@@ -60,6 +60,7 @@
 		AA000039 /* VoidHarbingerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100040 /* VoidHarbingerAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
 		AA000041 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* AudioService.swift */; };
+		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +68,7 @@
 		1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		260E703394574A0E21D9E82C /* WaveSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveSystem.swift; sourceTree = "<group>"; };
 		31EF22FB9EBD5242CFCD38DD /* TDConfig.json */ = {isa = PBXFileReference; includeInIndex = 1; path = TDConfig.json; sourceTree = "<group>"; };
+		3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeBackModal.swift; sourceTree = "<group>"; };
 		529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameScene.swift; sourceTree = "<group>"; };
 		652706E4D090EB81125BDB8E /* TowerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerSystem.swift; sourceTree = "<group>"; };
 		9BC456BE2F341A8C1006B747 /* CoreSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreSystem.swift; sourceTree = "<group>"; };
@@ -314,6 +316,7 @@
 		AA400017 /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -457,6 +460,7 @@
 				6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */,
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
+				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

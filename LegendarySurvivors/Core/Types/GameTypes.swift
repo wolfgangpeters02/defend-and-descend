@@ -734,6 +734,18 @@ struct TDModeStats: Codable {
     var highestWave: Int = 0
     var totalTowersPlaced: Int = 0
     var totalTDKills: Int = 0
+
+    // System: Reboot - Offline/Idle Earnings
+    var lastActiveTimestamp: TimeInterval = 0  // Last time player was active
+    var totalVirusKills: Int = 0               // Total viruses killed (for passive Data)
+    var totalData: Int = 0                     // Data currency (from Debugger/active mode)
+    var baseWattsPerSecond: CGFloat = 10       // Base Watts income rate
+    var averageEfficiency: CGFloat = 100       // Rolling average efficiency for offline calc
+
+    /// Calculate passive Data earned from virus kills
+    var passiveDataEarned: Int {
+        return totalVirusKills / 1000  // 1 Data per 1000 kills
+    }
 }
 
 // MARK: - Default Profile

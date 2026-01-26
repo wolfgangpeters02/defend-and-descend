@@ -266,6 +266,86 @@ class StorageService {
         }
     }
 
+    // MARK: - System: Reboot - Offline Earnings
+
+    /// Save timestamp when app goes to background
+    func saveLastActiveTime() {
+        var profile = getOrCreateDefaultPlayer()
+        profile.tdStats.lastActiveTimestamp = Date().timeIntervalSince1970
+        savePlayer(profile)
+    }
+
+    /// Calculate and apply offline earnings
+    /// Returns: (wattsEarned, timeAway) or nil if no earnings
+    func calculateOfflineEarnings() -> OfflineEarningsResult? {
+        let profile = getOrCreateDefaultPlayer()
+
+        // Check if we have a valid last active timestamp
+        guard profile.tdStats.lastActiveTimestamp > 0 else {
+            return nil
+        }
+
+        let now = Date().timeIntervalSince1970
+        let timeAway = now - profile.tdStats.lastActiveTimestamp
+
+        // Minimum 1 minute away to earn anything
+        guard timeAway >= 60 else {
+            return nil
+        }
+
+        // Cap at 8 hours (28800 seconds)
+        let cappedTime = min(timeAway, 28800)
+
+        // Calculate earnings
+        // offlineWatts = timeAway * baseRate * avgEfficiency * 0.5 (offline penalty)
+        let baseRate = profile.tdStats.baseWattsPerSecond
+        let efficiency = profile.tdStats.averageEfficiency / 100
+        let offlineMultiplier: CGFloat = 0.5  // 50% efficiency when offline
+
+        let wattsEarned = Int(cappedTime * Double(baseRate * efficiency * offlineMultiplier))
+
+        // Calculate passive Data from virus kills
+        let passiveData = profile.tdStats.passiveDataEarned
+
+        return OfflineEarningsResult(
+            wattsEarned: wattsEarned,
+            dataEarned: passiveData,
+            timeAwaySeconds: timeAway,
+            cappedTimeSeconds: cappedTime,
+            wasCapped: timeAway > 28800
+        )
+    }
+
+    /// Apply offline earnings to player profile
+    func applyOfflineEarnings(_ earnings: OfflineEarningsResult) {
+        var profile = getOrCreateDefaultPlayer()
+
+        // Add Watts
+        profile.gold += earnings.wattsEarned
+
+        // Update timestamp
+        profile.tdStats.lastActiveTimestamp = Date().timeIntervalSince1970
+
+        savePlayer(profile)
+    }
+
+    /// Update virus kill count (for passive Data generation)
+    func addVirusKills(_ count: Int) {
+        var profile = getOrCreateDefaultPlayer()
+        profile.tdStats.totalVirusKills += count
+        profile.tdStats.totalTDKills += count
+        profile.totalKills += count
+        savePlayer(profile)
+    }
+
+    /// Update average efficiency for offline calculations
+    func updateAverageEfficiency(_ efficiency: CGFloat) {
+        var profile = getOrCreateDefaultPlayer()
+        // Rolling average: 90% old, 10% new
+        profile.tdStats.averageEfficiency = profile.tdStats.averageEfficiency * 0.9 + efficiency * 0.1
+        savePlayer(profile)
+    }
+
     // MARK: - Reset
 
     /// Reset all data (for debugging)
@@ -273,5 +353,27 @@ class StorageService {
         userDefaults.removeObject(forKey: Keys.playerProfile)
         userDefaults.removeObject(forKey: Keys.allPlayers)
         userDefaults.removeObject(forKey: Keys.currentPlayerId)
+    }
+}
+
+// MARK: - Offline Earnings Result
+
+struct OfflineEarningsResult {
+    let wattsEarned: Int
+    let dataEarned: Int
+    let timeAwaySeconds: TimeInterval
+    let cappedTimeSeconds: TimeInterval
+    let wasCapped: Bool
+
+    /// Format time away as human-readable string
+    var formattedTimeAway: String {
+        let hours = Int(timeAwaySeconds) / 3600
+        let minutes = (Int(timeAwaySeconds) % 3600) / 60
+
+        if hours > 0 {
+            return "\(hours)h \(minutes)m"
+        } else {
+            return "\(minutes)m"
+        }
     }
 }

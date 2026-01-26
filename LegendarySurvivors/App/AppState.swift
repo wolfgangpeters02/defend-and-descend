@@ -39,8 +39,49 @@ class AppState: ObservableObject {
     // TD-specific selections
     @Published var selectedTDMap: String = "grasslands"
 
+    // Offline earnings
+    @Published var pendingOfflineEarnings: OfflineEarningsResult?
+    @Published var showWelcomeBack: Bool = false
+
     private init() {
         self.currentPlayer = StorageService.shared.getOrCreateDefaultPlayer()
+        checkOfflineEarnings()
+    }
+
+    // MARK: - Offline Earnings (System: Reboot)
+
+    /// Check for offline earnings on app launch/return
+    func checkOfflineEarnings() {
+        if let earnings = StorageService.shared.calculateOfflineEarnings() {
+            // Only show if meaningful earnings (at least 10 Watts)
+            if earnings.wattsEarned >= 10 {
+                pendingOfflineEarnings = earnings
+                showWelcomeBack = true
+            }
+        }
+    }
+
+    /// Collect offline earnings
+    func collectOfflineEarnings() {
+        guard let earnings = pendingOfflineEarnings else { return }
+
+        // Apply earnings to player
+        StorageService.shared.applyOfflineEarnings(earnings)
+        refreshPlayer()
+
+        // Clear pending
+        pendingOfflineEarnings = nil
+        showWelcomeBack = false
+    }
+
+    /// Called when app goes to background
+    func onAppBackground() {
+        StorageService.shared.saveLastActiveTime()
+    }
+
+    /// Called when app returns to foreground
+    func onAppForeground() {
+        checkOfflineEarnings()
     }
 
     // MARK: - Player Management

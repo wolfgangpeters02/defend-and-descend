@@ -99,6 +99,17 @@ struct ContentView: View {
                     .ignoresSafeArea()
                     .transition(.opacity)
             }
+
+            // Welcome Back modal overlay (System: Reboot offline earnings)
+            if appState.showWelcomeBack, let earnings = appState.pendingOfflineEarnings {
+                WelcomeBackModal(
+                    earnings: earnings,
+                    onDismiss: {
+                        appState.collectOfflineEarnings()
+                    }
+                )
+                .transition(.opacity)
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: screenKey)
         .environmentObject(appState)
