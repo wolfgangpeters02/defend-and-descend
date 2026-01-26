@@ -34,63 +34,67 @@ struct MainMenuView: View {
                 VStack(spacing: isPortrait ? 40 : 25) {
                     Spacer()
 
-                    // Title
-                    VStack(spacing: 5) {
-                        Text("LEGENDARY")
-                            .font(.system(size: isPortrait ? 48 : 40, weight: .black))
+                    // Title - System: Reboot
+                    VStack(spacing: 8) {
+                        Text("SYSTEM:")
+                            .font(.system(size: isPortrait ? 42 : 36, weight: .black, design: .monospaced))
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [.cyan, .blue],
+                                    colors: [.cyan, .green],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
 
-                        Text("SURVIVORS")
-                            .font(.system(size: isPortrait ? 36 : 28, weight: .bold))
-                            .foregroundColor(.white)
+                        Text("REBOOT")
+                            .font(.system(size: isPortrait ? 52 : 44, weight: .black, design: .monospaced))
+                            .foregroundColor(.cyan)
+
+                        Text("v1.0.0")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(.gray.opacity(0.6))
                     }
                     .opacity(showTitle ? 1 : 0)
                     .offset(y: showTitle ? 0 : -20)
 
                     Spacer()
 
-                    // Stats preview
+                    // Stats preview - System: Reboot themed
                     HStack(spacing: 20) {
                         StatBadge(
-                            icon: "flame.fill",
+                            icon: "ladybug.fill",
                             value: "\(appState.currentPlayer.totalKills)",
-                            label: "Kills"
+                            label: "Purged"
                         )
                         StatBadge(
-                            icon: "clock.fill",
-                            value: formatTime(appState.currentPlayer.bestTime),
-                            label: "Best"
+                            icon: "bolt.fill",
+                            value: "\(appState.currentPlayer.gold)",
+                            label: "Watts"
                         )
                         StatBadge(
-                            icon: "star.fill",
+                            icon: "shield.fill",
                             value: "\(appState.currentPlayer.legendariesUnlocked)",
-                            label: "Legendary"
+                            label: "Firewalls"
                         )
                     }
                     .opacity(showButtons ? 1 : 0)
 
                     Spacer()
 
-                    // Menu buttons
+                    // Menu buttons - Terminal style
                     VStack(spacing: 15) {
-                        MenuButton(title: "PLAY", color: .cyan, isPrimary: true) {
+                        MenuButton(title: "▶ INITIALIZE", color: .cyan, isPrimary: true) {
                             HapticsService.shared.play(.selection)
                             onPlay()
                         }
 
                         HStack(spacing: 15) {
-                            MenuButton(title: "COLLECTION", color: .purple) {
+                            MenuButton(title: "ARSENAL", color: .purple) {
                                 HapticsService.shared.play(.selection)
                                 onCollection()
                             }
 
-                            MenuButton(title: "STATS", color: .orange) {
+                            MenuButton(title: "LOGS", color: .orange) {
                                 HapticsService.shared.play(.selection)
                                 onStats()
                             }
@@ -100,11 +104,6 @@ struct MainMenuView: View {
                     .offset(y: showButtons ? 0 : 20)
 
                     Spacer()
-
-                    // Version
-                    Text("v1.0.0")
-                        .font(.caption)
-                        .foregroundColor(.gray.opacity(0.5))
                 }
                 .padding()
             }
@@ -140,16 +139,16 @@ struct MenuButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: isPrimary ? 24 : 16, weight: .bold))
+                .font(.system(size: isPrimary ? 20 : 14, weight: .bold, design: .monospaced))
                 .foregroundColor(isPrimary ? .black : .white)
                 .frame(maxWidth: isPrimary ? 280 : 130)
                 .padding(.vertical, isPrimary ? 18 : 14)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isPrimary ? color : color.opacity(0.2))
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isPrimary ? color : color.opacity(0.15))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(color, lineWidth: isPrimary ? 0 : 2)
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(color.opacity(isPrimary ? 0 : 0.5), lineWidth: 1)
                         )
                 )
         }
@@ -177,11 +176,11 @@ struct StatBadge: View {
                 .font(.system(size: 16))
 
             Text(value)
-                .font(.system(size: 18, weight: .bold))
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundColor(.white)
 
             Text(label)
-                .font(.system(size: 10))
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundColor(.gray)
         }
         .frame(width: 70)
