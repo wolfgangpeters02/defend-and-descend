@@ -1,0 +1,373 @@
+{
+  "tdSettings": {
+    "startingGold": 100,
+    "startingLives": 20,
+    "goldPerKill": 1,
+    "goldPerWave": 10,
+    "waveCountdown": 10.0,
+    "maxTowers": 20,
+    "totalWaves": 20
+  },
+  "towerCosts": {
+    "common": 50,
+    "rare": 100,
+    "epic": 200,
+    "legendary": 400
+  },
+  "waves": [
+    {
+      "waveNumber": 1,
+      "enemies": [
+        { "type": "basic", "count": 5, "healthMultiplier": 1.0, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.8,
+      "bonusGold": 10
+    },
+    {
+      "waveNumber": 2,
+      "enemies": [
+        { "type": "basic", "count": 8, "healthMultiplier": 1.1, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.75,
+      "bonusGold": 15
+    },
+    {
+      "waveNumber": 3,
+      "enemies": [
+        { "type": "basic", "count": 8, "healthMultiplier": 1.2, "speedMultiplier": 1.0 },
+        { "type": "fast", "count": 3, "healthMultiplier": 1.1, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.7,
+      "bonusGold": 20
+    },
+    {
+      "waveNumber": 4,
+      "enemies": [
+        { "type": "basic", "count": 10, "healthMultiplier": 1.3, "speedMultiplier": 1.02 },
+        { "type": "fast", "count": 5, "healthMultiplier": 1.2, "speedMultiplier": 1.02 }
+      ],
+      "spawnDelay": 0.65,
+      "bonusGold": 25
+    },
+    {
+      "waveNumber": 5,
+      "enemies": [
+        { "type": "basic", "count": 10, "healthMultiplier": 1.45, "speedMultiplier": 1.04 },
+        { "type": "fast", "count": 5, "healthMultiplier": 1.35, "speedMultiplier": 1.04 },
+        { "type": "boss", "count": 1, "healthMultiplier": 2.0, "speedMultiplier": 0.8 }
+      ],
+      "spawnDelay": 0.6,
+      "bonusGold": 50
+    },
+    {
+      "waveNumber": 6,
+      "enemies": [
+        { "type": "basic", "count": 12, "healthMultiplier": 1.6, "speedMultiplier": 1.06 },
+        { "type": "fast", "count": 6, "healthMultiplier": 1.5, "speedMultiplier": 1.06 },
+        { "type": "tank", "count": 2, "healthMultiplier": 1.4, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.55,
+      "bonusGold": 35
+    },
+    {
+      "waveNumber": 7,
+      "enemies": [
+        { "type": "basic", "count": 14, "healthMultiplier": 1.75, "speedMultiplier": 1.08 },
+        { "type": "fast", "count": 7, "healthMultiplier": 1.65, "speedMultiplier": 1.08 },
+        { "type": "tank", "count": 3, "healthMultiplier": 1.55, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.5,
+      "bonusGold": 40
+    },
+    {
+      "waveNumber": 8,
+      "enemies": [
+        { "type": "basic", "count": 15, "healthMultiplier": 1.9, "speedMultiplier": 1.1 },
+        { "type": "fast", "count": 8, "healthMultiplier": 1.8, "speedMultiplier": 1.1 },
+        { "type": "tank", "count": 4, "healthMultiplier": 1.7, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.45,
+      "bonusGold": 45
+    },
+    {
+      "waveNumber": 9,
+      "enemies": [
+        { "type": "basic", "count": 16, "healthMultiplier": 2.05, "speedMultiplier": 1.12 },
+        { "type": "fast", "count": 10, "healthMultiplier": 1.95, "speedMultiplier": 1.12 },
+        { "type": "tank", "count": 5, "healthMultiplier": 1.85, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.4,
+      "bonusGold": 50
+    },
+    {
+      "waveNumber": 10,
+      "enemies": [
+        { "type": "basic", "count": 15, "healthMultiplier": 2.2, "speedMultiplier": 1.14 },
+        { "type": "fast", "count": 10, "healthMultiplier": 2.1, "speedMultiplier": 1.14 },
+        { "type": "tank", "count": 5, "healthMultiplier": 2.0, "speedMultiplier": 1.0 },
+        { "type": "boss", "count": 2, "healthMultiplier": 3.0, "speedMultiplier": 0.8 }
+      ],
+      "spawnDelay": 0.4,
+      "bonusGold": 100
+    },
+    {
+      "waveNumber": 11,
+      "enemies": [
+        { "type": "basic", "count": 18, "healthMultiplier": 2.5, "speedMultiplier": 1.16 },
+        { "type": "fast", "count": 12, "healthMultiplier": 2.4, "speedMultiplier": 1.16 },
+        { "type": "tank", "count": 6, "healthMultiplier": 2.3, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.35,
+      "bonusGold": 60
+    },
+    {
+      "waveNumber": 12,
+      "enemies": [
+        { "type": "basic", "count": 20, "healthMultiplier": 2.8, "speedMultiplier": 1.18 },
+        { "type": "fast", "count": 14, "healthMultiplier": 2.7, "speedMultiplier": 1.18 },
+        { "type": "tank", "count": 7, "healthMultiplier": 2.6, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.35,
+      "bonusGold": 70
+    },
+    {
+      "waveNumber": 13,
+      "enemies": [
+        { "type": "basic", "count": 22, "healthMultiplier": 3.1, "speedMultiplier": 1.2 },
+        { "type": "fast", "count": 15, "healthMultiplier": 3.0, "speedMultiplier": 1.2 },
+        { "type": "tank", "count": 8, "healthMultiplier": 2.9, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.3,
+      "bonusGold": 80
+    },
+    {
+      "waveNumber": 14,
+      "enemies": [
+        { "type": "basic", "count": 24, "healthMultiplier": 3.4, "speedMultiplier": 1.22 },
+        { "type": "fast", "count": 16, "healthMultiplier": 3.3, "speedMultiplier": 1.22 },
+        { "type": "tank", "count": 9, "healthMultiplier": 3.2, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.3,
+      "bonusGold": 90
+    },
+    {
+      "waveNumber": 15,
+      "enemies": [
+        { "type": "basic", "count": 20, "healthMultiplier": 3.7, "speedMultiplier": 1.24 },
+        { "type": "fast", "count": 15, "healthMultiplier": 3.6, "speedMultiplier": 1.24 },
+        { "type": "tank", "count": 8, "healthMultiplier": 3.5, "speedMultiplier": 1.0 },
+        { "type": "boss", "count": 3, "healthMultiplier": 4.0, "speedMultiplier": 0.8 }
+      ],
+      "spawnDelay": 0.3,
+      "bonusGold": 150
+    },
+    {
+      "waveNumber": 16,
+      "enemies": [
+        { "type": "basic", "count": 25, "healthMultiplier": 4.0, "speedMultiplier": 1.26 },
+        { "type": "fast", "count": 18, "healthMultiplier": 3.9, "speedMultiplier": 1.26 },
+        { "type": "tank", "count": 10, "healthMultiplier": 3.8, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.25,
+      "bonusGold": 100
+    },
+    {
+      "waveNumber": 17,
+      "enemies": [
+        { "type": "basic", "count": 28, "healthMultiplier": 4.3, "speedMultiplier": 1.28 },
+        { "type": "fast", "count": 20, "healthMultiplier": 4.2, "speedMultiplier": 1.28 },
+        { "type": "tank", "count": 11, "healthMultiplier": 4.1, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.25,
+      "bonusGold": 110
+    },
+    {
+      "waveNumber": 18,
+      "enemies": [
+        { "type": "basic", "count": 30, "healthMultiplier": 4.6, "speedMultiplier": 1.3 },
+        { "type": "fast", "count": 22, "healthMultiplier": 4.5, "speedMultiplier": 1.3 },
+        { "type": "tank", "count": 12, "healthMultiplier": 4.4, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.2,
+      "bonusGold": 120
+    },
+    {
+      "waveNumber": 19,
+      "enemies": [
+        { "type": "basic", "count": 32, "healthMultiplier": 4.9, "speedMultiplier": 1.32 },
+        { "type": "fast", "count": 24, "healthMultiplier": 4.8, "speedMultiplier": 1.32 },
+        { "type": "tank", "count": 13, "healthMultiplier": 4.7, "speedMultiplier": 1.0 }
+      ],
+      "spawnDelay": 0.2,
+      "bonusGold": 130
+    },
+    {
+      "waveNumber": 20,
+      "enemies": [
+        { "type": "basic", "count": 25, "healthMultiplier": 5.5, "speedMultiplier": 1.35 },
+        { "type": "fast", "count": 20, "healthMultiplier": 5.4, "speedMultiplier": 1.35 },
+        { "type": "tank", "count": 12, "healthMultiplier": 5.3, "speedMultiplier": 1.0 },
+        { "type": "boss", "count": 5, "healthMultiplier": 6.0, "speedMultiplier": 0.8 }
+      ],
+      "spawnDelay": 0.2,
+      "bonusGold": 250
+    }
+  ],
+  "maps": {
+    "grasslands": {
+      "paths": [
+        {
+          "id": "main",
+          "waypoints": [
+            [400, 0],
+            [640, 150],
+            [160, 300],
+            [640, 450],
+            [400, 550]
+          ]
+        }
+      ],
+      "corePosition": [400, 550],
+      "spawnPoints": [[400, 0]]
+    },
+    "volcano": {
+      "paths": [
+        {
+          "id": "left",
+          "waypoints": [
+            [150, 0],
+            [150, 200],
+            [400, 300],
+            [400, 550]
+          ]
+        },
+        {
+          "id": "right",
+          "waypoints": [
+            [650, 0],
+            [650, 200],
+            [400, 300],
+            [400, 550]
+          ]
+        }
+      ],
+      "corePosition": [400, 550],
+      "spawnPoints": [[150, 0], [650, 0]]
+    },
+    "ice_cave": {
+      "paths": [
+        {
+          "id": "zigzag",
+          "waypoints": [
+            [100, 0],
+            [700, 100],
+            [100, 200],
+            [700, 300],
+            [100, 400],
+            [400, 550]
+          ]
+        }
+      ],
+      "corePosition": [400, 550],
+      "spawnPoints": [[100, 0]]
+    },
+    "castle": {
+      "paths": [
+        {
+          "id": "outer_left",
+          "waypoints": [
+            [200, 0],
+            [100, 150],
+            [100, 450],
+            [400, 550]
+          ]
+        },
+        {
+          "id": "center",
+          "waypoints": [
+            [400, 0],
+            [400, 200],
+            [400, 550]
+          ]
+        },
+        {
+          "id": "outer_right",
+          "waypoints": [
+            [600, 0],
+            [700, 150],
+            [700, 450],
+            [400, 550]
+          ]
+        }
+      ],
+      "corePosition": [400, 550],
+      "spawnPoints": [[200, 0], [400, 0], [600, 0]]
+    },
+    "space": {
+      "paths": [
+        {
+          "id": "spiral",
+          "waypoints": [
+            [400, 0],
+            [700, 100],
+            [700, 300],
+            [100, 300],
+            [100, 500],
+            [400, 550]
+          ]
+        }
+      ],
+      "corePosition": [400, 550],
+      "spawnPoints": [[400, 0]]
+    },
+    "temple": {
+      "paths": [
+        {
+          "id": "temple_path",
+          "waypoints": [
+            [400, 0],
+            [200, 100],
+            [600, 200],
+            [200, 300],
+            [600, 400],
+            [400, 550]
+          ]
+        }
+      ],
+      "corePosition": [400, 550],
+      "spawnPoints": [[400, 0]]
+    }
+  },
+  "coreUpgrades": {
+    "health": {
+      "baseCost": 50,
+      "costIncrease": 25,
+      "effect": "+20 Max Health",
+      "maxLevel": 10
+    },
+    "damage": {
+      "baseCost": 75,
+      "costIncrease": 35,
+      "effect": "+15% Damage",
+      "maxLevel": 10
+    },
+    "range": {
+      "baseCost": 60,
+      "costIncrease": 30,
+      "effect": "+20 Range",
+      "maxLevel": 10
+    },
+    "attackSpeed": {
+      "baseCost": 100,
+      "costIncrease": 50,
+      "effect": "+10% Attack Speed",
+      "maxLevel": 10
+    },
+    "armor": {
+      "baseCost": 80,
+      "costIncrease": 40,
+      "effect": "+5% Damage Reduction",
+      "maxLevel": 10
+    }
+  }
+}

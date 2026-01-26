@@ -1,0 +1,1087 @@
+{
+  "weapons": {
+    "bow": {
+      "id": "bow",
+      "name": "Bow",
+      "description": "Shoots straight arrows",
+      "rarity": "common",
+      "icon": "bow_icon",
+      "damage": 15,
+      "range": 300,
+      "attackSpeed": 2.0,
+      "projectileType": "arrow",
+      "color": "#8b4513",
+      "towerName": "Archer Tower",
+      "special": {
+        "projectileCount": 2
+      }
+    },
+    "cannon": {
+      "id": "cannon",
+      "name": "Cannon",
+      "description": "Massive explosive shots",
+      "rarity": "rare",
+      "icon": "cannon_icon",
+      "damage": 60,
+      "range": 400,
+      "attackSpeed": 0.8,
+      "projectileType": "cannonball",
+      "color": "#333333",
+      "towerName": "Cannon Tower",
+      "special": {
+        "splash": 120
+      }
+    },
+    "ice_shard": {
+      "id": "ice_shard",
+      "name": "Ice Shard",
+      "description": "Freezing projectiles that slow enemies",
+      "rarity": "common",
+      "icon": "ice_icon",
+      "damage": 16,
+      "range": 300,
+      "attackSpeed": 2.5,
+      "projectileType": "ice",
+      "color": "#00ffff",
+      "towerName": "Ice Tower",
+      "special": {
+        "projectileCount": 3,
+        "slow": 0.5,
+        "slowDuration": 2.0
+      }
+    },
+    "laser": {
+      "id": "laser",
+      "name": "Laser Beam",
+      "description": "Continuous beam damage",
+      "rarity": "epic",
+      "icon": "laser_icon",
+      "damage": 30,
+      "range": 400,
+      "attackSpeed": 0.5,
+      "projectileType": "laser",
+      "color": "#ff0000",
+      "towerName": "Beam Tower"
+    },
+    "staff": {
+      "id": "staff",
+      "name": "Magic Staff",
+      "description": "Fires homing missiles",
+      "rarity": "rare",
+      "icon": "staff_icon",
+      "damage": 20,
+      "range": 350,
+      "attackSpeed": 1.5,
+      "projectileType": "magic",
+      "color": "#9370db",
+      "towerName": "Tracker Tower",
+      "special": {
+        "homing": true,
+        "projectileCount": 2
+      }
+    },
+    "bomb": {
+      "id": "bomb",
+      "name": "Bomber",
+      "description": "Area damage explosions",
+      "rarity": "rare",
+      "icon": "bomb_icon",
+      "damage": 40,
+      "range": 200,
+      "attackSpeed": 1.2,
+      "projectileType": "bomb",
+      "color": "#ff8800",
+      "towerName": "Bomb Tower",
+      "special": {
+        "splash": 100
+      }
+    },
+    "lightning": {
+      "id": "lightning",
+      "name": "Lightning Staff",
+      "description": "Chain lightning attacks",
+      "rarity": "epic",
+      "icon": "lightning_icon",
+      "damage": 35,
+      "range": 350,
+      "attackSpeed": 1.5,
+      "projectileType": "lightning",
+      "color": "#00ffff",
+      "towerName": "Lightning Tower",
+      "special": {
+        "chain": 3
+      }
+    },
+    "flamethrower": {
+      "id": "flamethrower",
+      "name": "Flamethrower",
+      "description": "Burn everything in range",
+      "rarity": "rare",
+      "icon": "flame_icon",
+      "damage": 18,
+      "range": 150,
+      "attackSpeed": 5,
+      "projectileType": "fire",
+      "color": "#ff4500",
+      "towerName": "Flame Tower",
+      "special": {
+        "projectileCount": 3
+      }
+    },
+    "excalibur": {
+      "id": "excalibur",
+      "name": "Excalibur",
+      "description": "Legendary whirlwind blade",
+      "rarity": "legendary",
+      "icon": "excalibur_icon",
+      "damage": 100,
+      "range": 150,
+      "attackSpeed": 2.0,
+      "projectileType": "slash",
+      "color": "#ffd700",
+      "towerName": "Holy Tower",
+      "special": {
+        "splash": 80,
+        "projectileCount": 3
+      }
+    }
+  },
+  "powerups": {
+    "tank": {
+      "id": "tank",
+      "name": "Tank",
+      "description": "+150% max health",
+      "rarity": "common",
+      "icon": "tank_icon",
+      "effects": {
+        "healthMultiplier": 2.5
+      }
+    },
+    "berserker": {
+      "id": "berserker",
+      "name": "Berserker",
+      "description": "+150% damage",
+      "rarity": "common",
+      "icon": "berserker_icon",
+      "effects": {
+        "damageMultiplier": 2.5
+      }
+    },
+    "sniper": {
+      "id": "sniper",
+      "name": "Sniper",
+      "description": "+50% weapon range",
+      "rarity": "common",
+      "icon": "sniper_icon",
+      "effects": {
+        "startWithAbility": "rangeBoost"
+      }
+    },
+    "gunslinger": {
+      "id": "gunslinger",
+      "name": "Gunslinger",
+      "description": "+30% attack speed",
+      "rarity": "common",
+      "icon": "gunslinger_icon",
+      "effects": {
+        "startWithAbility": "attackSpeedBoost"
+      }
+    },
+    "giant": {
+      "id": "giant",
+      "name": "Giant",
+      "description": "+250% max health",
+      "rarity": "rare",
+      "icon": "giant_icon",
+      "effects": {
+        "healthMultiplier": 3.5
+      }
+    },
+    "assassin": {
+      "id": "assassin",
+      "name": "Assassin",
+      "description": "+70% damage, -15% health",
+      "rarity": "rare",
+      "icon": "assassin_icon",
+      "effects": {
+        "damageMultiplier": 1.7,
+        "healthMultiplier": 0.85
+      }
+    },
+    "warrior": {
+      "id": "warrior",
+      "name": "Warrior",
+      "description": "+80% damage, +80% health",
+      "rarity": "rare",
+      "icon": "warrior_icon",
+      "effects": {
+        "damageMultiplier": 1.8,
+        "healthMultiplier": 1.8
+      }
+    },
+    "mage": {
+      "id": "mage",
+      "name": "Mage",
+      "description": "+180% damage, -25% health",
+      "rarity": "epic",
+      "icon": "mage_icon",
+      "effects": {
+        "damageMultiplier": 2.8,
+        "healthMultiplier": 0.75
+      }
+    },
+    "godmode": {
+      "id": "godmode",
+      "name": "Ascension",
+      "description": "+100% to ALL stats",
+      "rarity": "legendary",
+      "icon": "godmode_icon",
+      "effects": {
+        "damageMultiplier": 2.0,
+        "healthMultiplier": 2.0,
+        "speedMultiplier": 1.7
+      }
+    }
+  },
+  "arenas": {
+    "grasslands": {
+      "id": "grasslands",
+      "name": "Grasslands",
+      "rarity": "common",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#4a7c23",
+      "theme": "nature",
+      "dungeonType": "cathedral",
+      "obstacles": [
+        {
+          "x": 100,
+          "y": 50,
+          "width": 60,
+          "height": 60,
+          "color": "#2d5016",
+          "type": "tree"
+        },
+        {
+          "x": 620,
+          "y": 80,
+          "width": 70,
+          "height": 70,
+          "color": "#2d5016",
+          "type": "tree"
+        },
+        {
+          "x": 250,
+          "y": 380,
+          "width": 50,
+          "height": 50,
+          "color": "#808080",
+          "type": "rock"
+        },
+        {
+          "x": 480,
+          "y": 350,
+          "width": 55,
+          "height": 55,
+          "color": "#2d5016",
+          "type": "tree"
+        }
+      ]
+    },
+    "volcano": {
+      "id": "volcano",
+      "name": "Volcano",
+      "rarity": "common",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#8b0000",
+      "theme": "fire",
+      "particleEffect": "ember",
+      "dungeonType": "volcanic",
+      "globalModifier": {
+        "damageMultiplier": 1.5,
+        "enemyDamageMultiplier": 1.3,
+        "description": "MOLTEN FURY: +50% damage dealt, +30% damage taken"
+      },
+      "hazards": [
+        {
+          "x": 150,
+          "y": 100,
+          "width": 80,
+          "height": 80,
+          "damage": 15,
+          "type": "lava"
+        },
+        {
+          "x": 500,
+          "y": 200,
+          "width": 100,
+          "height": 60,
+          "damage": 15,
+          "type": "lava"
+        },
+        {
+          "x": 300,
+          "y": 400,
+          "width": 90,
+          "height": 90,
+          "damage": 15,
+          "type": "lava"
+        }
+      ],
+      "events": [
+        {
+          "type": "lavaEruption",
+          "intervalMin": 15,
+          "intervalMax": 25,
+          "damage": 50,
+          "radius": 80,
+          "duration": 2000
+        }
+      ]
+    },
+    "ice_cave": {
+      "id": "ice_cave",
+      "name": "Ice Cave",
+      "rarity": "common",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#add8e6",
+      "theme": "ice",
+      "particleEffect": "snow",
+      "dungeonType": "frozen",
+      "globalModifier": {
+        "playerSpeedMultiplier": 1.5,
+        "enemySpeedMultiplier": 0.7,
+        "description": "SLIPPERY: You slide 50% faster, enemies move 30% slower"
+      },
+      "effectZones": [
+        {
+          "x": 50,
+          "y": 50,
+          "width": 200,
+          "height": 150,
+          "type": "ice",
+          "speedMultiplier": 1.5,
+          "visualEffect": "#87ceeb"
+        },
+        {
+          "x": 450,
+          "y": 100,
+          "width": 250,
+          "height": 180,
+          "type": "ice",
+          "speedMultiplier": 1.5,
+          "visualEffect": "#87ceeb"
+        },
+        {
+          "x": 200,
+          "y": 350,
+          "width": 180,
+          "height": 200,
+          "type": "ice",
+          "speedMultiplier": 1.5,
+          "visualEffect": "#87ceeb"
+        }
+      ]
+    },
+    "castle": {
+      "id": "castle",
+      "name": "Royal Castle",
+      "rarity": "rare",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#696969",
+      "theme": "medieval",
+      "dungeonType": "cathedral",
+      "obstacles": [
+        {
+          "x": 100,
+          "y": 100,
+          "width": 80,
+          "height": 120,
+          "color": "#505050",
+          "type": "wall"
+        },
+        {
+          "x": 600,
+          "y": 100,
+          "width": 80,
+          "height": 120,
+          "color": "#505050",
+          "type": "wall"
+        },
+        {
+          "x": 100,
+          "y": 380,
+          "width": 80,
+          "height": 120,
+          "color": "#505050",
+          "type": "wall"
+        },
+        {
+          "x": 600,
+          "y": 380,
+          "width": 80,
+          "height": 120,
+          "color": "#505050",
+          "type": "wall"
+        },
+        {
+          "x": 350,
+          "y": 250,
+          "width": 100,
+          "height": 100,
+          "color": "#404040",
+          "type": "pillar"
+        }
+      ]
+    },
+    "space": {
+      "id": "space",
+      "name": "Space Station",
+      "rarity": "rare",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#000033",
+      "theme": "space",
+      "particleEffect": "stars",
+      "dungeonType": "cathedral",
+      "globalModifier": {
+        "playerSpeedMultiplier": 1.3,
+        "projectileSpeedMultiplier": 1.5,
+        "description": "LOW GRAVITY: +30% speed, +50% projectile speed"
+      },
+      "effectZones": [
+        {
+          "x": 100,
+          "y": 100,
+          "width": 200,
+          "height": 200,
+          "type": "speedBoost",
+          "speedMultiplier": 1.8,
+          "visualEffect": "#4169e1"
+        },
+        {
+          "x": 450,
+          "y": 250,
+          "width": 220,
+          "height": 220,
+          "type": "speedBoost",
+          "speedMultiplier": 1.8,
+          "visualEffect": "#4169e1"
+        }
+      ],
+      "hazards": [
+        {
+          "x": 350,
+          "y": 80,
+          "width": 60,
+          "height": 60,
+          "damage": 20,
+          "type": "asteroid"
+        }
+      ]
+    },
+    "temple": {
+      "id": "temple",
+      "name": "Ancient Temple",
+      "rarity": "rare",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#8b7355",
+      "theme": "ruins",
+      "dungeonType": "sunken",
+      "obstacles": [
+        {
+          "x": 150,
+          "y": 150,
+          "width": 60,
+          "height": 80,
+          "color": "#a0522d",
+          "type": "pillar"
+        },
+        {
+          "x": 590,
+          "y": 150,
+          "width": 60,
+          "height": 80,
+          "color": "#a0522d",
+          "type": "pillar"
+        },
+        {
+          "x": 150,
+          "y": 370,
+          "width": 60,
+          "height": 80,
+          "color": "#a0522d",
+          "type": "pillar"
+        },
+        {
+          "x": 590,
+          "y": 370,
+          "width": 60,
+          "height": 80,
+          "color": "#a0522d",
+          "type": "pillar"
+        }
+      ],
+      "effectZones": [
+        {
+          "x": 300,
+          "y": 200,
+          "width": 200,
+          "height": 200,
+          "type": "healing",
+          "healPerSecond": 10,
+          "visualEffect": "#ffd700"
+        }
+      ]
+    },
+    "cyberboss": {
+      "id": "cyberboss",
+      "name": "Cyber Nexus",
+      "rarity": "legendary",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#0d0d1a",
+      "theme": "cyberpunk",
+      "dungeonType": "cyberboss",
+      "particleEffect": "neon",
+      "globalModifier": {
+        "enemyDamageMultiplier": 1.5,
+        "damageMultiplier": 1.3,
+        "description": "BOSS ARENA: +30% damage dealt, +50% damage taken"
+      }
+    },
+    "voidrealm": {
+      "id": "voidrealm",
+      "name": "Void Realm",
+      "rarity": "legendary",
+      "width": 800,
+      "height": 600,
+      "backgroundColor": "#0a0a14",
+      "theme": "void",
+      "dungeonType": "voidraid",
+      "particleEffect": "chaos",
+      "globalModifier": {
+        "enemyDamageMultiplier": 2.0,
+        "damageMultiplier": 1.5,
+        "description": "RAID MODE: +50% damage dealt, +100% damage taken"
+      }
+    }
+  },
+  "enemies": {
+    "basic": {
+      "id": "basic",
+      "name": "Basic Enemy",
+      "health": 21,
+      "speed": 80,
+      "damage": 10,
+      "coinValue": 1,
+      "size": 12,
+      "color": "#ff4444",
+      "shape": "square"
+    },
+    "fast": {
+      "id": "fast",
+      "name": "Fast Enemy",
+      "health": 11,
+      "speed": 150,
+      "damage": 5,
+      "coinValue": 2,
+      "size": 8,
+      "color": "#44ff44",
+      "shape": "triangle"
+    },
+    "tank": {
+      "id": "tank",
+      "name": "Tank Enemy",
+      "health": 70,
+      "speed": 40,
+      "damage": 20,
+      "coinValue": 5,
+      "size": 20,
+      "color": "#4444ff",
+      "shape": "hexagon"
+    },
+    "boss": {
+      "id": "boss",
+      "name": "Boss",
+      "health": 350,
+      "speed": 60,
+      "damage": 30,
+      "coinValue": 50,
+      "size": 30,
+      "color": "#ff00ff",
+      "shape": "hexagon",
+      "isBoss": true
+    },
+    "cyberboss": {
+      "id": "cyberboss",
+      "name": "Cyber Overlord",
+      "health": 50000,
+      "speed": 100,
+      "damage": 50,
+      "coinValue": 500,
+      "size": 50,
+      "color": "#00ffff",
+      "shape": "hexagon",
+      "isBoss": true
+    },
+    "voidharbinger": {
+      "id": "voidharbinger",
+      "name": "Void Harbinger",
+      "health": 100000,
+      "speed": 80,
+      "damage": 60,
+      "coinValue": 1000,
+      "size": 60,
+      "color": "#8800ff",
+      "shape": "hexagon",
+      "isBoss": true
+    },
+    "voidminion": {
+      "id": "voidminion",
+      "name": "Void Minion",
+      "health": 40,
+      "speed": 100,
+      "damage": 15,
+      "coinValue": 3,
+      "size": 14,
+      "color": "#6600aa",
+      "shape": "triangle"
+    }
+  },
+  "spawning": {
+    "maxEnemiesOnScreen": 200,
+    "waves": [
+      {
+        "startTime": 0,
+        "enemiesPerMinute": 45,
+        "enemyTypes": ["basic"]
+      },
+      {
+        "startTime": 30,
+        "enemiesPerMinute": 70,
+        "enemyTypes": ["basic", "fast"]
+      },
+      {
+        "startTime": 60,
+        "enemiesPerMinute": 100,
+        "enemyTypes": ["basic", "fast"]
+      },
+      {
+        "startTime": 90,
+        "enemiesPerMinute": 140,
+        "enemyTypes": ["basic", "fast", "tank"]
+      },
+      {
+        "startTime": 150,
+        "enemiesPerMinute": 190,
+        "enemyTypes": ["basic", "fast", "tank"]
+      },
+      {
+        "startTime": 210,
+        "enemiesPerMinute": 250,
+        "enemyTypes": ["basic", "fast", "tank", "boss"]
+      }
+    ]
+  },
+  "upgrades": {
+    "common": [
+      {
+        "id": "damage_35",
+        "name": "Stronger Arm",
+        "description": "+35% Damage",
+        "icon": "damage_icon",
+        "rarity": "common",
+        "effect": {
+          "type": "stat",
+          "target": "damage",
+          "value": 1.35,
+          "isMultiplier": true
+        }
+      },
+      {
+        "id": "health_50",
+        "name": "Tough Body",
+        "description": "+50 Max Health",
+        "icon": "health_icon",
+        "rarity": "common",
+        "effect": {
+          "type": "stat",
+          "target": "maxHealth",
+          "value": 50,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "attack_speed_25",
+        "name": "Quick Hands",
+        "description": "+25% Attack Speed",
+        "icon": "speed_icon",
+        "rarity": "common",
+        "effect": {
+          "type": "weapon",
+          "target": "attackSpeed",
+          "value": 0.25,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "range_50",
+        "name": "Far Reach",
+        "description": "+50 Range",
+        "icon": "range_icon",
+        "rarity": "common",
+        "effect": {
+          "type": "weapon",
+          "target": "range",
+          "value": 50,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "regen_2",
+        "name": "Regeneration",
+        "description": "+2 HP per second",
+        "icon": "regen_icon",
+        "rarity": "common",
+        "effect": {
+          "type": "stat",
+          "target": "regen",
+          "value": 2,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "armor_5",
+        "name": "Thick Skin",
+        "description": "+5% Damage Reduction",
+        "icon": "armor_icon",
+        "rarity": "common",
+        "effect": {
+          "type": "stat",
+          "target": "armor",
+          "value": 0.05,
+          "isMultiplier": false
+        }
+      }
+    ],
+    "rare": [
+      {
+        "id": "multi_shot",
+        "name": "Multi-Shot",
+        "description": "+1 Projectile",
+        "icon": "multishot_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "weapon",
+          "target": "projectileCount",
+          "value": 1,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "pierce_1",
+        "name": "Piercing Shots",
+        "description": "Projectiles pierce +1 enemy",
+        "icon": "pierce_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "weapon",
+          "target": "pierce",
+          "value": 1,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "splash_30",
+        "name": "Explosive Impact",
+        "description": "+30 Splash Damage Radius",
+        "icon": "splash_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "weapon",
+          "target": "splash",
+          "value": 30,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "homing",
+        "name": "Heat Seeking",
+        "description": "Projectiles home toward enemies",
+        "icon": "homing_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "weapon",
+          "target": "homing",
+          "value": 1,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "damage_65",
+        "name": "Devastating Blow",
+        "description": "+65% Damage",
+        "icon": "damage_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "stat",
+          "target": "damage",
+          "value": 1.65,
+          "isMultiplier": true
+        }
+      },
+      {
+        "id": "health_150",
+        "name": "Iron Constitution",
+        "description": "+150 Max Health",
+        "icon": "health_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "stat",
+          "target": "maxHealth",
+          "value": 150,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "attack_speed_60",
+        "name": "Rapid Fire",
+        "description": "+60% Attack Speed",
+        "icon": "speed_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "weapon",
+          "target": "attackSpeed",
+          "value": 0.6,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "armor_15",
+        "name": "Steel Armor",
+        "description": "+15% Damage Reduction",
+        "icon": "armor_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "stat",
+          "target": "armor",
+          "value": 0.15,
+          "isMultiplier": false
+        }
+      }
+    ],
+    "epic": [
+      {
+        "id": "damage_125",
+        "name": "Titan's Strength",
+        "description": "+125% Damage",
+        "icon": "damage_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "stat",
+          "target": "damage",
+          "value": 2.25,
+          "isMultiplier": true
+        }
+      },
+      {
+        "id": "multi_shot_2",
+        "name": "Triple Shot",
+        "description": "+2 Projectiles",
+        "icon": "multishot_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "weapon",
+          "target": "projectileCount",
+          "value": 2,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "pierce_3",
+        "name": "Infinite Pierce",
+        "description": "Projectiles pierce +3 enemies",
+        "icon": "pierce_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "weapon",
+          "target": "pierce",
+          "value": 3,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "splash_80",
+        "name": "Chain Explosion",
+        "description": "+80 Splash Damage Radius",
+        "icon": "splash_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "weapon",
+          "target": "splash",
+          "value": 80,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "health_300",
+        "name": "Titan's Blood",
+        "description": "+300 Max Health",
+        "icon": "health_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "stat",
+          "target": "maxHealth",
+          "value": 300,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "armor_25",
+        "name": "Diamond Skin",
+        "description": "+25% Damage Reduction",
+        "icon": "armor_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "stat",
+          "target": "armor",
+          "value": 0.25,
+          "isMultiplier": false
+        }
+      }
+    ],
+    "legendary": [
+      {
+        "id": "damage_175",
+        "name": "God's Wrath",
+        "description": "+175% Damage",
+        "icon": "damage_icon",
+        "rarity": "legendary",
+        "effect": {
+          "type": "stat",
+          "target": "damage",
+          "value": 2.75,
+          "isMultiplier": true
+        }
+      },
+      {
+        "id": "all_stats_50",
+        "name": "Ascension",
+        "description": "+50% to ALL stats",
+        "icon": "ascension_icon",
+        "rarity": "legendary",
+        "effect": {
+          "type": "ability",
+          "target": "allStats",
+          "value": 1.5,
+          "isMultiplier": true
+        }
+      }
+    ]
+  },
+  "dungeonUpgrades": {
+    "common": [],
+    "rare": [
+      {
+        "id": "lifesteal_22",
+        "name": "Vampiric Touch",
+        "description": "Heal 22% of damage dealt",
+        "icon": "lifesteal_icon",
+        "rarity": "rare",
+        "effect": {
+          "type": "ability",
+          "target": "lifesteal",
+          "value": 0.22,
+          "isMultiplier": false
+        }
+      }
+    ],
+    "epic": [
+      {
+        "id": "lifesteal_45",
+        "name": "Blood Magic",
+        "description": "Heal 45% of damage dealt",
+        "icon": "lifesteal_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "ability",
+          "target": "lifesteal",
+          "value": 0.45,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "thorns",
+        "name": "Thorns",
+        "description": "Enemies take 20% reflected damage",
+        "icon": "thorns_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "ability",
+          "target": "thorns",
+          "value": 0.2,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "explosion_on_kill",
+        "name": "Chain Reaction",
+        "description": "Enemies explode on death",
+        "icon": "explosion_icon",
+        "rarity": "epic",
+        "effect": {
+          "type": "ability",
+          "target": "explosionOnKill",
+          "value": 60,
+          "isMultiplier": false
+        }
+      }
+    ],
+    "legendary": [
+      {
+        "id": "phoenix_revive",
+        "name": "Phoenix Rebirth",
+        "description": "Revive once with full health",
+        "icon": "phoenix_icon",
+        "rarity": "legendary",
+        "effect": {
+          "type": "ability",
+          "target": "revive",
+          "value": 1,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "orbital_strike",
+        "name": "Orbital Laser",
+        "description": "Periodic screen-wide damage",
+        "icon": "orbital_icon",
+        "rarity": "legendary",
+        "effect": {
+          "type": "ability",
+          "target": "orbitalStrike",
+          "value": 100,
+          "isMultiplier": false
+        }
+      },
+      {
+        "id": "time_freeze",
+        "name": "Time Warp",
+        "description": "Freeze enemies for 3s every 30s",
+        "icon": "time_icon",
+        "rarity": "legendary",
+        "effect": {
+          "type": "ability",
+          "target": "timeFreeze",
+          "value": 3,
+          "isMultiplier": false
+        }
+      }
+    ]
+  }
+}
