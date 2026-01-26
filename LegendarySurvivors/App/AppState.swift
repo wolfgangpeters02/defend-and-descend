@@ -132,13 +132,8 @@ class AppState: ObservableObject {
     }
 
     func recordRun(kills: Int, time: TimeInterval, coins: Int) {
-        updatePlayer { profile in
-            profile.totalRuns += 1
-            profile.totalKills += kills
-            if time > profile.bestTime {
-                profile.bestTime = time
-            }
-        }
+        // Use the full survivor run recording with Data rewards
+        recordSurvivorRun(time: time, kills: kills, coins: coins, gameMode: .arena, victory: false)
     }
 
     func unlockItem(category: String, id: String, rarity: Rarity) {
@@ -256,6 +251,7 @@ class AppState: ObservableObject {
     }
 
     /// Record survivor run result with unified progression
+    /// Active/Debugger mode is the primary source of Data currency
     func recordSurvivorRun(time: TimeInterval, kills: Int, coins: Int, gameMode: GameMode, victory: Bool) {
         updatePlayer { profile in
             profile.totalRuns += 1
@@ -280,12 +276,22 @@ class AppState: ObservableObject {
                 profile.survivorStats.longestSurvival = time
             }
 
-            // Award XP and gold
+            // Award XP and Watts (gold)
             let xpReward = kills + Int(time / 10) + (victory ? 25 : 0)
-            let goldReward = coins / 10
+            let wattsReward = coins / 10
 
             profile.xp += xpReward
-            profile.gold += goldReward
+            profile.gold += wattsReward
+
+            // System: Reboot - Award DATA (primary Active mode reward)
+            // ~50x faster than passive (1 per 1000 kills)
+            // Formula: kills/20 + time bonus + victory bonus
+            let dataFromKills = kills / 20           // 1 Data per 20 kills (50x passive rate)
+            let dataFromTime = Int(time / 30)        // 1 Data per 30 seconds survived
+            let dataVictoryBonus = victory ? 10 : 0  // Bonus for dungeon completion
+            let totalDataReward = max(1, dataFromKills + dataFromTime + dataVictoryBonus)
+
+            profile.data += totalDataReward
 
             // Check level up
             while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -293,5 +299,30 @@ class AppState: ObservableObject {
                 profile.level += 1
             }
         }
+    }
+
+    // MARK: - Hero Upgrades (Cost: Watts)
+
+    /// Upgrade a hero stat using Watts
+    func upgradeHeroStat(_ type: HeroUpgradeType) -> Bool {
+        var success = false
+        updatePlayer { profile in
+            let cost = HeroUpgrades.upgradeCost(currentLevel: profile.heroUpgrades.level(for: type))
+            guard profile.heroUpgrades.canUpgrade(type: type, watts: profile.gold) else { return }
+
+            profile.gold -= cost
+            profile.heroUpgrades.upgrade(type: type)
+            success = true
+        }
+        return success
+    }
+
+    /// Get hero upgrade info
+    func heroUpgradeInfo(for type: HeroUpgradeType) -> (level: Int, cost: Int, canAfford: Bool, isMaxed: Bool) {
+        let level = currentPlayer.heroUpgrades.level(for: type)
+        let cost = HeroUpgrades.upgradeCost(currentLevel: level)
+        let isMaxed = level >= HeroUpgrades.maxLevel
+        let canAfford = currentPlayer.gold >= cost && !isMaxed
+        return (level, cost, canAfford, isMaxed)
     }
 }

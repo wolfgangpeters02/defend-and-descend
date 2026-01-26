@@ -4,22 +4,28 @@ import SwiftUI
 
 enum AppScreen: Equatable {
     case mainMenu
-    case modeSelect      // Choose Survivor or TD
+    case systemTabs      // NEW: Main game tabs (Board, Arsenal, Upgrades, Debug)
+    case modeSelect      // LEGACY: Choose Survivor or TD
     case loadout         // Survivor loadout
     case tdMapSelect     // TD map selection
     case collection
     case stats
+    case firewallShop    // Firewall unlock shop (System: Reboot)
+    case heroUpgrades    // Hero upgrades shop (System: Reboot)
     case playingSurvivor(GameMode)
     case playingTD(String)  // Map ID
 
     static func == (lhs: AppScreen, rhs: AppScreen) -> Bool {
         switch (lhs, rhs) {
         case (.mainMenu, .mainMenu): return true
+        case (.systemTabs, .systemTabs): return true
         case (.modeSelect, .modeSelect): return true
         case (.loadout, .loadout): return true
         case (.tdMapSelect, .tdMapSelect): return true
         case (.collection, .collection): return true
         case (.stats, .stats): return true
+        case (.firewallShop, .firewallShop): return true
+        case (.heroUpgrades, .heroUpgrades): return true
         case (.playingSurvivor(let a), .playingSurvivor(let b)): return a == b
         case (.playingTD(let a), .playingTD(let b)): return a == b
         default: return false
@@ -38,17 +44,23 @@ struct ContentView: View {
             switch currentScreen {
             case .mainMenu:
                 MainMenuView(
-                    onPlay: { currentScreen = .modeSelect },
+                    onPlay: { currentScreen = .systemTabs },  // NEW: Go to System Tabs
                     onCollection: { currentScreen = .collection },
                     onStats: { currentScreen = .stats }
                 )
                 .transition(.opacity)
 
+            case .systemTabs:
+                SystemTabView()
+                    .transition(.opacity)
+
             case .modeSelect:
                 ModeSelectView(
                     onSelectSurvivor: { currentScreen = .loadout },
                     onSelectTD: { currentScreen = .tdMapSelect },
-                    onBack: { currentScreen = .mainMenu }
+                    onBack: { currentScreen = .mainMenu },
+                    onFirewallShop: { currentScreen = .firewallShop },
+                    onHeroUpgrades: { currentScreen = .heroUpgrades }
                 )
                 .transition(.move(edge: .trailing))
 
@@ -98,6 +110,20 @@ struct ContentView: View {
                     .environmentObject(appState)
                     .ignoresSafeArea()
                     .transition(.opacity)
+
+            case .firewallShop:
+                FirewallShopView(
+                    onBack: { currentScreen = .modeSelect }
+                )
+                .environmentObject(appState)
+                .transition(.move(edge: .trailing))
+
+            case .heroUpgrades:
+                HeroUpgradesView(
+                    onBack: { currentScreen = .modeSelect }
+                )
+                .environmentObject(appState)
+                .transition(.move(edge: .trailing))
             }
 
             // Welcome Back modal overlay (System: Reboot offline earnings)
@@ -119,11 +145,14 @@ struct ContentView: View {
     private var screenKey: String {
         switch currentScreen {
         case .mainMenu: return "mainMenu"
+        case .systemTabs: return "systemTabs"
         case .modeSelect: return "modeSelect"
         case .loadout: return "loadout"
         case .tdMapSelect: return "tdMapSelect"
         case .collection: return "collection"
         case .stats: return "stats"
+        case .firewallShop: return "firewallShop"
+        case .heroUpgrades: return "heroUpgrades"
         case .playingSurvivor: return "playingSurvivor"
         case .playingTD: return "playingTD"
         }
@@ -138,6 +167,8 @@ struct ModeSelectView: View {
     let onSelectSurvivor: () -> Void
     let onSelectTD: () -> Void
     let onBack: () -> Void
+    var onFirewallShop: (() -> Void)? = nil
+    var onHeroUpgrades: (() -> Void)? = nil
 
     var body: some View {
         ZStack {
@@ -175,14 +206,15 @@ struct ModeSelectView: View {
                         .foregroundColor(.gray)
                 }
 
-                // Player stats - Watts currency
-                HStack(spacing: 30) {
+                // Player stats - Dual currency display
+                HStack(spacing: 20) {
+                    // Level
                     VStack {
                         Text("LEVEL")
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundColor(.gray)
                         Text("\(appState.currentPlayer.level)")
-                            .font(.system(size: 28, weight: .bold, design: .monospaced))
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                     }
 
@@ -190,6 +222,7 @@ struct ModeSelectView: View {
                         .frame(height: 40)
                         .background(Color.cyan.opacity(0.3))
 
+                    // Watts (earned in Idle/Motherboard mode)
                     VStack {
                         HStack(spacing: 4) {
                             Image(systemName: "bolt.fill")
@@ -199,8 +232,26 @@ struct ModeSelectView: View {
                         }
                         .foregroundColor(.gray)
                         Text("\(appState.currentPlayer.gold)")
-                            .font(.system(size: 28, weight: .bold, design: .monospaced))
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
                             .foregroundColor(.cyan)
+                    }
+
+                    Divider()
+                        .frame(height: 40)
+                        .background(Color.green.opacity(0.3))
+
+                    // Data (earned in Active/Debugger mode)
+                    VStack {
+                        HStack(spacing: 4) {
+                            Image(systemName: "memorychip")
+                                .font(.caption)
+                            Text("DATA")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        }
+                        .foregroundColor(.gray)
+                        Text("\(appState.currentPlayer.data)")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .foregroundColor(.green)
                     }
                 }
                 .padding()
@@ -242,6 +293,62 @@ struct ModeSelectView: View {
                         ],
                         action: onSelectSurvivor
                     )
+                }
+                .padding(.horizontal)
+
+                // Shop buttons
+                HStack(spacing: 16) {
+                    // Firewall Lab (unlock new firewalls with Data)
+                    if let onFirewallShop = onFirewallShop {
+                        Button(action: onFirewallShop) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "shield.fill")
+                                    .foregroundColor(.green)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("FIREWALL LAB")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                    Text("Unlock with Data")
+                                        .font(.system(size: 9, design: .monospaced))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color.green.opacity(0.2))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.green.opacity(0.5), lineWidth: 1)
+                            )
+                        }
+                    }
+
+                    // Hero Upgrades (upgrade hero with Watts)
+                    if let onHeroUpgrades = onHeroUpgrades {
+                        Button(action: onHeroUpgrades) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "person.fill.badge.plus")
+                                    .foregroundColor(.cyan)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("HERO UPGRADES")
+                                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.white)
+                                    Text("Upgrade with Watts")
+                                        .font(.system(size: 9, design: .monospaced))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color.cyan.opacity(0.2))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.cyan.opacity(0.5), lineWidth: 1)
+                            )
+                        }
+                    }
                 }
                 .padding(.horizontal)
 

@@ -76,6 +76,60 @@ class GameStateFactory {
         )
     }
 
+    // MARK: - Debug Mode (System: Reboot)
+
+    /// Create a game state for Debug mode using a Protocol as the weapon
+    func createDebugGameState(
+        gameProtocol: Protocol,
+        sector: Sector,
+        playerProfile: PlayerProfile
+    ) -> GameState {
+        let config = GameConfigLoader.shared
+
+        // Use sector's visual theme to determine arena (or use a default debug arena)
+        let arenaType = sector.visualTheme
+        let arenaConfig = config.getArena(arenaType) ?? config.getArena("city")!
+
+        // Create arena data
+        var arena = config.createArenaData(from: arenaConfig)
+        arena.name = sector.name
+
+        // Create weapon from Protocol
+        let weapon = gameProtocol.toWeapon()
+
+        // Create player at arena center
+        var player = createPlayer(
+            x: arena.width / 2,
+            y: arena.height / 2,
+            weapon: weapon
+        )
+
+        // Apply RAM upgrade (health bonus) from global upgrades
+        // healthBonus returns absolute value (100, 120, 140...) so we use it directly
+        player.maxHealth = playerProfile.globalUpgrades.healthBonus
+        player.health = player.maxHealth
+
+        // Apply Cooling upgrade (fire rate bonus) to weapon
+        let fireRateMultiplier = playerProfile.globalUpgrades.fireRateMultiplier
+        player.weapons[0].attackSpeed *= fireRateMultiplier
+
+        let now = Date().timeIntervalSince1970
+
+        return GameState(
+            sessionId: RandomUtils.generateId(),
+            playerId: playerProfile.id,
+            startTime: now,
+            gameMode: .arena,  // Debug mode uses arena gameplay
+            arena: arena,
+            player: player,
+            currentWeaponType: gameProtocol.id,
+            currentPowerUpType: "none",
+            activeSynergy: nil,
+            runStartTime: now,
+            dataMultiplier: sector.dataMultiplier  // Apply sector's data multiplier
+        )
+    }
+
     /// Create a player instance
     private func createPlayer(x: CGFloat, y: CGFloat, weapon: Weapon) -> Player {
         return Player(

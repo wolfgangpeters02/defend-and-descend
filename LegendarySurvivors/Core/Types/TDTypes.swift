@@ -52,8 +52,11 @@ struct TDGameState {
         return max(0, min(100, 100 - CGFloat(leakCounter) * 5))
     }
     var baseWattsPerSecond: CGFloat = 10  // Base income rate at 100% efficiency
+    var cpuMultiplier: CGFloat = 1.0      // CPU tier multiplier (1x, 2x, 4x, 8x, 16x)
+    var cpuTier: Int = 1                  // Current CPU tier for display
+    var efficiencyRegenMultiplier: CGFloat = 1.0  // RAM upgrade bonus to efficiency recovery
     var wattsPerSecond: CGFloat {
-        return baseWattsPerSecond * (efficiency / 100)
+        return baseWattsPerSecond * cpuMultiplier * (efficiency / 100)
     }
     var wattsAccumulator: CGFloat = 0  // Accumulates fractional watts
 
@@ -93,6 +96,27 @@ struct TDGameState {
     /// Check if a blocker can be placed
     var canPlaceBlocker: Bool {
         return availableBlockerSlots > 0
+    }
+
+    // MARK: - System Breach (Zero-Day Boss)
+    // Periodically spawns an unkillable boss that drains efficiency
+    // Player must enter Active/Debugger mode to defeat it
+
+    var zeroDayActive: Bool = false          // Is a Zero-Day boss currently active
+    var zeroDayBossId: String?               // ID of the Zero-Day boss enemy
+    var zeroDayTimer: TimeInterval = 120     // Timer until next Zero-Day (starts at 120s)
+    var zeroDayEfficiencyDrain: CGFloat = 2  // Efficiency drain per second while active
+    var zeroDayCooldown: TimeInterval = 180  // Cooldown after defeating Zero-Day (180s)
+
+    // Zero-Day constants
+    static let zeroDayMinSpawnTime: TimeInterval = 90    // Minimum time between spawns
+    static let zeroDayMaxSpawnTime: TimeInterval = 180   // Maximum time between spawns
+    static let zeroDayEfficiencyDrainRate: CGFloat = 2   // Efficiency drain per second
+
+    /// Check if the Zero-Day boss is alive
+    var isZeroDayAlive: Bool {
+        guard let bossId = zeroDayBossId else { return false }
+        return enemies.contains { $0.id == bossId && !$0.isDead && !$0.reachedCore }
     }
 }
 
@@ -190,6 +214,7 @@ struct Tower: Identifiable {
     var id: String
     var weaponType: String  // Links to WeaponTower
     var level: Int = 1
+    var rarity: Rarity = .common  // Tower rarity for cost calculations
 
     // Position
     var x: CGFloat
@@ -256,6 +281,7 @@ struct Tower: Identifiable {
             id: RandomUtils.generateId(),
             weaponType: weapon.id,
             level: weapon.level,
+            rarity: weapon.rarity,
             x: slot.x,
             y: slot.y,
             slotId: slot.id,
@@ -271,6 +297,33 @@ struct Tower: Identifiable {
             chain: weapon.chain,
             color: weapon.color,
             towerName: weapon.towerName,
+            mergeLevel: mergeLevel
+        )
+    }
+
+    /// Create tower from Protocol (System: Reboot - Firewall mode)
+    static func from(protocol proto: Protocol, at slot: TowerSlot, mergeLevel: Int = 1) -> Tower {
+        let stats = proto.firewallStats
+        return Tower(
+            id: RandomUtils.generateId(),
+            weaponType: proto.id,  // Use protocol ID as weapon type
+            level: proto.level,
+            rarity: proto.rarity,
+            x: slot.x,
+            y: slot.y,
+            slotId: slot.id,
+            damage: stats.damage,
+            range: stats.range,
+            attackSpeed: stats.fireRate,
+            projectileCount: stats.projectileCount,
+            pierce: stats.pierce,
+            splash: stats.splash,
+            homing: stats.special == .homing,
+            slow: stats.slow > 0 ? stats.slow : nil,
+            slowDuration: stats.slowDuration > 0 ? stats.slowDuration : nil,
+            chain: stats.special == .chain ? 3 : nil,  // Chain hits 3 enemies
+            color: proto.color,
+            towerName: proto.name,
             mergeLevel: mergeLevel
         )
     }
@@ -372,6 +425,10 @@ struct TDEnemy: Identifiable {
     var isDead: Bool = false
     var reachedCore: Bool = false
     var isBoss: Bool = false
+
+    // Zero-Day (System Breach) properties
+    var isZeroDay: Bool = false        // Is this a Zero-Day boss
+    var immuneToTowers: Bool = false   // Cannot be damaged by Firewalls
 
     var position: CGPoint {
         CGPoint(x: x, y: y)
@@ -536,7 +593,7 @@ class TDGameStateFactory {
         // Create blocker slots at path intersections (turns in the path)
         let blockerSlots = createBlockerSlots(for: paths)
 
-        return TDGameState(
+        var state = TDGameState(
             sessionId: RandomUtils.generateId(),
             playerId: playerProfile.id,
             startTime: Date().timeIntervalSince1970,
@@ -551,6 +608,16 @@ class TDGameStateFactory {
             blockerSlots: blockerSlots,
             basePaths: paths  // Store original paths for rerouting
         )
+
+        // Apply Global Upgrades
+        // CPU level determines base Watts generation rate
+        state.baseWattsPerSecond = playerProfile.globalUpgrades.wattsPerSecond
+        state.cpuMultiplier = 1.0  // Level scaling is now in baseWattsPerSecond
+        state.cpuTier = playerProfile.globalUpgrades.cpuLevel
+        // RAM level determines efficiency recovery speed
+        state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
+
+        return state
     }
 
     /// Create blocker slots at path intersections (turns)

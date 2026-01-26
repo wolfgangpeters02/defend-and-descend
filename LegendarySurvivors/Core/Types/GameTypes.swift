@@ -53,6 +53,9 @@ struct GameState {
     var xpBarProgress: CGFloat = 0
     var lastBossSpawnTime: TimeInterval = 0
 
+    // System: Reboot - Data multiplier for Debug mode sectors
+    var dataMultiplier: CGFloat = 1.0
+
     // Game objects
     var enemies: [Enemy] = []
     var projectiles: [Projectile] = []
@@ -215,6 +218,7 @@ struct Weapon {
 
     // Tower name for TD mode (e.g., "Archer Tower" for bow)
     var towerName: String?
+
 }
 
 // MARK: - Arena
@@ -689,12 +693,82 @@ struct PlayerProfile: Codable {
     // Unified progression
     var level: Int = 1
     var xp: Int = 0
-    var gold: Int = 0
 
-    // Collection unlocks (shared between modes)
+    // System: Reboot - Dual Currency
+    var watts: Int = 0      // Watts - earned passively in Motherboard, spent on building/upgrades
+    var data: Int = 0       // Data - earned in Debug/Active mode, spent on Protocol unlocks
+
+    // MARK: - CodingKeys (exclude computed properties)
+
+    enum CodingKeys: String, CodingKey {
+        case id, displayName, createdAt, level, xp, watts, data
+        case compiledProtocols, protocolLevels, equippedProtocolId, protocolBlueprints
+        case globalUpgrades, unlockedExpansions, motherboardEfficiency
+        case unlockedSectors, sectorBestTimes
+        case lastActiveTimestamp, offlineEfficiencySnapshot
+        case unlocks, weaponLevels, powerupLevels, heroUpgrades
+        case survivorStats, tdStats
+        case totalRuns, bestTime, totalKills, legendariesUnlocked
+    }
+
+    // Legacy currency alias (for backward compatibility)
+    var gold: Int {
+        get { return watts }
+        set { watts = newValue }
+    }
+
+    // MARK: - Protocol System (New)
+
+    /// IDs of compiled (unlocked) protocols
+    var compiledProtocols: [String] = []
+
+    /// Protocol ID -> Level (1-10)
+    var protocolLevels: [String: Int] = [:]
+
+    /// Currently equipped protocol for Debug mode
+    var equippedProtocolId: String = ProtocolLibrary.starterProtocolId
+
+    /// IDs of found but not compiled protocol blueprints
+    var protocolBlueprints: [String] = []
+
+    // MARK: - Global Upgrades (New)
+
+    /// CPU, RAM, Cooling upgrades
+    var globalUpgrades: GlobalUpgrades = GlobalUpgrades()
+
+    // MARK: - Motherboard Progress (New)
+
+    /// IDs of unlocked board expansions
+    var unlockedExpansions: [String] = []
+
+    /// Current efficiency (0.0 to 1.0)
+    var motherboardEfficiency: CGFloat = 1.0
+
+    // MARK: - Sector Progress (New)
+
+    /// IDs of unlocked sectors
+    var unlockedSectors: [String] = [SectorLibrary.starterSectorId]
+
+    /// Sector ID -> Best survival time
+    var sectorBestTimes: [String: TimeInterval] = [:]
+
+    // MARK: - Offline State (New)
+
+    /// Last time the app was active (for offline calculation)
+    var lastActiveTimestamp: Date = Date()
+
+    /// Efficiency snapshot for offline calculation
+    var offlineEfficiencySnapshot: CGFloat = 1.0
+
+    // MARK: - Legacy Fields (Preserved for migration)
+
+    // Collection unlocks (shared between modes) - LEGACY
     var unlocks: PlayerUnlocks
     var weaponLevels: [String: Int]  // weapon_id -> level (1-10)
     var powerupLevels: [String: Int]
+
+    // Hero Upgrades - LEGACY (replaced by globalUpgrades)
+    var heroUpgrades: HeroUpgrades = HeroUpgrades()
 
     // Stats by mode
     var survivorStats: SurvivorModeStats
@@ -709,6 +783,117 @@ struct PlayerProfile: Codable {
     // XP required for next level
     static func xpForLevel(_ level: Int) -> Int {
         return 100 + (level - 1) * 75
+    }
+
+    // MARK: - Protocol Helpers
+
+    /// Check if a protocol is compiled (unlocked)
+    func isProtocolCompiled(_ protocolId: String) -> Bool {
+        return compiledProtocols.contains(protocolId)
+    }
+
+    /// Get the level of a protocol (1 if not leveled)
+    func protocolLevel(_ protocolId: String) -> Int {
+        return protocolLevels[protocolId] ?? 1
+    }
+
+    /// Check if player has a blueprint for a protocol
+    func hasBlueprint(_ protocolId: String) -> Bool {
+        return protocolBlueprints.contains(protocolId)
+    }
+
+    /// Get the currently equipped protocol
+    func equippedProtocol() -> Protocol? {
+        guard var proto = ProtocolLibrary.get(equippedProtocolId) else { return nil }
+        proto.level = protocolLevel(equippedProtocolId)
+        proto.isCompiled = true
+        return proto
+    }
+
+    // MARK: - Sector Helpers
+
+    /// Check if a sector is unlocked
+    func isSectorUnlocked(_ sectorId: String) -> Bool {
+        return unlockedSectors.contains(sectorId)
+    }
+
+    /// Get best time for a sector
+    func sectorBestTime(_ sectorId: String) -> TimeInterval? {
+        return sectorBestTimes[sectorId]
+    }
+}
+
+// MARK: - Hero Upgrades (Purchased with Watts, used in Active/Debugger mode)
+
+struct HeroUpgrades: Codable {
+    var maxHpLevel: Int = 0         // Each level: +10 HP
+    var damageLevel: Int = 0        // Each level: +5% damage
+    var speedLevel: Int = 0         // Each level: +5% speed
+    var pickupRangeLevel: Int = 0   // Each level: +10% pickup range
+
+    // Maximum level for each upgrade
+    static let maxLevel = 10
+
+    // Bonus calculations
+    var hpBonus: CGFloat { return CGFloat(maxHpLevel) * 10 }
+    var damageMultiplier: CGFloat { return 1.0 + CGFloat(damageLevel) * 0.05 }
+    var speedMultiplier: CGFloat { return 1.0 + CGFloat(speedLevel) * 0.05 }
+    var pickupRangeMultiplier: CGFloat { return 1.0 + CGFloat(pickupRangeLevel) * 0.10 }
+
+    // Cost for next level of each upgrade type
+    static func upgradeCost(currentLevel: Int) -> Int {
+        guard currentLevel < maxLevel else { return 0 }
+        // 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200
+        return 100 * Int(pow(2.0, Double(currentLevel)))
+    }
+
+    func canUpgrade(type: HeroUpgradeType, watts: Int) -> Bool {
+        let level = self.level(for: type)
+        guard level < HeroUpgrades.maxLevel else { return false }
+        return watts >= HeroUpgrades.upgradeCost(currentLevel: level)
+    }
+
+    func level(for type: HeroUpgradeType) -> Int {
+        switch type {
+        case .maxHp: return maxHpLevel
+        case .damage: return damageLevel
+        case .speed: return speedLevel
+        case .pickupRange: return pickupRangeLevel
+        }
+    }
+
+    mutating func upgrade(type: HeroUpgradeType) {
+        switch type {
+        case .maxHp: maxHpLevel = min(maxHpLevel + 1, HeroUpgrades.maxLevel)
+        case .damage: damageLevel = min(damageLevel + 1, HeroUpgrades.maxLevel)
+        case .speed: speedLevel = min(speedLevel + 1, HeroUpgrades.maxLevel)
+        case .pickupRange: pickupRangeLevel = min(pickupRangeLevel + 1, HeroUpgrades.maxLevel)
+        }
+    }
+}
+
+enum HeroUpgradeType: String, CaseIterable, Codable {
+    case maxHp = "Max HP"
+    case damage = "Damage"
+    case speed = "Speed"
+    case pickupRange = "Pickup Range"
+
+    var icon: String {
+        switch self {
+        case .maxHp: return "heart.fill"
+        case .damage: return "flame.fill"
+        case .speed: return "hare.fill"
+        case .pickupRange: return "magnet"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .maxHp: return "+10 HP per level"
+        case .damage: return "+5% damage per level"
+        case .speed: return "+5% speed per level"
+        case .pickupRange: return "+10% pickup range per level"
+        }
     }
 }
 
@@ -742,31 +927,89 @@ struct TDModeStats: Codable {
     var baseWattsPerSecond: CGFloat = 10       // Base Watts income rate
     var averageEfficiency: CGFloat = 100       // Rolling average efficiency for offline calc
 
+    // CPU Tier Upgrades (global income multiplier)
+    var cpuTier: Int = 1                       // Current CPU tier (1-5)
+
     /// Calculate passive Data earned from virus kills
     var passiveDataEarned: Int {
         return totalVirusKills / 1000  // 1 Data per 1000 kills
+    }
+
+    /// CPU tier multiplier for Watts income
+    var cpuMultiplier: CGFloat {
+        switch cpuTier {
+        case 1: return 1.0
+        case 2: return 2.0
+        case 3: return 4.0
+        case 4: return 8.0
+        case 5: return 16.0
+        default: return 1.0
+        }
+    }
+
+    /// Cost in Watts to upgrade to next CPU tier
+    var nextCpuUpgradeCost: Int? {
+        switch cpuTier {
+        case 1: return 1000   // 1.0 -> 2.0
+        case 2: return 5000   // 2.0 -> 3.0
+        case 3: return 25000  // 3.0 -> 4.0
+        case 4: return 100000 // 4.0 -> 5.0
+        default: return nil   // Max tier
+        }
+    }
+
+    /// Display name for current CPU tier
+    var cpuDisplayName: String {
+        return "CPU \(cpuTier).0"
+    }
+
+    /// Check if CPU can be upgraded (not max tier and has enough Watts)
+    func canUpgradeCpu(watts: Int) -> Bool {
+        guard let cost = nextCpuUpgradeCost else { return false }
+        return watts >= cost
     }
 }
 
 // MARK: - Default Profile
 
 extension PlayerProfile {
+    // MARK: - Constants (to avoid circular dependencies)
+
+    /// Default starter protocol ID
+    static let defaultProtocolId = "kernel_pulse"
+
+    /// Default starter sector ID
+    static let defaultSectorId = "ram"
+
     /// Create a default profile for new players
     static var defaultProfile: PlayerProfile {
         PlayerProfile(
             id: UUID().uuidString,
-            displayName: "Guardian",
+            displayName: "Kernel",
             createdAt: ISO8601DateFormatter().string(from: Date()),
             level: 1,
             xp: 0,
-            gold: 100,
+            watts: 500,                       // Starting Watts
+            data: 0,                          // Starting Data
+            compiledProtocols: [defaultProtocolId],  // Start with Kernel Pulse
+            protocolLevels: [defaultProtocolId: 1],
+            equippedProtocolId: defaultProtocolId,
+            protocolBlueprints: [],
+            globalUpgrades: GlobalUpgrades(),
+            unlockedExpansions: [],
+            motherboardEfficiency: 1.0,
+            unlockedSectors: [defaultSectorId],
+            sectorBestTimes: [:],
+            lastActiveTimestamp: Date(),
+            offlineEfficiencySnapshot: 1.0,
             unlocks: PlayerUnlocks(
-                arenas: ["grasslands", "volcano", "ice_cave"],
-                weapons: ["bow", "ice_shard"],
-                powerups: ["tank", "berserker"]
+                arenas: ["grasslands"],
+                weapons: ["bow"],
+                powerups: ["tank"]
             ),
-            weaponLevels: ["bow": 1, "ice_shard": 1],
-            powerupLevels: ["tank": 1, "berserker": 1],
+            weaponLevels: ["bow": 1],
+            powerupLevels: ["tank": 1],
+            heroUpgrades: HeroUpgrades(),
             survivorStats: SurvivorModeStats(),
             tdStats: TDModeStats(),
             totalRuns: 0,
@@ -774,5 +1017,30 @@ extension PlayerProfile {
             totalKills: 0,
             legendariesUnlocked: 0
         )
+    }
+
+    /// Migrate an old profile to new format
+    static func migrate(_ oldProfile: PlayerProfile) -> PlayerProfile {
+        var profile = oldProfile
+
+        // Ensure starter protocol is compiled
+        if !profile.compiledProtocols.contains(defaultProtocolId) {
+            profile.compiledProtocols.append(defaultProtocolId)
+        }
+
+        // Ensure protocol level exists
+        if profile.protocolLevels[defaultProtocolId] == nil {
+            profile.protocolLevels[defaultProtocolId] = 1
+        }
+
+        // Ensure starter sector is unlocked
+        if !profile.unlockedSectors.contains(defaultSectorId) {
+            profile.unlockedSectors.append(defaultSectorId)
+        }
+
+        // Migrate gold to watts if needed (gold is now a computed property)
+        // This happens automatically via the getter/setter
+
+        return profile
     }
 }

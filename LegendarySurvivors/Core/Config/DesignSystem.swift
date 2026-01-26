@@ -68,6 +68,35 @@ enum DesignColors {
     static let gridDot = Color(hex: "2a3a4a") ?? Color.gray           // Grid intersection dots
     static let gridLineUI = UIColor(hex: "1a2332") ?? .darkGray
     static let gridDotUI = UIColor(hex: "2a3a4a") ?? .darkGray
+
+    // Enemy tier colors - virus classification
+    static let enemyTier1 = Color(hex: "ef4444") ?? Color.red         // Red - basic viruses
+    static let enemyTier2 = Color(hex: "f97316") ?? Color.orange      // Orange - medium threats
+    static let enemyTier3 = Color(hex: "a855f7") ?? Color.purple      // Purple - advanced threats
+    static let enemyTier4 = Color.white                               // White (with color cycle) - boss
+    static let zeroDayVirus = Color(hex: "9933ff") ?? Color.purple    // Deep purple/violet - Zero-Day
+
+    static let enemyTier1UI = UIColor(hex: "ef4444") ?? .red
+    static let enemyTier2UI = UIColor(hex: "f97316") ?? .orange
+    static let enemyTier3UI = UIColor(hex: "a855f7") ?? .purple
+    static let enemyTier4UI = UIColor.white
+    static let zeroDayVirusUI = UIColor(hex: "9933ff") ?? .purple
+
+    /// Get enemy color based on tier (1-4+)
+    static func enemyColor(for tier: Int, isBoss: Bool = false, isZeroDay: Bool = false) -> UIColor {
+        if isZeroDay {
+            return zeroDayVirusUI
+        }
+        if isBoss {
+            return enemyTier4UI
+        }
+        switch tier {
+        case 1: return enemyTier1UI
+        case 2: return enemyTier2UI
+        case 3: return enemyTier3UI
+        default: return enemyTier4UI
+        }
+    }
 }
 
 // MARK: - Rarity Colors

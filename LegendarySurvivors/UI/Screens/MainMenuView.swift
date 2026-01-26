@@ -83,13 +83,13 @@ struct MainMenuView: View {
 
                     // Menu buttons - Terminal style
                     VStack(spacing: 15) {
-                        MenuButton(title: "▶ INITIALIZE", color: .cyan, isPrimary: true) {
+                        MenuButton(title: "▶ SYSTEM START", color: .cyan, isPrimary: true) {
                             HapticsService.shared.play(.selection)
                             onPlay()
                         }
 
                         HStack(spacing: 15) {
-                            MenuButton(title: "ARSENAL", color: .purple) {
+                            MenuButton(title: "LEGACY", color: .purple) {
                                 HapticsService.shared.play(.selection)
                                 onCollection()
                             }

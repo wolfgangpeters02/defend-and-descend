@@ -55,6 +55,12 @@ class TDGameScene: SKScene {
     // Particle layer
     private var particleLayer: SKNode!
 
+    // Camera for zoom/pan
+    private var cameraNode: SKCameraNode!
+    private var currentScale: CGFloat = 1.0
+    private let minScale: CGFloat = 0.5  // Can zoom out to 50%
+    private let maxScale: CGFloat = 2.0  // Can zoom in to 200%
+
     // MARK: - Setup
 
     override func didMove(to view: SKView) {
@@ -63,6 +69,80 @@ class TDGameScene: SKScene {
         if backgroundLayer == nil {
             setupLayers()
         }
+
+        // Setup camera for zoom/pan
+        setupCamera()
+        setupGestureRecognizers(view: view)
+    }
+
+    private func setupCamera() {
+        cameraNode = SKCameraNode()
+        cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        addChild(cameraNode)
+        camera = cameraNode
+    }
+
+    private func setupGestureRecognizers(view: SKView) {
+        // Pinch to zoom
+        let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+        view.addGestureRecognizer(pinchGesture)
+
+        // Pan to move camera (two fingers to avoid conflict with tower drag)
+        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+        panGesture.minimumNumberOfTouches = 2
+        panGesture.maximumNumberOfTouches = 2
+        view.addGestureRecognizer(panGesture)
+    }
+
+    @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+        guard let cameraNode = cameraNode else { return }
+
+        if gesture.state == .changed {
+            // Invert scale: pinch out = smaller scale = zoom in
+            let newScale = currentScale / gesture.scale
+            let clampedScale = max(minScale, min(maxScale, newScale))
+            cameraNode.setScale(clampedScale)
+            gesture.scale = 1.0
+        } else if gesture.state == .ended {
+            currentScale = cameraNode.xScale
+        }
+    }
+
+    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
+        guard let cameraNode = cameraNode, let view = gesture.view else { return }
+
+        if gesture.state == .changed {
+            let translation = gesture.translation(in: view)
+
+            // Move camera (inverted for natural scrolling)
+            let newX = cameraNode.position.x - translation.x * currentScale
+            let newY = cameraNode.position.y + translation.y * currentScale
+
+            // Clamp camera position to stay within map bounds
+            let minX = size.width * 0.25
+            let maxX = size.width * 0.75
+            let minY = size.height * 0.25
+            let maxY = size.height * 0.75
+
+            cameraNode.position = CGPoint(
+                x: max(minX, min(maxX, newX)),
+                y: max(minY, min(maxY, newY))
+            )
+
+            gesture.setTranslation(.zero, in: view)
+        }
+    }
+
+    /// Reset camera to default view
+    func resetCamera() {
+        guard let cameraNode = cameraNode else { return }
+        let action = SKAction.group([
+            SKAction.move(to: CGPoint(x: size.width / 2, y: size.height / 2), duration: 0.3),
+            SKAction.scale(to: 1.0, duration: 0.3)
+        ])
+        action.timingMode = .easeInEaseOut
+        cameraNode.run(action)
+        currentScale = 1.0
     }
 
     private func setupLayers() {
@@ -542,17 +622,98 @@ class TDGameScene: SKScene {
     private func setupCore() {
         guard let state = state else { return }
 
-        let coreNode = SKShapeNode(circleOfRadius: 25)
-        coreNode.fillColor = .yellow
-        coreNode.strokeColor = .orange
-        coreNode.lineWidth = 3
-        coreNode.position = convertToScene(state.core.position)
-        coreNode.name = "core"
+        // Create CPU container node
+        let coreContainer = SKNode()
+        coreContainer.position = convertToScene(state.core.position)
+        coreContainer.name = "core"
 
-        // Glow effect
-        coreNode.glowWidth = 5
+        // CPU body - rounded square (System: Reboot aesthetic)
+        let cpuSize: CGFloat = 90
+        let cpuBody = SKShapeNode(rectOf: CGSize(width: cpuSize, height: cpuSize), cornerRadius: 12)
+        cpuBody.fillColor = DesignColors.surfaceUI
+        cpuBody.strokeColor = DesignColors.primaryUI
+        cpuBody.lineWidth = 4
+        cpuBody.glowWidth = 8
+        cpuBody.name = "cpuBody"
+        coreContainer.addChild(cpuBody)
 
-        backgroundLayer.addChild(coreNode)
+        // Inner chip detail - smaller square
+        let innerSize: CGFloat = 60
+        let innerChip = SKShapeNode(rectOf: CGSize(width: innerSize, height: innerSize), cornerRadius: 6)
+        innerChip.fillColor = DesignColors.backgroundUI
+        innerChip.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.6)
+        innerChip.lineWidth = 2
+        innerChip.name = "innerChip"
+        coreContainer.addChild(innerChip)
+
+        // CPU label
+        let cpuLabel = SKLabelNode(text: "CPU")
+        cpuLabel.fontName = "Menlo-Bold"
+        cpuLabel.fontSize = 20
+        cpuLabel.fontColor = DesignColors.primaryUI
+        cpuLabel.verticalAlignmentMode = .center
+        cpuLabel.horizontalAlignmentMode = .center
+        coreContainer.addChild(cpuLabel)
+
+        // Efficiency percentage (below CPU text)
+        let efficiencyLabel = SKLabelNode(text: "100%")
+        efficiencyLabel.fontName = "Menlo-Bold"
+        efficiencyLabel.fontSize = 12
+        efficiencyLabel.fontColor = DesignColors.successUI
+        efficiencyLabel.verticalAlignmentMode = .center
+        efficiencyLabel.horizontalAlignmentMode = .center
+        efficiencyLabel.position = CGPoint(x: 0, y: -18)
+        efficiencyLabel.name = "efficiencyLabel"
+        coreContainer.addChild(efficiencyLabel)
+
+        // Pin connectors (circuit board aesthetic)
+        let pinCount = 6
+        let pinLength: CGFloat = 15
+        let pinWidth: CGFloat = 4
+        let pinSpacing = cpuSize / CGFloat(pinCount + 1)
+
+        for side in 0..<4 {  // 4 sides
+            for i in 1...pinCount {
+                let pin = SKShapeNode(rectOf: CGSize(width: pinWidth, height: pinLength))
+                pin.fillColor = DesignColors.primaryUI.withAlphaComponent(0.5)
+                pin.strokeColor = .clear
+
+                let offset = -cpuSize / 2 + pinSpacing * CGFloat(i)
+                switch side {
+                case 0: // Top
+                    pin.position = CGPoint(x: offset, y: cpuSize / 2 + pinLength / 2)
+                case 1: // Bottom
+                    pin.position = CGPoint(x: offset, y: -cpuSize / 2 - pinLength / 2)
+                case 2: // Left
+                    pin.zRotation = .pi / 2
+                    pin.position = CGPoint(x: -cpuSize / 2 - pinLength / 2, y: offset)
+                case 3: // Right
+                    pin.zRotation = .pi / 2
+                    pin.position = CGPoint(x: cpuSize / 2 + pinLength / 2, y: offset)
+                default:
+                    break
+                }
+                coreContainer.addChild(pin)
+            }
+        }
+
+        // Glow ring (pulsing based on efficiency)
+        let glowRing = SKShapeNode(circleOfRadius: cpuSize / 2 + 15)
+        glowRing.fillColor = .clear
+        glowRing.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.3)
+        glowRing.lineWidth = 3
+        glowRing.glowWidth = 15
+        glowRing.name = "glowRing"
+        glowRing.zPosition = -1
+        coreContainer.addChild(glowRing)
+
+        // Pulse animation for glow ring
+        let pulseOut = SKAction.scale(to: 1.1, duration: 1.0)
+        let pulseIn = SKAction.scale(to: 0.95, duration: 1.0)
+        let pulse = SKAction.sequence([pulseOut, pulseIn])
+        glowRing.run(SKAction.repeatForever(pulse))
+
+        backgroundLayer.addChild(coreContainer)
     }
 
     // MARK: - Update Loop
@@ -585,6 +746,9 @@ class TDGameScene: SKScene {
         // Efficiency System (System: Reboot)
         PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
         PathSystem.updateWattsIncome(state: &state, deltaTime: deltaTime)
+
+        // Zero-Day System (System Breach events)
+        _ = ZeroDaySystem.update(state: &state, deltaTime: deltaTime)
 
         // Check wave completion
         if state.waveInProgress && WaveSystem.isWaveComplete(state: state) {
@@ -1101,8 +1265,27 @@ class TDGameScene: SKScene {
     private func createEnemyNode(enemy: TDEnemy) -> SKNode {
         let container = SKNode()
 
-        // Virus color - red with variations based on type
-        let virusColor = DesignColors.dangerUI
+        // Virus color based on enemy type/tier
+        // Zero-Day: deep purple with white corona
+        // Boss: white with warning glow
+        // Tank: purple (tier 3)
+        // Fast: orange (tier 2)
+        // Basic: red (tier 1)
+        let virusColor: UIColor
+        if enemy.isZeroDay {
+            virusColor = DesignColors.zeroDayVirusUI
+        } else if enemy.isBoss {
+            virusColor = DesignColors.enemyTier4UI
+        } else {
+            switch enemy.type {
+            case "tank":
+                virusColor = DesignColors.enemyTier3UI  // Purple
+            case "fast":
+                virusColor = DesignColors.enemyTier2UI  // Orange
+            default:
+                virusColor = DesignColors.enemyTier1UI  // Red
+            }
+        }
 
         // Virus body - hexagonal shape for tech aesthetic
         let body: SKShapeNode
@@ -1143,18 +1326,62 @@ class TDGameScene: SKScene {
         innerNode.lineWidth = 1
         container.addChild(innerNode)
 
-        // Boss effects - Zero-Day virus
-        if enemy.isBoss {
-            // Warning glow
-            body.glowWidth = 8
+        // Boss effects - different for Zero-Day vs regular boss
+        if enemy.isZeroDay {
+            // Zero-Day: Deep purple with white corona effect
+            body.glowWidth = 15
+            body.strokeColor = UIColor.white
 
-            // Boss indicator - skull/warning symbol
-            let bossLabel = SKLabelNode(text: "⚠")
-            bossLabel.fontSize = 12
+            // Add white corona/ring effect
+            let corona = SKShapeNode(circleOfRadius: enemy.size * 1.3)
+            corona.strokeColor = UIColor.white.withAlphaComponent(0.6)
+            corona.fillColor = .clear
+            corona.lineWidth = 2
+            corona.glowWidth = 10
+            corona.zPosition = -1
+            container.addChild(corona)
+
+            // Corona pulse animation
+            let coronaPulse = SKAction.sequence([
+                SKAction.fadeAlpha(to: 0.3, duration: 0.6),
+                SKAction.fadeAlpha(to: 0.8, duration: 0.6)
+            ])
+            corona.run(SKAction.repeatForever(coronaPulse))
+
+            // Zero-Day indicator
+            let zeroDayLabel = SKLabelNode(text: "⚠ ZERO-DAY")
+            zeroDayLabel.fontName = "Menlo-Bold"
+            zeroDayLabel.fontSize = 10
+            zeroDayLabel.fontColor = DesignColors.zeroDayVirusUI
+            zeroDayLabel.position = CGPoint(x: 0, y: enemy.size + 20)
+            zeroDayLabel.name = "bossIndicator"
+            container.addChild(zeroDayLabel)
+
+            // Menacing slow rotation
+            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 6.0)
+            body.run(SKAction.repeatForever(rotate))
+
+        } else if enemy.isBoss {
+            // Regular boss: White with warning glow and color cycle
+            body.glowWidth = 10
+
+            // Boss indicator
+            let bossLabel = SKLabelNode(text: "⚠ BOSS")
+            bossLabel.fontName = "Menlo-Bold"
+            bossLabel.fontSize = 10
             bossLabel.fontColor = DesignColors.warningUI
             bossLabel.position = CGPoint(x: 0, y: enemy.size + 16)
             bossLabel.name = "bossIndicator"
             container.addChild(bossLabel)
+
+            // Color cycle effect for boss
+            let colorCycle = SKAction.sequence([
+                SKAction.colorize(with: .red, colorBlendFactor: 0.5, duration: 0.5),
+                SKAction.colorize(with: .orange, colorBlendFactor: 0.5, duration: 0.5),
+                SKAction.colorize(with: .yellow, colorBlendFactor: 0.5, duration: 0.5),
+                SKAction.colorize(with: .white, colorBlendFactor: 0.0, duration: 0.5)
+            ])
+            body.run(SKAction.repeatForever(colorCycle))
 
             // Menacing pulse animation
             let pulse = SKAction.sequence([
@@ -1163,7 +1390,7 @@ class TDGameScene: SKScene {
             ])
             body.run(SKAction.repeatForever(pulse), withKey: "bossPulse")
 
-            // Rotation for boss
+            // Rotation for boss inner
             let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
             innerNode.run(SKAction.repeatForever(rotate))
         }
@@ -1314,21 +1541,55 @@ class TDGameScene: SKScene {
     }
 
     private func updateCoreVisual(state: TDGameState, currentTime: TimeInterval) {
-        guard let coreNode = backgroundLayer.childNode(withName: "core") as? SKShapeNode else { return }
+        guard let coreContainer = backgroundLayer.childNode(withName: "core") else { return }
 
-        // Update color based on health
-        let healthPercent = state.core.health / state.core.maxHealth
-        if healthPercent > 0.6 {
-            coreNode.fillColor = .yellow
-        } else if healthPercent > 0.3 {
-            coreNode.fillColor = .orange
+        // Get efficiency for color updates
+        let efficiency = state.efficiency
+
+        // Determine color based on efficiency
+        let efficiencyColor: UIColor
+        let glowIntensity: CGFloat
+        if efficiency >= 70 {
+            efficiencyColor = DesignColors.successUI  // Green
+            glowIntensity = 15
+        } else if efficiency >= 40 {
+            efficiencyColor = DesignColors.warningUI  // Yellow/Amber
+            glowIntensity = 10
+        } else if efficiency >= 20 {
+            efficiencyColor = UIColor.orange
+            glowIntensity = 8
         } else {
-            coreNode.fillColor = .red
+            efficiencyColor = DesignColors.dangerUI   // Red - critical
+            glowIntensity = 20  // More intense glow when critical
         }
 
-        // Pulse effect
-        let scale = CoreSystem.getCorePulseScale(state: state, currentTime: currentTime)
-        coreNode.setScale(scale)
+        // Update CPU body stroke color
+        if let cpuBody = coreContainer.childNode(withName: "cpuBody") as? SKShapeNode {
+            cpuBody.strokeColor = efficiencyColor
+            cpuBody.glowWidth = glowIntensity
+        }
+
+        // Update inner chip
+        if let innerChip = coreContainer.childNode(withName: "innerChip") as? SKShapeNode {
+            innerChip.strokeColor = efficiencyColor.withAlphaComponent(0.6)
+        }
+
+        // Update efficiency label
+        if let efficiencyLabel = coreContainer.childNode(withName: "efficiencyLabel") as? SKLabelNode {
+            efficiencyLabel.text = "\(Int(efficiency))%"
+            efficiencyLabel.fontColor = efficiencyColor
+        }
+
+        // Update glow ring
+        if let glowRing = coreContainer.childNode(withName: "glowRing") as? SKShapeNode {
+            glowRing.strokeColor = efficiencyColor.withAlphaComponent(0.3)
+            glowRing.glowWidth = glowIntensity
+        }
+
+        // Pulse effect - more intense when efficiency is low
+        let baseScale = CoreSystem.getCorePulseScale(state: state, currentTime: currentTime)
+        let pulseIntensity: CGFloat = efficiency < 30 ? 1.15 : 1.0  // More intense pulse when critical
+        coreContainer.setScale(baseScale * pulseIntensity)
     }
 
     // MARK: - Touch Handling
@@ -1757,7 +2018,15 @@ class TDGameScene: SKScene {
     func placeTower(weaponType: String, slotId: String, profile: PlayerProfile) {
         guard var state = state else { return }
 
-        let result = TowerSystem.placeTower(state: &state, weaponType: weaponType, slotId: slotId, playerProfile: profile)
+        // Check if this is a Protocol ID (System: Reboot) or a legacy weapon type
+        let result: TowerPlacementResult
+        if ProtocolLibrary.get(weaponType) != nil {
+            // Use Protocol-based placement
+            result = TowerSystem.placeTowerFromProtocol(state: &state, protocolId: weaponType, slotId: slotId, playerProfile: profile)
+        } else {
+            // Legacy weapon placement
+            result = TowerSystem.placeTower(state: &state, weaponType: weaponType, slotId: slotId, playerProfile: profile)
+        }
 
         if case .success = result {
             // Update slot visual

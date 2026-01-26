@@ -99,10 +99,12 @@ class PathSystem {
     }
 
     /// Decay leak counter over time (call from game loop)
-    /// Leak counter decreases by 1 every 5 seconds, allowing efficiency recovery
+    /// Leak counter decreases by 1 every 5 seconds (modified by RAM upgrade)
     static func updateLeakDecay(state: inout TDGameState, deltaTime: TimeInterval) {
         state.leakDecayTimer += deltaTime
-        if state.leakDecayTimer >= 5.0 && state.leakCounter > 0 {
+        // RAM upgrade speeds up efficiency recovery (higher multiplier = faster decay)
+        let decayInterval = 5.0 / state.efficiencyRegenMultiplier
+        if state.leakDecayTimer >= decayInterval && state.leakCounter > 0 {
             state.leakCounter -= 1
             state.leakDecayTimer = 0
         }

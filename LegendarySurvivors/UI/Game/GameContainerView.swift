@@ -2,6 +2,8 @@ import SwiftUI
 import SpriteKit
 
 // MARK: - Game Container View
+// System: Reboot - Active/Debugger Mode
+// Terminal hacker aesthetic with scan lines and glitch effects
 
 struct GameContainerView: View {
     let gameMode: GameMode
@@ -14,6 +16,9 @@ struct GameContainerView: View {
     @State private var showVictory = false
     @State private var inputState = InputState()
     @State private var screenSize: CGSize = .zero
+    @State private var showGlitchEffect = false
+    @State private var scanLineOffset: CGFloat = 0
+    @State private var previousHealth: CGFloat = 0
 
     var body: some View {
         GeometryReader { geometry in
@@ -29,6 +34,18 @@ struct GameContainerView: View {
                             screenSize = geometry.size
                             setupGame()
                         }
+                }
+
+                // Scan lines overlay - terminal aesthetic
+                ScanLinesOverlay()
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+
+                // Glitch effect overlay (when player takes damage)
+                if showGlitchEffect {
+                    GlitchEffectOverlay()
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
                 }
 
                 // Virtual joystick overlay
@@ -53,7 +70,7 @@ struct GameContainerView: View {
                                 // Health value
                                 HStack(spacing: 6) {
                                     Image(systemName: "heart.fill")
-                                        .font(.title2)
+                                        .font(DesignTypography.headline(22))
                                         .foregroundColor(.red)
                                     Text("\(Int(state.player.health))/\(Int(state.player.maxHealth))")
                                         .font(.system(size: 18, weight: .bold))
@@ -106,7 +123,7 @@ struct GameContainerView: View {
                             if let state = gameState {
                                 HStack(spacing: 4) {
                                     Image(systemName: "flame.fill")
-                                        .font(.title3)
+                                        .font(DesignTypography.headline(18))
                                         .foregroundColor(.orange)
                                     Text("\(state.stats.enemiesKilled)")
                                         .font(.system(size: 18, weight: .bold))
@@ -120,7 +137,7 @@ struct GameContainerView: View {
                                 onExit()
                             }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(.title)
+                                    .font(DesignTypography.display(28))
                                     .foregroundColor(.white.opacity(0.8))
                             }
                         }
@@ -165,7 +182,7 @@ struct GameContainerView: View {
                             // Coins
                             HStack(spacing: 4) {
                                 Image(systemName: "dollarsign.circle.fill")
-                                    .font(.title3)
+                                    .font(DesignTypography.headline(18))
                                     .foregroundColor(.yellow)
                                 Text("\(state.coins)")
                                     .font(.system(size: 18, weight: .bold))
@@ -263,8 +280,17 @@ struct GameContainerView: View {
             }
         }
         scene.onStateUpdate = { updatedState in
+            // Check for damage taken (health decreased)
+            if let currentState = gameState {
+                if updatedState.player.health < currentState.player.health {
+                    triggerGlitchEffect()
+                }
+            }
             gameState = updatedState
         }
+
+        // Initialize previous health
+        previousHealth = state.player.health
 
         gameScene = scene
     }
@@ -273,6 +299,18 @@ struct GameContainerView: View {
         let minutes = Int(seconds) / 60
         let secs = Int(seconds) % 60
         return String(format: "%d:%02d", minutes, secs)
+    }
+
+    /// Trigger the glitch visual effect when taking damage
+    private func triggerGlitchEffect() {
+        // Show glitch effect briefly
+        showGlitchEffect = true
+        HapticsService.shared.play(.light)
+
+        // Hide after short duration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            showGlitchEffect = false
+        }
     }
 }
 
@@ -284,38 +322,75 @@ struct GameOverOverlay: View {
     let onRetry: () -> Void
     let onExit: () -> Void
 
+    // Calculate Data reward (matches AppState.recordSurvivorRun formula)
+    private var dataEarned: Int {
+        guard let state = gameState else { return 0 }
+        let kills = state.stats.enemiesKilled
+        let time = state.timeElapsed
+        let dataFromKills = kills / 20
+        let dataFromTime = Int(time / 30)
+        let victoryBonus = victory ? 10 : 0
+        return max(1, dataFromKills + dataFromTime + victoryBonus)
+    }
+
     var body: some View {
         ZStack {
             Color.black.opacity(0.85)
                 .ignoresSafeArea()
 
             VStack(spacing: 30) {
+                // System: Reboot themed titles
                 if victory {
-                    Text("VICTORY!")
-                        .font(.system(size: 48, weight: .black))
-                        .foregroundColor(.yellow)
+                    Text("EXTRACTION COMPLETE")
+                        .font(.system(size: 36, weight: .black, design: .monospaced))
+                        .foregroundColor(.green)
 
-                    Image(systemName: "crown.fill")
+                    Image(systemName: "checkmark.shield.fill")
                         .font(.system(size: 60))
-                        .foregroundColor(.yellow)
+                        .foregroundColor(.green)
                 } else {
-                    Text("GAME OVER")
-                        .font(.system(size: 48, weight: .black))
+                    Text("DEBUG FAILED")
+                        .font(.system(size: 36, weight: .black, design: .monospaced))
+                        .foregroundColor(.red)
+
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 60))
                         .foregroundColor(.red)
                 }
 
                 if let state = gameState {
                     VStack(spacing: 12) {
                         StatRow(label: "Time Survived", value: formatTime(state.timeElapsed))
-                        StatRow(label: "Enemies Killed", value: "\(state.stats.enemiesKilled)")
+                        StatRow(label: "Viruses Killed", value: "\(state.stats.enemiesKilled)")
                         StatRow(label: "Damage Dealt", value: formatNumber(Int(state.stats.damageDealt)))
-                        StatRow(label: "Coins Collected", value: "\(state.stats.coinsCollected)")
-                        StatRow(label: "Upgrades", value: "\(state.stats.upgradesChosen)")
+
+                        Divider().background(Color.white.opacity(0.3))
+
+                        // Data reward - primary currency from Active mode
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: "memorychip")
+                                    .foregroundColor(.green)
+                                Text("DATA EXTRACTED")
+                            }
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+
+                            Spacer()
+
+                            Text("+\(dataEarned)")
+                                .font(.system(size: 24, weight: .bold, design: .monospaced))
+                                .foregroundColor(.green)
+                        }
                     }
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.white.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                            )
                     )
                 }
 
@@ -325,7 +400,7 @@ struct GameOverOverlay: View {
                             Image(systemName: "arrow.counterclockwise")
                             Text("RETRY")
                         }
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
                         .padding(.horizontal, 30)
                         .padding(.vertical, 15)
@@ -340,7 +415,7 @@ struct GameOverOverlay: View {
                             Image(systemName: "house.fill")
                             Text("MENU")
                         }
-                        .font(.system(size: 18, weight: .bold))
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                         .padding(.horizontal, 30)
                         .padding(.vertical, 15)
@@ -383,6 +458,88 @@ struct StatRow: View {
             Text(value)
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
+        }
+    }
+}
+
+// MARK: - Scan Lines Overlay (Terminal Aesthetic)
+
+struct ScanLinesOverlay: View {
+    @State private var offset: CGFloat = 0
+
+    var body: some View {
+        GeometryReader { geometry in
+            Canvas { context, size in
+                // Draw horizontal scan lines every 4pt
+                let lineSpacing: CGFloat = 4
+                let lineHeight: CGFloat = 2
+                var y: CGFloat = offset.truncatingRemainder(dividingBy: lineSpacing * 2)
+
+                while y < size.height {
+                    let rect = CGRect(x: 0, y: y, width: size.width, height: lineHeight)
+                    context.fill(Path(rect), with: .color(.white.opacity(0.03)))
+                    y += lineSpacing
+                }
+            }
+            .onAppear {
+                // Subtle slow scroll animation
+                withAnimation(Animation.linear(duration: 8).repeatForever(autoreverses: false)) {
+                    offset = 8 // One full cycle
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Glitch Effect Overlay (Damage Feedback)
+
+struct GlitchEffectOverlay: View {
+    @State private var rgbOffset: CGFloat = 3
+    @State private var slices: [GlitchSlice] = []
+
+    struct GlitchSlice: Identifiable {
+        let id = UUID()
+        let yPosition: CGFloat
+        let height: CGFloat
+        let xOffset: CGFloat
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // RGB channel split effect
+                Rectangle()
+                    .fill(Color.red.opacity(0.15))
+                    .offset(x: -rgbOffset, y: 0)
+                    .blendMode(.screen)
+
+                Rectangle()
+                    .fill(Color.blue.opacity(0.15))
+                    .offset(x: rgbOffset, y: 0)
+                    .blendMode(.screen)
+
+                // Horizontal displacement slices
+                ForEach(slices) { slice in
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(width: geometry.size.width, height: slice.height)
+                        .offset(x: slice.xOffset, y: slice.yPosition - geometry.size.height / 2)
+                }
+            }
+            .onAppear {
+                generateGlitchSlices(height: geometry.size.height)
+            }
+        }
+    }
+
+    private func generateGlitchSlices(height: CGFloat) {
+        // Generate random horizontal displacement slices
+        slices = (0..<Int.random(in: 3...8)).map { _ in
+            GlitchSlice(
+                yPosition: CGFloat.random(in: 0...height),
+                height: CGFloat.random(in: 10...40),
+                xOffset: CGFloat.random(in: -20...20)
+            )
         }
     }
 }

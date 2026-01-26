@@ -297,12 +297,13 @@ class StorageService {
         let cappedTime = min(timeAway, 28800)
 
         // Calculate earnings
-        // offlineWatts = timeAway * baseRate * avgEfficiency * 0.5 (offline penalty)
+        // offlineWatts = timeAway * baseRate * cpuMultiplier * avgEfficiency * 0.5 (offline penalty)
         let baseRate = profile.tdStats.baseWattsPerSecond
+        let cpuMultiplier = profile.tdStats.cpuMultiplier
         let efficiency = profile.tdStats.averageEfficiency / 100
         let offlineMultiplier: CGFloat = 0.5  // 50% efficiency when offline
 
-        let wattsEarned = Int(cappedTime * Double(baseRate * efficiency * offlineMultiplier))
+        let wattsEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * efficiency * offlineMultiplier))
 
         // Calculate passive Data from virus kills
         let passiveData = profile.tdStats.passiveDataEarned
@@ -344,6 +345,41 @@ class StorageService {
         // Rolling average: 90% old, 10% new
         profile.tdStats.averageEfficiency = profile.tdStats.averageEfficiency * 0.9 + efficiency * 0.1
         savePlayer(profile)
+    }
+
+    // MARK: - CPU Tier Upgrades
+
+    /// Attempt to upgrade CPU tier
+    /// Returns: true if upgrade successful, false if not enough Watts or max tier
+    func upgradeCpuTier() -> Bool {
+        var profile = getOrCreateDefaultPlayer()
+
+        guard let cost = profile.tdStats.nextCpuUpgradeCost else {
+            // Already at max tier
+            return false
+        }
+
+        guard profile.gold >= cost else {
+            // Not enough Watts
+            return false
+        }
+
+        // Deduct cost and upgrade
+        profile.gold -= cost
+        profile.tdStats.cpuTier += 1
+
+        savePlayer(profile)
+        return true
+    }
+
+    /// Get current CPU tier info
+    func getCpuTierInfo() -> (tier: Int, multiplier: CGFloat, nextCost: Int?) {
+        let profile = getOrCreateDefaultPlayer()
+        return (
+            tier: profile.tdStats.cpuTier,
+            multiplier: profile.tdStats.cpuMultiplier,
+            nextCost: profile.tdStats.nextCpuUpgradeCost
+        )
     }
 
     // MARK: - Reset

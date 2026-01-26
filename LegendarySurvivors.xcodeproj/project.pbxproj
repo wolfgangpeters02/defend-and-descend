@@ -11,12 +11,18 @@
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
 		24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652706E4D090EB81125BDB8E /* TowerSystem.swift */; };
 		41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */; };
+		469B93F994E728C789F86031 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F896AC2E9B27982965DBAF /* Protocol.swift */; };
 		47C2EC65CDFEE77D87E73F93 /* TDConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 31EF22FB9EBD5242CFCD38DD /* TDConfig.json */; };
+		4D473EABFFD987BB6E1232E2 /* HeroUpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F5B6FBDB75C6498F7553CA /* HeroUpgradesView.swift */; };
 		594042117873415AD5954A69 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */; };
 		6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */; };
 		6FAF2498EB10A21AABF8C5D8 /* TDGameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */; };
+		76264979E6D40ACBE476736D /* FirewallUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */; };
+		80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */; };
 		8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC456BE2F341A8C1006B747 /* CoreSystem.swift */; };
+		85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */; };
 		8805B6CA90B2CE24AA04B7A4 /* TDMapSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */; };
+		897CEB3FD92CC6A9D4EA05D0 /* FirewallShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9355D561D7842C47786518B0 /* FirewallShopView.swift */; };
 		9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE64BB27463A150B6F32451C /* TDTypes.swift */; };
 		A322E4133BD75AF92145044F /* WaveSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260E703394574A0E21D9E82C /* WaveSystem.swift */; };
 		AA000001 /* LegendarySurvivorsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* LegendarySurvivorsApp.swift */; };
@@ -60,18 +66,23 @@
 		AA000039 /* VoidHarbingerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100040 /* VoidHarbingerAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
 		AA000041 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* AudioService.swift */; };
+		D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */; };
 		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		09DD228498839C35BD9C1D41 /* PathSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PathSystem.swift; sourceTree = "<group>"; };
 		1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		260E703394574A0E21D9E82C /* WaveSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveSystem.swift; sourceTree = "<group>"; };
-		31EF22FB9EBD5242CFCD38DD /* TDConfig.json */ = {isa = PBXFileReference; includeInIndex = 1; path = TDConfig.json; sourceTree = "<group>"; };
+		31EF22FB9EBD5242CFCD38DD /* TDConfig.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = TDConfig.json; sourceTree = "<group>"; };
 		3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeBackModal.swift; sourceTree = "<group>"; };
 		529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameScene.swift; sourceTree = "<group>"; };
 		652706E4D090EB81125BDB8E /* TowerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerSystem.swift; sourceTree = "<group>"; };
+		81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirewallUnlockSystem.swift; sourceTree = "<group>"; };
+		9355D561D7842C47786518B0 /* FirewallShopView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirewallShopView.swift; sourceTree = "<group>"; };
 		9BC456BE2F341A8C1006B747 /* CoreSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreSystem.swift; sourceTree = "<group>"; };
+		A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemTabView.swift; sourceTree = "<group>"; };
 		AA100001 /* LegendarySurvivorsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegendarySurvivorsApp.swift; sourceTree = "<group>"; };
 		AA100002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA100003 /* GameTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameTypes.swift; sourceTree = "<group>"; };
@@ -116,8 +127,11 @@
 		AA100042 /* AudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioService.swift; sourceTree = "<group>"; };
 		AA200001 /* LegendarySurvivors.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LegendarySurvivors.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
+		C9F5B6FBDB75C6498F7553CA /* HeroUpgradesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeroUpgradesView.swift; sourceTree = "<group>"; };
 		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
+		CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZeroDaySystem.swift; sourceTree = "<group>"; };
 		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		F5F896AC2E9B27982965DBAF /* Protocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
 		F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDMapSelectView.swift; sourceTree = "<group>"; };
 		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -214,6 +228,7 @@
 				AA400016 /* Screens */,
 				AA400017 /* Components */,
 				AA400018 /* Game */,
+				B51208EDDA6B09BF55F44B88 /* Tabs */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -244,6 +259,8 @@
 				AA100003 /* GameTypes.swift */,
 				1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */,
 				BE64BB27463A150B6F32451C /* TDTypes.swift */,
+				F5F896AC2E9B27982965DBAF /* Protocol.swift */,
+				05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -288,6 +305,8 @@
 				09DD228498839C35BD9C1D41 /* PathSystem.swift */,
 				9BC456BE2F341A8C1006B747 /* CoreSystem.swift */,
 				FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */,
+				81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */,
+				CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -309,6 +328,8 @@
 				AA100035 /* CollectionView.swift */,
 				AA100036 /* StatsView.swift */,
 				F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */,
+				9355D561D7842C47786518B0 /* FirewallShopView.swift */,
+				C9F5B6FBDB75C6498F7553CA /* HeroUpgradesView.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -337,6 +358,14 @@
 			children = (
 			);
 			path = ParticleEffects;
+			sourceTree = "<group>";
+		};
+		B51208EDDA6B09BF55F44B88 /* Tabs */ = {
+			isa = PBXGroup;
+			children = (
+				A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */,
+			);
+			path = Tabs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -461,6 +490,13 @@
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
+				76264979E6D40ACBE476736D /* FirewallUnlockSystem.swift in Sources */,
+				897CEB3FD92CC6A9D4EA05D0 /* FirewallShopView.swift in Sources */,
+				4D473EABFFD987BB6E1232E2 /* HeroUpgradesView.swift in Sources */,
+				85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */,
+				469B93F994E728C789F86031 /* Protocol.swift in Sources */,
+				D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */,
+				80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -593,7 +629,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = V38KUCNRLV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LegendarySurvivors/Info.plist;
@@ -622,7 +658,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = V38KUCNRLV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = LegendarySurvivors/Info.plist;

@@ -55,11 +55,6 @@ struct TDGameContainerView: View {
                         .safeAreaInset(edge: .bottom) { Color.clear.frame(height: 0) }
                 }
 
-                // Tower selection menu (legacy - for slot tapping)
-                if showTowerMenu, let slotId = selectedSlotId {
-                    towerSelectionMenu(slotId: slotId)
-                }
-
                 // Selected tower info panel
                 if let towerId = selectedTowerId,
                    let tower = gameState?.towers.first(where: { $0.id == towerId }) {
@@ -69,6 +64,11 @@ struct TDGameContainerView: View {
                 // Drag preview overlay
                 if isDraggingFromDeck, let weaponType = draggedWeaponType {
                     dragPreviewOverlay(weaponType: weaponType, geometry: geometry)
+                }
+
+                // Zero-Day Alert overlay (System Breach)
+                if let state = gameState, state.zeroDayActive {
+                    zeroDayAlertOverlay
                 }
 
                 // Pause overlay
@@ -81,6 +81,7 @@ struct TDGameContainerView: View {
                     gameOverOverlay
                 }
             }
+            .coordinateSpace(name: "gameArea")
         }
         .onAppear {
             setupGame()
@@ -88,132 +89,162 @@ struct TDGameContainerView: View {
         .navigationBarHidden(true)
     }
 
-    // MARK: - Top Bar (Mobile-First HUD)
-    // Full-width bar with large, readable stats
+    // MARK: - Zero-Day Alert Overlay (System Breach)
+
+    private var zeroDayAlertOverlay: some View {
+        VStack {
+            Spacer()
+
+            // Alert banner at bottom of screen (above tower deck)
+            VStack(spacing: 12) {
+                // Warning header
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(DesignTypography.headline(22))
+                        .foregroundColor(.red)
+
+                    Text("SYSTEM BREACH DETECTED")
+                        .font(.system(size: 18, weight: .black, design: .monospaced))
+                        .foregroundColor(.red)
+
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(DesignTypography.headline(22))
+                        .foregroundColor(.red)
+                }
+
+                Text("Zero-Day virus detected! Firewalls ineffective.")
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundColor(.gray)
+
+                Text("Efficiency draining: -2%/sec")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.orange)
+
+                // MANUAL OVERRIDE button
+                Button(action: {
+                    initiateManualOverride()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "person.fill.viewfinder")
+                            .font(DesignTypography.headline(18))
+                        Text("MANUAL OVERRIDE")
+                            .font(.system(size: 16, weight: .black, design: .monospaced))
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.green)
+                    )
+                    .shadow(color: .green.opacity(0.6), radius: 10)
+                }
+                .padding(.top, 4)
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.95))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.red.opacity(0.8), lineWidth: 2)
+                    )
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 130) // Above tower deck
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: gameState?.zeroDayActive)
+    }
+
+    // MARK: - Manual Override (Zero-Day Boss Fight)
+
+    private func initiateManualOverride() {
+        HapticsService.shared.play(.warning)
+
+        // TODO: Transition to boss fight mode
+        // For now, show an alert that this feature is coming
+        // In full implementation, this would:
+        // 1. Pause the TD game
+        // 2. Launch a special boss fight in Active/Survivor mode
+        // 3. On victory: apply ZeroDaySystem.onZeroDayDefeated rewards
+        // 4. On defeat: return to TD with Zero-Day still active
+
+        // Placeholder: Just remove the Zero-Day for now
+        if var state = gameState {
+            let reward = ZeroDaySystem.onZeroDayDefeated(state: &state)
+            gameState = state
+
+            // Apply rewards to player
+            appState.updatePlayer { profile in
+                profile.data += reward.dataBonus
+                profile.gold += reward.wattsBonus
+            }
+
+            HapticsService.shared.play(.success)
+        }
+    }
+
+    // MARK: - Top Bar (Simplified HUD)
+    // Clean, minimal HUD with only essential info
 
     private var topBar: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 16) {
             // Left: Pause + Wave
-            HStack(spacing: 12) {
-                // Pause button
+            HStack(spacing: 10) {
                 Button(action: {
                     isPaused = true
                     HapticsService.shared.play(.light)
                 }) {
                     Image(systemName: "pause.fill")
-                        .font(.title2)
+                        .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(10)
+                        .frame(width: 36, height: 36)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(8)
                 }
 
-                // Wave indicator - large and clear
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("WAVE")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.gray)
-                    Text("\(gameState?.currentWave ?? 0)/20")
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
+                Text("WAVE \(gameState?.currentWave ?? 0)")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
             }
 
             Spacer()
 
-            // Center: CPU Efficiency (most important)
-            HStack(spacing: 8) {
-                Image(systemName: "cpu")
-                    .font(.title2)
-                    .foregroundColor(efficiencyColor)
-
-                // Efficiency percentage
+            // Center: Efficiency bar (wider, more visible)
+            HStack(spacing: 6) {
                 let efficiency = calculateEfficiency()
-                Text("\(Int(efficiency))%")
-                    .font(.system(size: 22, weight: .bold, design: .monospaced))
-                    .foregroundColor(efficiencyColor)
-
-                // Mini efficiency bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: 4)
                             .fill(Color.gray.opacity(0.3))
-                        RoundedRectangle(cornerRadius: 2)
+                        RoundedRectangle(cornerRadius: 4)
                             .fill(efficiencyColor)
                             .frame(width: geo.size.width * efficiency / 100)
                     }
                 }
-                .frame(width: 40, height: 6)
+                .frame(width: 80, height: 10)
+
+                Text("\(Int(efficiency))%")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(efficiencyColor)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(Color.black.opacity(0.5))
-            .cornerRadius(10)
 
             Spacer()
 
-            // Right: Blockers + Watts + Viruses
-            HStack(spacing: 12) {
-                // Blocker slots available
-                if let state = gameState {
-                    Button(action: { toggleBlockerMode() }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "octagon.fill")
-                                .font(.title3)
-                                .foregroundColor(isBlockerModeActive ? .red : .red.opacity(0.6))
-                            Text("\(state.availableBlockerSlots)/\(state.maxBlockerSlots)")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(isBlockerModeActive ? .red : .white)
-                        }
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(isBlockerModeActive ? Color.red.opacity(0.2) : Color.clear)
-                        .cornerRadius(6)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(isBlockerModeActive ? Color.red : Color.clear, lineWidth: 1)
-                        )
-                    }
-                }
-
-                // Watts - primary currency with income rate
-                VStack(alignment: .trailing, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bolt.fill")
-                            .font(.title2)
-                            .foregroundColor(.cyan)
-                        Text("\(gameState?.gold ?? 0)")
-                            .font(.system(size: 20, weight: .bold, design: .monospaced))
-                            .foregroundColor(.cyan)
-                    }
-                    // Watts per second income rate
-                    Text("+\(String(format: "%.1f", wattsPerSecond))/s")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(wattsPerSecond > 0 ? .green : .gray)
-                }
-
-                // Viruses remaining during wave
-                if let state = gameState, state.waveInProgress {
-                    HStack(spacing: 4) {
-                        Image(systemName: "ladybug.fill")
-                            .font(.title3)
-                            .foregroundColor(.red)
-                        Text("\(state.enemies.filter { !$0.isDead && !$0.reachedCore }.count)")
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
-                            .foregroundColor(.red)
-                    }
-                }
+            // Right: Watts only (clean)
+            HStack(spacing: 4) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 16))
+                    .foregroundColor(DesignColors.primary)
+                Text("\(gameState?.gold ?? 0)")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(DesignColors.primary)
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(
-            LinearGradient(
-                colors: [Color.black.opacity(0.8), Color.black.opacity(0.4)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
+        .padding(.vertical, 8)
+        .background(Color.black.opacity(0.7))
     }
 
     // MARK: - Wave Controls (Auto-start, no manual button needed)
@@ -236,14 +267,29 @@ struct TDGameContainerView: View {
             // Scrollable tower cards - large and touch-friendly
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(getAvailableTowers(), id: \.id) { weapon in
-                        TowerDeckCard(
-                            weapon: weapon,
-                            gold: gameState?.gold ?? 0,
-                            onDragStart: { startDragFromDeck(weaponType: weapon.id) },
-                            onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
-                            onDragEnded: { endDragFromDeck() }
-                        )
+                    // Use Protocol-based deck if player has compiled protocols
+                    let protocols = getCompiledProtocols()
+                    if !protocols.isEmpty {
+                        ForEach(protocols) { proto in
+                            ProtocolDeckCard(
+                                protocol: proto,
+                                watts: gameState?.gold ?? 0,
+                                onDragStart: { startDragFromDeck(weaponType: proto.id) },
+                                onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
+                                onDragEnded: { endDragFromDeck() }
+                            )
+                        }
+                    } else {
+                        // Fallback to legacy weapon system
+                        ForEach(getAvailableTowers(), id: \.id) { weapon in
+                            TowerDeckCard(
+                                weapon: weapon,
+                                gold: gameState?.gold ?? 0,
+                                onDragStart: { startDragFromDeck(weaponType: weapon.id) },
+                                onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
+                                onDragEnded: { endDragFromDeck() }
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -269,8 +315,66 @@ struct TDGameContainerView: View {
             // The grid dots are rendered in TDGameScene now (progressive disclosure)
             // Only the dragged tower preview is shown here in SwiftUI
 
-            // Dragged tower preview - follows finger
-            if let weapon = GameConfigLoader.shared.getWeapon(weaponType) {
+            // Check if this is a Protocol (System: Reboot) or legacy weapon
+            if let proto = ProtocolLibrary.get(weaponType) {
+                // Protocol-based preview
+                let displayPosition = nearestValidSlot != nil && canAffordDraggedTower
+                    ? convertGameToScreen(nearestValidSlot!.position, geometry: geometry)
+                    : dragPosition
+                let protoColor = Color(hex: proto.color) ?? DesignColors.primary
+                let range = proto.firewallStats.range
+
+                ZStack {
+                    // Range preview circle (shown when snapped to valid slot)
+                    if nearestValidSlot != nil && canAffordDraggedTower {
+                        Circle()
+                            .fill(protoColor.opacity(DesignLayout.rangeCircleFillOpacity))
+                            .frame(width: range * 0.6, height: range * 0.6)
+
+                        Circle()
+                            .stroke(protoColor.opacity(DesignLayout.rangeCircleStrokeOpacity), lineWidth: 2)
+                            .frame(width: range * 0.6, height: range * 0.6)
+                    }
+
+                    // Tower preview body
+                    Circle()
+                        .fill(protoColor.opacity(DesignLayout.towerPreviewOpacity))
+                        .frame(width: 44, height: 44)
+                        .overlay(
+                            Circle()
+                                .stroke(
+                                    canAffordDraggedTower ? Color.white : DesignColors.danger,
+                                    lineWidth: 2
+                                )
+                        )
+                        .shadow(
+                            color: canAffordDraggedTower
+                                ? protoColor.opacity(0.6)
+                                : DesignColors.danger.opacity(0.4),
+                            radius: canAffordDraggedTower ? 12 : 6
+                        )
+
+                    // Protocol icon
+                    Image(systemName: proto.iconName)
+                        .font(DesignTypography.headline(18))
+                        .foregroundColor(.white)
+
+                    // Cost indicator (Watts)
+                    Text("\(TowerSystem.towerPlacementCost(rarity: proto.rarity))W")
+                        .font(DesignTypography.caption(11))
+                        .fontWeight(.bold)
+                        .foregroundColor(canAffordDraggedTower ? DesignColors.primary : DesignColors.danger)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(DesignColors.surface.opacity(0.9))
+                        .cornerRadius(4)
+                        .offset(y: 32)
+                }
+                .position(displayPosition)
+                .animation(DesignAnimations.quick, value: nearestValidSlot?.id)
+
+            } else if let weapon = GameConfigLoader.shared.getWeapon(weaponType) {
+                // Legacy weapon preview
                 let displayPosition = nearestValidSlot != nil && canAffordDraggedTower
                     ? convertGameToScreen(nearestValidSlot!.position, geometry: geometry)
                     : dragPosition
@@ -307,7 +411,7 @@ struct TDGameContainerView: View {
 
                     // Weapon icon
                     Image(systemName: iconForWeapon(weapon.id))
-                        .font(.title3)
+                        .font(DesignTypography.headline(18))
                         .foregroundColor(.white)
 
                     // Cost indicator (Watts)
@@ -330,6 +434,12 @@ struct TDGameContainerView: View {
 
     /// Get SF Symbol icon for firewall type (System: Reboot themed)
     private func iconForWeapon(_ weaponType: String) -> String {
+        // Check if this is a Protocol ID first
+        if let proto = ProtocolLibrary.get(weaponType) {
+            return proto.iconName
+        }
+
+        // Legacy weapon icons
         switch weaponType {
         case "bow", "crossbow": return "antenna.radiowaves.left.and.right"  // Signal firewall
         case "wand", "staff": return "wand.and.rays"                        // Magic/scan firewall
@@ -349,8 +459,11 @@ struct TDGameContainerView: View {
         draggedWeaponType = weaponType
         previousNearestSlot = nil
 
-        // Check affordability
-        if let weapon = GameConfigLoader.shared.getWeapon(weaponType) {
+        // Check affordability - Protocol or legacy weapon
+        if let proto = ProtocolLibrary.get(weaponType) {
+            let cost = TowerSystem.towerPlacementCost(rarity: proto.rarity)
+            canAffordDraggedTower = (gameState?.gold ?? 0) >= cost
+        } else if let weapon = GameConfigLoader.shared.getWeapon(weaponType) {
             let cost = TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common)
             canAffordDraggedTower = (gameState?.gold ?? 0) >= cost
         }
@@ -368,7 +481,16 @@ struct TDGameContainerView: View {
         if let state = gameState {
             let gamePos = convertScreenToGame(dragPosition, geometry: geometry)
             var nearest: TowerSlot?
-            var minDistance: CGFloat = DesignLayout.snapDistance // 50pt snap distance
+
+            // Calculate scale-adjusted snap distance (50 screen pixels worth)
+            let gameAreaHeight = geometry.size.height - topHUDHeight - bottomDeckHeight
+            let gameAreaWidth = geometry.size.width
+            let scaleX = gameAreaWidth / 800
+            let scaleY = gameAreaHeight / 600
+            let scale = min(scaleX, scaleY)
+            let snapDistanceInGameUnits = 60 / scale  // 60 screen pixels converted to game units
+
+            var minDistance: CGFloat = snapDistanceInGameUnits
 
             for slot in state.towerSlots where !slot.occupied {
                 let dx = slot.x - gamePos.x
@@ -417,33 +539,53 @@ struct TDGameContainerView: View {
     }
 
     // MARK: - Coordinate Conversion
+    // Top HUD height ~50pt, Bottom deck height ~110pt
+
+    private let topHUDHeight: CGFloat = 50
+    private let bottomDeckHeight: CGFloat = 110
 
     private func convertGameToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // Game coordinates are 800x600, need to map to screen
-        let scaleX = geometry.size.width / 800
-        let scaleY = (geometry.size.height - 120) / 600 // Account for deck height
+        // Game area is between top HUD and bottom deck
+        let gameAreaHeight = geometry.size.height - topHUDHeight - bottomDeckHeight
+        let gameAreaWidth = geometry.size.width
+
+        // Calculate scale to fit 800x600 game into available space
+        let scaleX = gameAreaWidth / 800
+        let scaleY = gameAreaHeight / 600
         let scale = min(scaleX, scaleY)
 
-        let offsetX = (geometry.size.width - 800 * scale) / 2
-        let offsetY = (geometry.size.height - 120 - 600 * scale) / 2
+        // Center the game area
+        let scaledWidth = 800 * scale
+        let scaledHeight = 600 * scale
+        let offsetX = (gameAreaWidth - scaledWidth) / 2
+        let offsetY = topHUDHeight + (gameAreaHeight - scaledHeight) / 2
 
+        // Game coordinates and SwiftUI both have origin top-left, Y increases downward
+        // No Y flip needed
         return CGPoint(
             x: point.x * scale + offsetX,
-            y: (600 - point.y) * scale + offsetY // Flip Y axis
+            y: point.y * scale + offsetY
         )
     }
 
     private func convertScreenToGame(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        let scaleX = geometry.size.width / 800
-        let scaleY = (geometry.size.height - 120) / 600
+        let gameAreaHeight = geometry.size.height - topHUDHeight - bottomDeckHeight
+        let gameAreaWidth = geometry.size.width
+
+        let scaleX = gameAreaWidth / 800
+        let scaleY = gameAreaHeight / 600
         let scale = min(scaleX, scaleY)
 
-        let offsetX = (geometry.size.width - 800 * scale) / 2
-        let offsetY = (geometry.size.height - 120 - 600 * scale) / 2
+        let scaledWidth = 800 * scale
+        let scaledHeight = 600 * scale
+        let offsetX = (gameAreaWidth - scaledWidth) / 2
+        let offsetY = topHUDHeight + (gameAreaHeight - scaledHeight) / 2
 
+        // Game coordinates and SwiftUI both have origin top-left, Y increases downward
+        // No Y flip needed
         return CGPoint(
             x: (point.x - offsetX) / scale,
-            y: 600 - (point.y - offsetY) / scale
+            y: (point.y - offsetY) / scale
         )
     }
 
@@ -514,7 +656,7 @@ struct TDGameContainerView: View {
             // Header with name and merge stars
             HStack {
                 Text(tower.towerName)
-                    .font(.headline)
+                    .font(DesignTypography.headline(16))
                     .foregroundColor(.white)
 
                 Spacer()
@@ -523,19 +665,19 @@ struct TDGameContainerView: View {
                 HStack(spacing: 2) {
                     ForEach(0..<tower.mergeLevel, id: \.self) { _ in
                         Image(systemName: "star.fill")
-                            .font(.caption)
+                            .font(DesignTypography.caption(12))
                             .foregroundColor(.yellow)
                     }
                     ForEach(0..<(3 - tower.mergeLevel), id: \.self) { _ in
                         Image(systemName: "star")
-                            .font(.caption)
+                            .font(DesignTypography.caption(12))
                             .foregroundColor(.gray)
                     }
                 }
             }
 
             Text("Level: \(tower.level)/10")
-                .font(.caption)
+                .font(DesignTypography.caption(12))
                 .foregroundColor(.gray)
 
             Divider().background(Color.white.opacity(0.3))
@@ -553,7 +695,7 @@ struct TDGameContainerView: View {
                     TDStatRow(icon: "chart.line.uptrend.xyaxis", label: "DPS", value: String(format: "%.1f", tower.damage * tower.attackSpeed), color: .green)
                 }
             }
-            .font(.caption)
+            .font(DesignTypography.caption(12))
 
             Divider().background(Color.white.opacity(0.3))
 
@@ -590,7 +732,7 @@ struct TDGameContainerView: View {
                 Spacer()
                 Button(action: { selectedTowerId = nil }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
+                        .font(DesignTypography.headline(18))
                         .foregroundColor(.white.opacity(0.6))
                 }
             }
@@ -631,6 +773,9 @@ struct TDGameContainerView: View {
                         .foregroundColor(.gray)
                 }
 
+                // CPU Upgrade Section
+                cpuUpgradeSection
+
                 VStack(spacing: 16) {
                     Button(action: {
                         isPaused = false
@@ -658,6 +803,114 @@ struct TDGameContainerView: View {
                 }
             }
         }
+    }
+
+    // MARK: - CPU Upgrade Section
+
+    private var cpuUpgradeSection: some View {
+        let cpuInfo = StorageService.shared.getCpuTierInfo()
+        let canUpgrade = cpuInfo.nextCost != nil && appState.currentPlayer.gold >= (cpuInfo.nextCost ?? 0)
+
+        return VStack(spacing: 12) {
+            // Current CPU info
+            HStack(spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("CPU TIER")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.gray)
+                    HStack(spacing: 4) {
+                        Image(systemName: "cpu")
+                            .font(DesignTypography.headline(22))
+                        Text("\(cpuInfo.tier).0")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    }
+                    .foregroundColor(.cyan)
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("MULTIPLIER")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.gray)
+                    Text("\(String(format: "%.0f", cpuInfo.multiplier))x")
+                        .font(.system(size: 24, weight: .bold, design: .monospaced))
+                        .foregroundColor(.green)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("WATTS")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(.gray)
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                        Text("\(appState.currentPlayer.gold)")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    }
+                    .foregroundColor(.cyan)
+                }
+            }
+            .padding()
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(12)
+
+            // Upgrade button (if not max tier)
+            if let upgradeCost = cpuInfo.nextCost {
+                Button(action: {
+                    upgradeCpu()
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.up.circle.fill")
+                        Text("UPGRADE TO CPU \(cpuInfo.tier + 1).0")
+                        Spacer()
+                        Text("\(upgradeCost)W")
+                            .fontWeight(.bold)
+                    }
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundColor(canUpgrade ? .black : .gray)
+                    .padding()
+                    .background(canUpgrade ? Color.cyan : Color.gray.opacity(0.3))
+                    .cornerRadius(10)
+                }
+                .disabled(!canUpgrade)
+            } else {
+                Text("MAX CPU TIER")
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(.yellow)
+                    .padding()
+                    .background(Color.yellow.opacity(0.2))
+                    .cornerRadius(10)
+            }
+        }
+        .frame(width: 280)
+    }
+
+    // MARK: - CPU Upgrade Action
+
+    private func upgradeCpu() {
+        // Use GlobalUpgrades system for CPU upgrades
+        let profile = appState.currentPlayer
+        guard let cost = profile.globalUpgrades.cpuUpgradeCost,
+              profile.watts >= cost else {
+            HapticsService.shared.play(.warning)
+            return
+        }
+
+        // Deduct cost and apply upgrade
+        var updatedProfile = profile
+        updatedProfile.watts -= cost
+        updatedProfile.globalUpgrades.upgrade(.cpu)
+        StorageService.shared.savePlayer(updatedProfile)
+        appState.refreshPlayer()
+
+        // Update game state's Watts generation
+        if var state = gameState {
+            state.baseWattsPerSecond = appState.currentPlayer.globalUpgrades.wattsPerSecond
+            state.cpuTier = appState.currentPlayer.globalUpgrades.cpuLevel
+            gameState = state
+        }
+
+        HapticsService.shared.play(.success)
     }
 
     // MARK: - Game Over Overlay
@@ -793,6 +1046,16 @@ struct TDGameContainerView: View {
         return appState.currentPlayer.unlocks.weapons.compactMap { config.getWeapon($0) }
     }
 
+    /// Get compiled Protocols from player profile (System: Reboot - Firewall deck)
+    private func getCompiledProtocols() -> [Protocol] {
+        return appState.currentPlayer.compiledProtocols.compactMap { protocolId in
+            guard var proto = ProtocolLibrary.get(protocolId) else { return nil }
+            // Apply player's level to the protocol
+            proto.level = appState.currentPlayer.protocolLevel(protocolId)
+            return proto
+        }
+    }
+
     private func rarityColor(_ rarity: String) -> Color {
         switch rarity {
         case "common": return .gray
@@ -838,11 +1101,8 @@ struct TDGameContainerView: View {
     }
 
     fileprivate func handleSlotSelected(_ slotId: String) {
-        // Check if slot is empty
-        if let slot = gameState?.towerSlots.first(where: { $0.id == slotId }), !slot.occupied {
-            selectedSlotId = slotId
-            showTowerMenu = true
-        }
+        // Legacy tap-to-place disabled - use drag-to-place only
+        // This provides a cleaner UX with progressive disclosure
     }
 
     fileprivate func handleTowerSelected(_ towerId: String?) {
@@ -943,7 +1203,7 @@ struct TowerDeckCard: View {
 
                 // Weapon type icon - larger
                 Image(systemName: iconForWeapon(weapon.id))
-                    .font(.title)
+                    .font(DesignTypography.display(28))
                     .foregroundColor(canAfford ? .white : .gray)
             }
             .overlay(
@@ -965,7 +1225,7 @@ struct TowerDeckCard: View {
         .opacity(canAfford ? 1.0 : 0.5)
         .animation(.easeOut(duration: 0.15), value: isDragging)
         .gesture(
-            DragGesture(minimumDistance: 5)
+            DragGesture(minimumDistance: 5, coordinateSpace: .named("gameArea"))
                 .onChanged { value in
                     if canAfford {
                         if !isDragging {
@@ -996,6 +1256,91 @@ struct TowerDeckCard: View {
     }
 }
 
+// MARK: - Protocol Deck Card (System: Reboot - Firewall selection)
+
+struct ProtocolDeckCard: View {
+    let `protocol`: Protocol
+    let watts: Int
+    let onDragStart: () -> Void
+    let onDragChanged: (DragGesture.Value) -> Void
+    let onDragEnded: () -> Void
+
+    @State private var isDragging = false
+
+    private var cost: Int {
+        TowerSystem.towerPlacementCost(rarity: `protocol`.rarity)
+    }
+
+    private var canAfford: Bool {
+        watts >= cost
+    }
+
+    private var rarityColor: Color {
+        RarityColors.color(for: `protocol`.rarity)
+    }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            // Large firewall icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(rarityColor.opacity(canAfford ? 0.5 : 0.2))
+                    .frame(width: 60, height: 60)
+
+                // Protocol icon
+                Image(systemName: `protocol`.iconName)
+                    .font(DesignTypography.display(28))
+                    .foregroundColor(canAfford ? .white : .gray)
+
+                // Level badge
+                if `protocol`.level > 1 {
+                    Text("L\(`protocol`.level)")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.black.opacity(0.7))
+                        .cornerRadius(4)
+                        .offset(x: 20, y: -20)
+                }
+            }
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(rarityColor.opacity(canAfford ? 1 : 0.4), lineWidth: 3)
+            )
+            .scaleEffect(isDragging ? 0.85 : 1.0)
+            .shadow(color: canAfford ? rarityColor.opacity(0.5) : .clear, radius: 5)
+
+            // Cost label (Watts)
+            HStack(spacing: 3) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 12))
+                Text("\(cost)")
+                    .font(.system(size: 14, weight: .bold))
+            }
+            .foregroundColor(canAfford ? DesignColors.primary : .red)
+        }
+        .opacity(canAfford ? 1.0 : 0.5)
+        .animation(.easeOut(duration: 0.15), value: isDragging)
+        .gesture(
+            DragGesture(minimumDistance: 5, coordinateSpace: .named("gameArea"))
+                .onChanged { value in
+                    if canAfford {
+                        if !isDragging {
+                            isDragging = true
+                            onDragStart()
+                        }
+                        onDragChanged(value)
+                    }
+                }
+                .onEnded { _ in
+                    isDragging = false
+                    onDragEnded()
+                }
+        )
+    }
+}
+
 // MARK: - TD Stat Row
 
 struct TDStatRow: View {
@@ -1008,7 +1353,7 @@ struct TDStatRow: View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .foregroundColor(color)
-                .font(.caption2)
+                .font(DesignTypography.caption(10))
             Text("\(label):")
                 .foregroundColor(.gray)
             Text(value)
@@ -1029,11 +1374,11 @@ struct ResourceIndicator: View {
         HStack(spacing: 4) {
             Image(systemName: icon)
                 .foregroundColor(color)
-                .font(.caption)
+                .font(DesignTypography.caption(12))
             Text("\(value)")
                 .foregroundColor(.white)
                 .fontWeight(.bold)
-                .font(.subheadline)
+                .font(DesignTypography.body(14))
         }
     }
 }
@@ -1099,7 +1444,7 @@ struct CountdownBar: View {
             .frame(height: 4)
 
             Text("Next: \(Int(seconds))s")
-                .font(.caption2)
+                .font(DesignTypography.caption(10))
                 .foregroundColor(.yellow)
         }
     }
@@ -1116,7 +1461,7 @@ private struct GameEndStatRow: View {
     var body: some View {
         HStack {
             Image(systemName: icon)
-                .font(.title2)
+                .font(DesignTypography.headline(22))
                 .foregroundColor(color)
                 .frame(width: 32)
             Text(label)

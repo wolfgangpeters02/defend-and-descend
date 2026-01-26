@@ -72,6 +72,66 @@ class TowerSystem {
         }
     }
 
+    // MARK: - Protocol-Based Tower Placement (System: Reboot)
+
+    /// Place a tower from a Protocol (Firewall mode)
+    static func placeTowerFromProtocol(
+        state: inout TDGameState,
+        protocolId: String,
+        slotId: String,
+        playerProfile: PlayerProfile
+    ) -> TowerPlacementResult {
+        // Find the slot
+        guard let slotIndex = state.towerSlots.firstIndex(where: { $0.id == slotId }) else {
+            return .invalidSlot
+        }
+
+        let slot = state.towerSlots[slotIndex]
+
+        // Check if slot is occupied
+        if slot.occupied {
+            return .slotOccupied
+        }
+
+        // Check if protocol is compiled (unlocked)
+        guard playerProfile.isProtocolCompiled(protocolId) else {
+            return .weaponLocked
+        }
+
+        // Get protocol from library
+        guard var proto = ProtocolLibrary.get(protocolId) else {
+            return .invalidSlot
+        }
+
+        // Apply player's protocol level
+        proto.level = playerProfile.protocolLevel(protocolId)
+
+        // Calculate placement cost based on rarity
+        let placementCost = towerPlacementCost(rarity: proto.rarity)
+
+        // Check gold (Watts)
+        if state.gold < placementCost {
+            return .insufficientGold(required: placementCost, available: state.gold)
+        }
+
+        // Create and place tower from protocol
+        var tower = Tower.from(protocol: proto, at: slot)
+
+        // Apply global upgrade bonuses (Cooling = fire rate)
+        let fireRateMultiplier = playerProfile.globalUpgrades.fireRateMultiplier
+        tower.attackSpeed *= fireRateMultiplier
+
+        // Update state
+        state.towers.append(tower)
+        state.towerSlots[slotIndex].occupied = true
+        state.towerSlots[slotIndex].towerId = tower.id
+        state.gold -= placementCost
+        state.stats.towersPlaced += 1
+        state.stats.goldSpent += placementCost
+
+        return .success(tower: tower)
+    }
+
     /// Upgrade a tower
     static func upgradeTower(state: inout TDGameState, towerId: String) -> Bool {
         guard let towerIndex = state.towers.firstIndex(where: { $0.id == towerId }) else {
@@ -105,7 +165,7 @@ class TowerSystem {
         let tower = state.towers[towerIndex]
 
         // Calculate refund (50% of total investment)
-        let baseCost = towerPlacementCost(rarity: Rarity(rawValue: tower.weaponType) ?? .common)
+        let baseCost = towerPlacementCost(rarity: tower.rarity)
         let upgradeInvestment = (tower.level - 1) * 75  // Approximate upgrade costs
         let refund = (baseCost + upgradeInvestment) / 2
 
@@ -215,6 +275,9 @@ class TowerSystem {
 
         for enemy in state.enemies {
             if enemy.isDead || enemy.reachedCore { continue }
+
+            // Skip Zero-Day enemies (immune to tower damage)
+            if enemy.immuneToTowers || enemy.isZeroDay { continue }
 
             let dx = enemy.x - towerPos.x
             let dy = enemy.y - towerPos.y
