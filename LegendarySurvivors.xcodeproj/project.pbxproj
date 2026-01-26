@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */; };
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
 		24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652706E4D090EB81125BDB8E /* TowerSystem.swift */; };
 		41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */; };
@@ -116,6 +117,7 @@
 		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
 		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDMapSelectView.swift; sourceTree = "<group>"; };
+		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -283,6 +285,7 @@
 				260E703394574A0E21D9E82C /* WaveSystem.swift */,
 				09DD228498839C35BD9C1D41 /* PathSystem.swift */,
 				9BC456BE2F341A8C1006B747 /* CoreSystem.swift */,
+				FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -453,6 +456,7 @@
 				8805B6CA90B2CE24AA04B7A4 /* TDMapSelectView.swift in Sources */,
 				6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */,
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
+				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

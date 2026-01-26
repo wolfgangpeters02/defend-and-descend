@@ -27,6 +27,10 @@ struct TDGameContainerView: View {
     @State private var canAffordDraggedTower = false
     @State private var previousNearestSlot: TowerSlot?  // For snap detection
 
+    // Blocker mode state
+    @State private var isBlockerModeActive = false
+    @State private var selectedBlockerSlotId: String?
+
     let mapId: String
 
     var body: some View {
@@ -148,16 +152,44 @@ struct TDGameContainerView: View {
 
             Spacer()
 
-            // Right: Watts + Viruses
-            HStack(spacing: 16) {
-                // Watts - primary currency
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
-                        .font(.title2)
-                        .foregroundColor(.cyan)
-                    Text("\(gameState?.gold ?? 0)")
-                        .font(.system(size: 20, weight: .bold, design: .monospaced))
-                        .foregroundColor(.cyan)
+            // Right: Blockers + Watts + Viruses
+            HStack(spacing: 12) {
+                // Blocker slots available
+                if let state = gameState {
+                    Button(action: { toggleBlockerMode() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "octagon.fill")
+                                .font(.title3)
+                                .foregroundColor(isBlockerModeActive ? .red : .red.opacity(0.6))
+                            Text("\(state.availableBlockerSlots)/\(state.maxBlockerSlots)")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(isBlockerModeActive ? .red : .white)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(isBlockerModeActive ? Color.red.opacity(0.2) : Color.clear)
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(isBlockerModeActive ? Color.red : Color.clear, lineWidth: 1)
+                        )
+                    }
+                }
+
+                // Watts - primary currency with income rate
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.title2)
+                            .foregroundColor(.cyan)
+                        Text("\(gameState?.gold ?? 0)")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .foregroundColor(.cyan)
+                    }
+                    // Watts per second income rate
+                    Text("+\(String(format: "%.1f", wattsPerSecond))/s")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundColor(wattsPerSecond > 0 ? .green : .gray)
                 }
 
                 // Viruses remaining during wave
@@ -729,6 +761,31 @@ struct TDGameContainerView: View {
         selectedTowerId = nil
     }
 
+    // MARK: - Blocker Actions
+
+    /// Toggle blocker placement mode
+    private func toggleBlockerMode() {
+        isBlockerModeActive.toggle()
+        HapticsService.shared.play(.selection)
+
+        if isBlockerModeActive {
+            // Exit any other active mode
+            selectedTowerId = nil
+            showTowerMenu = false
+        }
+    }
+
+    /// Place a blocker at a slot
+    private func placeBlocker(slotId: String) {
+        scene?.placeBlocker(slotId: slotId)
+        // Stay in blocker mode for multiple placements
+    }
+
+    /// Remove a blocker
+    private func removeBlocker(blockerId: String) {
+        scene?.removeBlocker(blockerId: blockerId)
+    }
+
     // MARK: - Helpers
 
     private func getAvailableTowers() -> [WeaponConfig] {
@@ -748,13 +805,11 @@ struct TDGameContainerView: View {
 
     // MARK: - Efficiency System (System: Reboot)
 
-    /// Calculate efficiency based on lives remaining (will be replaced with leak counter later)
+    /// Get efficiency from game state (0-100%)
+    /// Efficiency = 100 - (leakCounter * 5)
+    /// Each virus reaching CPU reduces efficiency by 5%
     private func calculateEfficiency() -> CGFloat {
-        guard let state = gameState else { return 100 }
-        // For now, map lives to efficiency: 20 lives = 100%, 0 lives = 0%
-        let maxLives: CGFloat = 20
-        let currentLives = CGFloat(state.lives)
-        return max(0, min(100, (currentLives / maxLives) * 100))
+        return gameState?.efficiency ?? 100
     }
 
     /// Color for efficiency display
@@ -764,6 +819,11 @@ struct TDGameContainerView: View {
         if efficiency >= 40 { return .yellow }
         if efficiency >= 20 { return .orange }
         return .red
+    }
+
+    /// Current Watts per second income rate
+    private var wattsPerSecond: CGFloat {
+        return gameState?.wattsPerSecond ?? 0
     }
 
     // MARK: - State Updates

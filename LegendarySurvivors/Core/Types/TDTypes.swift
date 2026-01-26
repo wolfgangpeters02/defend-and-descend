@@ -38,9 +38,30 @@ struct TDGameState {
     var nextWaveCountdown: TimeInterval = 0
     var wavesCompleted: Int = 0
 
-    // Resources
-    var gold: Int = 100
-    var lives: Int = 20  // Core lives
+    // Resources (System: Reboot - Watts currency)
+    var gold: Int = 100  // Watts - primary currency
+    var lives: Int = 20  // Legacy - kept for compatibility, represents max efficiency baseline
+
+    // Efficiency System (System: Reboot core mechanic)
+    // Efficiency determines Watts income rate - no death, just reduced income
+    var leakCounter: Int = 0           // Increments when virus reaches CPU
+    var leakDecayTimer: TimeInterval = 0  // Timer for leak counter decay
+    var efficiency: CGFloat {
+        // efficiency = max(0, 100 - leakCounter * 5)
+        // Each leaked virus reduces efficiency by 5%
+        return max(0, min(100, 100 - CGFloat(leakCounter) * 5))
+    }
+    var baseWattsPerSecond: CGFloat = 10  // Base income rate at 100% efficiency
+    var wattsPerSecond: CGFloat {
+        return baseWattsPerSecond * (efficiency / 100)
+    }
+    var wattsAccumulator: CGFloat = 0  // Accumulates fractional watts
+
+    // Passive Data generation (soft-lock prevention)
+    var virusesKilledTotal: Int = 0    // Total viruses killed by firewalls
+    var dataFromKills: Int {
+        return virusesKilledTotal / 1000  // 1 Data per 1000 kills
+    }
 
     // Stats
     var stats: TDSessionStats = TDSessionStats()
@@ -54,6 +75,25 @@ struct TDGameState {
 
     // Drag state for tower merging and placement
     var dragState: TowerDragState?
+
+    // Blocker Nodes (System: Reboot - Path Control)
+    // Player can place blockers to reroute viruses
+    var blockerNodes: [BlockerNode] = []
+    var blockerSlots: [BlockerSlot] = []
+    var maxBlockerSlots: Int = 3  // Start with 3, upgradeable
+
+    // Base paths (original paths without blockers)
+    var basePaths: [EnemyPath] = []
+
+    /// Number of available blocker slots
+    var availableBlockerSlots: Int {
+        return maxBlockerSlots - blockerNodes.count
+    }
+
+    /// Check if a blocker can be placed
+    var canPlaceBlocker: Bool {
+        return availableBlockerSlots > 0
+    }
 }
 
 // MARK: - Tower Drag State
@@ -69,6 +109,46 @@ struct TowerDragState {
     var validMergeTargetId: String?      // Tower ID that can be merged with
     var validPlacementSlotId: String?    // Slot ID for valid placement
     var isValidDrop: Bool = false
+}
+
+// MARK: - Blocker Node (System: Reboot - Path Control)
+// Player can place blockers at trace intersections to reroute viruses
+// Start with 3 slots, upgradeable. Blockers are free to place/move.
+
+struct BlockerNode: Identifiable, Codable {
+    var id: String
+    var x: CGFloat
+    var y: CGFloat
+    var size: CGFloat = 30  // Visual size (octagon)
+
+    var position: CGPoint {
+        CGPoint(x: x, y: y)
+    }
+
+    /// Create a blocker at a position
+    static func create(at position: CGPoint) -> BlockerNode {
+        BlockerNode(
+            id: RandomUtils.generateId(),
+            x: position.x,
+            y: position.y
+        )
+    }
+}
+
+// MARK: - Blocker Slot (Available placement positions for blockers)
+// Slots are at trace intersections where viruses can be rerouted
+
+struct BlockerSlot: Identifiable, Codable {
+    var id: String
+    var x: CGFloat
+    var y: CGFloat
+    var size: CGFloat = 40  // Touch target size
+    var occupied: Bool = false
+    var blockerId: String?
+
+    var position: CGPoint {
+        CGPoint(x: x, y: y)
+    }
 }
 
 // MARK: - TD Session Stats
@@ -453,6 +533,9 @@ class TDGameStateFactory {
         // Create tower slots around the map
         let slots = createTowerSlots(for: map, avoiding: paths)
 
+        // Create blocker slots at path intersections (turns in the path)
+        let blockerSlots = createBlockerSlots(for: paths)
+
         return TDGameState(
             sessionId: RandomUtils.generateId(),
             playerId: playerProfile.id,
@@ -464,8 +547,32 @@ class TDGameStateFactory {
             towerSlots: slots,
             enemies: [],
             projectiles: [],
-            particles: []
+            particles: [],
+            blockerSlots: blockerSlots,
+            basePaths: paths  // Store original paths for rerouting
         )
+    }
+
+    /// Create blocker slots at path intersections (turns)
+    /// Blockers can be placed here to reroute viruses
+    private static func createBlockerSlots(for paths: [EnemyPath]) -> [BlockerSlot] {
+        var slots: [BlockerSlot] = []
+
+        for path in paths {
+            // Create slots at each waypoint (except start and end)
+            guard path.waypoints.count > 2 else { continue }
+
+            for i in 1..<(path.waypoints.count - 1) {
+                let waypoint = path.waypoints[i]
+                slots.append(BlockerSlot(
+                    id: "blocker_slot_\(path.id)_\(i)",
+                    x: waypoint.x,
+                    y: waypoint.y
+                ))
+            }
+        }
+
+        return slots
     }
 
     /// Create TD map from arena config

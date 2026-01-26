@@ -59,29 +59,66 @@ class PathSystem {
         state.enemies[enemyIndex] = enemy
     }
 
-    // MARK: - Core Damage
+    // MARK: - Core Damage (Efficiency System)
 
     /// Process enemies that reached the core
+    /// System: Reboot - Uses efficiency instead of lives. No game over from leaks.
     static func processReachedCore(state: inout TDGameState) {
         for i in (0..<state.enemies.count).reversed() {
             let enemy = state.enemies[i]
 
             if enemy.reachedCore && !enemy.isDead {
-                // Deal damage to core
+                // Deal damage to core (visual/feedback only)
                 state.core.takeDamage(enemy.damage)
-                state.lives -= 1
+
+                // Efficiency System: Increment leak counter instead of decrementing lives
+                // Each leak reduces efficiency by 5% (up to 20 leaks = 0% efficiency)
+                let previousEfficiency = state.efficiency
+                state.leakCounter += 1
 
                 // Mark enemy as handled
                 state.enemies[i].isDead = true
                 state.waveEnemiesRemaining -= 1
 
-                // Check game over (defeat)
-                if state.lives <= 0 || state.core.isDead {
-                    state.isGameOver = true
-                    state.victory = false  // Explicit defeat
+                // Haptic feedback based on efficiency drop severity
+                if state.efficiency <= 0 && previousEfficiency > 0 {
+                    // Efficiency hit 0% - critical alert
                     HapticsService.shared.play(.defeat)
+                } else if state.efficiency <= 25 && previousEfficiency > 25 {
+                    // Efficiency dropped below 25% - warning
+                    HapticsService.shared.play(.warning)
+                } else {
+                    // Normal leak - light feedback
+                    HapticsService.shared.play(.light)
                 }
+
+                // Note: No game over from efficiency loss
+                // Player can recover by killing viruses (leak counter decays)
             }
+        }
+    }
+
+    /// Decay leak counter over time (call from game loop)
+    /// Leak counter decreases by 1 every 5 seconds, allowing efficiency recovery
+    static func updateLeakDecay(state: inout TDGameState, deltaTime: TimeInterval) {
+        state.leakDecayTimer += deltaTime
+        if state.leakDecayTimer >= 5.0 && state.leakCounter > 0 {
+            state.leakCounter -= 1
+            state.leakDecayTimer = 0
+        }
+    }
+
+    /// Update Watts income based on efficiency
+    static func updateWattsIncome(state: inout TDGameState, deltaTime: TimeInterval) {
+        // Accumulate fractional watts
+        state.wattsAccumulator += state.wattsPerSecond * CGFloat(deltaTime)
+
+        // Convert to whole watts
+        let wholeWatts = Int(state.wattsAccumulator)
+        if wholeWatts > 0 {
+            state.gold += wholeWatts
+            state.wattsAccumulator -= CGFloat(wholeWatts)
+            state.stats.goldEarned += wholeWatts
         }
     }
 

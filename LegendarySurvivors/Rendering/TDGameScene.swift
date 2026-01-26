@@ -23,6 +23,7 @@ class TDGameScene: SKScene {
     private var pathLayer: SKNode!
     private var towerSlotLayer: SKNode!           // Hidden by default, shown only during drag
     private var gridDotsLayer: SKNode!            // Subtle grid dots for placement mode
+    private var blockerLayer: SKNode!             // Blocker nodes and slots layer
     private var activeSlotHighlight: SKShapeNode? // Highlights nearest valid slot during drag
     private var towerLayer: SKNode!
     private var enemyLayer: SKNode!
@@ -81,6 +82,11 @@ class TDGameScene: SKScene {
         pathLayer.zPosition = 3
         addChild(pathLayer)
 
+        // Blocker layer - on path layer for visual placement
+        blockerLayer = SKNode()
+        blockerLayer.zPosition = 3.5
+        addChild(blockerLayer)
+
         // Tower slot layer - HIDDEN by default (progressive disclosure)
         // Only shown during drag operations
         towerSlotLayer = SKNode()
@@ -124,6 +130,7 @@ class TDGameScene: SKScene {
         setupBackground()
         setupPaths()
         setupTowerSlots()
+        setupBlockers()
         setupCore()
     }
 
@@ -316,6 +323,119 @@ class TDGameScene: SKScene {
         return container
     }
 
+    // MARK: - Blocker Nodes (System: Reboot - Path Control)
+
+    private func setupBlockers() {
+        guard let state = state else { return }
+
+        blockerLayer.removeAllChildren()
+
+        // Render blocker slots (available placement positions)
+        for slot in state.blockerSlots {
+            let slotNode = createBlockerSlotNode(slot: slot)
+            slotNode.position = convertToScene(slot.position)
+            slotNode.name = "blockerSlot_\(slot.id)"
+            blockerLayer.addChild(slotNode)
+        }
+
+        // Render placed blockers
+        for blocker in state.blockerNodes {
+            let blockerNode = createBlockerNode(blocker: blocker)
+            blockerNode.position = convertToScene(blocker.position)
+            blockerNode.name = "blocker_\(blocker.id)"
+            blockerLayer.addChild(blockerNode)
+        }
+    }
+
+    /// Create visual for blocker slot (octagon outline where blocker can be placed)
+    private func createBlockerSlotNode(slot: BlockerSlot) -> SKNode {
+        let container = SKNode()
+
+        if slot.occupied {
+            // Slot is occupied - no visual needed (blocker will be rendered separately)
+            return container
+        }
+
+        // Draw octagon outline to indicate available blocker position
+        let size: CGFloat = 24
+        let path = UIBezierPath()
+        let points = octagonPoints(size: size)
+        path.move(to: points[0])
+        for i in 1..<points.count {
+            path.addLine(to: points[i])
+        }
+        path.close()
+
+        let octagon = SKShapeNode(path: path.cgPath)
+        octagon.strokeColor = UIColor.red.withAlphaComponent(0.4)
+        octagon.fillColor = UIColor.red.withAlphaComponent(0.1)
+        octagon.lineWidth = 2
+        octagon.glowWidth = 2
+
+        // Subtle pulse animation
+        let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: 1.0)
+        let fadeIn = SKAction.fadeAlpha(to: 0.7, duration: 1.0)
+        octagon.run(SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn])))
+
+        container.addChild(octagon)
+        return container
+    }
+
+    /// Create visual for placed blocker (solid red octagon - stop sign aesthetic)
+    private func createBlockerNode(blocker: BlockerNode) -> SKNode {
+        let container = SKNode()
+
+        // Draw solid octagon (stop sign style)
+        let size: CGFloat = 28
+        let path = UIBezierPath()
+        let points = octagonPoints(size: size)
+        path.move(to: points[0])
+        for i in 1..<points.count {
+            path.addLine(to: points[i])
+        }
+        path.close()
+
+        let octagon = SKShapeNode(path: path.cgPath)
+        octagon.strokeColor = UIColor(red: 0.8, green: 0.1, blue: 0.1, alpha: 1.0)
+        octagon.fillColor = UIColor(red: 0.6, green: 0.1, blue: 0.1, alpha: 0.9)
+        octagon.lineWidth = 3
+        container.addChild(octagon)
+
+        // Add "X" or "STOP" symbol inside
+        let xSize: CGFloat = 10
+        let xPath = UIBezierPath()
+        xPath.move(to: CGPoint(x: -xSize, y: -xSize))
+        xPath.addLine(to: CGPoint(x: xSize, y: xSize))
+        xPath.move(to: CGPoint(x: xSize, y: -xSize))
+        xPath.addLine(to: CGPoint(x: -xSize, y: xSize))
+
+        let xSymbol = SKShapeNode(path: xPath.cgPath)
+        xSymbol.strokeColor = .white
+        xSymbol.lineWidth = 3
+        xSymbol.lineCap = .round
+        container.addChild(xSymbol)
+
+        return container
+    }
+
+    /// Generate points for an octagon shape
+    private func octagonPoints(size: CGFloat) -> [CGPoint] {
+        var points: [CGPoint] = []
+        let radius = size / 2
+        for i in 0..<8 {
+            let angle = CGFloat(i) * .pi / 4 - .pi / 8
+            let x = radius * cos(angle)
+            let y = radius * sin(angle)
+            points.append(CGPoint(x: x, y: y))
+        }
+        return points
+    }
+
+    /// Update blocker visuals after placement/removal
+    func updateBlockers() {
+        setupBlockers()
+    }
+
     // MARK: - Placement Mode (Progressive Disclosure)
 
     /// Enter placement mode - show grid dots with fade in
@@ -435,6 +555,10 @@ class TDGameScene: SKScene {
         PathSystem.processReachedCore(state: &state)
         processCollisions(state: &state)
         cleanupDeadEntities(state: &state)
+
+        // Efficiency System (System: Reboot)
+        PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
+        PathSystem.updateWattsIncome(state: &state, deltaTime: deltaTime)
 
         // Check wave completion
         if state.waveInProgress && WaveSystem.isWaveComplete(state: state) {
@@ -593,6 +717,7 @@ class TDGameScene: SKScene {
                         state.gold += enemy.goldValue
                         state.stats.goldEarned += enemy.goldValue
                         state.stats.enemiesKilled += 1
+                        state.virusesKilledTotal += 1  // For passive Data generation
                         state.waveEnemiesRemaining -= 1
 
                         // Spawn death particles and gold floaties
@@ -641,6 +766,7 @@ class TDGameScene: SKScene {
                     state.gold += enemy.goldValue
                     state.stats.goldEarned += enemy.goldValue
                     state.stats.enemiesKilled += 1
+                    state.virusesKilledTotal += 1  // For passive Data generation
                     state.waveEnemiesRemaining -= 1
                 }
 
@@ -1612,6 +1738,67 @@ class TDGameScene: SKScene {
 
         self.state = state
         gameStateDelegate?.gameStateUpdated(state)
+    }
+
+    // MARK: - Blocker Actions
+
+    /// Place a blocker at a slot
+    func placeBlocker(slotId: String) {
+        guard var state = state else { return }
+
+        let result = BlockerSystem.placeBlocker(state: &state, slotId: slotId)
+
+        if case .success = result {
+            self.state = state
+            setupBlockers()  // Refresh blocker visuals
+            setupPaths()     // Refresh paths (they may have changed)
+            gameStateDelegate?.gameStateUpdated(state)
+            HapticsService.shared.play(.medium)
+        } else {
+            HapticsService.shared.play(.warning)
+        }
+    }
+
+    /// Remove a blocker
+    func removeBlocker(blockerId: String) {
+        guard var state = state else { return }
+
+        BlockerSystem.removeBlocker(state: &state, blockerId: blockerId)
+
+        self.state = state
+        setupBlockers()
+        setupPaths()
+        gameStateDelegate?.gameStateUpdated(state)
+        HapticsService.shared.play(.light)
+    }
+
+    /// Move a blocker to a new slot
+    func moveBlocker(blockerId: String, toSlotId: String) {
+        guard var state = state else { return }
+
+        let result = BlockerSystem.moveBlocker(state: &state, blockerId: blockerId, toSlotId: toSlotId)
+
+        if case .success = result {
+            self.state = state
+            setupBlockers()
+            setupPaths()
+            gameStateDelegate?.gameStateUpdated(state)
+            HapticsService.shared.play(.medium)
+        } else {
+            HapticsService.shared.play(.warning)
+        }
+    }
+
+    /// Check if a blocker can be placed at a slot
+    func canPlaceBlockerAt(slotId: String) -> Bool {
+        guard let state = state else { return false }
+        return BlockerSystem.canPlaceBlockerAt(state: state, slotId: slotId)
+    }
+
+    /// Get preview of paths if blocker is placed
+    func previewBlockerPaths(slotId: String) -> [EnemyPath]? {
+        guard let state = state else { return nil }
+        return BlockerSystem.previewPathsWithBlocker(state: state, slotId: slotId)
     }
 
     // MARK: - Helpers
