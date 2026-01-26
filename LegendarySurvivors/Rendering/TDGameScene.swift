@@ -140,25 +140,30 @@ class TDGameScene: SKScene {
         // Clear existing
         backgroundLayer.removeAllChildren()
 
-        // Background color
-        let bg = SKSpriteNode(color: UIColor(hex: state.map.backgroundColor) ?? .darkGray, size: size)
+        // Background color - deep terminal black
+        let bg = SKSpriteNode(color: DesignColors.backgroundUI, size: size)
         bg.position = CGPoint(x: size.width/2, y: size.height/2)
         backgroundLayer.addChild(bg)
 
-        // Draw obstacles
+        // Add circuit board grid pattern
+        let gridNode = SpriteKitDesign.createCircuitGridNode(size: size, gridSpacing: 40)
+        gridNode.zPosition = 0.5
+        backgroundLayer.addChild(gridNode)
+
+        // Draw obstacles with circuit board style (darker surface)
         for obstacle in state.map.obstacles {
             let node = SKSpriteNode(
-                color: UIColor(hex: obstacle.color) ?? .gray,
+                color: DesignColors.surfaceUI,
                 size: CGSize(width: obstacle.width, height: obstacle.height)
             )
             node.position = CGPoint(x: obstacle.x + obstacle.width/2, y: size.height - obstacle.y - obstacle.height/2)
             backgroundLayer.addChild(node)
         }
 
-        // Draw hazards
+        // Draw hazards with danger color
         for hazard in state.map.hazards {
             let node = SKSpriteNode(
-                color: hazardColor(for: hazard.type).withAlphaComponent(0.6),
+                color: DesignColors.dangerUI.withAlphaComponent(0.4),
                 size: CGSize(width: hazard.width, height: hazard.height)
             )
             node.position = CGPoint(x: hazard.x + hazard.width/2, y: size.height - hazard.y - hazard.height/2)
@@ -171,11 +176,11 @@ class TDGameScene: SKScene {
 
         pathLayer.removeAllChildren()
 
-        // Path dimensions from design system
-        let pathWidth: CGFloat = DesignLayout.pathWidth        // 70pt wide
-        let borderWidth: CGFloat = DesignLayout.pathBorderWidth // 4pt border
+        // Circuit trace dimensions - thinner for tech aesthetic
+        let traceWidth: CGFloat = DesignLayout.pathWidth         // Main trace width
+        let glowWidth: CGFloat = traceWidth + 8                  // Glow extends beyond trace
 
-        // Draw each path with improved visibility
+        // Draw each path as a glowing circuit trace
         for path in state.paths {
             let bezierPath = UIBezierPath()
 
@@ -187,28 +192,49 @@ class TDGameScene: SKScene {
                 }
             }
 
-            // Dark border/outline (behind main path)
+            // Outer glow layer (soft cyan glow)
+            let glowNode = SKShapeNode()
+            glowNode.path = bezierPath.cgPath
+            glowNode.strokeColor = DesignColors.traceGlowUI.withAlphaComponent(0.2)
+            glowNode.lineWidth = glowWidth
+            glowNode.lineCap = .round
+            glowNode.lineJoin = .round
+            glowNode.zPosition = 0
+            glowNode.glowWidth = 6
+            pathLayer.addChild(glowNode)
+
+            // Dark border/outline for depth
             let borderNode = SKShapeNode()
             borderNode.path = bezierPath.cgPath
-            borderNode.strokeColor = DesignColors.pathBorderUI
-            borderNode.lineWidth = pathWidth + (borderWidth * 2)
+            borderNode.strokeColor = DesignColors.traceBorderUI
+            borderNode.lineWidth = traceWidth + 4
             borderNode.lineCap = .round
             borderNode.lineJoin = .round
-            borderNode.zPosition = 0
+            borderNode.zPosition = 1
             pathLayer.addChild(borderNode)
 
-            // Main path fill - tan gradient effect (using solid color for SpriteKit)
+            // Main circuit trace - bright cyan
             let pathNode = SKShapeNode()
             pathNode.path = bezierPath.cgPath
-            pathNode.strokeColor = DesignColors.pathFillLightUI
-            pathNode.lineWidth = pathWidth
+            pathNode.strokeColor = DesignColors.tracePrimaryUI
+            pathNode.lineWidth = traceWidth
             pathNode.lineCap = .round
             pathNode.lineJoin = .round
-            pathNode.zPosition = 1
+            pathNode.zPosition = 2
             pathLayer.addChild(pathNode)
 
-            // Add direction chevrons along the path
-            addPathChevrons(for: path, pathWidth: pathWidth)
+            // Inner highlight for 3D effect
+            let highlightNode = SKShapeNode()
+            highlightNode.path = bezierPath.cgPath
+            highlightNode.strokeColor = UIColor.white.withAlphaComponent(0.3)
+            highlightNode.lineWidth = traceWidth * 0.3
+            highlightNode.lineCap = .round
+            highlightNode.lineJoin = .round
+            highlightNode.zPosition = 3
+            pathLayer.addChild(highlightNode)
+
+            // Add data flow direction indicators (chevrons)
+            addPathChevrons(for: path, pathWidth: traceWidth)
         }
     }
 
@@ -1074,12 +1100,15 @@ class TDGameScene: SKScene {
 
     private func createEnemyNode(enemy: TDEnemy) -> SKNode {
         let container = SKNode()
-        let enemyColor = UIColor(hex: enemy.color) ?? .red
 
-        // Enemy body based on shape
+        // Virus color - red with variations based on type
+        let virusColor = DesignColors.dangerUI
+
+        // Virus body - hexagonal shape for tech aesthetic
         let body: SKShapeNode
         switch enemy.shape {
         case "triangle":
+            // Triangle virus - fast/small
             let path = UIBezierPath()
             let size = enemy.size
             path.move(to: CGPoint(x: 0, y: size))
@@ -1088,55 +1117,74 @@ class TDGameScene: SKScene {
             path.close()
             body = SKShapeNode(path: path.cgPath)
         case "hexagon":
+            // Hexagon virus - standard
             body = SKShapeNode(path: createHexagonPath(radius: enemy.size))
         case "diamond":
+            // Diamond virus - armored
             body = SKShapeNode(path: createDiamondPath(size: enemy.size * 2))
         default:
-            body = SKShapeNode(rectOf: CGSize(width: enemy.size, height: enemy.size), cornerRadius: 3)
+            // Default hexagon virus
+            body = SKShapeNode(path: createHexagonPath(radius: enemy.size))
         }
 
-        body.fillColor = enemyColor
-        body.strokeColor = enemy.isBoss ? .yellow : .white
-        body.lineWidth = enemy.isBoss ? 3 : 1
+        body.fillColor = virusColor.withAlphaComponent(0.85)
+        body.strokeColor = enemy.isBoss ? DesignColors.warningUI : virusColor
+        body.lineWidth = enemy.isBoss ? 3 : 2
+        body.glowWidth = enemy.isBoss ? 6 : 3
         body.name = "body"
         container.addChild(body)
 
-        // Boss glow effect
+        // Inner detail - digital corruption pattern
+        let innerSize = enemy.size * 0.5
+        let innerPath = createHexagonPath(radius: innerSize)
+        let innerNode = SKShapeNode(path: innerPath)
+        innerNode.fillColor = UIColor.black.withAlphaComponent(0.3)
+        innerNode.strokeColor = virusColor.withAlphaComponent(0.8)
+        innerNode.lineWidth = 1
+        container.addChild(innerNode)
+
+        // Boss effects - Zero-Day virus
         if enemy.isBoss {
-            body.glowWidth = 5
+            // Warning glow
+            body.glowWidth = 8
 
-            // Boss crown
-            let crown = SKLabelNode(text: "")
-            crown.fontSize = 14
-            crown.position = CGPoint(x: 0, y: enemy.size + 18)
-            crown.name = "crown"
-            container.addChild(crown)
+            // Boss indicator - skull/warning symbol
+            let bossLabel = SKLabelNode(text: "⚠")
+            bossLabel.fontSize = 12
+            bossLabel.fontColor = DesignColors.warningUI
+            bossLabel.position = CGPoint(x: 0, y: enemy.size + 16)
+            bossLabel.name = "bossIndicator"
+            container.addChild(bossLabel)
 
-            // Pulse animation for boss
+            // Menacing pulse animation
             let pulse = SKAction.sequence([
-                SKAction.scale(to: 1.1, duration: 0.5),
-                SKAction.scale(to: 1.0, duration: 0.5)
+                SKAction.scale(to: 1.15, duration: 0.4),
+                SKAction.scale(to: 0.95, duration: 0.4)
             ])
             body.run(SKAction.repeatForever(pulse), withKey: "bossPulse")
+
+            // Rotation for boss
+            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
+            innerNode.run(SKAction.repeatForever(rotate))
         }
 
-        // Slow effect overlay (hidden by default)
-        let slowOverlay = SKShapeNode(circleOfRadius: enemy.size * 0.8)
-        slowOverlay.fillColor = .cyan.withAlphaComponent(0.3)
-        slowOverlay.strokeColor = .cyan.withAlphaComponent(0.6)
+        // Slow effect overlay (ice blue, hidden by default)
+        let slowOverlay = SKShapeNode(circleOfRadius: enemy.size * 0.9)
+        slowOverlay.fillColor = DesignColors.primaryUI.withAlphaComponent(0.2)
+        slowOverlay.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.5)
         slowOverlay.lineWidth = 2
         slowOverlay.name = "slowOverlay"
         slowOverlay.isHidden = true
         container.addChild(slowOverlay)
 
-        // Health bar background
+        // Health bar background - dark
         let healthBarWidth = enemy.size * 1.5
-        let healthBg = SKSpriteNode(color: .black.withAlphaComponent(0.5), size: CGSize(width: healthBarWidth + 2, height: 6))
+        let healthBg = SKSpriteNode(color: DesignColors.backgroundUI.withAlphaComponent(0.8), size: CGSize(width: healthBarWidth + 2, height: 5))
         healthBg.position = CGPoint(x: 0, y: enemy.size + 8)
         container.addChild(healthBg)
 
-        // Health bar
-        let healthBar = SKSpriteNode(color: .green, size: CGSize(width: healthBarWidth, height: 4))
+        // Health bar - red for virus health
+        let healthBar = SKSpriteNode(color: virusColor, size: CGSize(width: healthBarWidth, height: 3))
         healthBar.anchorPoint = CGPoint(x: 0, y: 0.5)
         healthBar.position = CGPoint(x: -healthBarWidth / 2, y: enemy.size + 8)
         healthBar.name = "healthBar"
