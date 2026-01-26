@@ -130,9 +130,9 @@ struct ModeSelectView: View {
 
     var body: some View {
         ZStack {
-            // Background
+            // Background - Terminal/cyber aesthetic
             LinearGradient(
-                colors: [Color.indigo.opacity(0.8), Color.black],
+                colors: [Color(red: 0.04, green: 0.08, blue: 0.12), Color.black],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -153,86 +153,92 @@ struct ModeSelectView: View {
                 }
                 .padding(.horizontal)
 
-                // Title
+                // Title - System: Reboot branding
                 VStack(spacing: 8) {
-                    Text("GUARDIAN")
-                        .font(.system(size: 42, weight: .black))
-                        .foregroundColor(.white)
+                    Text("SYSTEM: REBOOT")
+                        .font(.system(size: 32, weight: .black, design: .monospaced))
+                        .foregroundColor(.cyan)
 
-                    Text("Choose Your Mode")
-                        .font(.title3)
+                    Text("SELECT PROTOCOL")
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
                 }
 
-                // Player level & gold
+                // Player stats - Watts currency
                 HStack(spacing: 30) {
                     VStack {
-                        Text("Level")
-                            .font(.caption)
+                        Text("LEVEL")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundColor(.gray)
                         Text("\(appState.currentPlayer.level)")
-                            .font(.title)
-                            .fontWeight(.bold)
+                            .font(.system(size: 28, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                     }
 
                     Divider()
                         .frame(height: 40)
-                        .background(Color.white.opacity(0.3))
+                        .background(Color.cyan.opacity(0.3))
 
                     VStack {
-                        Text("Gold")
-                            .font(.caption)
-                            .foregroundColor(.gray)
+                        HStack(spacing: 4) {
+                            Image(systemName: "bolt.fill")
+                                .font(.caption)
+                            Text("WATTS")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        }
+                        .foregroundColor(.gray)
                         Text("\(appState.currentPlayer.gold)")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(.yellow)
+                            .font(.system(size: 28, weight: .bold, design: .monospaced))
+                            .foregroundColor(.cyan)
                     }
                 }
                 .padding()
-                .background(Color.black.opacity(0.3))
+                .background(Color.black.opacity(0.5))
                 .cornerRadius(15)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.cyan.opacity(0.3), lineWidth: 1)
+                )
 
                 Spacer()
 
-                // Mode buttons
+                // Mode buttons - System: Reboot themed
                 VStack(spacing: 20) {
-                    // Survivor Mode
+                    // Motherboard Mode (Idle/TD)
                     ModeCard(
-                        title: "SURVIVOR",
-                        subtitle: "Arena & Dungeon",
-                        description: "Control the Guardian directly. Dodge enemies, collect power-ups, and survive!",
-                        icon: "figure.run",
-                        color: .green,
+                        title: "MOTHERBOARD",
+                        subtitle: "Idle Defense",
+                        description: "Deploy Firewalls to protect the CPU. Earn Watts while you're away.",
+                        icon: "cpu",
+                        color: .cyan,
                         stats: [
-                            "Runs": "\(appState.currentPlayer.survivorStats.arenaRuns + appState.currentPlayer.survivorStats.dungeonRuns)",
-                            "Kills": "\(appState.currentPlayer.survivorStats.totalSurvivorKills)"
-                        ],
-                        action: onSelectSurvivor
-                    )
-
-                    // Tower Defense Mode
-                    ModeCard(
-                        title: "TOWER DEFENSE",
-                        subtitle: "Strategic Defense",
-                        description: "Place towers to defend the Guardian Core. Survive 20 waves of enemies!",
-                        icon: "building.columns.fill",
-                        color: .purple,
-                        stats: [
-                            "Wins": "\(appState.currentPlayer.tdStats.gamesWon)",
+                            "Secure": "\(appState.currentPlayer.tdStats.gamesWon)",
                             "Best Wave": "\(appState.currentPlayer.tdStats.highestWave)"
                         ],
                         action: onSelectTD
+                    )
+
+                    // Debugger Mode (Active/Survivor)
+                    ModeCard(
+                        title: "DEBUGGER",
+                        subtitle: "Manual Override",
+                        description: "Enter corrupted sectors. Extract Data to unlock new Firewalls.",
+                        icon: "ant.fill",
+                        color: .green,
+                        stats: [
+                            "Runs": "\(appState.currentPlayer.survivorStats.arenaRuns + appState.currentPlayer.survivorStats.dungeonRuns)",
+                            "Viruses": "\(appState.currentPlayer.survivorStats.totalSurvivorKills)"
+                        ],
+                        action: onSelectSurvivor
                     )
                 }
                 .padding(.horizontal)
 
                 Spacer()
 
-                // Shared progression note
-                Text("All modes share weapons, XP, and gold!")
-                    .font(.caption)
+                // Dependency loop note
+                Text("Motherboard earns Watts • Debugger unlocks Firewalls")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(.gray)
                     .padding(.bottom)
             }

@@ -1,8 +1,9 @@
 import SwiftUI
 import SpriteKit
 
-// MARK: - TD Game Container View
-// Main SwiftUI view for Tower Defense mode
+// MARK: - Motherboard View (Idle Mode)
+// Main SwiftUI view for System Defense / Idle mode
+// You are an AI protecting a computer system from viruses
 // Implements progressive disclosure: show only what's needed, when it's needed
 
 struct TDGameContainerView: View {
@@ -116,19 +117,29 @@ struct TDGameContainerView: View {
 
             Spacer()
 
-            // Center: Lives (most important)
-            HStack(spacing: 6) {
-                ForEach(0..<(gameState?.lives ?? 3), id: \.self) { _ in
-                    Image(systemName: "heart.fill")
-                        .font(.title2)
-                        .foregroundColor(.red)
+            // Center: CPU Efficiency (most important)
+            HStack(spacing: 8) {
+                Image(systemName: "cpu")
+                    .font(.title2)
+                    .foregroundColor(efficiencyColor)
+
+                // Efficiency percentage
+                let efficiency = calculateEfficiency()
+                Text("\(Int(efficiency))%")
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
+                    .foregroundColor(efficiencyColor)
+
+                // Mini efficiency bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color.gray.opacity(0.3))
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(efficiencyColor)
+                            .frame(width: geo.size.width * efficiency / 100)
+                    }
                 }
-                // Show empty hearts for lost lives
-                ForEach(0..<max(0, 3 - (gameState?.lives ?? 3)), id: \.self) { _ in
-                    Image(systemName: "heart")
-                        .font(.title2)
-                        .foregroundColor(.red.opacity(0.3))
-                }
+                .frame(width: 40, height: 6)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
@@ -137,27 +148,27 @@ struct TDGameContainerView: View {
 
             Spacer()
 
-            // Right: Gold + Enemies
+            // Right: Watts + Viruses
             HStack(spacing: 16) {
-                // Gold - large display
+                // Watts - primary currency
                 HStack(spacing: 4) {
-                    Image(systemName: "dollarsign.circle.fill")
+                    Image(systemName: "bolt.fill")
                         .font(.title2)
-                        .foregroundColor(.yellow)
+                        .foregroundColor(.cyan)
                     Text("\(gameState?.gold ?? 0)")
-                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                        .foregroundColor(.yellow)
+                        .font(.system(size: 20, weight: .bold, design: .monospaced))
+                        .foregroundColor(.cyan)
                 }
 
-                // Enemies remaining during wave
+                // Viruses remaining during wave
                 if let state = gameState, state.waveInProgress {
                     HStack(spacing: 4) {
-                        Image(systemName: "figure.walk")
+                        Image(systemName: "ladybug.fill")
                             .font(.title3)
-                            .foregroundColor(.orange)
+                            .foregroundColor(.red)
                         Text("\(state.enemies.filter { !$0.isDead && !$0.reachedCore }.count)")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.orange)
+                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .foregroundColor(.red)
                     }
                 }
             }
@@ -185,8 +196,8 @@ struct TDGameContainerView: View {
     private func towerDeck(geometry: GeometryProxy) -> some View {
         VStack(spacing: 0) {
             // Hint text
-            Text("Drag tower to place")
-                .font(.system(size: 12, weight: .medium))
+            Text("DRAG FIREWALL TO DEPLOY")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundColor(.gray)
                 .padding(.top, 6)
 
@@ -267,11 +278,11 @@ struct TDGameContainerView: View {
                         .font(.title3)
                         .foregroundColor(.white)
 
-                    // Cost indicator
-                    Text("\(TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common))g")
+                    // Cost indicator (Watts)
+                    Text("\(TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common))W")
                         .font(DesignTypography.caption(11))
                         .fontWeight(.bold)
-                        .foregroundColor(canAffordDraggedTower ? DesignColors.warning : DesignColors.danger)
+                        .foregroundColor(canAffordDraggedTower ? DesignColors.primary : DesignColors.danger)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(DesignColors.surface.opacity(0.9))
@@ -285,17 +296,17 @@ struct TDGameContainerView: View {
         .allowsHitTesting(false)
     }
 
-    /// Get SF Symbol icon for weapon type
+    /// Get SF Symbol icon for firewall type (System: Reboot themed)
     private func iconForWeapon(_ weaponType: String) -> String {
         switch weaponType {
-        case "bow", "crossbow": return "arrow.up.right"
-        case "wand", "staff": return "sparkles"
-        case "cannon", "bomb": return "burst.fill"
-        case "ice_shard": return "snowflake"
-        case "laser": return "rays"
-        case "flamethrower": return "flame.fill"
-        case "sword", "katana": return "bolt.fill"
-        default: return "square.fill"
+        case "bow", "crossbow": return "antenna.radiowaves.left.and.right"  // Signal firewall
+        case "wand", "staff": return "wand.and.rays"                        // Magic/scan firewall
+        case "cannon", "bomb": return "burst.fill"                          // Burst firewall
+        case "ice_shard": return "snowflake"                                // Freeze firewall
+        case "laser": return "rays"                                         // Laser firewall
+        case "flamethrower": return "flame.fill"                            // Purge firewall
+        case "sword", "katana": return "bolt.fill"                          // Chain firewall
+        default: return "shield.fill"                                       // Basic firewall
         }
     }
 
@@ -408,9 +419,9 @@ struct TDGameContainerView: View {
 
     private func towerSelectionMenu(slotId: String) -> some View {
         VStack(spacing: 12) {
-            Text("Select Tower")
-                .font(.headline)
-                .foregroundColor(.white)
+            Text("DEPLOY FIREWALL")
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(.cyan)
 
             ForEach(getAvailableTowers(), id: \.id) { weapon in
                 let cost = TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common)
@@ -422,18 +433,18 @@ struct TDGameContainerView: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text(weapon.towerName ?? weapon.name)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
+                                .font(.system(size: 14, weight: .medium, design: .monospaced))
                             Text("DMG: \(Int(weapon.damage)) | RNG: \(Int(weapon.range))")
-                                .font(.caption)
+                                .font(.system(size: 11, design: .monospaced))
                                 .foregroundColor(.gray)
                         }
 
                         Spacer()
 
-                        Text("\(cost)g")
-                            .foregroundColor(canAfford ? .yellow : .red)
+                        Text("\(cost)W")
+                            .foregroundColor(canAfford ? .cyan : .red)
                             .fontWeight(.bold)
+                            .font(.system(size: 14, design: .monospaced))
                     }
                     .padding(10)
                     .background(rarityColor(weapon.rarity).opacity(0.3))
@@ -443,15 +454,16 @@ struct TDGameContainerView: View {
                 .opacity(canAfford ? 1 : 0.5)
             }
 
-            Button("Cancel") {
+            Button("CANCEL") {
                 showTowerMenu = false
                 selectedSlotId = nil
             }
-            .foregroundColor(.white)
+            .font(.system(size: 12, weight: .medium, design: .monospaced))
+            .foregroundColor(.gray)
             .padding(.top, 8)
         }
         .padding(16)
-        .background(Color.black.opacity(0.9))
+        .background(Color.black.opacity(0.95))
         .cornerRadius(16)
         .frame(maxWidth: 300)
     }
@@ -519,13 +531,12 @@ struct TDGameContainerView: View {
                     Button(action: { upgradeTower(tower.id) }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.circle.fill")
-                            Text("\(tower.upgradeCost)g")
+                            Text("\(tower.upgradeCost)W")
                         }
-                        .font(.caption)
-                        .fontWeight(.medium)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background((gameState?.gold ?? 0) >= tower.upgradeCost ? Color.blue : Color.gray)
+                        .background((gameState?.gold ?? 0) >= tower.upgradeCost ? Color.cyan : Color.gray)
                         .cornerRadius(6)
                     }
                     .disabled((gameState?.gold ?? 0) < tower.upgradeCost)
@@ -533,14 +544,13 @@ struct TDGameContainerView: View {
 
                 Button(action: { sellTower(tower.id) }) {
                     HStack(spacing: 4) {
-                        Image(systemName: "dollarsign.circle.fill")
-                        Text("Sell")
+                        Image(systemName: "arrow.uturn.backward.circle.fill")
+                        Text("Recycle")
                     }
-                    .font(.caption)
-                    .fontWeight(.medium)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.red.opacity(0.8))
+                    .background(Color.orange.opacity(0.8))
                     .cornerRadius(6)
                 }
 
@@ -580,18 +590,23 @@ struct TDGameContainerView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 32) {
-                Text("PAUSED")
-                    .font(.system(size: 42, weight: .bold))
-                    .foregroundColor(.white)
+                VStack(spacing: 8) {
+                    Text("SYSTEM PAUSED")
+                        .font(.system(size: 32, weight: .bold, design: .monospaced))
+                        .foregroundColor(.cyan)
+                    Text("Defense protocols suspended")
+                        .font(.system(size: 14, design: .monospaced))
+                        .foregroundColor(.gray)
+                }
 
                 VStack(spacing: 16) {
                     Button(action: {
                         isPaused = false
                         HapticsService.shared.play(.light)
                     }) {
-                        Text("Resume")
-                            .font(.system(size: 20, weight: .semibold))
-                            .foregroundColor(.white)
+                        Text("RESUME")
+                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .foregroundColor(.black)
                             .frame(width: 220, height: 56)
                             .background(Color.green)
                             .cornerRadius(12)
@@ -601,11 +616,11 @@ struct TDGameContainerView: View {
                         HapticsService.shared.play(.light)
                         dismiss()
                     }) {
-                        Text("Quit")
-                            .font(.system(size: 20, weight: .semibold))
+                        Text("ABORT")
+                            .font(.system(size: 18, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 220, height: 56)
-                            .background(Color.red)
+                            .background(Color.red.opacity(0.8))
                             .cornerRadius(12)
                     }
                 }
@@ -621,32 +636,42 @@ struct TDGameContainerView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 32) {
-                // Victory/Defeat title
-                Text(gameState?.victory == true ? "VICTORY!" : "DEFEAT")
-                    .font(.system(size: 48, weight: .bold))
-                    .foregroundColor(gameState?.victory == true ? .green : .red)
+                // Victory/Defeat title - System: Reboot themed
+                VStack(spacing: 8) {
+                    Text(gameState?.victory == true ? "SYSTEM SECURE" : "SYSTEM BREACH")
+                        .font(.system(size: 36, weight: .bold, design: .monospaced))
+                        .foregroundColor(gameState?.victory == true ? .green : .red)
+
+                    Text(gameState?.victory == true ? "All threats neutralized" : "CPU integrity compromised")
+                        .font(.system(size: 14, design: .monospaced))
+                        .foregroundColor(.gray)
+                }
 
                 // Stats card
                 if let state = gameState {
                     VStack(spacing: 16) {
-                        GameEndStatRow(label: "Waves", value: "\(state.wavesCompleted)/20", icon: "flag.fill", color: .purple)
-                        GameEndStatRow(label: "Kills", value: "\(state.stats.enemiesKilled)", icon: "flame.fill", color: .orange)
-                        GameEndStatRow(label: "Gold", value: "\(state.stats.goldEarned)", icon: "dollarsign.circle.fill", color: .yellow)
+                        GameEndStatRow(label: "Waves", value: "\(state.wavesCompleted)/20", icon: "waveform.path", color: .purple)
+                        GameEndStatRow(label: "Viruses", value: "\(state.stats.enemiesKilled)", icon: "ladybug.fill", color: .red)
+                        GameEndStatRow(label: "Watts", value: "\(state.stats.goldEarned)", icon: "bolt.fill", color: .cyan)
                     }
                     .padding(24)
-                    .background(Color.white.opacity(0.1))
+                    .background(Color.white.opacity(0.05))
                     .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.cyan.opacity(0.3), lineWidth: 1)
+                    )
                 }
 
                 Button(action: {
                     HapticsService.shared.play(.light)
                     dismiss()
                 }) {
-                    Text("Continue")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
+                    Text("EXIT")
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundColor(.black)
                         .frame(width: 220, height: 56)
-                        .background(Color.blue)
+                        .background(Color.cyan)
                         .cornerRadius(12)
                 }
             }
@@ -721,6 +746,26 @@ struct TDGameContainerView: View {
         }
     }
 
+    // MARK: - Efficiency System (System: Reboot)
+
+    /// Calculate efficiency based on lives remaining (will be replaced with leak counter later)
+    private func calculateEfficiency() -> CGFloat {
+        guard let state = gameState else { return 100 }
+        // For now, map lives to efficiency: 20 lives = 100%, 0 lives = 0%
+        let maxLives: CGFloat = 20
+        let currentLives = CGFloat(state.lives)
+        return max(0, min(100, (currentLives / maxLives) * 100))
+    }
+
+    /// Color for efficiency display
+    private var efficiencyColor: Color {
+        let efficiency = calculateEfficiency()
+        if efficiency >= 70 { return .green }
+        if efficiency >= 40 { return .yellow }
+        if efficiency >= 20 { return .orange }
+        return .red
+    }
+
     // MARK: - State Updates
 
     fileprivate func updateGameState(_ state: TDGameState) {
@@ -756,12 +801,12 @@ struct TDGameContainerView: View {
         profile.tdStats.totalTowersPlaced += state.stats.towersPlaced
         profile.tdStats.totalTDKills += state.stats.enemiesKilled
 
-        // Award XP and gold
-        let xpReward = state.wavesCompleted * 10 + state.stats.enemiesKilled + (state.victory ? 50 : 0)
-        let goldReward = state.stats.goldEarned / 10 + (state.victory ? state.wavesCompleted * 5 : 0)
+        // Award Data and Watts (System: Reboot currencies)
+        let dataReward = state.wavesCompleted * 10 + state.stats.enemiesKilled + (state.victory ? 50 : 0)
+        let wattsReward = state.stats.goldEarned / 10 + (state.victory ? state.wavesCompleted * 5 : 0)
 
-        profile.xp += xpReward
-        profile.gold += goldReward
+        profile.xp += dataReward      // Data is stored as XP for now
+        profile.gold += wattsReward   // Watts is stored as gold for now
 
         // Check level up
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
