@@ -43,16 +43,16 @@ enum DesignColors {
     static let mutedUI = UIColor(hex: "3a3a4a") ?? .gray
     static let textTerminalUI = UIColor(hex: "00ff41") ?? .green
 
-    // Circuit trace colors (paths in TD mode)
-    static let tracePrimary = Color(hex: "00d4ff") ?? Color.cyan      // Main circuit trace - cyan
-    static let traceSecondary = Color(hex: "0099cc") ?? Color.cyan    // Darker trace variant
-    static let traceBorder = Color(hex: "006688") ?? Color.cyan       // Trace outline
-    static let traceGlow = Color(hex: "00d4ff") ?? Color.cyan         // Glow effect color
+    // Circuit trace colors (paths in TD mode) - Copper/Gold aesthetic
+    static let tracePrimary = Color(hex: "b87333") ?? Color.orange      // Main circuit trace - copper
+    static let traceSecondary = Color(hex: "cd7f32") ?? Color.orange    // Bronze variant
+    static let traceBorder = Color(hex: "8b5a2b") ?? Color.brown        // Dark copper outline
+    static let traceGlow = Color(hex: "d4a84b") ?? Color.yellow         // Gold glow effect
 
-    static let tracePrimaryUI = UIColor(hex: "00d4ff") ?? .cyan
-    static let traceSecondaryUI = UIColor(hex: "0099cc") ?? .cyan
-    static let traceBorderUI = UIColor(hex: "006688") ?? .cyan
-    static let traceGlowUI = UIColor(hex: "00d4ff") ?? .cyan
+    static let tracePrimaryUI = UIColor(hex: "b87333") ?? .orange
+    static let traceSecondaryUI = UIColor(hex: "cd7f32") ?? .orange
+    static let traceBorderUI = UIColor(hex: "8b5a2b") ?? .brown
+    static let traceGlowUI = UIColor(hex: "d4a84b") ?? .systemYellow
 
     // Legacy path colors (kept for compatibility, now mapped to traces)
     static let pathFillLight = tracePrimary
@@ -95,6 +95,48 @@ enum DesignColors {
         case 2: return enemyTier2UI
         case 3: return enemyTier3UI
         default: return enemyTier4UI
+        }
+    }
+
+    // MARK: - Mega-Board Sector Theme Colors
+
+    /// Get color for mega-board sector theme
+    static func sectorThemeColor(_ theme: String) -> UIColor {
+        switch theme.lowercased() {
+        case "ram":
+            return primaryUI                    // Cyan - memory module
+        case "cpu":
+            return tracePrimaryUI               // Copper - processor core
+        case "gpu":
+            return successUI                    // Green - graphics array
+        case "ssd":
+            return secondaryUI                  // Purple - storage controller
+        case "network":
+            return enemyTier2UI                 // Orange - network interface
+        case "power":
+            return dangerUI                     // Red - power supply
+        default:
+            return mutedUI                      // Gray - unknown
+        }
+    }
+
+    /// Get SwiftUI color for mega-board sector theme
+    static func sectorThemeSwiftUIColor(_ theme: String) -> Color {
+        switch theme.lowercased() {
+        case "ram":
+            return primary
+        case "cpu":
+            return tracePrimary
+        case "gpu":
+            return success
+        case "ssd":
+            return secondary
+        case "network":
+            return enemyTier2
+        case "power":
+            return danger
+        default:
+            return muted
         }
     }
 }
@@ -250,8 +292,22 @@ enum TDPlacementState {
 }
 
 // MARK: - Color Extension for Hex
-// Note: Using the init?(hex:) from TDMapSelectView.swift for SwiftUI Colors
-// For UIKit UIColor hex init, see TDGameScene.swift
+
+extension Color {
+    init?(hex: String) {
+        var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        hexSanitized = hexSanitized.replacingOccurrences(of: "#", with: "")
+
+        var rgb: UInt64 = 0
+        guard Scanner(string: hexSanitized).scanHexInt64(&rgb) else { return nil }
+
+        let r = Double((rgb & 0xFF0000) >> 16) / 255.0
+        let g = Double((rgb & 0x00FF00) >> 8) / 255.0
+        let b = Double(rgb & 0x0000FF) / 255.0
+
+        self.init(red: r, green: g, blue: b)
+    }
+}
 
 // MARK: - View Modifiers
 

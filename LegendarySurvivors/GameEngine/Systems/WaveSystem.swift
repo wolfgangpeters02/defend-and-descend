@@ -206,9 +206,9 @@ class WaveSystem {
         state.wavesCompleted += 1
         state.stats.wavesCompleted += 1
 
-        // Award wave completion bonus
-        state.gold += wave.bonusGold
-        state.stats.goldEarned += wave.bonusGold
+        // Award wave completion bonus (subject to Hash storage cap)
+        let actualBonus = state.addHash(wave.bonusGold)
+        state.stats.goldEarned += actualBonus
 
         // Countdown to next wave
         state.nextWaveCountdown = 10.0  // 10 seconds between waves

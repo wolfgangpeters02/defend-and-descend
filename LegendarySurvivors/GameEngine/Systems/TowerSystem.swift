@@ -44,8 +44,8 @@ class TowerSystem {
         let placementCost = towerPlacementCost(rarity: weaponTower.rarity)
 
         // Check gold
-        if state.gold < placementCost {
-            return .insufficientGold(required: placementCost, available: state.gold)
+        if state.hash < placementCost {
+            return .insufficientGold(required: placementCost, available: state.hash)
         }
 
         // Create and place tower
@@ -55,7 +55,7 @@ class TowerSystem {
         state.towers.append(tower)
         state.towerSlots[slotIndex].occupied = true
         state.towerSlots[slotIndex].towerId = tower.id
-        state.gold -= placementCost
+        state.hash -= placementCost
         state.stats.towersPlaced += 1
         state.stats.goldSpent += placementCost
 
@@ -109,9 +109,15 @@ class TowerSystem {
         // Calculate placement cost based on rarity
         let placementCost = towerPlacementCost(rarity: proto.rarity)
 
-        // Check gold (Watts)
-        if state.gold < placementCost {
-            return .insufficientGold(required: placementCost, available: state.gold)
+        // Check gold (Hash)
+        if state.hash < placementCost {
+            return .insufficientGold(required: placementCost, available: state.hash)
+        }
+
+        // Check power capacity (System: Reboot)
+        let powerRequired = proto.firewallStats.powerDraw
+        if state.powerAvailable < powerRequired {
+            return .insufficientPower(required: powerRequired, available: state.powerAvailable)
         }
 
         // Create and place tower from protocol
@@ -125,7 +131,7 @@ class TowerSystem {
         state.towers.append(tower)
         state.towerSlots[slotIndex].occupied = true
         state.towerSlots[slotIndex].towerId = tower.id
-        state.gold -= placementCost
+        state.hash -= placementCost
         state.stats.towersPlaced += 1
         state.stats.goldSpent += placementCost
 
@@ -145,11 +151,11 @@ class TowerSystem {
 
         // Check gold
         let cost = tower.upgradeCost
-        guard state.gold >= cost else { return false }
+        guard state.hash >= cost else { return false }
 
         // Apply upgrade
         state.towers[towerIndex].upgrade()
-        state.gold -= cost
+        state.hash -= cost
         state.stats.towersUpgraded += 1
         state.stats.goldSpent += cost
 
@@ -175,11 +181,11 @@ class TowerSystem {
             state.towerSlots[slotIndex].towerId = nil
         }
 
-        // Remove tower and refund
+        // Remove tower and refund (subject to Hash storage cap)
         state.towers.remove(at: towerIndex)
-        state.gold += refund
+        let actualRefund = state.addHash(refund)
 
-        return refund
+        return actualRefund
     }
 
     // MARK: - Tower Merging
@@ -325,18 +331,41 @@ class TowerSystem {
         let attackInterval = 1.0 / tower.attackSpeed
         guard currentTime - tower.lastAttackTime >= attackInterval else { return }
 
+        // Calculate lead targeting (predict where enemy will be)
+        let projectileSpeed: CGFloat = 600  // Faster projectiles for better hit rate
+
+        // Estimate enemy velocity from path direction
+        let path = state.paths.indices.contains(target.pathIndex) ? state.paths[target.pathIndex] : nil
+        let targetVelocity = estimateEnemyVelocity(enemy: target, path: path)
+
+        let leadPosition = calculateLeadPosition(
+            towerPos: tower.position,
+            targetPos: CGPoint(x: target.x, y: target.y),
+            targetVelocity: targetVelocity,
+            projectileSpeed: projectileSpeed
+        )
+
+        // Calculate angle to lead position
+        let dx = leadPosition.x - tower.x
+        let dy = leadPosition.y - tower.y
+        let leadAngle = atan2(dy, dx)
+
+        // Update tower rotation to face lead position
+        state.towers[towerIndex].rotation = leadAngle
+
         // Fire projectile(s)
         let projectileCount = tower.projectileCount
-        let spreadAngle: CGFloat = projectileCount > 1 ? 0.2 : 0  // Spread for multi-shot
+        let spreadAngle: CGFloat = projectileCount > 1 ? 0.15 : 0  // Tighter spread
 
         for p in 0..<projectileCount {
             let angleOffset = (CGFloat(p) - CGFloat(projectileCount - 1) / 2) * spreadAngle
-            let angle = tower.rotation + angleOffset
+            let angle = leadAngle + angleOffset
 
             let projectile = createTowerProjectile(
                 tower: tower,
                 angle: angle,
                 target: target,
+                projectileSpeed: projectileSpeed,
                 currentTime: currentTime
             )
             state.projectiles.append(projectile)
@@ -346,16 +375,66 @@ class TowerSystem {
         state.towers[towerIndex].lastAttackTime = currentTime
     }
 
+    /// Estimate enemy velocity from their path direction
+    private static func estimateEnemyVelocity(enemy: TDEnemy, path: EnemyPath?) -> CGPoint {
+        guard let path = path, path.waypoints.count >= 2 else {
+            return .zero
+        }
+
+        // Get direction from current position toward next waypoint
+        let currentProgress = enemy.pathProgress
+        let lookAheadProgress = min(1.0, currentProgress + 0.05)  // Look slightly ahead
+
+        let currentPos = path.positionAt(progress: currentProgress)
+        let aheadPos = path.positionAt(progress: lookAheadProgress)
+
+        let dx = aheadPos.x - currentPos.x
+        let dy = aheadPos.y - currentPos.y
+        let distance = sqrt(dx*dx + dy*dy)
+
+        guard distance > 0 else { return .zero }
+
+        // Normalize direction and multiply by speed
+        let speed = enemy.currentSpeed
+        return CGPoint(
+            x: (dx / distance) * speed,
+            y: (dy / distance) * speed
+        )
+    }
+
+    /// Calculate lead position for predictive targeting
+    private static func calculateLeadPosition(
+        towerPos: CGPoint,
+        targetPos: CGPoint,
+        targetVelocity: CGPoint,
+        projectileSpeed: CGFloat
+    ) -> CGPoint {
+        // Distance to current target position
+        let dx = targetPos.x - towerPos.x
+        let dy = targetPos.y - towerPos.y
+        let distance = sqrt(dx*dx + dy*dy)
+
+        // Time for projectile to reach current position
+        let timeToTarget = distance / projectileSpeed
+
+        // Predict where enemy will be (with a cap to avoid overshooting)
+        let predictionTime = min(timeToTarget, 0.8)  // Cap at 0.8 seconds
+        let predictedX = targetPos.x + targetVelocity.x * predictionTime
+        let predictedY = targetPos.y + targetVelocity.y * predictionTime
+
+        return CGPoint(x: predictedX, y: predictedY)
+    }
+
     /// Create projectile from tower
     private static func createTowerProjectile(
         tower: Tower,
         angle: CGFloat,
         target: TDEnemy,
+        projectileSpeed: CGFloat,
         currentTime: TimeInterval
     ) -> Projectile {
-        let speed: CGFloat = 400
-        let velocityX = cos(angle) * speed
-        let velocityY = sin(angle) * speed
+        let velocityX = cos(angle) * projectileSpeed
+        let velocityY = sin(angle) * projectileSpeed
 
         return Projectile(
             id: RandomUtils.generateId(),
@@ -365,16 +444,16 @@ class TowerSystem {
             velocityX: velocityX,
             velocityY: velocityY,
             damage: tower.damage,
-            radius: 5,
+            radius: 8,  // Slightly larger hitbox for better hit detection
             color: tower.color,
             lifetime: 3.0,
             piercing: tower.pierce,
             hitEnemies: [],
             isHoming: tower.homing,
-            homingStrength: tower.homing ? 5.0 : 0,
+            homingStrength: tower.homing ? 8.0 : 0,  // Stronger homing
             isEnemyProjectile: false,
             targetId: tower.homing ? target.id : nil,
-            speed: speed,
+            speed: projectileSpeed,
             createdAt: currentTime,
             pierceRemaining: tower.pierce,
             splash: tower.splash > 0 ? tower.splash : nil,

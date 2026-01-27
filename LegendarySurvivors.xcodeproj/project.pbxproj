@@ -9,20 +9,21 @@
 /* Begin PBXBuildFile section */
 		132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */; };
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
+		2096E9DBF01F2416463E54D1 /* MegaBoardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642FC35778370BD58869415C /* MegaBoardTypes.swift */; };
 		24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652706E4D090EB81125BDB8E /* TowerSystem.swift */; };
 		41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */; };
+		44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */; };
 		469B93F994E728C789F86031 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F896AC2E9B27982965DBAF /* Protocol.swift */; };
 		47C2EC65CDFEE77D87E73F93 /* TDConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 31EF22FB9EBD5242CFCD38DD /* TDConfig.json */; };
-		4D473EABFFD987BB6E1232E2 /* HeroUpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9F5B6FBDB75C6498F7553CA /* HeroUpgradesView.swift */; };
 		594042117873415AD5954A69 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */; };
 		6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */; };
 		6FAF2498EB10A21AABF8C5D8 /* TDGameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */; };
+		7584C9579299C011354D004E /* MegaBoardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */; };
 		76264979E6D40ACBE476736D /* FirewallUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */; };
 		80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */; };
 		8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC456BE2F341A8C1006B747 /* CoreSystem.swift */; };
 		85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */; };
-		8805B6CA90B2CE24AA04B7A4 /* TDMapSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */; };
-		897CEB3FD92CC6A9D4EA05D0 /* FirewallShopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9355D561D7842C47786518B0 /* FirewallShopView.swift */; };
+		8F2433B0984EE3015CE09545 /* MegaBoardSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */; };
 		9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE64BB27463A150B6F32451C /* TDTypes.swift */; };
 		A322E4133BD75AF92145044F /* WaveSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260E703394574A0E21D9E82C /* WaveSystem.swift */; };
 		AA000001 /* LegendarySurvivorsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* LegendarySurvivorsApp.swift */; };
@@ -56,31 +57,33 @@
 		AA000029 /* UpgradeModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030 /* UpgradeModalView.swift */; };
 		AA000030 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100031 /* AppState.swift */; };
 		AA000031 /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100032 /* StorageService.swift */; };
-		AA000032 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100033 /* MainMenuView.swift */; };
-		AA000033 /* LoadoutSelectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100034 /* LoadoutSelectView.swift */; };
-		AA000034 /* CollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100035 /* CollectionView.swift */; };
-		AA000035 /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100036 /* StatsView.swift */; };
 		AA000036 /* DungeonSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100037 /* DungeonSystem.swift */; };
 		AA000037 /* ArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100038 /* ArenaSystem.swift */; };
 		AA000038 /* CyberbossAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100039 /* CyberbossAI.swift */; };
 		AA000039 /* VoidHarbingerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100040 /* VoidHarbingerAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
 		AA000041 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* AudioService.swift */; };
+		D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */; };
 		D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */; };
 		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
+		ENTID00001 /* EntityIDs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTIDFILE1 /* EntityIDs.swift */; };
+		MBRD00001 /* MotherboardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = MBRDFILE01 /* MotherboardTypes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MegaBoardSystem.swift; path = Systems/MegaBoardSystem.swift; sourceTree = "<group>"; };
 		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		09DD228498839C35BD9C1D41 /* PathSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PathSystem.swift; sourceTree = "<group>"; };
+		1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SectorUnlockSystem.swift; path = Systems/SectorUnlockSystem.swift; sourceTree = "<group>"; };
 		1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		260E703394574A0E21D9E82C /* WaveSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveSystem.swift; sourceTree = "<group>"; };
 		31EF22FB9EBD5242CFCD38DD /* TDConfig.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = TDConfig.json; sourceTree = "<group>"; };
 		3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeBackModal.swift; sourceTree = "<group>"; };
+		524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideView.swift; sourceTree = "<group>"; };
 		529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameScene.swift; sourceTree = "<group>"; };
+		642FC35778370BD58869415C /* MegaBoardTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardTypes.swift; sourceTree = "<group>"; };
 		652706E4D090EB81125BDB8E /* TowerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerSystem.swift; sourceTree = "<group>"; };
 		81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirewallUnlockSystem.swift; sourceTree = "<group>"; };
-		9355D561D7842C47786518B0 /* FirewallShopView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirewallShopView.swift; sourceTree = "<group>"; };
 		9BC456BE2F341A8C1006B747 /* CoreSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreSystem.swift; sourceTree = "<group>"; };
 		A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemTabView.swift; sourceTree = "<group>"; };
 		AA100001 /* LegendarySurvivorsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegendarySurvivorsApp.swift; sourceTree = "<group>"; };
@@ -115,10 +118,6 @@
 		AA100030 /* UpgradeModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeModalView.swift; sourceTree = "<group>"; };
 		AA100031 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		AA100032 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
-		AA100033 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
-		AA100034 /* LoadoutSelectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadoutSelectView.swift; sourceTree = "<group>"; };
-		AA100035 /* CollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionView.swift; sourceTree = "<group>"; };
-		AA100036 /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		AA100037 /* DungeonSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DungeonSystem.swift; sourceTree = "<group>"; };
 		AA100038 /* ArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaSystem.swift; sourceTree = "<group>"; };
 		AA100039 /* CyberbossAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberbossAI.swift; sourceTree = "<group>"; };
@@ -127,13 +126,14 @@
 		AA100042 /* AudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioService.swift; sourceTree = "<group>"; };
 		AA200001 /* LegendarySurvivors.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LegendarySurvivors.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
-		C9F5B6FBDB75C6498F7553CA /* HeroUpgradesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HeroUpgradesView.swift; sourceTree = "<group>"; };
 		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
 		CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZeroDaySystem.swift; sourceTree = "<group>"; };
 		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		ENTIDFILE1 /* EntityIDs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntityIDs.swift; sourceTree = "<group>"; };
+		F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardRenderer.swift; sourceTree = "<group>"; };
 		F5F896AC2E9B27982965DBAF /* Protocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
-		F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDMapSelectView.swift; sourceTree = "<group>"; };
 		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
+		MBRDFILE01 /* MotherboardTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardTypes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -195,6 +195,7 @@
 				AA400011 /* Types */,
 				AA400012 /* Config */,
 				AA400013 /* Utils */,
+				B8763795AB941FBACFABA17D /* Systems */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -218,6 +219,7 @@
 				AA100023 /* VisualEffects.swift */,
 				AA100024 /* ArenaRenderer.swift */,
 				529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */,
+				F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */,
 			);
 			path = Rendering;
 			sourceTree = "<group>";
@@ -225,7 +227,6 @@
 		AA400008 /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				AA400016 /* Screens */,
 				AA400017 /* Components */,
 				AA400018 /* Game */,
 				B51208EDDA6B09BF55F44B88 /* Tabs */,
@@ -260,7 +261,10 @@
 				1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */,
 				BE64BB27463A150B6F32451C /* TDTypes.swift */,
 				F5F896AC2E9B27982965DBAF /* Protocol.swift */,
+				ENTIDFILE1 /* EntityIDs.swift */,
 				05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */,
+				MBRDFILE01 /* MotherboardTypes.swift */,
+				642FC35778370BD58869415C /* MegaBoardTypes.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -320,20 +324,6 @@
 			path = Bosses;
 			sourceTree = "<group>";
 		};
-		AA400016 /* Screens */ = {
-			isa = PBXGroup;
-			children = (
-				AA100033 /* MainMenuView.swift */,
-				AA100034 /* LoadoutSelectView.swift */,
-				AA100035 /* CollectionView.swift */,
-				AA100036 /* StatsView.swift */,
-				F78F064A538FECC2B533DE5F /* TDMapSelectView.swift */,
-				9355D561D7842C47786518B0 /* FirewallShopView.swift */,
-				C9F5B6FBDB75C6498F7553CA /* HeroUpgradesView.swift */,
-			);
-			path = Screens;
-			sourceTree = "<group>";
-		};
 		AA400017 /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -349,6 +339,7 @@
 				AA100013 /* VirtualJoystick.swift */,
 				AA100030 /* UpgradeModalView.swift */,
 				CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */,
+				524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -366,6 +357,15 @@
 				A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */,
 			);
 			path = Tabs;
+			sourceTree = "<group>";
+		};
+		B8763795AB941FBACFABA17D /* Systems */ = {
+			isa = PBXGroup;
+			children = (
+				02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */,
+				1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */,
+			);
+			name = Systems;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -468,10 +468,6 @@
 				AA000029 /* UpgradeModalView.swift in Sources */,
 				AA000030 /* AppState.swift in Sources */,
 				AA000031 /* StorageService.swift in Sources */,
-				AA000032 /* MainMenuView.swift in Sources */,
-				AA000033 /* LoadoutSelectView.swift in Sources */,
-				AA000034 /* CollectionView.swift in Sources */,
-				AA000035 /* StatsView.swift in Sources */,
 				AA000036 /* DungeonSystem.swift in Sources */,
 				AA000037 /* ArenaSystem.swift in Sources */,
 				AA000038 /* CyberbossAI.swift in Sources */,
@@ -485,18 +481,22 @@
 				13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */,
 				8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */,
 				6FAF2498EB10A21AABF8C5D8 /* TDGameScene.swift in Sources */,
-				8805B6CA90B2CE24AA04B7A4 /* TDMapSelectView.swift in Sources */,
 				6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */,
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
 				76264979E6D40ACBE476736D /* FirewallUnlockSystem.swift in Sources */,
-				897CEB3FD92CC6A9D4EA05D0 /* FirewallShopView.swift in Sources */,
-				4D473EABFFD987BB6E1232E2 /* HeroUpgradesView.swift in Sources */,
 				85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */,
 				469B93F994E728C789F86031 /* Protocol.swift in Sources */,
+				ENTID00001 /* EntityIDs.swift in Sources */,
 				D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */,
 				80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */,
+				MBRD00001 /* MotherboardTypes.swift in Sources */,
+				2096E9DBF01F2416463E54D1 /* MegaBoardTypes.swift in Sources */,
+				8F2433B0984EE3015CE09545 /* MegaBoardSystem.swift in Sources */,
+				D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */,
+				7584C9579299C011354D004E /* MegaBoardRenderer.swift in Sources */,
+				44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

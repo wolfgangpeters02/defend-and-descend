@@ -30,10 +30,6 @@ struct GameContainerView: View {
                 } else {
                     Color.black
                         .ignoresSafeArea()
-                        .onAppear {
-                            screenSize = geometry.size
-                            setupGame()
-                        }
                 }
 
                 // Scan lines overlay - terminal aesthetic
@@ -48,7 +44,7 @@ struct GameContainerView: View {
                         .allowsHitTesting(false)
                 }
 
-                // Virtual joystick overlay
+                // Virtual joystick overlay (no momentum for direct control)
                 VirtualJoystick(
                     onMove: { angle, distance in
                         inputState.joystick = JoystickInput(angle: angle, distance: distance)
@@ -57,7 +53,8 @@ struct GameContainerView: View {
                     onStop: {
                         inputState.joystick = nil
                         gameScene?.updateInput(inputState)
-                    }
+                    },
+                    config: JoystickConfig(enableMomentum: false)
                 )
 
                 // HUD overlay - Mobile-first design with large readable elements
@@ -242,10 +239,27 @@ struct GameContainerView: View {
                     )
                 }
             }
+            // Setup game when we have valid geometry
+            .onChange(of: geometry.size) { newSize in
+                if gameScene == nil && newSize.width > 0 && newSize.height > 0 {
+                    screenSize = newSize
+                    setupGame()
+                }
+            }
+            .onAppear {
+                print("[GameContainerView] onAppear - geometry: \(geometry.size), gameScene: \(gameScene == nil ? "nil" : "exists")")
+                // Also try on appear in case geometry is already valid
+                if gameScene == nil && geometry.size.width > 0 && geometry.size.height > 0 {
+                    screenSize = geometry.size
+                    setupGame()
+                }
+            }
         }
     }
 
     private func setupGame() {
+        print("[GameContainerView] setupGame - screenSize: \(screenSize)")
+
         // Use selected loadout from AppState
         let weaponType = appState.selectedWeapon
         let powerUpType = appState.selectedPowerup
@@ -267,6 +281,8 @@ struct GameContainerView: View {
             )
         }
         gameState = state
+
+        print("[GameContainerView] Created game state - arena: \(state.arena.width)x\(state.arena.height), player at: (\(state.player.x), \(state.player.y))")
 
         // Create and configure scene with screen size for full-screen arena
         let scene = GameScene()
@@ -341,7 +357,7 @@ struct GameOverOverlay: View {
             VStack(spacing: 30) {
                 // System: Reboot themed titles
                 if victory {
-                    Text("EXTRACTION COMPLETE")
+                    Text("EXTRACTION_COMPLETE")
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.green)
 
@@ -349,7 +365,7 @@ struct GameOverOverlay: View {
                         .font(.system(size: 60))
                         .foregroundColor(.green)
                 } else {
-                    Text("DEBUG FAILED")
+                    Text("DEBUG_FAILED")
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.red)
 

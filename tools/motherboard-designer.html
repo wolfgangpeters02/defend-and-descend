@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motherboard Designer - System: Reboot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0f;
+            color: #fff;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            overflow: hidden;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+        }
+
+        #sidebar {
+            width: 280px;
+            background: #1a1a24;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #sidebar h1 {
+            padding: 16px;
+            font-size: 14px;
+            color: #00d4ff;
+            border-bottom: 1px solid #333;
+        }
+
+        .tool-section {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .tool-section h3 {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .tool-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: #2a2a34;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        .tool-btn:hover {
+            background: #3a3a44;
+        }
+
+        .tool-btn.active {
+            background: #00d4ff;
+            color: #000;
+            border-color: #00d4ff;
+        }
+
+        .tool-btn.danger {
+            border-color: #f44;
+        }
+
+        .tool-btn.danger:hover {
+            background: #f44;
+            color: #000;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #0d0d12;
+        }
+
+        #canvas {
+            position: absolute;
+            cursor: grab;
+        }
+
+        #canvas:active {
+            cursor: grabbing;
+        }
+
+        #status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.8);
+            padding: 8px 16px;
+            font-size: 11px;
+            color: #888;
+            display: flex;
+            gap: 24px;
+        }
+
+        #status-bar span {
+            color: #00d4ff;
+        }
+
+        .info-panel {
+            padding: 12px;
+            background: #0d1117;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-size: 11px;
+        }
+
+        .info-panel label {
+            display: block;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .info-panel input, .info-panel select {
+            width: 100%;
+            padding: 6px;
+            background: #1a1a24;
+            border: 1px solid #444;
+            border-radius: 3px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        #path-list, #slot-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            padding: 6px 8px;
+            background: #2a2a34;
+            margin-bottom: 4px;
+            border-radius: 3px;
+            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item button {
+            background: none;
+            border: none;
+            color: #f44;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #export-output {
+            width: 100%;
+            height: 150px;
+            background: #0d1117;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: #0f0;
+            font-family: inherit;
+            font-size: 10px;
+            padding: 8px;
+            resize: vertical;
+        }
+
+        .color-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .color-chip {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 9px;
+        }
+
+        #help-overlay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.9);
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 11px;
+            max-width: 300px;
+            border: 1px solid #333;
+        }
+
+        #help-overlay h4 {
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+
+        #help-overlay ul {
+            padding-left: 16px;
+            line-height: 1.6;
+        }
+
+        #help-overlay kbd {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="sidebar">
+            <h1>MOTHERBOARD DESIGNER</h1>
+
+            <div class="tool-section">
+                <h3>Mode</h3>
+                <button class="tool-btn active" data-mode="pan">Pan / Select</button>
+                <button class="tool-btn" data-mode="slot">Place Tower Slot</button>
+                <button class="tool-btn" data-mode="path">Draw Path</button>
+                <button class="tool-btn" data-mode="spawn">Place Spawn Point</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>Slot Size</h3>
+                <select id="slot-size">
+                    <option value="40">Small (40px) - Firewall</option>
+                    <option value="60" selected>Medium (60px) - Standard</option>
+                    <option value="80">Large (80px) - Component</option>
+                </select>
+            </div>
+
+            <div class="tool-section">
+                <h3>Paths</h3>
+                <div id="path-list"></div>
+                <button class="tool-btn" id="new-path-btn">+ New Path</button>
+                <button class="tool-btn" id="finish-path-btn">Finish Current Path</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>Tower Slots (<span id="slot-count">0</span>)</h3>
+                <div id="slot-list"></div>
+                <button class="tool-btn danger" id="clear-slots-btn">Clear All Slots</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>View</h3>
+                <button class="tool-btn" id="reset-view-btn">Reset View</button>
+                <button class="tool-btn" id="fit-view-btn">Fit to Screen</button>
+                <button class="tool-btn" id="toggle-grid-btn">Toggle Grid</button>
+            </div>
+
+            <div class="tool-section">
+                <h3>Sectors</h3>
+                <div class="color-legend">
+                    <span class="color-chip" style="background:#44ff88">RAM</span>
+                    <span class="color-chip" style="background:#4488ff">CPU</span>
+                    <span class="color-chip" style="background:#ff4444">GPU</span>
+                    <span class="color-chip" style="background:#8844ff">Storage</span>
+                    <span class="color-chip" style="background:#44ff88">Cache</span>
+                    <span class="color-chip" style="background:#ffaa00">I/O</span>
+                    <span class="color-chip" style="background:#00ffff">Network</span>
+                    <span class="color-chip" style="background:#ffdd00">Power</span>
+                    <span class="color-chip" style="background:#ffaa00">Expansion</span>
+                </div>
+            </div>
+
+            <div class="tool-section">
+                <h3>Export</h3>
+                <button class="tool-btn" id="export-btn">Export JSON</button>
+                <button class="tool-btn" id="copy-btn">Copy to Clipboard</button>
+                <textarea id="export-output" readonly placeholder="Click Export to generate JSON..."></textarea>
+            </div>
+
+            <div class="tool-section">
+                <h3>Import</h3>
+                <button class="tool-btn" id="import-btn">Import JSON</button>
+                <input type="file" id="import-file" accept=".json" style="display:none">
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="canvas"></canvas>
+
+            <div id="status-bar">
+                <div>Zoom: <span id="zoom-level">100%</span></div>
+                <div>Position: <span id="cursor-pos">0, 0</span></div>
+                <div>Grid: <span id="grid-pos">0, 0</span></div>
+                <div>Mode: <span id="current-mode">Pan</span></div>
+            </div>
+
+            <div id="help-overlay">
+                <h4>Controls</h4>
+                <ul>
+                    <li><kbd>Scroll</kbd> Zoom in/out</li>
+                    <li><kbd>Drag</kbd> Pan canvas</li>
+                    <li><kbd>Click</kbd> Place item (in mode)</li>
+                    <li><kbd>Delete</kbd> Remove selected</li>
+                    <li><kbd>Esc</kbd> Cancel current action</li>
+                    <li><kbd>G</kbd> Toggle grid</li>
+                    <li><kbd>1-4</kbd> Switch modes</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            canvasWidth: 4200,
+            canvasHeight: 4200,
+            sectorWidth: 1400,
+            sectorHeight: 1400,
+            gridSize: 50,
+            minZoom: 0.05,
+            maxZoom: 2
+        };
+
+        // Sector definitions (matching Swift)
+        const SECTORS = [
+            { id: 'power', name: 'Power Grid', gridX: 0, gridY: 0, theme: 'power', color: '#ffdd00' },
+            { id: 'cpu', name: 'CPU Core', gridX: 1, gridY: 0, theme: 'processing', color: '#4488ff', hasCore: true },
+            { id: 'expansion', name: 'Expansion', gridX: 2, gridY: 0, theme: 'io', color: '#ffaa00' },
+            { id: 'gpu', name: 'GPU', gridX: 0, gridY: 1, theme: 'graphics', color: '#ff4444' },
+            { id: 'ram', name: 'RAM (Start)', gridX: 1, gridY: 1, theme: 'memory', color: '#44ff88', isStarter: true },
+            { id: 'storage', name: 'Storage', gridX: 2, gridY: 1, theme: 'storage', color: '#8844ff' },
+            { id: 'io', name: 'I/O', gridX: 0, gridY: 2, theme: 'io', color: '#ffaa00' },
+            { id: 'cache', name: 'Cache', gridX: 1, gridY: 2, theme: 'memory', color: '#44ff88' },
+            { id: 'network', name: 'Network', gridX: 2, gridY: 2, theme: 'network', color: '#00ffff' }
+        ];
+
+        // State
+        const state = {
+            zoom: 0.15,
+            panX: 0,
+            panY: 0,
+            mode: 'pan',
+            showGrid: true,
+            isDragging: false,
+            lastMouseX: 0,
+            lastMouseY: 0,
+            towerSlots: [],
+            paths: [],
+            currentPath: null,
+            spawnPoints: [],
+            selectedItem: null
+        };
+
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            render();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Center view on RAM sector initially
+        state.panX = canvas.width / 2 - (CONFIG.sectorWidth * 1.5) * state.zoom;
+        state.panY = canvas.height / 2 - (CONFIG.sectorHeight * 1.5) * state.zoom;
+
+        // Rendering
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.save();
+            ctx.translate(state.panX, state.panY);
+            ctx.scale(state.zoom, state.zoom);
+
+            // Draw background
+            ctx.fillStyle = '#0a0a0f';
+            ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+
+            // Draw grid
+            if (state.showGrid) {
+                drawGrid();
+            }
+
+            // Draw sectors
+            drawSectors();
+
+            // Draw paths
+            drawPaths();
+
+            // Draw spawn points
+            drawSpawnPoints();
+
+            // Draw tower slots
+            drawTowerSlots();
+
+            // Draw current path being drawn
+            if (state.currentPath && state.currentPath.waypoints.length > 0) {
+                drawCurrentPath();
+            }
+
+            ctx.restore();
+
+            // Update status
+            document.getElementById('zoom-level').textContent = Math.round(state.zoom * 100) + '%';
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#1a1a24';
+            ctx.lineWidth = 1;
+
+            // Minor grid
+            for (let x = 0; x <= CONFIG.canvasWidth; x += CONFIG.gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, CONFIG.canvasHeight);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= CONFIG.canvasHeight; y += CONFIG.gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(CONFIG.canvasWidth, y);
+                ctx.stroke();
+            }
+
+            // Sector boundaries
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            for (let x = 0; x <= 3; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * CONFIG.sectorWidth, 0);
+                ctx.lineTo(x * CONFIG.sectorWidth, CONFIG.canvasHeight);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= 3; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * CONFIG.sectorHeight);
+                ctx.lineTo(CONFIG.canvasWidth, y * CONFIG.sectorHeight);
+                ctx.stroke();
+            }
+        }
+
+        function drawSectors() {
+            SECTORS.forEach(sector => {
+                const x = sector.gridX * CONFIG.sectorWidth;
+                const y = (2 - sector.gridY) * CONFIG.sectorHeight; // Flip Y for screen coords
+
+                // Sector background
+                ctx.fillStyle = sector.color + '15';
+                ctx.fillRect(x, y, CONFIG.sectorWidth, CONFIG.sectorHeight);
+
+                // Sector border
+                ctx.strokeStyle = sector.color + '40';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(x + 5, y + 5, CONFIG.sectorWidth - 10, CONFIG.sectorHeight - 10);
+
+                // Sector label
+                ctx.fillStyle = sector.color;
+                ctx.font = 'bold 48px Menlo';
+                ctx.textAlign = 'center';
+                ctx.fillText(sector.name.toUpperCase(), x + CONFIG.sectorWidth / 2, y + 80);
+
+                ctx.font = '24px Menlo';
+                ctx.fillStyle = '#666';
+                ctx.fillText(`(${sector.gridX}, ${sector.gridY})`, x + CONFIG.sectorWidth / 2, y + 120);
+
+                // Core indicator
+                if (sector.hasCore) {
+                    const coreX = x + CONFIG.sectorWidth / 2;
+                    const coreY = y + CONFIG.sectorHeight / 2;
+
+                    ctx.beginPath();
+                    ctx.arc(coreX, coreY, 60, 0, Math.PI * 2);
+                    ctx.fillStyle = '#00d4ff20';
+                    ctx.fill();
+                    ctx.strokeStyle = '#00d4ff';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#00d4ff';
+                    ctx.font = 'bold 24px Menlo';
+                    ctx.fillText('CPU', coreX, coreY + 8);
+                }
+
+                // Starter indicator
+                if (sector.isStarter) {
+                    ctx.fillStyle = '#44ff88';
+                    ctx.font = 'bold 20px Menlo';
+                    ctx.fillText('★ STARTER', x + CONFIG.sectorWidth / 2, y + CONFIG.sectorHeight - 40);
+                }
+            });
+        }
+
+        function drawPaths() {
+            state.paths.forEach((path, pathIndex) => {
+                if (path.waypoints.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(path.waypoints[0].x, path.waypoints[0].y);
+
+                for (let i = 1; i < path.waypoints.length; i++) {
+                    ctx.lineTo(path.waypoints[i].x, path.waypoints[i].y);
+                }
+
+                ctx.strokeStyle = path.color || '#b87333';
+                ctx.lineWidth = 24;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+
+                // Glow
+                ctx.strokeStyle = (path.color || '#b87333') + '40';
+                ctx.lineWidth = 40;
+                ctx.stroke();
+
+                // Waypoints
+                path.waypoints.forEach((wp, i) => {
+                    ctx.beginPath();
+                    ctx.arc(wp.x, wp.y, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = i === 0 ? '#f44' : (i === path.waypoints.length - 1 ? '#4f4' : '#fff');
+                    ctx.fill();
+                    ctx.strokeStyle = '#000';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Waypoint number
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 14px Menlo';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(i.toString(), wp.x, wp.y + 5);
+                });
+
+                // Path label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 16px Menlo';
+                ctx.fillText(`Path ${pathIndex + 1}`, path.waypoints[0].x, path.waypoints[0].y - 25);
+            });
+        }
+
+        function drawCurrentPath() {
+            const path = state.currentPath;
+
+            ctx.beginPath();
+            ctx.moveTo(path.waypoints[0].x, path.waypoints[0].y);
+
+            for (let i = 1; i < path.waypoints.length; i++) {
+                ctx.lineTo(path.waypoints[i].x, path.waypoints[i].y);
+            }
+
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 24;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash([20, 20]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Waypoints
+            path.waypoints.forEach((wp, i) => {
+                ctx.beginPath();
+                ctx.arc(wp.x, wp.y, 12, 0, Math.PI * 2);
+                ctx.fillStyle = i === 0 ? '#f44' : '#00d4ff';
+                ctx.fill();
+            });
+        }
+
+        function drawTowerSlots() {
+            state.towerSlots.forEach((slot, i) => {
+                const isSelected = state.selectedItem?.type === 'slot' && state.selectedItem?.index === i;
+
+                ctx.beginPath();
+                ctx.arc(slot.x, slot.y, slot.size / 2, 0, Math.PI * 2);
+
+                ctx.fillStyle = isSelected ? '#00d4ff40' : '#2a2a3480';
+                ctx.fill();
+
+                ctx.strokeStyle = isSelected ? '#00d4ff' : '#666';
+                ctx.lineWidth = isSelected ? 4 : 2;
+                ctx.stroke();
+
+                // Slot number
+                ctx.fillStyle = '#888';
+                ctx.font = '12px Menlo';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), slot.x, slot.y + 4);
+            });
+        }
+
+        function drawSpawnPoints() {
+            state.spawnPoints.forEach((sp, i) => {
+                ctx.beginPath();
+                ctx.moveTo(sp.x, sp.y - 30);
+                ctx.lineTo(sp.x - 25, sp.y + 20);
+                ctx.lineTo(sp.x + 25, sp.y + 20);
+                ctx.closePath();
+
+                ctx.fillStyle = '#f4440';
+                ctx.fill();
+                ctx.strokeStyle = '#f44';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px Menlo';
+                ctx.textAlign = 'center';
+                ctx.fillText('SPAWN', sp.x, sp.y + 50);
+            });
+        }
+
+        // Mouse handling
+        function screenToWorld(screenX, screenY) {
+            return {
+                x: (screenX - state.panX) / state.zoom,
+                y: (screenY - state.panY) / state.zoom
+            };
+        }
+
+        function snapToGrid(value, gridSize = CONFIG.gridSize) {
+            return Math.round(value / gridSize) * gridSize;
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const world = screenToWorld(x, y);
+
+            if (state.mode === 'pan') {
+                state.isDragging = true;
+                state.lastMouseX = x;
+                state.lastMouseY = y;
+                canvas.style.cursor = 'grabbing';
+            } else if (state.mode === 'slot') {
+                const size = parseInt(document.getElementById('slot-size').value);
+                state.towerSlots.push({
+                    x: snapToGrid(world.x),
+                    y: snapToGrid(world.y),
+                    size: size
+                });
+                updateSlotList();
+                render();
+            } else if (state.mode === 'path') {
+                if (!state.currentPath) {
+                    state.currentPath = { waypoints: [], color: '#b87333' };
+                }
+                state.currentPath.waypoints.push({
+                    x: snapToGrid(world.x),
+                    y: snapToGrid(world.y)
+                });
+                render();
+            } else if (state.mode === 'spawn') {
+                state.spawnPoints.push({
+                    x: snapToGrid(world.x),
+                    y: snapToGrid(world.y)
+                });
+                render();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const world = screenToWorld(x, y);
+
+            document.getElementById('cursor-pos').textContent =
+                `${Math.round(world.x)}, ${Math.round(world.y)}`;
+            document.getElementById('grid-pos').textContent =
+                `${Math.floor(world.x / CONFIG.sectorWidth)}, ${Math.floor(world.y / CONFIG.sectorHeight)}`;
+
+            if (state.isDragging) {
+                state.panX += x - state.lastMouseX;
+                state.panY += y - state.lastMouseY;
+                state.lastMouseX = x;
+                state.lastMouseY = y;
+                render();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            state.isDragging = false;
+            canvas.style.cursor = state.mode === 'pan' ? 'grab' : 'crosshair';
+        });
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const worldBefore = screenToWorld(mouseX, mouseY);
+
+            const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+            state.zoom = Math.max(CONFIG.minZoom, Math.min(CONFIG.maxZoom, state.zoom * zoomFactor));
+
+            const worldAfter = screenToWorld(mouseX, mouseY);
+
+            state.panX += (worldAfter.x - worldBefore.x) * state.zoom;
+            state.panY += (worldAfter.y - worldBefore.y) * state.zoom;
+
+            render();
+        });
+
+        // Mode buttons
+        document.querySelectorAll('[data-mode]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('[data-mode]').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.mode = btn.dataset.mode;
+                document.getElementById('current-mode').textContent = btn.textContent;
+                canvas.style.cursor = state.mode === 'pan' ? 'grab' : 'crosshair';
+            });
+        });
+
+        // Path controls
+        document.getElementById('new-path-btn').addEventListener('click', () => {
+            if (state.currentPath && state.currentPath.waypoints.length > 1) {
+                state.paths.push(state.currentPath);
+            }
+            state.currentPath = { waypoints: [], color: '#b87333' };
+            updatePathList();
+            render();
+        });
+
+        document.getElementById('finish-path-btn').addEventListener('click', () => {
+            if (state.currentPath && state.currentPath.waypoints.length > 1) {
+                state.paths.push(state.currentPath);
+                state.currentPath = null;
+                updatePathList();
+                render();
+            }
+        });
+
+        function updatePathList() {
+            const list = document.getElementById('path-list');
+            list.innerHTML = state.paths.map((path, i) => `
+                <div class="list-item">
+                    <span>Path ${i + 1} (${path.waypoints.length} pts)</span>
+                    <button onclick="deletePath(${i})">×</button>
+                </div>
+            `).join('');
+        }
+
+        function deletePath(index) {
+            state.paths.splice(index, 1);
+            updatePathList();
+            render();
+        }
+
+        // Slot controls
+        function updateSlotList() {
+            document.getElementById('slot-count').textContent = state.towerSlots.length;
+            const list = document.getElementById('slot-list');
+            list.innerHTML = state.towerSlots.slice(-10).map((slot, i) => {
+                const realIndex = state.towerSlots.length - 10 + i;
+                if (realIndex < 0) return '';
+                return `
+                    <div class="list-item">
+                        <span>#${realIndex}: (${slot.x}, ${slot.y})</span>
+                        <button onclick="deleteSlot(${realIndex})">×</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteSlot(index) {
+            state.towerSlots.splice(index, 1);
+            updateSlotList();
+            render();
+        }
+
+        document.getElementById('clear-slots-btn').addEventListener('click', () => {
+            if (confirm('Clear all tower slots?')) {
+                state.towerSlots = [];
+                updateSlotList();
+                render();
+            }
+        });
+
+        // View controls
+        document.getElementById('reset-view-btn').addEventListener('click', () => {
+            state.zoom = 0.15;
+            state.panX = canvas.width / 2 - (CONFIG.sectorWidth * 1.5) * state.zoom;
+            state.panY = canvas.height / 2 - (CONFIG.sectorHeight * 1.5) * state.zoom;
+            render();
+        });
+
+        document.getElementById('fit-view-btn').addEventListener('click', () => {
+            state.zoom = Math.min(
+                canvas.width / CONFIG.canvasWidth,
+                canvas.height / CONFIG.canvasHeight
+            ) * 0.9;
+            state.panX = (canvas.width - CONFIG.canvasWidth * state.zoom) / 2;
+            state.panY = (canvas.height - CONFIG.canvasHeight * state.zoom) / 2;
+            render();
+        });
+
+        document.getElementById('toggle-grid-btn').addEventListener('click', () => {
+            state.showGrid = !state.showGrid;
+            render();
+        });
+
+        // Export
+        document.getElementById('export-btn').addEventListener('click', () => {
+            const output = {
+                sectorWidth: CONFIG.sectorWidth,
+                sectorHeight: CONFIG.sectorHeight,
+                towerSlots: state.towerSlots.map((slot, i) => ({
+                    id: `slot_${i}`,
+                    x: slot.x,
+                    y: CONFIG.canvasHeight - slot.y, // Flip Y back to game coords
+                    size: slot.size
+                })),
+                paths: state.paths.map((path, i) => ({
+                    id: `path_${i}`,
+                    waypoints: path.waypoints.map(wp => ({
+                        x: wp.x,
+                        y: CONFIG.canvasHeight - wp.y // Flip Y
+                    }))
+                })),
+                spawnPoints: state.spawnPoints.map(sp => ({
+                    x: sp.x,
+                    y: CONFIG.canvasHeight - sp.y // Flip Y
+                }))
+            };
+
+            document.getElementById('export-output').value = JSON.stringify(output, null, 2);
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', () => {
+            const output = document.getElementById('export-output');
+            output.select();
+            document.execCommand('copy');
+            alert('Copied to clipboard!');
+        });
+
+        // Import
+        document.getElementById('import-btn').addEventListener('click', () => {
+            document.getElementById('import-file').click();
+        });
+
+        document.getElementById('import-file').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+
+                    if (data.towerSlots) {
+                        state.towerSlots = data.towerSlots.map(slot => ({
+                            x: slot.x,
+                            y: CONFIG.canvasHeight - slot.y, // Flip Y for screen
+                            size: slot.size || 60
+                        }));
+                    }
+
+                    if (data.paths) {
+                        state.paths = data.paths.map(path => ({
+                            waypoints: path.waypoints.map(wp => ({
+                                x: wp.x,
+                                y: CONFIG.canvasHeight - wp.y // Flip Y
+                            })),
+                            color: '#b87333'
+                        }));
+                    }
+
+                    if (data.spawnPoints) {
+                        state.spawnPoints = data.spawnPoints.map(sp => ({
+                            x: sp.x,
+                            y: CONFIG.canvasHeight - sp.y
+                        }));
+                    }
+
+                    updateSlotList();
+                    updatePathList();
+                    render();
+                    alert('Import successful!');
+                } catch (err) {
+                    alert('Error importing: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch (e.key) {
+                case '1': document.querySelector('[data-mode="pan"]').click(); break;
+                case '2': document.querySelector('[data-mode="slot"]').click(); break;
+                case '3': document.querySelector('[data-mode="path"]').click(); break;
+                case '4': document.querySelector('[data-mode="spawn"]').click(); break;
+                case 'g':
+                case 'G':
+                    state.showGrid = !state.showGrid;
+                    render();
+                    break;
+                case 'Escape':
+                    state.currentPath = null;
+                    render();
+                    break;
+            }
+        });
+
+        // Initial render
+        render();
+        updatePathList();
+        updateSlotList();
+    </script>
+</body>
+</html>

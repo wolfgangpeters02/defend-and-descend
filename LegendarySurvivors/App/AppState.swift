@@ -53,8 +53,8 @@ class AppState: ObservableObject {
     /// Check for offline earnings on app launch/return
     func checkOfflineEarnings() {
         if let earnings = StorageService.shared.calculateOfflineEarnings() {
-            // Only show if meaningful earnings (at least 10 Watts)
-            if earnings.wattsEarned >= 10 {
+            // Only show if meaningful earnings (at least 10 Hash)
+            if earnings.hashEarned >= 10 {
                 pendingOfflineEarnings = earnings
                 showWelcomeBack = true
             }
@@ -240,7 +240,7 @@ class AppState: ObservableObject {
             let goldReward = goldEarned / 10 + (victory ? wavesCompleted * 5 : 0)
 
             profile.xp += xpReward
-            profile.gold += goldReward
+            profile.addHash(goldReward)
 
             // Check level up
             while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -281,7 +281,7 @@ class AppState: ObservableObject {
             let wattsReward = coins / 10
 
             profile.xp += xpReward
-            profile.gold += wattsReward
+            profile.addHash(wattsReward)
 
             // System: Reboot - Award DATA (primary Active mode reward)
             // ~50x faster than passive (1 per 1000 kills)
@@ -301,28 +301,4 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Hero Upgrades (Cost: Watts)
-
-    /// Upgrade a hero stat using Watts
-    func upgradeHeroStat(_ type: HeroUpgradeType) -> Bool {
-        var success = false
-        updatePlayer { profile in
-            let cost = HeroUpgrades.upgradeCost(currentLevel: profile.heroUpgrades.level(for: type))
-            guard profile.heroUpgrades.canUpgrade(type: type, watts: profile.gold) else { return }
-
-            profile.gold -= cost
-            profile.heroUpgrades.upgrade(type: type)
-            success = true
-        }
-        return success
-    }
-
-    /// Get hero upgrade info
-    func heroUpgradeInfo(for type: HeroUpgradeType) -> (level: Int, cost: Int, canAfford: Bool, isMaxed: Bool) {
-        let level = currentPlayer.heroUpgrades.level(for: type)
-        let cost = HeroUpgrades.upgradeCost(currentLevel: level)
-        let isMaxed = level >= HeroUpgrades.maxLevel
-        let canAfford = currentPlayer.gold >= cost && !isMaxed
-        return (level, cost, canAfford, isMaxed)
-    }
 }

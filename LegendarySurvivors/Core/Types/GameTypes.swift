@@ -695,26 +695,20 @@ struct PlayerProfile: Codable {
     var xp: Int = 0
 
     // System: Reboot - Dual Currency
-    var watts: Int = 0      // Watts - earned passively in Motherboard, spent on building/upgrades
-    var data: Int = 0       // Data - earned in Debug/Active mode, spent on Protocol unlocks
+    var hash: Int = 0       // Hash (Ħ) - earned passively in Motherboard, spent on building/upgrades
+    var data: Int = 0       // Data (◈) - earned in Debug/Active mode, spent on Protocol unlocks
 
     // MARK: - CodingKeys (exclude computed properties)
 
     enum CodingKeys: String, CodingKey {
-        case id, displayName, createdAt, level, xp, watts, data
+        case id, displayName, createdAt, level, xp, hash, data
         case compiledProtocols, protocolLevels, equippedProtocolId, protocolBlueprints
         case globalUpgrades, unlockedExpansions, motherboardEfficiency
-        case unlockedSectors, sectorBestTimes
+        case unlockedSectors, sectorBestTimes, tdSectorUnlockProgress, unlockedTDSectors
         case lastActiveTimestamp, offlineEfficiencySnapshot
-        case unlocks, weaponLevels, powerupLevels, heroUpgrades
+        case unlocks, weaponLevels, powerupLevels
         case survivorStats, tdStats
         case totalRuns, bestTime, totalKills, legendariesUnlocked
-    }
-
-    // Legacy currency alias (for backward compatibility)
-    var gold: Int {
-        get { return watts }
-        set { watts = newValue }
     }
 
     // MARK: - Protocol System (New)
@@ -746,11 +740,17 @@ struct PlayerProfile: Codable {
 
     // MARK: - Sector Progress (New)
 
-    /// IDs of unlocked sectors
-    var unlockedSectors: [String] = [SectorLibrary.starterSectorId]
+    /// IDs of unlocked Active mode sectors
+    var unlockedSectors: [String] = [SectorLibrary.starterSectorId, "cathedral"]  // RAM + Cathedral unlocked by default
 
     /// Sector ID -> Best survival time
     var sectorBestTimes: [String: TimeInterval] = [:]
+
+    /// TD Mega-Board sector unlock progress (partial payments)
+    var tdSectorUnlockProgress: [String: Int] = [:]
+
+    /// IDs of unlocked TD Mega-Board sectors (default: starter sector)
+    var unlockedTDSectors: [String] = [SectorID.starter.rawValue]
 
     // MARK: - Offline State (New)
 
@@ -766,9 +766,6 @@ struct PlayerProfile: Codable {
     var unlocks: PlayerUnlocks
     var weaponLevels: [String: Int]  // weapon_id -> level (1-10)
     var powerupLevels: [String: Int]
-
-    // Hero Upgrades - LEGACY (replaced by globalUpgrades)
-    var heroUpgrades: HeroUpgrades = HeroUpgrades()
 
     // Stats by mode
     var survivorStats: SurvivorModeStats
@@ -821,79 +818,34 @@ struct PlayerProfile: Codable {
     func sectorBestTime(_ sectorId: String) -> TimeInterval? {
         return sectorBestTimes[sectorId]
     }
-}
 
-// MARK: - Hero Upgrades (Purchased with Watts, used in Active/Debugger mode)
+    // MARK: - Currency Helpers (System: Reboot)
 
-struct HeroUpgrades: Codable {
-    var maxHpLevel: Int = 0         // Each level: +10 HP
-    var damageLevel: Int = 0        // Each level: +5% damage
-    var speedLevel: Int = 0         // Each level: +5% speed
-    var pickupRangeLevel: Int = 0   // Each level: +10% pickup range
-
-    // Maximum level for each upgrade
-    static let maxLevel = 10
-
-    // Bonus calculations
-    var hpBonus: CGFloat { return CGFloat(maxHpLevel) * 10 }
-    var damageMultiplier: CGFloat { return 1.0 + CGFloat(damageLevel) * 0.05 }
-    var speedMultiplier: CGFloat { return 1.0 + CGFloat(speedLevel) * 0.05 }
-    var pickupRangeMultiplier: CGFloat { return 1.0 + CGFloat(pickupRangeLevel) * 0.10 }
-
-    // Cost for next level of each upgrade type
-    static func upgradeCost(currentLevel: Int) -> Int {
-        guard currentLevel < maxLevel else { return 0 }
-        // 100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200
-        return 100 * Int(pow(2.0, Double(currentLevel)))
+    /// Maximum hash storage capacity based on HDD level
+    var hashStorageCapacity: Int {
+        return globalUpgrades.hashStorageCapacity
     }
 
-    func canUpgrade(type: HeroUpgradeType, watts: Int) -> Bool {
-        let level = self.level(for: type)
-        guard level < HeroUpgrades.maxLevel else { return false }
-        return watts >= HeroUpgrades.upgradeCost(currentLevel: level)
+    /// Add hash with storage cap enforcement
+    /// Returns the actual amount added (may be less if hitting cap)
+    @discardableResult
+    mutating func addHash(_ amount: Int) -> Int {
+        let cap = hashStorageCapacity
+        let spaceAvailable = max(0, cap - hash)
+        let actualAdded = min(amount, spaceAvailable)
+        hash += actualAdded
+        return actualAdded
     }
 
-    func level(for type: HeroUpgradeType) -> Int {
-        switch type {
-        case .maxHp: return maxHpLevel
-        case .damage: return damageLevel
-        case .speed: return speedLevel
-        case .pickupRange: return pickupRangeLevel
-        }
+    /// Check if hash storage is full
+    var isHashStorageFull: Bool {
+        return hash >= hashStorageCapacity
     }
 
-    mutating func upgrade(type: HeroUpgradeType) {
-        switch type {
-        case .maxHp: maxHpLevel = min(maxHpLevel + 1, HeroUpgrades.maxLevel)
-        case .damage: damageLevel = min(damageLevel + 1, HeroUpgrades.maxLevel)
-        case .speed: speedLevel = min(speedLevel + 1, HeroUpgrades.maxLevel)
-        case .pickupRange: pickupRangeLevel = min(pickupRangeLevel + 1, HeroUpgrades.maxLevel)
-        }
-    }
-}
-
-enum HeroUpgradeType: String, CaseIterable, Codable {
-    case maxHp = "Max HP"
-    case damage = "Damage"
-    case speed = "Speed"
-    case pickupRange = "Pickup Range"
-
-    var icon: String {
-        switch self {
-        case .maxHp: return "heart.fill"
-        case .damage: return "flame.fill"
-        case .speed: return "hare.fill"
-        case .pickupRange: return "magnet"
-        }
-    }
-
-    var description: String {
-        switch self {
-        case .maxHp: return "+10 HP per level"
-        case .damage: return "+5% damage per level"
-        case .speed: return "+5% speed per level"
-        case .pickupRange: return "+10% pickup range per level"
-        }
+    /// Percentage of hash storage used (0.0 - 1.0)
+    var hashStoragePercent: Double {
+        guard hashStorageCapacity > 0 else { return 0 }
+        return Double(hash) / Double(hashStorageCapacity)
     }
 }
 
@@ -924,7 +876,7 @@ struct TDModeStats: Codable {
     var lastActiveTimestamp: TimeInterval = 0  // Last time player was active
     var totalVirusKills: Int = 0               // Total viruses killed (for passive Data)
     var totalData: Int = 0                     // Data currency (from Debugger/active mode)
-    var baseWattsPerSecond: CGFloat = 10       // Base Watts income rate
+    var baseHashPerSecond: CGFloat = 10        // Base Hash income rate
     var averageEfficiency: CGFloat = 100       // Rolling average efficiency for offline calc
 
     // CPU Tier Upgrades (global income multiplier)
@@ -963,10 +915,10 @@ struct TDModeStats: Codable {
         return "CPU \(cpuTier).0"
     }
 
-    /// Check if CPU can be upgraded (not max tier and has enough Watts)
-    func canUpgradeCpu(watts: Int) -> Bool {
+    /// Check if CPU can be upgraded (not max tier and has enough Hash)
+    func canUpgradeCpu(hash: Int) -> Bool {
         guard let cost = nextCpuUpgradeCost else { return false }
-        return watts >= cost
+        return hash >= cost
     }
 }
 
@@ -989,8 +941,8 @@ extension PlayerProfile {
             createdAt: ISO8601DateFormatter().string(from: Date()),
             level: 1,
             xp: 0,
-            watts: 500,                       // Starting Watts
-            data: 0,                          // Starting Data
+            hash: 500,                        // Starting Hash (Ħ)
+            data: 0,                          // Starting Data (◈)
             compiledProtocols: [defaultProtocolId],  // Start with Kernel Pulse
             protocolLevels: [defaultProtocolId: 1],
             equippedProtocolId: defaultProtocolId,
@@ -998,7 +950,7 @@ extension PlayerProfile {
             globalUpgrades: GlobalUpgrades(),
             unlockedExpansions: [],
             motherboardEfficiency: 1.0,
-            unlockedSectors: [defaultSectorId],
+            unlockedSectors: [defaultSectorId, "cathedral"],  // RAM + Cathedral unlocked by default
             sectorBestTimes: [:],
             lastActiveTimestamp: Date(),
             offlineEfficiencySnapshot: 1.0,
@@ -1009,7 +961,6 @@ extension PlayerProfile {
             ),
             weaponLevels: ["bow": 1],
             powerupLevels: ["tank": 1],
-            heroUpgrades: HeroUpgrades(),
             survivorStats: SurvivorModeStats(),
             tdStats: TDModeStats(),
             totalRuns: 0,
@@ -1033,13 +984,16 @@ extension PlayerProfile {
             profile.protocolLevels[defaultProtocolId] = 1
         }
 
-        // Ensure starter sector is unlocked
+        // Ensure starter sectors are unlocked (RAM + Cathedral)
         if !profile.unlockedSectors.contains(defaultSectorId) {
             profile.unlockedSectors.append(defaultSectorId)
         }
+        if !profile.unlockedSectors.contains("cathedral") {
+            profile.unlockedSectors.append("cathedral")
+        }
 
-        // Migrate gold to watts if needed (gold is now a computed property)
-        // This happens automatically via the getter/setter
+        // Migrate legacy gold to hash if needed
+        // This happens automatically via StorageService migration
 
         return profile
     }

@@ -336,6 +336,33 @@
       ],
       "corePosition": [400, 550],
       "spawnPoints": [[400, 0]]
+    },
+    "motherboard": {
+      "width": 4200,
+      "height": 4200,
+      "paths": [
+        {
+          "id": "west_bus",
+          "waypoints": [
+            [100, 2100],
+            [700, 2100],
+            [700, 1700],
+            [1100, 1700],
+            [1100, 2100],
+            [1700, 2100],
+            [1700, 1800]
+          ]
+        }
+      ],
+      "corePosition": [1700, 1800],
+      "spawnPoints": [[100, 2100]],
+      "districts": {
+        "cpu": { "x": 1800, "y": 1800, "width": 400, "height": 400 },
+        "ram": { "x": 1600, "y": 3000, "width": 800, "height": 600 },
+        "gpu": { "x": 1600, "y": 400, "width": 800, "height": 600 },
+        "storage": { "x": 3000, "y": 1600, "width": 600, "height": 800 },
+        "io": { "x": 400, "y": 1600, "width": 600, "height": 800 }
+      }
     }
   },
   "coreUpgrades": {

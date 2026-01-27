@@ -82,7 +82,9 @@ class PathSystem {
 
                 // Haptic feedback based on efficiency drop severity
                 if state.efficiency <= 0 && previousEfficiency > 0 {
-                    // Efficiency hit 0% - critical alert
+                    // Efficiency hit 0% - SYSTEM FREEZE triggered!
+                    state.isSystemFrozen = true
+                    state.freezeCount += 1
                     HapticsService.shared.play(.defeat)
                 } else if state.efficiency <= 25 && previousEfficiency > 25 {
                     // Efficiency dropped below 25% - warning
@@ -92,8 +94,7 @@ class PathSystem {
                     HapticsService.shared.play(.light)
                 }
 
-                // Note: No game over from efficiency loss
-                // Player can recover by killing viruses (leak counter decays)
+                // Note: System freeze pauses game, player must recover via UI options
             }
         }
     }
@@ -110,17 +111,17 @@ class PathSystem {
         }
     }
 
-    /// Update Watts income based on efficiency
-    static func updateWattsIncome(state: inout TDGameState, deltaTime: TimeInterval) {
-        // Accumulate fractional watts
-        state.wattsAccumulator += state.wattsPerSecond * CGFloat(deltaTime)
+    /// Update Hash income based on efficiency
+    static func updateHashIncome(state: inout TDGameState, deltaTime: TimeInterval) {
+        // Accumulate fractional hash
+        state.hashAccumulator += state.hashPerSecond * CGFloat(deltaTime)
 
-        // Convert to whole watts
-        let wholeWatts = Int(state.wattsAccumulator)
-        if wholeWatts > 0 {
-            state.gold += wholeWatts
-            state.wattsAccumulator -= CGFloat(wholeWatts)
-            state.stats.goldEarned += wholeWatts
+        // Convert to whole hash (subject to HDD storage cap)
+        let wholeHash = Int(state.hashAccumulator)
+        if wholeHash > 0 {
+            let actualAdded = state.addHash(wholeHash)
+            state.hashAccumulator -= CGFloat(wholeHash)
+            state.stats.goldEarned += actualAdded
         }
     }
 

@@ -11,6 +11,7 @@ class StorageService {
         static let playerProfile = "playerProfile"
         static let allPlayers = "allPlayers"
         static let currentPlayerId = "currentPlayerId"
+        static let tdSessionState = "td_session_state"
     }
 
     private init() {}
@@ -63,7 +64,7 @@ class StorageService {
         // Migrate old level/xp/gold if present (these were separate before)
         if let level = json["level"] as? Int { profile.level = level }
         if let xp = json["xp"] as? Int { profile.xp = xp }
-        if let gold = json["gold"] as? Int { profile.gold = gold }
+        if let gold = json["gold"] as? Int { profile.hash = gold }  // Legacy gold → hash
 
         // Migrate unlocks
         if let unlocksData = json["unlocks"] as? [String: Any] {
@@ -93,6 +94,18 @@ class StorageService {
 
         // TD stats start fresh
         profile.tdStats = TDModeStats()
+
+        // Migrate TD sector progress if present, otherwise use defaults
+        if let unlockedTDSectors = json["unlockedTDSectors"] as? [String], !unlockedTDSectors.isEmpty {
+            profile.unlockedTDSectors = unlockedTDSectors
+        } else {
+            // Default to starter sector (RAM)
+            profile.unlockedTDSectors = [SectorID.starter.rawValue]
+        }
+
+        if let tdSectorProgress = json["tdSectorUnlockProgress"] as? [String: Int] {
+            profile.tdSectorUnlockProgress = tdSectorProgress
+        }
 
         return profile
     }
@@ -198,7 +211,7 @@ class StorageService {
         let goldReward = coinsCollected / 10
 
         profile.xp += xpReward
-        profile.gold += goldReward
+        profile.addHash(goldReward)
 
         // Check level up
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -231,7 +244,7 @@ class StorageService {
         let goldReward = goldEarned / 10 + (victory ? wavesCompleted * 5 : 0)
 
         profile.xp += xpReward
-        profile.gold += goldReward
+        profile.addHash(goldReward)
 
         // Check level up
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -276,7 +289,7 @@ class StorageService {
     }
 
     /// Calculate and apply offline earnings
-    /// Returns: (wattsEarned, timeAway) or nil if no earnings
+    /// Returns: (hashEarned, timeAway) or nil if no earnings
     func calculateOfflineEarnings() -> OfflineEarningsResult? {
         let profile = getOrCreateDefaultPlayer()
 
@@ -297,19 +310,19 @@ class StorageService {
         let cappedTime = min(timeAway, 28800)
 
         // Calculate earnings
-        // offlineWatts = timeAway * baseRate * cpuMultiplier * avgEfficiency * 0.5 (offline penalty)
-        let baseRate = profile.tdStats.baseWattsPerSecond
+        // offlineHash = timeAway * baseRate * cpuMultiplier * avgEfficiency * 0.5 (offline penalty)
+        let baseRate = profile.tdStats.baseHashPerSecond
         let cpuMultiplier = profile.tdStats.cpuMultiplier
         let efficiency = profile.tdStats.averageEfficiency / 100
         let offlineMultiplier: CGFloat = 0.5  // 50% efficiency when offline
 
-        let wattsEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * efficiency * offlineMultiplier))
+        let hashEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * efficiency * offlineMultiplier))
 
         // Calculate passive Data from virus kills
         let passiveData = profile.tdStats.passiveDataEarned
 
         return OfflineEarningsResult(
-            wattsEarned: wattsEarned,
+            hashEarned: hashEarned,
             dataEarned: passiveData,
             timeAwaySeconds: timeAway,
             cappedTimeSeconds: cappedTime,
@@ -321,8 +334,8 @@ class StorageService {
     func applyOfflineEarnings(_ earnings: OfflineEarningsResult) {
         var profile = getOrCreateDefaultPlayer()
 
-        // Add Watts
-        profile.gold += earnings.wattsEarned
+        // Add Hash (subject to HDD storage cap)
+        profile.addHash(earnings.hashEarned)
 
         // Update timestamp
         profile.tdStats.lastActiveTimestamp = Date().timeIntervalSince1970
@@ -359,13 +372,13 @@ class StorageService {
             return false
         }
 
-        guard profile.gold >= cost else {
-            // Not enough Watts
+        guard profile.hash >= cost else {
+            // Not enough Hash
             return false
         }
 
         // Deduct cost and upgrade
-        profile.gold -= cost
+        profile.hash -= cost
         profile.tdStats.cpuTier += 1
 
         savePlayer(profile)
@@ -382,6 +395,28 @@ class StorageService {
         )
     }
 
+    // MARK: - TD Session Persistence
+
+    /// Save TD session state (towers, slots, resources)
+    func saveTDSession(_ state: TDSessionState) {
+        if let data = try? JSONEncoder().encode(state) {
+            userDefaults.set(data, forKey: Keys.tdSessionState)
+        }
+    }
+
+    /// Load TD session state
+    func loadTDSession() -> TDSessionState? {
+        guard let data = userDefaults.data(forKey: Keys.tdSessionState),
+              let state = try? JSONDecoder().decode(TDSessionState.self, from: data)
+        else { return nil }
+        return state
+    }
+
+    /// Clear TD session state (on game reset or new game)
+    func clearTDSession() {
+        userDefaults.removeObject(forKey: Keys.tdSessionState)
+    }
+
     // MARK: - Reset
 
     /// Reset all data (for debugging)
@@ -389,13 +424,14 @@ class StorageService {
         userDefaults.removeObject(forKey: Keys.playerProfile)
         userDefaults.removeObject(forKey: Keys.allPlayers)
         userDefaults.removeObject(forKey: Keys.currentPlayerId)
+        userDefaults.removeObject(forKey: Keys.tdSessionState)
     }
 }
 
 // MARK: - Offline Earnings Result
 
 struct OfflineEarningsResult {
-    let wattsEarned: Int
+    let hashEarned: Int
     let dataEarned: Int
     let timeAwaySeconds: TimeInterval
     let cappedTimeSeconds: TimeInterval

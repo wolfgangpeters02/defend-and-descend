@@ -24,7 +24,7 @@ struct WelcomeBackModal: View {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 8) {
-                    Text("SYSTEM ONLINE")
+                    Text("SYSTEM_RESTORE_COMPLETE")
                         .font(.system(size: 28, weight: .black, design: .monospaced))
                         .foregroundColor(.cyan)
 
@@ -55,22 +55,22 @@ struct WelcomeBackModal: View {
 
                 // Earnings card
                 VStack(spacing: 16) {
-                    Text("IDLE EARNINGS")
+                    Text("GENERATED_PWR")
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.gray)
 
                     HStack(spacing: 32) {
                         // Watts earned
                         VStack(spacing: 4) {
-                            Image(systemName: "bolt.fill")
+                            Image(systemName: "number.circle.fill")
                                 .font(.title2)
                                 .foregroundColor(.cyan)
 
-                            Text("+\(earnings.wattsEarned)")
+                            Text("+\(earnings.hashEarned)")
                                 .font(.system(size: 22, weight: .bold, design: .monospaced))
                                 .foregroundColor(.cyan)
 
-                            Text("WATTS")
+                            Text("HASH")
                                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray)
                         }
@@ -150,7 +150,7 @@ struct WelcomeBackModal: View {
 #Preview {
     WelcomeBackModal(
         earnings: OfflineEarningsResult(
-            wattsEarned: 1250,
+            hashEarned: 1250,
             dataEarned: 3,
             timeAwaySeconds: 7200,
             cappedTimeSeconds: 7200,

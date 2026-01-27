@@ -24,7 +24,7 @@ class TDGameScene: SKScene {
     private var towerSlotLayer: SKNode!           // Hidden by default, shown only during drag
     private var gridDotsLayer: SKNode!            // Subtle grid dots for placement mode
     private var blockerLayer: SKNode!             // Blocker nodes and slots layer
-    private var activeSlotHighlight: SKShapeNode? // Highlights nearest valid slot during drag
+    private var activeSlotHighlight: SKNode? // Highlights nearest valid slot during drag
     private var towerLayer: SKNode!
     private var enemyLayer: SKNode!
     private var projectileLayer: SKNode!
@@ -39,18 +39,23 @@ class TDGameScene: SKScene {
     private var enemyNodes: [String: SKNode] = [:]
     private var projectileNodes: [String: SKNode] = [:]
     private var slotNodes: [String: SKNode] = [:]
+    private var gateNodes: [String: SKNode] = [:]  // Mega-board encryption gates
+
+    // Mega-board renderer
+    private var megaBoardRenderer: MegaBoardRenderer?
 
     // Selection
     private var selectedSlotId: String?
     private var selectedTowerId: String?
 
-    // Drag state for merging
+    // Drag state for merging and moving
     private var isDragging = false
     private var draggedTowerId: String?
     private var dragStartPosition: CGPoint?
     private var dragNode: SKNode?
     private var longPressTimer: Timer?
     private var validMergeTargets: Set<String> = []
+    private var validMoveSlots: Set<String> = []  // Empty slots for tower repositioning
 
     // Particle layer
     private var particleLayer: SKNode!
@@ -58,13 +63,40 @@ class TDGameScene: SKScene {
     // Camera for zoom/pan
     private var cameraNode: SKCameraNode!
     private var currentScale: CGFloat = 1.0
-    private let minScale: CGFloat = 0.5  // Can zoom out to 50%
-    private let maxScale: CGFloat = 2.0  // Can zoom in to 200%
+    private let minScale: CGFloat = 0.25  // Zoom IN limit (smaller = towers appear much bigger)
+    private let maxScale: CGFloat = 1.8   // Zoom OUT limit (see more map but not too much black)
+
+    // Inertia camera physics
+    private var cameraVelocity: CGPoint = .zero
+    private let cameraFriction: CGFloat = 0.92
+    private let cameraBoundsElasticity: CGFloat = 0.3
+    private var lastPanVelocity: CGPoint = .zero
+
+    // Parallax background
+    private var parallaxLayers: [(node: SKNode, speedFactor: CGFloat)] = []
+    private var lastCameraPosition: CGPoint = .zero
+
+    // Projectile trails
+    private var projectileTrails: [String: [CGPoint]] = [:]
+    private let maxTrailLength: Int = 8
+
+    // Motherboard City rendering
+    private var isMotherboardMap: Bool {
+        state?.map.theme == "motherboard"
+    }
 
     // MARK: - Setup
 
     override func didMove(to view: SKView) {
         backgroundColor = .black
+
+        // CRITICAL: Set anchor point to bottom-left (0,0) for correct positioning
+        // Without this, default (0.5, 0.5) makes (0,0) the center, causing entities
+        // to render in wrong positions
+        self.anchorPoint = CGPoint(x: 0, y: 0)
+
+        print("[TDGameScene] didMove - view: \(view.bounds.size), scene size: \(size), anchorPoint: \(anchorPoint)")
+
         // Only setup layers if not already done (loadState may have been called first)
         if backgroundLayer == nil {
             setupLayers()
@@ -77,31 +109,93 @@ class TDGameScene: SKScene {
 
     private func setupCamera() {
         cameraNode = SKCameraNode()
-        cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
+
+        // Center camera on the starter sector for motherboard, or scene center for others
+        if isMotherboardMap {
+            // Motherboard: Center on starter sector (RAM at center of 3x3 grid)
+            if let starterSector = MegaBoardSystem.shared.starterSector {
+                cameraNode.position = starterSector.center
+            } else {
+                // Fallback: center of grid (1400 * 1.5 = 2100)
+                cameraNode.position = CGPoint(x: 2100, y: 2100)
+            }
+        } else {
+            cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        }
         addChild(cameraNode)
         camera = cameraNode
+
+        // Start zoomed out to give overview, then animate to comfortable level
+        if isMotherboardMap {
+            // Motherboard: start zoomed out, animate to comfortable view
+            currentScale = 2.0  // Start at max zoom out
+            cameraNode.setScale(currentScale)
+
+            // Animate zoom-in to comfortable level
+            let wait = SKAction.wait(forDuration: 0.8)
+            let zoomIn = SKAction.scale(to: 1.0, duration: 1.0)
+            zoomIn.timingMode = .easeInEaseOut
+            let updateScale = SKAction.run { [weak self] in
+                self?.currentScale = 1.0
+            }
+            cameraNode.run(SKAction.sequence([wait, zoomIn, updateScale]))
+        } else {
+            currentScale = 1.5  // Start slightly zoomed out
+            cameraNode.setScale(currentScale)
+
+            // Animate zoom-in
+            let wait = SKAction.wait(forDuration: 1.0)
+            let zoomIn = SKAction.scale(to: 0.8, duration: 0.6)
+            zoomIn.timingMode = .easeInEaseOut
+            let updateScale = SKAction.run { [weak self] in
+                self?.currentScale = 0.8
+            }
+            cameraNode.run(SKAction.sequence([wait, zoomIn, updateScale]))
+        }
     }
 
     private func setupGestureRecognizers(view: SKView) {
         // Pinch to zoom
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
+        pinchGesture.cancelsTouchesInView = false  // Allow touches to pass through
         view.addGestureRecognizer(pinchGesture)
 
-        // Pan to move camera (two fingers to avoid conflict with tower drag)
+        // Pan to move camera (one finger for easy navigation)
+        // Tower placement is handled via drag from weapon deck in SwiftUI layer
         let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-        panGesture.minimumNumberOfTouches = 2
+        panGesture.minimumNumberOfTouches = 1
         panGesture.maximumNumberOfTouches = 2
+        panGesture.cancelsTouchesInView = false  // Allow SwiftUI gestures to also work
         view.addGestureRecognizer(panGesture)
     }
 
     @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-        guard let cameraNode = cameraNode else { return }
+        guard let cameraNode = cameraNode, let view = gesture.view else { return }
 
         if gesture.state == .changed {
-            // Invert scale: pinch out = smaller scale = zoom in
+            // Get pinch center in view coordinates
+            let pinchCenter = gesture.location(in: view)
+
+            // Convert to scene coordinates BEFORE zoom
+            let scenePointBefore = convertPoint(fromView: pinchCenter)
+
+            // Calculate new scale (invert: pinch out = smaller scale = zoom in)
             let newScale = currentScale / gesture.scale
             let clampedScale = max(minScale, min(maxScale, newScale))
+
+            // Apply new scale
             cameraNode.setScale(clampedScale)
+            currentScale = clampedScale
+
+            // Convert same view point to scene coordinates AFTER zoom
+            let scenePointAfter = convertPoint(fromView: pinchCenter)
+
+            // Adjust camera position so pinch point stays fixed (Google Maps style)
+            let deltaX = scenePointAfter.x - scenePointBefore.x
+            let deltaY = scenePointAfter.y - scenePointBefore.y
+            cameraNode.position.x -= deltaX
+            cameraNode.position.y -= deltaY
+
             gesture.scale = 1.0
         } else if gesture.state == .ended {
             currentScale = cameraNode.xScale
@@ -111,26 +205,151 @@ class TDGameScene: SKScene {
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
         guard let cameraNode = cameraNode, let view = gesture.view else { return }
 
-        if gesture.state == .changed {
+        switch gesture.state {
+        case .began:
+            // Stop any existing inertia
+            cameraVelocity = .zero
+
+        case .changed:
             let translation = gesture.translation(in: view)
 
+            // Pan speed multiplier - faster for large maps
+            let panSpeedMultiplier: CGFloat = isMotherboardMap ? 2.5 : 1.0
+
             // Move camera (inverted for natural scrolling)
-            let newX = cameraNode.position.x - translation.x * currentScale
-            let newY = cameraNode.position.y + translation.y * currentScale
+            let newX = cameraNode.position.x - translation.x * currentScale * panSpeedMultiplier
+            let newY = cameraNode.position.y + translation.y * currentScale * panSpeedMultiplier
 
-            // Clamp camera position to stay within map bounds
-            let minX = size.width * 0.25
-            let maxX = size.width * 0.75
-            let minY = size.height * 0.25
-            let maxY = size.height * 0.75
+            // Get camera bounds
+            let bounds = calculateCameraBounds()
 
-            cameraNode.position = CGPoint(
-                x: max(minX, min(maxX, newX)),
-                y: max(minY, min(maxY, newY))
-            )
+            // Soft bounds - allow slight overscroll with resistance
+            let overscrollResistance: CGFloat = 0.3
+            var finalX = newX
+            var finalY = newY
+
+            if newX < bounds.minX {
+                finalX = bounds.minX + (newX - bounds.minX) * overscrollResistance
+            } else if newX > bounds.maxX {
+                finalX = bounds.maxX + (newX - bounds.maxX) * overscrollResistance
+            }
+
+            if newY < bounds.minY {
+                finalY = bounds.minY + (newY - bounds.minY) * overscrollResistance
+            } else if newY > bounds.maxY {
+                finalY = bounds.maxY + (newY - bounds.maxY) * overscrollResistance
+            }
+
+            cameraNode.position = CGPoint(x: finalX, y: finalY)
+
+            // Capture velocity for inertia
+            let velocity = gesture.velocity(in: view)
+            lastPanVelocity = CGPoint(x: -velocity.x * currentScale * panSpeedMultiplier, y: velocity.y * currentScale * panSpeedMultiplier)
 
             gesture.setTranslation(.zero, in: view)
+
+        case .ended, .cancelled:
+            // Transfer velocity for inertia scrolling
+            cameraVelocity = lastPanVelocity
+            lastPanVelocity = .zero
+
+        default:
+            break
         }
+    }
+
+    /// Calculate camera bounds based on map size
+    /// Now allows panning to see full map edges (Google Maps style)
+    private func calculateCameraBounds() -> (minX: CGFloat, maxX: CGFloat, minY: CGFloat, maxY: CGFloat) {
+        guard let view = self.view else {
+            // Fallback for motherboard: center of map
+            if isMotherboardMap {
+                return (2100, 2100, 2100, 2100)
+            }
+            return (size.width / 2, size.width / 2, size.height / 2, size.height / 2)
+        }
+
+        // Calculate visible area in game units
+        let visibleWidth = view.bounds.width * currentScale
+        let visibleHeight = view.bounds.height * currentScale
+        let halfWidth = visibleWidth / 2
+        let halfHeight = visibleHeight / 2
+
+        if isMotherboardMap {
+            // Full motherboard is 4200x4200 (3x3 sectors of 1400 each)
+            let mapWidth: CGFloat = 4200
+            let mapHeight: CGFloat = 4200
+
+            // Allow camera to reach edges - camera can go from halfWidth to mapWidth-halfWidth
+            let minX = halfWidth
+            let maxX = mapWidth - halfWidth
+            let minY = halfHeight
+            let maxY = mapHeight - halfHeight
+
+            // If zoomed out so much that visible area > map, center it
+            return (
+                minX: min(minX, mapWidth / 2),
+                maxX: max(maxX, mapWidth / 2),
+                minY: min(minY, mapHeight / 2),
+                maxY: max(maxY, mapHeight / 2)
+            )
+        }
+
+        // Standard maps: allow panning to edges
+        let minX = halfWidth
+        let maxX = size.width - halfWidth
+        let minY = halfHeight
+        let maxY = size.height - halfHeight
+
+        return (
+            minX: min(minX, size.width / 2),
+            maxX: max(maxX, size.width / 2),
+            minY: min(minY, size.height / 2),
+            maxY: max(maxY, size.height / 2)
+        )
+    }
+
+    /// Update camera physics for inertia scrolling
+    private func updateCameraPhysics(deltaTime: TimeInterval) {
+        guard let cameraNode = cameraNode else { return }
+
+        // Skip if velocity is negligible
+        let speed = sqrt(cameraVelocity.x * cameraVelocity.x + cameraVelocity.y * cameraVelocity.y)
+        guard speed > 0.1 else {
+            cameraVelocity = .zero
+            return
+        }
+
+        // Apply velocity to camera position
+        let dt = CGFloat(deltaTime)
+        var newX = cameraNode.position.x + cameraVelocity.x * dt
+        var newY = cameraNode.position.y + cameraVelocity.y * dt
+
+        // Get camera bounds
+        let bounds = calculateCameraBounds()
+
+        // Elastic bounce at bounds
+        if newX < bounds.minX {
+            newX = bounds.minX
+            cameraVelocity.x = -cameraVelocity.x * cameraBoundsElasticity
+        } else if newX > bounds.maxX {
+            newX = bounds.maxX
+            cameraVelocity.x = -cameraVelocity.x * cameraBoundsElasticity
+        }
+
+        if newY < bounds.minY {
+            newY = bounds.minY
+            cameraVelocity.y = -cameraVelocity.y * cameraBoundsElasticity
+        } else if newY > bounds.maxY {
+            newY = bounds.maxY
+            cameraVelocity.y = -cameraVelocity.y * cameraBoundsElasticity
+        }
+
+        cameraNode.position = CGPoint(x: newX, y: newY)
+
+        // Apply friction
+        cameraVelocity.x *= cameraFriction
+        cameraVelocity.y *= cameraFriction
     }
 
     /// Reset camera to default view
@@ -151,10 +370,10 @@ class TDGameScene: SKScene {
         backgroundLayer.zPosition = 0
         addChild(backgroundLayer)
 
-        // Grid dots layer - below path, only visible during placement
+        // Grid dots layer - below path, always slightly visible for socket awareness
         gridDotsLayer = SKNode()
         gridDotsLayer.zPosition = 1
-        gridDotsLayer.alpha = 0  // Hidden by default
+        gridDotsLayer.alpha = 0.3  // Always slightly visible (Dark Terminal aesthetic)
         addChild(gridDotsLayer)
 
         // Path layer - above grid dots so path is always visible
@@ -201,6 +420,17 @@ class TDGameScene: SKScene {
         self.state = newState
         self.waves = waves
 
+        print("[TDGameScene] loadState - map: \(newState.map.width)x\(newState.map.height)")
+        print("[TDGameScene] loadState - paths: \(newState.paths.count), spawnPoints: \(newState.map.spawnPoints)")
+        print("[TDGameScene] loadState - waves: \(waves.count), towerSlots: \(newState.towerSlots.count)")
+
+        // Initialize mega-board system for motherboard maps
+        if newState.map.theme == "motherboard" {
+            MegaBoardSystem.shared.loadDefaultConfig()
+            MegaBoardSystem.shared.updateUnlockCache(from: AppState.shared.currentPlayer)
+            print("[TDGameScene] Mega-board system initialized")
+        }
+
         // Ensure layers are set up (in case loadState is called before didMove)
         if backgroundLayer == nil {
             setupLayers()
@@ -212,6 +442,67 @@ class TDGameScene: SKScene {
         setupTowerSlots()
         setupBlockers()
         setupCore()
+
+        // Setup mega-board visuals (ghost sectors, gates) for motherboard maps
+        if newState.map.theme == "motherboard" {
+            setupMegaBoardVisuals()
+        }
+    }
+
+    /// Setup mega-board ghost sectors and encryption gates
+    private func setupMegaBoardVisuals() {
+        guard isMotherboardMap else { return }
+
+        // Clear existing gate nodes
+        gateNodes.removeAll()
+
+        let profile = AppState.shared.currentPlayer
+
+        // Create and store renderer
+        megaBoardRenderer = MegaBoardRenderer(scene: self)
+        guard let renderer = megaBoardRenderer else { return }
+
+        // Render ghost sectors (locked but adjacent to unlocked)
+        let ghostSectors = MegaBoardSystem.shared.visibleLockedSectors(for: profile)
+        for sector in ghostSectors {
+            renderer.renderGhostSector(sector, in: backgroundLayer)
+        }
+
+        // Render encryption gates and store references for hit testing
+        let gates = MegaBoardSystem.shared.visibleGates(for: profile)
+        for gate in gates {
+            if let sector = MegaBoardSystem.shared.sector(id: gate.sectorId) {
+                renderer.renderEncryptionGate(gate, sector: sector, in: uiLayer)
+
+                // Store gate node for hit testing (find by name)
+                if let gateNode = uiLayer.childNode(withName: "gate_\(gate.id)") {
+                    gateNodes[gate.sectorId] = gateNode
+                }
+            }
+        }
+
+        // Render data bus connections
+        let connections = MegaBoardSystem.shared.connections
+        for connection in connections {
+            let isActive = connection.isActive(unlockedSectorIds: Set(profile.unlockedTDSectors))
+            renderer.renderDataBus(connection, isActive: isActive, in: pathLayer)
+        }
+
+        print("[TDGameScene] Mega-board visuals: \(ghostSectors.count) ghost sectors, \(gates.count) gates")
+    }
+
+    /// Refresh mega-board visuals after a sector is unlocked
+    func refreshMegaBoardVisuals() {
+        guard isMotherboardMap else { return }
+
+        // Clear existing visuals
+        megaBoardRenderer?.removeAllGhostSectors()
+        megaBoardRenderer?.removeAllEncryptionGates()
+        megaBoardRenderer?.removeAllDataBuses()
+        gateNodes.removeAll()
+
+        // Rebuild
+        setupMegaBoardVisuals()
     }
 
     private func setupBackground() {
@@ -219,6 +510,18 @@ class TDGameScene: SKScene {
 
         // Clear existing
         backgroundLayer.removeAllChildren()
+
+        // Use different rendering based on map theme
+        if isMotherboardMap {
+            setupMotherboardBackground()
+        } else {
+            setupStandardBackground()
+        }
+    }
+
+    /// Standard background rendering for non-motherboard maps
+    private func setupStandardBackground() {
+        guard let state = state else { return }
 
         // Background color - deep terminal black
         let bg = SKSpriteNode(color: DesignColors.backgroundUI, size: size)
@@ -249,12 +552,409 @@ class TDGameScene: SKScene {
             node.position = CGPoint(x: hazard.x + hazard.width/2, y: size.height - hazard.y - hazard.height/2)
             backgroundLayer.addChild(node)
         }
+
+        // Setup parallax layers
+        setupParallaxBackground()
+    }
+
+    // MARK: - Motherboard PCB Rendering
+
+    /// PCB substrate background for motherboard map
+    private func setupMotherboardBackground() {
+        // PCB Colors
+        let substrateColor = UIColor(hex: MotherboardColors.substrate) ?? UIColor(red: 0.1, green: 0.1, blue: 0.18, alpha: 1.0)
+
+        // 1. PCB Substrate (dark blue-black base)
+        let substrate = SKSpriteNode(color: substrateColor, size: size)
+        substrate.position = CGPoint(x: size.width/2, y: size.height/2)
+        substrate.zPosition = -5
+        backgroundLayer.addChild(substrate)
+
+        // 2. PCB Grid pattern (subtle copper grid)
+        let gridNode = createPCBGridNode()
+        gridNode.zPosition = -4
+        backgroundLayer.addChild(gridNode)
+
+        // 3. Draw districts as ghost outlines
+        drawMotherboardDistricts()
+
+        // 4. Draw system buses (copper traces)
+        drawSystemBuses()
+
+        // 5. Draw CPU core (always visible and glowing)
+        drawCPUCore()
+    }
+
+    /// Create subtle PCB grid pattern
+    private func createPCBGridNode() -> SKNode {
+        let gridNode = SKNode()
+        let gridSpacing: CGFloat = 100  // 100pt grid cells (40x40 grid on 4000x4000)
+        let lineColor = UIColor(hex: MotherboardColors.ghostMode)?.withAlphaComponent(0.3) ?? UIColor.darkGray.withAlphaComponent(0.3)
+
+        // Vertical lines
+        for x in stride(from: 0, through: size.width, by: gridSpacing) {
+            let line = SKShapeNode()
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: x, y: 0))
+            path.addLine(to: CGPoint(x: x, y: size.height))
+            line.path = path
+            line.strokeColor = lineColor
+            line.lineWidth = 1
+            gridNode.addChild(line)
+        }
+
+        // Horizontal lines
+        for y in stride(from: 0, through: size.height, by: gridSpacing) {
+            let line = SKShapeNode()
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: 0, y: y))
+            path.addLine(to: CGPoint(x: size.width, y: y))
+            line.path = path
+            line.strokeColor = lineColor
+            line.lineWidth = 1
+            gridNode.addChild(line)
+        }
+
+        return gridNode
+    }
+
+    /// Draw motherboard districts as ghost outlines (locked) or lit (unlocked)
+    private func drawMotherboardDistricts() {
+        let config = MotherboardConfig.createDefault()
+        let ghostColor = UIColor(hex: MotherboardColors.ghostMode) ?? UIColor.darkGray
+
+        for district in config.districts {
+            let districtNode = SKNode()
+
+            // District outline
+            let rect = CGRect(x: 0, y: 0, width: district.width, height: district.height)
+            let outline = SKShapeNode(rect: rect, cornerRadius: 8)
+
+            // Check if this is the CPU district (always active)
+            let isActive = district.id == "cpu_district"
+
+            if isActive {
+                // Active district - full brightness
+                outline.strokeColor = UIColor(hex: district.primaryColor) ?? UIColor.blue
+                outline.lineWidth = 3
+                outline.fillColor = UIColor(hex: district.primaryColor)?.withAlphaComponent(0.1) ?? UIColor.blue.withAlphaComponent(0.1)
+                outline.glowWidth = 5
+            } else {
+                // Ghost district - dimmed at 15%
+                outline.strokeColor = ghostColor.withAlphaComponent(0.4)
+                outline.lineWidth = 1
+                outline.fillColor = ghostColor.withAlphaComponent(0.05)
+            }
+
+            districtNode.addChild(outline)
+
+            // District label (silkscreen text)
+            let label = SKLabelNode(text: district.name.uppercased())
+            label.fontName = "Menlo-Bold"
+            label.fontSize = isActive ? 16 : 12
+            label.fontColor = isActive ? UIColor.white : ghostColor
+            label.position = CGPoint(x: district.width/2, y: district.height + 10)
+            label.horizontalAlignmentMode = .center
+            districtNode.addChild(label)
+
+            // For locked districts, add "LOCKED" or cost text
+            if !isActive {
+                let lockedLabel = SKLabelNode(text: "LOCKED")
+                lockedLabel.fontName = "Menlo"
+                lockedLabel.fontSize = 10
+                lockedLabel.fontColor = ghostColor.withAlphaComponent(0.6)
+                lockedLabel.position = CGPoint(x: district.width/2, y: district.height/2)
+                lockedLabel.horizontalAlignmentMode = .center
+                districtNode.addChild(lockedLabel)
+            }
+
+            // Position in scene (convert from game coords)
+            districtNode.position = CGPoint(x: district.x, y: district.y)
+            districtNode.zPosition = -3
+            backgroundLayer.addChild(districtNode)
+        }
+    }
+
+    /// Draw system buses as copper traces
+    /// Only draws ACTIVE buses - inactive/locked buses are not rendered
+    private func drawSystemBuses() {
+        // Currently disabled - we only show the enemy paths (neon lines)
+        // The copper traces were causing visual clutter
+        // TODO: Re-enable when sector unlock system shows unlocked sectors
+        return
+
+        /*
+        let config = MotherboardConfig.createDefault()
+        let copperColor = UIColor(hex: MotherboardColors.copperTrace) ?? UIColor.orange
+
+        for bus in config.buses {
+            // Skip inactive buses entirely - no ghost rendering
+            guard bus.isActive else { continue }
+
+            for segment in bus.segments {
+                let path = CGMutablePath()
+                path.move(to: segment.start)
+                path.addLine(to: segment.end)
+
+                // Outer glow
+                let glowNode = SKShapeNode(path: path)
+                glowNode.strokeColor = copperColor.withAlphaComponent(0.3)
+                glowNode.lineWidth = bus.width + 16
+                glowNode.lineCap = .round
+                glowNode.zPosition = -2.5
+                glowNode.blendMode = .add
+                backgroundLayer.addChild(glowNode)
+
+                // Main trace
+                let traceNode = SKShapeNode(path: path)
+                traceNode.strokeColor = copperColor
+                traceNode.lineWidth = bus.width
+                traceNode.lineCap = .square  // Manhattan geometry - square caps
+                traceNode.zPosition = -2
+                backgroundLayer.addChild(traceNode)
+
+                // Center highlight
+                let highlightNode = SKShapeNode(path: path)
+                highlightNode.strokeColor = UIColor.white.withAlphaComponent(0.2)
+                highlightNode.lineWidth = bus.width * 0.3
+                highlightNode.lineCap = .square
+                highlightNode.zPosition = -1.5
+                backgroundLayer.addChild(highlightNode)
+            }
+        }
+        */
+    }
+
+    /// Draw glowing CPU core at center
+    private func drawCPUCore() {
+        let cpuColor = UIColor(hex: MotherboardColors.cpuCore) ?? UIColor.blue
+        let glowColor = UIColor(hex: MotherboardColors.activeGlow) ?? UIColor.green
+
+        let cpuSize: CGFloat = 300
+        let cpuPosition = CGPoint(x: 2000, y: 2000)
+
+        // Outer glow
+        let outerGlow = SKShapeNode(rectOf: CGSize(width: cpuSize + 60, height: cpuSize + 60), cornerRadius: 20)
+        outerGlow.position = cpuPosition
+        outerGlow.fillColor = cpuColor.withAlphaComponent(0.1)
+        outerGlow.strokeColor = glowColor.withAlphaComponent(0.5)
+        outerGlow.lineWidth = 3
+        outerGlow.glowWidth = 20
+        outerGlow.zPosition = -1
+        outerGlow.blendMode = .add
+        backgroundLayer.addChild(outerGlow)
+
+        // CPU body
+        let cpuBody = SKShapeNode(rectOf: CGSize(width: cpuSize, height: cpuSize), cornerRadius: 10)
+        cpuBody.position = cpuPosition
+        cpuBody.fillColor = UIColor(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
+        cpuBody.strokeColor = cpuColor
+        cpuBody.lineWidth = 4
+        cpuBody.zPosition = 0
+        backgroundLayer.addChild(cpuBody)
+
+        // CPU die (inner bright square)
+        let dieSize: CGFloat = 150
+        let cpuDie = SKShapeNode(rectOf: CGSize(width: dieSize, height: dieSize), cornerRadius: 5)
+        cpuDie.position = cpuPosition
+        cpuDie.fillColor = cpuColor.withAlphaComponent(0.3)
+        cpuDie.strokeColor = cpuColor
+        cpuDie.lineWidth = 2
+        cpuDie.zPosition = 1
+        backgroundLayer.addChild(cpuDie)
+
+        // CPU label
+        let label = SKLabelNode(text: "CPU")
+        label.fontName = "Menlo-Bold"
+        label.fontSize = 32
+        label.fontColor = UIColor.white
+        label.position = CGPoint(x: cpuPosition.x, y: cpuPosition.y - 10)
+        label.horizontalAlignmentMode = .center
+        label.verticalAlignmentMode = .center
+        label.zPosition = 2
+        backgroundLayer.addChild(label)
+
+        // Pulse animation for glow
+        let pulseUp = SKAction.scale(to: 1.05, duration: 1.5)
+        let pulseDown = SKAction.scale(to: 1.0, duration: 1.5)
+        pulseUp.timingMode = .easeInEaseOut
+        pulseDown.timingMode = .easeInEaseOut
+        let pulse = SKAction.sequence([pulseUp, pulseDown])
+        outerGlow.run(SKAction.repeatForever(pulse))
+    }
+
+    /// Setup parallax background layers for depth effect
+    private func setupParallaxBackground() {
+        // Clear existing parallax layers
+        for (node, _) in parallaxLayers {
+            node.removeFromParent()
+        }
+        parallaxLayers.removeAll()
+
+        // Layer 1: Slow star field (z=-3, speed factor 0.1)
+        let starLayer = createStarFieldLayer()
+        starLayer.zPosition = -3
+        backgroundLayer.addChild(starLayer)
+        parallaxLayers.append((starLayer, 0.1))
+
+        // Layer 2: Circuit grid pattern (z=-2, speed factor 0.3)
+        let circuitLayer = createCircuitPatternLayer()
+        circuitLayer.zPosition = -2
+        backgroundLayer.addChild(circuitLayer)
+        parallaxLayers.append((circuitLayer, 0.3))
+
+        // Layer 3: Data flow particles (z=-1, speed factor 0.6)
+        let dataFlowLayer = createDataFlowLayer()
+        dataFlowLayer.zPosition = -1
+        backgroundLayer.addChild(dataFlowLayer)
+        parallaxLayers.append((dataFlowLayer, 0.6))
+
+        // Initialize camera position tracking
+        lastCameraPosition = cameraNode?.position ?? CGPoint(x: size.width / 2, y: size.height / 2)
+    }
+
+    /// Create star field background layer
+    private func createStarFieldLayer() -> SKNode {
+        let layer = SKNode()
+
+        // Create small dots as distant stars
+        let starCount = 50
+        let layerSize = CGSize(width: size.width * 2, height: size.height * 2)
+
+        for _ in 0..<starCount {
+            let star = SKShapeNode(circleOfRadius: CGFloat.random(in: 1...2))
+            star.fillColor = UIColor.white.withAlphaComponent(CGFloat.random(in: 0.2...0.5))
+            star.strokeColor = .clear
+            star.position = CGPoint(
+                x: CGFloat.random(in: -layerSize.width/2...layerSize.width/2),
+                y: CGFloat.random(in: -layerSize.height/2...layerSize.height/2)
+            )
+
+            // Subtle twinkle animation
+            let fadeOut = SKAction.fadeAlpha(to: 0.1, duration: Double.random(in: 1...3))
+            let fadeIn = SKAction.fadeAlpha(to: star.alpha, duration: Double.random(in: 1...3))
+            let delay = SKAction.wait(forDuration: Double.random(in: 0...2))
+            star.run(SKAction.repeatForever(SKAction.sequence([delay, fadeOut, fadeIn])))
+
+            layer.addChild(star)
+        }
+
+        layer.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        return layer
+    }
+
+    /// Create circuit pattern parallax layer
+    private func createCircuitPatternLayer() -> SKNode {
+        let layer = SKNode()
+
+        // Create faint circuit traces in background
+        let traceCount = 15
+        let layerSize = CGSize(width: size.width * 1.5, height: size.height * 1.5)
+
+        for _ in 0..<traceCount {
+            let startPoint = CGPoint(
+                x: CGFloat.random(in: -layerSize.width/2...layerSize.width/2),
+                y: CGFloat.random(in: -layerSize.height/2...layerSize.height/2)
+            )
+
+            let isHorizontal = Bool.random()
+            let length = CGFloat.random(in: 50...150)
+            let endPoint = isHorizontal
+                ? CGPoint(x: startPoint.x + length, y: startPoint.y)
+                : CGPoint(x: startPoint.x, y: startPoint.y + length)
+
+            let path = UIBezierPath()
+            path.move(to: startPoint)
+            path.addLine(to: endPoint)
+
+            let trace = SKShapeNode(path: path.cgPath)
+            trace.strokeColor = DesignColors.tracePrimaryUI.withAlphaComponent(0.15)
+            trace.lineWidth = 2
+            trace.lineCap = .round
+            layer.addChild(trace)
+
+            // Add junction dot at end
+            let dot = SKShapeNode(circleOfRadius: 3)
+            dot.fillColor = DesignColors.tracePrimaryUI.withAlphaComponent(0.2)
+            dot.strokeColor = .clear
+            dot.position = endPoint
+            layer.addChild(dot)
+        }
+
+        layer.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        return layer
+    }
+
+    /// Create data flow particles layer
+    private func createDataFlowLayer() -> SKNode {
+        let layer = SKNode()
+
+        // Create floating data particles
+        let particleCount = 20
+
+        for _ in 0..<particleCount {
+            let particle = SKShapeNode(rectOf: CGSize(width: 4, height: 4), cornerRadius: 1)
+            particle.fillColor = DesignColors.primaryUI.withAlphaComponent(0.3)
+            particle.strokeColor = .clear
+            particle.position = CGPoint(
+                x: CGFloat.random(in: 0...size.width),
+                y: CGFloat.random(in: 0...size.height)
+            )
+
+            // Floating animation
+            let moveUp = SKAction.moveBy(x: 0, y: 30, duration: Double.random(in: 2...4))
+            let moveDown = SKAction.moveBy(x: 0, y: -30, duration: Double.random(in: 2...4))
+            moveUp.timingMode = .easeInEaseOut
+            moveDown.timingMode = .easeInEaseOut
+            particle.run(SKAction.repeatForever(SKAction.sequence([moveUp, moveDown])))
+
+            // Fade animation
+            let fade = SKAction.sequence([
+                SKAction.fadeAlpha(to: 0.1, duration: Double.random(in: 1.5...3)),
+                SKAction.fadeAlpha(to: 0.3, duration: Double.random(in: 1.5...3))
+            ])
+            particle.run(SKAction.repeatForever(fade))
+
+            layer.addChild(particle)
+        }
+
+        return layer
+    }
+
+    /// Update parallax layers based on camera movement
+    private func updateParallaxLayers() {
+        guard let cameraNode = cameraNode else { return }
+
+        let cameraDelta = CGPoint(
+            x: cameraNode.position.x - lastCameraPosition.x,
+            y: cameraNode.position.y - lastCameraPosition.y
+        )
+
+        // Move each layer based on its speed factor (opposite to camera movement)
+        for (layer, speedFactor) in parallaxLayers {
+            layer.position.x -= cameraDelta.x * speedFactor
+            layer.position.y -= cameraDelta.y * speedFactor
+        }
+
+        lastCameraPosition = cameraNode.position
     }
 
     private func setupPaths() {
         guard let state = state else { return }
 
         pathLayer.removeAllChildren()
+
+        // Use different rendering based on map theme
+        if isMotherboardMap {
+            setupMotherboardPaths()
+        } else {
+            setupStandardPaths()
+        }
+    }
+
+    /// Standard path rendering for non-motherboard maps
+    private func setupStandardPaths() {
+        guard let state = state else { return }
 
         // Circuit trace dimensions - thinner for tech aesthetic
         let traceWidth: CGFloat = DesignLayout.pathWidth         // Main trace width
@@ -272,15 +972,16 @@ class TDGameScene: SKScene {
                 }
             }
 
-            // Outer glow layer (soft cyan glow)
+            // Outer glow layer (soft cyan glow with additive blending)
             let glowNode = SKShapeNode()
             glowNode.path = bezierPath.cgPath
-            glowNode.strokeColor = DesignColors.traceGlowUI.withAlphaComponent(0.2)
+            glowNode.strokeColor = DesignColors.traceGlowUI.withAlphaComponent(0.25)
             glowNode.lineWidth = glowWidth
             glowNode.lineCap = .round
             glowNode.lineJoin = .round
             glowNode.zPosition = 0
-            glowNode.glowWidth = 6
+            glowNode.glowWidth = 10  // Enhanced glow width
+            glowNode.blendMode = .add  // Additive blending for brighter glow
             pathLayer.addChild(glowNode)
 
             // Dark border/outline for depth
@@ -315,6 +1016,104 @@ class TDGameScene: SKScene {
 
             // Add data flow direction indicators (chevrons)
             addPathChevrons(for: path, pathWidth: traceWidth)
+        }
+    }
+
+    /// Motherboard-style copper trace paths
+    private func setupMotherboardPaths() {
+        guard let state = state else { return }
+
+        let copperColor = UIColor(hex: MotherboardColors.copperTrace) ?? UIColor.orange
+        let copperHighlight = UIColor(hex: MotherboardColors.copperHighlight) ?? UIColor(red: 0.83, green: 0.59, blue: 0.42, alpha: 1.0)
+        let traceWidth: CGFloat = 24  // Thicker traces for PCB look
+
+        for path in state.paths {
+            // Create Manhattan-style path (straight lines, 90° turns)
+            let bezierPath = UIBezierPath()
+
+            if let firstPoint = path.waypoints.first {
+                bezierPath.move(to: convertToScene(firstPoint))
+
+                for i in 1..<path.waypoints.count {
+                    bezierPath.addLine(to: convertToScene(path.waypoints[i]))
+                }
+            }
+
+            // Outer dark border (PCB substrate showing through)
+            let borderNode = SKShapeNode()
+            borderNode.path = bezierPath.cgPath
+            borderNode.strokeColor = UIColor(red: 0.08, green: 0.08, blue: 0.12, alpha: 1.0)
+            borderNode.lineWidth = traceWidth + 6
+            borderNode.lineCap = .square  // Manhattan geometry - square caps
+            borderNode.lineJoin = .miter  // Sharp 90° corners
+            borderNode.zPosition = 1
+            pathLayer.addChild(borderNode)
+
+            // Main copper trace
+            let pathNode = SKShapeNode()
+            pathNode.path = bezierPath.cgPath
+            pathNode.strokeColor = copperColor
+            pathNode.lineWidth = traceWidth
+            pathNode.lineCap = .square
+            pathNode.lineJoin = .miter
+            pathNode.zPosition = 2
+            pathLayer.addChild(pathNode)
+
+            // Inner highlight for 3D copper effect
+            let highlightNode = SKShapeNode()
+            highlightNode.path = bezierPath.cgPath
+            highlightNode.strokeColor = copperHighlight.withAlphaComponent(0.6)
+            highlightNode.lineWidth = traceWidth * 0.4
+            highlightNode.lineCap = .square
+            highlightNode.lineJoin = .miter
+            highlightNode.zPosition = 3
+            pathLayer.addChild(highlightNode)
+
+            // Add data flow indicators (smaller, subtler)
+            addMotherboardPathChevrons(for: path, pathWidth: traceWidth)
+        }
+    }
+
+    /// Add data flow chevrons for motherboard paths
+    private func addMotherboardPathChevrons(for path: EnemyPath, pathWidth: CGFloat) {
+        guard path.waypoints.count >= 2 else { return }
+
+        let chevronSpacing: CGFloat = 150
+        let glowColor = UIColor(hex: MotherboardColors.activeGlow) ?? UIColor.green
+
+        for i in 0..<(path.waypoints.count - 1) {
+            let start = convertToScene(path.waypoints[i])
+            let end = convertToScene(path.waypoints[i + 1])
+
+            let dx = end.x - start.x
+            let dy = end.y - start.y
+            let segmentLength = sqrt(dx*dx + dy*dy)
+            let angle = atan2(dy, dx)
+
+            let chevronCount = Int(segmentLength / chevronSpacing)
+
+            for j in 1...max(1, chevronCount) {
+                let t = CGFloat(j) / CGFloat(chevronCount + 1)
+                let x = start.x + dx * t
+                let y = start.y + dy * t
+
+                // Small glowing dot instead of chevron for PCB aesthetic
+                let dot = SKShapeNode(circleOfRadius: 4)
+                dot.position = CGPoint(x: x, y: y)
+                dot.fillColor = glowColor.withAlphaComponent(0.8)
+                dot.strokeColor = .clear
+                dot.zPosition = 4
+                dot.glowWidth = 3
+                dot.blendMode = .add
+                pathLayer.addChild(dot)
+
+                // Pulse animation
+                let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: 0.8)
+                let fadeIn = SKAction.fadeAlpha(to: 0.9, duration: 0.8)
+                let delay = SKAction.wait(forDuration: Double(j) * 0.15)
+                let pulse = SKAction.sequence([delay, SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn]))])
+                dot.run(pulse)
+            }
         }
     }
 
@@ -398,22 +1197,54 @@ class TDGameScene: SKScene {
         }
     }
 
-    /// Create a subtle grid dot for placement mode (progressive disclosure)
-    private func createGridDot(slot: TowerSlot) -> SKShapeNode {
-        let dotSize = DesignLayout.gridDotSize
-        let dot = SKShapeNode(circleOfRadius: dotSize / 2)
+    /// Create tower socket visual (Circuit board aesthetic)
+    /// Smaller, subtler dots when idle; brighter appearance during placement
+    private func createGridDot(slot: TowerSlot) -> SKNode {
+        let container = SKNode()
 
         if slot.occupied {
-            // No dot for occupied slots
-            dot.fillColor = .clear
-            dot.strokeColor = .clear
+            // Occupied slot: Bright chip indicator
+            let chipSize: CGFloat = 20
+            let chip = SKShapeNode(rectOf: CGSize(width: chipSize, height: chipSize), cornerRadius: 3)
+            chip.fillColor = DesignColors.primaryUI.withAlphaComponent(0.6)
+            chip.strokeColor = DesignColors.primaryUI
+            chip.lineWidth = 1
+            chip.glowWidth = 4
+            container.addChild(chip)
         } else {
-            // Subtle muted dot
-            dot.fillColor = DesignColors.mutedUI.withAlphaComponent(DesignLayout.gridDotOpacity)
-            dot.strokeColor = .clear
+            // Empty slot: Subtle grid point with circuit board pins
+            let dotRadius: CGFloat = 4
+            let dot = SKShapeNode(circleOfRadius: dotRadius)
+            dot.fillColor = UIColor(white: 0.3, alpha: 0.4)
+            dot.strokeColor = UIColor(white: 0.5, alpha: 0.3)
+            dot.lineWidth = 1
+            container.addChild(dot)
+
+            // Corner pins (circuit board aesthetic - smaller, subtler)
+            let pinSize: CGFloat = 3
+            let pinOffset: CGFloat = 10
+            for (xSign, ySign) in [(1, 1), (1, -1), (-1, 1), (-1, -1)] as [(CGFloat, CGFloat)] {
+                let pin = SKShapeNode(rectOf: CGSize(width: pinSize, height: pinSize))
+                pin.fillColor = UIColor(white: 0.4, alpha: 0.3)
+                pin.strokeColor = .clear
+                pin.position = CGPoint(x: pinOffset * xSign, y: pinOffset * ySign)
+                container.addChild(pin)
+            }
+
+            // Connection traces (subtle lines to pins)
+            for (xSign, ySign) in [(1, 0), (-1, 0), (0, 1), (0, -1)] as [(CGFloat, CGFloat)] {
+                let trace = SKShapeNode()
+                let path = CGMutablePath()
+                path.move(to: CGPoint(x: dotRadius * xSign, y: dotRadius * ySign))
+                path.addLine(to: CGPoint(x: 8 * xSign, y: 8 * ySign))
+                trace.path = path
+                trace.strokeColor = UIColor(white: 0.35, alpha: 0.25)
+                trace.lineWidth = 1
+                container.addChild(trace)
+            }
         }
 
-        return dot
+        return container
     }
 
     private func createSlotNode(slot: TowerSlot) -> SKNode {
@@ -544,29 +1375,29 @@ class TDGameScene: SKScene {
 
     // MARK: - Placement Mode (Progressive Disclosure)
 
-    /// Enter placement mode - show grid dots with fade in
+    /// Enter placement mode - brighten grid dots
     func enterPlacementMode(weaponType: String) {
         guard !isInPlacementMode else { return }
 
         isInPlacementMode = true
         placementWeaponType = weaponType
 
-        // Fade in grid dots
-        gridDotsLayer.run(SKAction.fadeIn(withDuration: DesignAnimations.Timing.quick))
+        // Brighten grid dots during placement (from ambient 0.3 to full visibility)
+        gridDotsLayer.run(SKAction.fadeAlpha(to: 1.0, duration: DesignAnimations.Timing.quick))
 
         // Update grid dots to show only unoccupied slots
         updateGridDotsVisibility()
     }
 
-    /// Exit placement mode - hide grid dots with fade out
+    /// Exit placement mode - dim grid dots back to ambient level
     func exitPlacementMode() {
         guard isInPlacementMode else { return }
 
         isInPlacementMode = false
         placementWeaponType = nil
 
-        // Fade out grid dots
-        gridDotsLayer.run(SKAction.fadeOut(withDuration: DesignAnimations.Timing.quick))
+        // Dim grid dots back to ambient visibility
+        gridDotsLayer.run(SKAction.fadeAlpha(to: 0.3, duration: DesignAnimations.Timing.quick))
 
         // Remove active slot highlight
         activeSlotHighlight?.removeFromParent()
@@ -578,7 +1409,8 @@ class TDGameScene: SKScene {
         guard let state = state else { return }
 
         for slot in state.towerSlots {
-            if let dotNode = gridDotsLayer.childNode(withName: "gridDot_\(slot.id)") as? SKShapeNode {
+            // Use SKNode instead of SKShapeNode since createGridDot now returns a container
+            if let dotNode = gridDotsLayer.childNode(withName: "gridDot_\(slot.id)") {
                 if slot.occupied {
                     dotNode.alpha = 0
                 } else {
@@ -588,7 +1420,7 @@ class TDGameScene: SKScene {
         }
     }
 
-    /// Highlight the nearest valid slot during drag
+    /// Highlight the nearest valid slot during drag with enhanced visuals
     func highlightNearestSlot(_ slot: TowerSlot?, canAfford: Bool) {
         // Remove existing highlight
         activeSlotHighlight?.removeFromParent()
@@ -596,61 +1428,119 @@ class TDGameScene: SKScene {
 
         guard let slot = slot, !slot.occupied else { return }
 
-        // Create new highlight
-        let highlight = SKShapeNode(circleOfRadius: 20)
-        highlight.fillColor = canAfford
-            ? DesignColors.primaryUI.withAlphaComponent(0.3)
-            : DesignColors.dangerUI.withAlphaComponent(0.2)
-        highlight.strokeColor = canAfford
-            ? DesignColors.primaryUI
-            : DesignColors.dangerUI
-        highlight.lineWidth = 3
-        highlight.glowWidth = canAfford ? 10 : 5
-        highlight.position = convertToScene(slot.position)
-        highlight.zPosition = 8
+        // Create highlight container
+        let container = SKNode()
+        container.position = convertToScene(slot.position)
+        container.name = "slotHighlight"
+        container.zPosition = 8
+
+        // Outer glow ring
+        let outerRing = SKShapeNode(circleOfRadius: 45)
+        outerRing.fillColor = .clear
+        outerRing.strokeColor = canAfford ? DesignColors.primaryUI : DesignColors.dangerUI
+        outerRing.lineWidth = 3
+        outerRing.glowWidth = 10
+        outerRing.alpha = 0.8
+        container.addChild(outerRing)
+
+        // Inner fill
+        let innerFill = SKShapeNode(circleOfRadius: 35)
+        innerFill.fillColor = (canAfford ? DesignColors.primaryUI : DesignColors.dangerUI).withAlphaComponent(0.2)
+        innerFill.strokeColor = .clear
+        container.addChild(innerFill)
+
+        // Crosshair lines for targeting aesthetic
+        let crosshairSize: CGFloat = 50
+        let crosshairGap: CGFloat = 15
+        let crosshairColor = canAfford ? DesignColors.primaryUI : DesignColors.dangerUI
+
+        // Horizontal lines
+        for xSign in [-1.0, 1.0] as [CGFloat] {
+            let line = SKShapeNode()
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: crosshairGap * xSign, y: 0))
+            path.addLine(to: CGPoint(x: crosshairSize * xSign, y: 0))
+            line.path = path
+            line.strokeColor = crosshairColor.withAlphaComponent(0.8)
+            line.lineWidth = 2
+            container.addChild(line)
+        }
+
+        // Vertical lines
+        for ySign in [-1.0, 1.0] as [CGFloat] {
+            let line = SKShapeNode()
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: 0, y: crosshairGap * ySign))
+            path.addLine(to: CGPoint(x: 0, y: crosshairSize * ySign))
+            line.path = path
+            line.strokeColor = crosshairColor.withAlphaComponent(0.8)
+            line.lineWidth = 2
+            container.addChild(line)
+        }
+
+        // Corner brackets for circuit board aesthetic
+        let bracketSize: CGFloat = 12
+        let bracketOffset: CGFloat = 32
+        for (xSign, ySign) in [(1, 1), (1, -1), (-1, 1), (-1, -1)] as [(CGFloat, CGFloat)] {
+            let bracket = SKShapeNode()
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: bracketOffset * xSign, y: (bracketOffset + bracketSize) * ySign))
+            path.addLine(to: CGPoint(x: bracketOffset * xSign, y: bracketOffset * ySign))
+            path.addLine(to: CGPoint(x: (bracketOffset + bracketSize) * xSign, y: bracketOffset * ySign))
+            bracket.path = path
+            bracket.strokeColor = crosshairColor.withAlphaComponent(0.6)
+            bracket.lineWidth = 2
+            bracket.lineCap = .round
+            container.addChild(bracket)
+        }
 
         // Pulse animation
-        let scaleUp = SKAction.scale(to: 1.1, duration: 0.3)
-        let scaleDown = SKAction.scale(to: 0.95, duration: 0.3)
-        let pulse = SKAction.sequence([scaleUp, scaleDown])
-        highlight.run(SKAction.repeatForever(pulse))
+        let pulse = SKAction.repeatForever(SKAction.sequence([
+            SKAction.scale(to: 1.15, duration: 0.4),
+            SKAction.scale(to: 1.0, duration: 0.4)
+        ]))
+        container.run(pulse)
 
-        addChild(highlight)
-        activeSlotHighlight = highlight
+        addChild(container)
+        activeSlotHighlight = container
     }
 
     private func setupCore() {
         guard let state = state else { return }
+
+        // Copper/Gold colors matching trace aesthetic
+        let copperColor = UIColor(red: 184/255, green: 115/255, blue: 51/255, alpha: 1.0)  // #b87333
+        let goldGlowColor = UIColor(red: 212/255, green: 168/255, blue: 75/255, alpha: 1.0)  // #d4a84b
 
         // Create CPU container node
         let coreContainer = SKNode()
         coreContainer.position = convertToScene(state.core.position)
         coreContainer.name = "core"
 
-        // CPU body - rounded square (System: Reboot aesthetic)
+        // CPU body - rounded square (Heatsink/Chip aesthetic)
         let cpuSize: CGFloat = 90
         let cpuBody = SKShapeNode(rectOf: CGSize(width: cpuSize, height: cpuSize), cornerRadius: 12)
         cpuBody.fillColor = DesignColors.surfaceUI
-        cpuBody.strokeColor = DesignColors.primaryUI
+        cpuBody.strokeColor = copperColor
         cpuBody.lineWidth = 4
         cpuBody.glowWidth = 8
         cpuBody.name = "cpuBody"
         coreContainer.addChild(cpuBody)
 
-        // Inner chip detail - smaller square
+        // Inner chip detail - smaller square with copper accent
         let innerSize: CGFloat = 60
         let innerChip = SKShapeNode(rectOf: CGSize(width: innerSize, height: innerSize), cornerRadius: 6)
         innerChip.fillColor = DesignColors.backgroundUI
-        innerChip.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.6)
+        innerChip.strokeColor = copperColor.withAlphaComponent(0.6)
         innerChip.lineWidth = 2
         innerChip.name = "innerChip"
         coreContainer.addChild(innerChip)
 
-        // CPU label
+        // CPU label with copper color
         let cpuLabel = SKLabelNode(text: "CPU")
         cpuLabel.fontName = "Menlo-Bold"
         cpuLabel.fontSize = 20
-        cpuLabel.fontColor = DesignColors.primaryUI
+        cpuLabel.fontColor = copperColor
         cpuLabel.verticalAlignmentMode = .center
         cpuLabel.horizontalAlignmentMode = .center
         coreContainer.addChild(cpuLabel)
@@ -666,7 +1556,29 @@ class TDGameScene: SKScene {
         efficiencyLabel.name = "efficiencyLabel"
         coreContainer.addChild(efficiencyLabel)
 
-        // Pin connectors (circuit board aesthetic)
+        // Heatsink fins radiating from the chip (copper colored)
+        let finCount = 8
+        let finLength: CGFloat = 20
+        let finWidth: CGFloat = 6
+        let finOffset = cpuSize / 2 + finLength / 2 + 2
+
+        for i in 0..<finCount {
+            let angle = CGFloat(i) * .pi / 4  // 8 directions
+            let fin = SKShapeNode(rectOf: CGSize(width: finWidth, height: finLength), cornerRadius: 2)
+            fin.fillColor = copperColor.withAlphaComponent(0.7)
+            fin.strokeColor = copperColor
+            fin.lineWidth = 1
+
+            fin.position = CGPoint(
+                x: cos(angle) * finOffset,
+                y: sin(angle) * finOffset
+            )
+            fin.zRotation = angle + .pi / 2
+            fin.zPosition = -0.5
+            coreContainer.addChild(fin)
+        }
+
+        // Pin connectors (circuit board aesthetic - copper)
         let pinCount = 6
         let pinLength: CGFloat = 15
         let pinWidth: CGFloat = 4
@@ -675,7 +1587,7 @@ class TDGameScene: SKScene {
         for side in 0..<4 {  // 4 sides
             for i in 1...pinCount {
                 let pin = SKShapeNode(rectOf: CGSize(width: pinWidth, height: pinLength))
-                pin.fillColor = DesignColors.primaryUI.withAlphaComponent(0.5)
+                pin.fillColor = copperColor.withAlphaComponent(0.5)
                 pin.strokeColor = .clear
 
                 let offset = -cpuSize / 2 + pinSpacing * CGFloat(i)
@@ -697,21 +1609,33 @@ class TDGameScene: SKScene {
             }
         }
 
-        // Glow ring (pulsing based on efficiency)
-        let glowRing = SKShapeNode(circleOfRadius: cpuSize / 2 + 15)
+        // Glow ring (pulsing gold glow - intensity based on efficiency)
+        let glowRing = SKShapeNode(circleOfRadius: cpuSize / 2 + 25)
         glowRing.fillColor = .clear
-        glowRing.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.3)
-        glowRing.lineWidth = 3
-        glowRing.glowWidth = 15
+        glowRing.strokeColor = goldGlowColor.withAlphaComponent(0.4)
+        glowRing.lineWidth = 4
+        glowRing.glowWidth = 20
         glowRing.name = "glowRing"
         glowRing.zPosition = -1
         coreContainer.addChild(glowRing)
 
-        // Pulse animation for glow ring
-        let pulseOut = SKAction.scale(to: 1.1, duration: 1.0)
-        let pulseIn = SKAction.scale(to: 0.95, duration: 1.0)
+        // Pulse animation for glow ring (synced to game rhythm)
+        let pulseOut = SKAction.scale(to: 1.15, duration: 0.8)
+        let pulseIn = SKAction.scale(to: 0.9, duration: 0.8)
+        pulseOut.timingMode = .easeInEaseOut
+        pulseIn.timingMode = .easeInEaseOut
         let pulse = SKAction.sequence([pulseOut, pulseIn])
         glowRing.run(SKAction.repeatForever(pulse))
+
+        // Secondary inner glow (copper)
+        let innerGlow = SKShapeNode(circleOfRadius: cpuSize / 2 + 5)
+        innerGlow.fillColor = .clear
+        innerGlow.strokeColor = copperColor.withAlphaComponent(0.3)
+        innerGlow.lineWidth = 2
+        innerGlow.glowWidth = 8
+        innerGlow.name = "innerGlow"
+        innerGlow.zPosition = -0.5
+        coreContainer.addChild(innerGlow)
 
         backgroundLayer.addChild(coreContainer)
     }
@@ -724,6 +1648,14 @@ class TDGameScene: SKScene {
         // Calculate delta time
         let deltaTime = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
         lastUpdateTime = currentTime
+
+        // Check for System Freeze (0% efficiency)
+        // When frozen, pause all game updates and notify delegate
+        if state.isSystemFrozen {
+            // Only update core visual (pulsing red), no game logic
+            updateCoreVisual(state: state, currentTime: currentTime)
+            return
+        }
 
         // Update game time
         state.gameTime += deltaTime
@@ -743,9 +1675,17 @@ class TDGameScene: SKScene {
         processCollisions(state: &state)
         cleanupDeadEntities(state: &state)
 
+        // Check if system just froze (efficiency hit 0%)
+        if state.isSystemFrozen {
+            self.state = state
+            gameStateDelegate?.gameStateUpdated(state)
+            gameStateDelegate?.systemFrozen()
+            return
+        }
+
         // Efficiency System (System: Reboot)
         PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
-        PathSystem.updateWattsIncome(state: &state, deltaTime: deltaTime)
+        PathSystem.updateHashIncome(state: &state, deltaTime: deltaTime)
 
         // Zero-Day System (System Breach events)
         _ = ZeroDaySystem.update(state: &state, deltaTime: deltaTime)
@@ -774,15 +1714,27 @@ class TDGameScene: SKScene {
             if !hasStartedFirstWave {
                 // Initial delay before wave 1
                 gameStartDelay -= deltaTime
-                if gameStartDelay <= 0 {
+                if gameStartDelay <= 0 && currentWaveIndex < waves.count {
                     hasStartedFirstWave = true
-                    startWave()
+                    print("[TDGameScene] Starting first wave! currentWaveIndex: \(currentWaveIndex), waves.count: \(waves.count)")
+                    // Start wave directly on local state (not via startWave() which modifies self.state)
+                    WaveSystem.startWave(state: &state, wave: waves[currentWaveIndex])
+                    spawnTimer = 0
+                    print("[TDGameScene] After startWave - waveInProgress: \(state.waveInProgress), waveEnemiesRemaining: \(state.waveEnemiesRemaining)")
                 }
             } else if state.nextWaveCountdown <= 0 && currentWaveIndex < waves.count {
                 // Auto-start next wave when countdown finishes
-                startWave()
+                // Start wave directly on local state
+                WaveSystem.startWave(state: &state, wave: waves[currentWaveIndex])
+                spawnTimer = 0
             }
         }
+
+        // Update camera physics (inertia scrolling)
+        updateCameraPhysics(deltaTime: deltaTime)
+
+        // Update parallax background
+        updateParallaxLayers()
 
         // Update visuals
         updateTowerVisuals(state: state)
@@ -807,9 +1759,17 @@ class TDGameScene: SKScene {
         if spawnTimer >= wave.delayBetweenSpawns {
             spawnTimer = 0
 
-            // Spawn next enemy
+            // Debug: log spawn attempt
+            print("[TDGameScene] Attempting spawn - waveEnemiesSpawned: \(state.waveEnemiesSpawned), waveEnemiesRemaining: \(state.waveEnemiesRemaining), wave.enemies: \(wave.enemies.count)")
+
+            // Spawn next enemy with portal animation
             if let enemy = WaveSystem.spawnNextEnemy(state: &state, wave: wave, currentTime: currentTime) {
                 state.enemies.append(enemy)
+                let spawnPosition = convertToScene(enemy.position)
+                spawnPortalAnimation(at: spawnPosition)
+                print("[TDGameScene] Spawned enemy '\(enemy.type)' at (\(enemy.x), \(enemy.y)) -> scene pos: \(spawnPosition)")
+            } else {
+                print("[TDGameScene] spawnNextEnemy returned nil!")
             }
         }
     }
@@ -904,8 +1864,8 @@ class TDGameScene: SKScene {
                     // Check enemy death
                     if enemy.health <= 0 {
                         enemy.isDead = true
-                        state.gold += enemy.goldValue
-                        state.stats.goldEarned += enemy.goldValue
+                        let actualGold = state.addHash(enemy.goldValue)
+                        state.stats.goldEarned += actualGold
                         state.stats.enemiesKilled += 1
                         state.virusesKilledTotal += 1  // For passive Data generation
                         state.waveEnemiesRemaining -= 1
@@ -953,8 +1913,8 @@ class TDGameScene: SKScene {
 
                 if enemy.health <= 0 {
                     enemy.isDead = true
-                    state.gold += enemy.goldValue
-                    state.stats.goldEarned += enemy.goldValue
+                    let actualGold = state.addHash(enemy.goldValue)
+                    state.stats.goldEarned += actualGold
                     state.stats.enemiesKilled += 1
                     state.virusesKilledTotal += 1  // For passive Data generation
                     state.waveEnemiesRemaining -= 1
@@ -1491,6 +2451,7 @@ class TDGameScene: SKScene {
                 node.position = convertToScene(enemy.position)
                 enemyLayer.addChild(node)
                 enemyNodes[enemy.id] = node
+                print("[TDGameScene] Created enemy node - pos: \(node.position), size: \(enemy.size), type: \(enemy.type), enemyLayer.alpha: \(enemyLayer.alpha), enemyLayer.zPosition: \(enemyLayer.zPosition)")
             }
         }
     }
@@ -1516,27 +2477,95 @@ class TDGameScene: SKScene {
     }
 
     private func updateProjectileVisuals(state: TDGameState) {
-        // Remove old projectile nodes
+        // Remove old projectile nodes and trails
         for (id, node) in projectileNodes {
             if !state.projectiles.contains(where: { $0.id == id }) {
                 node.removeFromParent()
                 projectileNodes.removeValue(forKey: id)
+                projectileTrails.removeValue(forKey: id)
             }
         }
 
-        // Update/create projectile nodes
+        // Update/create projectile nodes and trails
         for proj in state.projectiles {
+            let scenePos = convertToScene(CGPoint(x: proj.x, y: proj.y))
+
             if let node = projectileNodes[proj.id] {
-                node.position = convertToScene(CGPoint(x: proj.x, y: proj.y))
+                node.position = scenePos
+
+                // Update trail
+                updateProjectileTrail(projId: proj.id, position: scenePos, color: UIColor(hex: proj.color) ?? .yellow)
             } else {
-                let node = SKShapeNode(circleOfRadius: proj.radius)
-                node.fillColor = UIColor(hex: proj.color) ?? .yellow
-                node.strokeColor = .white
-                node.lineWidth = 1
-                node.position = convertToScene(CGPoint(x: proj.x, y: proj.y))
-                projectileLayer.addChild(node)
-                projectileNodes[proj.id] = node
+                // Create new projectile node
+                let container = SKNode()
+                container.position = scenePos
+
+                let projectile = SKShapeNode(circleOfRadius: proj.radius)
+                projectile.fillColor = UIColor(hex: proj.color) ?? .yellow
+                projectile.strokeColor = .white
+                projectile.lineWidth = 1
+                projectile.name = "projectile"
+                projectile.glowWidth = 3
+                container.addChild(projectile)
+
+                // Trail container
+                let trailNode = SKNode()
+                trailNode.name = "trail"
+                trailNode.zPosition = -1
+                container.addChild(trailNode)
+
+                projectileLayer.addChild(container)
+                projectileNodes[proj.id] = container
+
+                // Initialize trail
+                projectileTrails[proj.id] = [scenePos]
             }
+        }
+    }
+
+    /// Update projectile trail with glowing effect
+    private func updateProjectileTrail(projId: String, position: CGPoint, color: UIColor) {
+        // Get or create trail array
+        var trail = projectileTrails[projId] ?? []
+
+        // Add current position
+        trail.append(position)
+
+        // Limit trail length
+        if trail.count > maxTrailLength {
+            trail.removeFirst(trail.count - maxTrailLength)
+        }
+
+        projectileTrails[projId] = trail
+
+        // Update trail visual
+        guard let node = projectileNodes[projId],
+              let trailNode = node.childNode(withName: "trail"),
+              trail.count >= 2 else { return }
+
+        // Remove old trail segments
+        trailNode.removeAllChildren()
+
+        // Draw new trail segments with fading effect
+        for i in 0..<(trail.count - 1) {
+            let startPos = CGPoint(x: trail[i].x - node.position.x, y: trail[i].y - node.position.y)
+            let endPos = CGPoint(x: trail[i + 1].x - node.position.x, y: trail[i + 1].y - node.position.y)
+
+            let path = UIBezierPath()
+            path.move(to: startPos)
+            path.addLine(to: endPos)
+
+            let segment = SKShapeNode(path: path.cgPath)
+
+            // Fade based on position in trail (older = more faded)
+            let alpha = CGFloat(i + 1) / CGFloat(trail.count) * 0.6
+            segment.strokeColor = color.withAlphaComponent(alpha)
+            segment.lineWidth = max(1, 3 * alpha)
+            segment.lineCap = .round
+            segment.blendMode = .add  // Additive blending for glow effect
+            segment.glowWidth = 2 * alpha
+
+            trailNode.addChild(segment)
         }
     }
 
@@ -1598,6 +2627,30 @@ class TDGameScene: SKScene {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
 
+        // Check for encryption gate tap (mega-board)
+        // Use direct position-based hit detection for reliability
+        if isMotherboardMap {
+            let profile = AppState.shared.currentPlayer
+            let visibleGates = MegaBoardSystem.shared.visibleGates(for: profile)
+
+            for gate in visibleGates {
+                // Create a hit rect around the gate position
+                let hitRect = CGRect(
+                    x: gate.position.x - gate.gateWidth / 2 - 20,  // Extra padding for easier tapping
+                    y: gate.position.y - gate.gateHeight / 2 - 20,
+                    width: gate.gateWidth + 40,
+                    height: gate.gateHeight + 40
+                )
+
+                if hitRect.contains(location) {
+                    print("[TDGameScene] Gate tapped: \(gate.sectorId) at \(gate.position)")
+                    HapticsService.shared.play(.light)
+                    gameStateDelegate?.gateSelected(gate.sectorId)
+                    return
+                }
+            }
+        }
+
         // Check for tower touch (start long-press timer for drag)
         for (towerId, node) in towerNodes {
             if node.contains(location) {
@@ -1655,9 +2708,13 @@ class TDGameScene: SKScene {
         cancelLongPress()
 
         if isDragging, let draggedId = draggedTowerId {
-            // Check for merge drop
+            // Check for merge drop first (higher priority)
             if let targetId = findMergeTargetAtLocation(location), targetId != draggedId {
                 performMerge(sourceTowerId: draggedId, targetTowerId: targetId)
+            }
+            // Check for move to empty slot
+            else if let targetSlotId = findEmptySlotAtLocation(location) {
+                performTowerMove(towerId: draggedId, toSlotId: targetSlotId)
             }
 
             // End drag
@@ -1683,16 +2740,22 @@ class TDGameScene: SKScene {
     // MARK: - Drag Operations
 
     private func startDraggingTower(towerId: String, from position: CGPoint) {
-        guard let tower = state?.towers.first(where: { $0.id == towerId }),
-              tower.canMerge else { return }
+        guard let tower = state?.towers.first(where: { $0.id == towerId }) else { return }
 
         isDragging = true
         draggedTowerId = towerId
         longPressTimer = nil
 
-        // Find valid merge targets
+        // Find valid merge targets (only if tower can merge)
         if let state = state {
-            validMergeTargets = Set(TowerSystem.findMergeTargets(state: state, towerId: towerId).map { $0.id })
+            if tower.canMerge {
+                validMergeTargets = Set(TowerSystem.findMergeTargets(state: state, towerId: towerId).map { $0.id })
+            } else {
+                validMergeTargets = []
+            }
+
+            // Find empty slots for repositioning
+            validMoveSlots = Set(state.towerSlots.filter { !$0.occupied }.map { $0.id })
         }
 
         // Create drag visual
@@ -1706,11 +2769,11 @@ class TDGameScene: SKScene {
         ghost.glowWidth = 5
         dragVisual.addChild(ghost)
 
-        // Merge indicator
-        let mergeIcon = SKLabelNode(text: "⭐")
-        mergeIcon.fontSize = 16
-        mergeIcon.verticalAlignmentMode = .center
-        dragVisual.addChild(mergeIcon)
+        // Move/merge indicator
+        let icon = SKLabelNode(text: tower.canMerge ? "⭐" : "↔")
+        icon.fontSize = 16
+        icon.verticalAlignmentMode = .center
+        dragVisual.addChild(icon)
 
         dragVisual.position = position
         dragVisual.zPosition = 100
@@ -1732,6 +2795,9 @@ class TDGameScene: SKScene {
             }
         }
 
+        // Show empty slots as valid move targets
+        showEmptySlotHighlights()
+
         // Dim the source tower
         if let sourceNode = towerNodes[towerId] {
             sourceNode.alpha = 0.3
@@ -1739,6 +2805,38 @@ class TDGameScene: SKScene {
 
         // Haptic feedback
         HapticsService.shared.play(.selection)
+    }
+
+    /// Show highlights on all empty slots during tower drag
+    private func showEmptySlotHighlights() {
+        guard let state = state else { return }
+
+        for slot in state.towerSlots where !slot.occupied {
+            if let dotNode = gridDotsLayer.childNode(withName: "gridDot_\(slot.id)") {
+                // Create move highlight
+                let highlight = SKShapeNode(circleOfRadius: 35)
+                highlight.fillColor = DesignColors.primaryUI.withAlphaComponent(0.15)
+                highlight.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.6)
+                highlight.lineWidth = 2
+                highlight.name = "moveHighlight"
+                highlight.zPosition = 10
+                dotNode.addChild(highlight)
+
+                // Pulse animation
+                let pulse = SKAction.sequence([
+                    SKAction.scale(to: 1.1, duration: 0.5),
+                    SKAction.scale(to: 1.0, duration: 0.5)
+                ])
+                highlight.run(SKAction.repeatForever(pulse))
+            }
+        }
+    }
+
+    /// Hide empty slot highlights
+    private func hideEmptySlotHighlights() {
+        gridDotsLayer.enumerateChildNodes(withName: "*/moveHighlight") { node, _ in
+            node.removeFromParent()
+        }
     }
 
     private func updateMergeTargetHighlights(at location: CGPoint) {
@@ -1772,6 +2870,70 @@ class TDGameScene: SKScene {
         return nil
     }
 
+    /// Find empty slot at drop location for tower repositioning
+    private func findEmptySlotAtLocation(_ location: CGPoint) -> String? {
+        guard let state = state else { return nil }
+
+        for slot in state.towerSlots where validMoveSlots.contains(slot.id) {
+            let slotScenePos = convertToScene(slot.position)
+            let distance = hypot(slotScenePos.x - location.x, slotScenePos.y - location.y)
+            if distance < 45 {  // Slightly larger hit area for easier placement
+                return slot.id
+            }
+        }
+        return nil
+    }
+
+    /// Move tower to a new empty slot
+    private func performTowerMove(towerId: String, toSlotId: String) {
+        guard var state = self.state,
+              let towerIndex = state.towers.firstIndex(where: { $0.id == towerId }),
+              let newSlotIndex = state.towerSlots.firstIndex(where: { $0.id == toSlotId }),
+              !state.towerSlots[newSlotIndex].occupied
+        else { return }
+
+        let tower = state.towers[towerIndex]
+        let oldSlotId = tower.slotId
+
+        // Free old slot
+        if let oldSlotIndex = state.towerSlots.firstIndex(where: { $0.id == oldSlotId }) {
+            state.towerSlots[oldSlotIndex].occupied = false
+            state.towerSlots[oldSlotIndex].towerId = nil
+        }
+
+        // Move tower to new slot
+        let newSlot = state.towerSlots[newSlotIndex]
+        state.towers[towerIndex].x = newSlot.x
+        state.towers[towerIndex].y = newSlot.y
+        state.towers[towerIndex].slotId = toSlotId
+
+        // Occupy new slot
+        state.towerSlots[newSlotIndex].occupied = true
+        state.towerSlots[newSlotIndex].towerId = towerId
+
+        self.state = state
+
+        // Animate tower movement
+        if let towerNode = towerNodes[towerId] {
+            let newScenePos = convertToScene(CGPoint(x: newSlot.x, y: newSlot.y))
+            let moveAction = SKAction.move(to: newScenePos, duration: 0.3)
+            moveAction.timingMode = .easeOut
+            towerNode.run(moveAction)
+        }
+
+        // Update slot visuals
+        if let oldSlotIndex = state.towerSlots.firstIndex(where: { $0.id == oldSlotId }) {
+            updateSlotVisual(slot: state.towerSlots[oldSlotIndex])
+        }
+        updateSlotVisual(slot: state.towerSlots[newSlotIndex])
+
+        HapticsService.shared.play(.selection)
+
+        // Persist and notify
+        StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
+        gameStateDelegate?.gameStateUpdated(state)
+    }
+
     private func performMerge(sourceTowerId: String, targetTowerId: String) {
         guard var state = state else { return }
 
@@ -1789,6 +2951,9 @@ class TDGameScene: SKScene {
             // Update state
             self.state = state
             gameStateDelegate?.gameStateUpdated(state)
+
+            // Persist merge
+            StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
 
         default:
             // Merge failed - play error feedback
@@ -1816,8 +2981,12 @@ class TDGameScene: SKScene {
             }
         }
 
+        // Hide empty slot move highlights
+        hideEmptySlotHighlights()
+
         draggedTowerId = nil
         validMergeTargets.removeAll()
+        validMoveSlots.removeAll()
         dragStartPosition = nil
     }
 
@@ -1850,6 +3019,78 @@ class TDGameScene: SKScene {
     }
 
     // MARK: - Particle Effects
+
+    /// Spawn portal animation when enemy enters the map
+    func spawnPortalAnimation(at position: CGPoint, completion: (() -> Void)? = nil) {
+        let portalDuration: TimeInterval = 0.8
+
+        // Portal container
+        let portal = SKNode()
+        portal.position = position
+        portal.zPosition = 40
+        particleLayer.addChild(portal)
+
+        // Outer expanding ring
+        let outerRing = SKShapeNode(circleOfRadius: 5)
+        outerRing.fillColor = .clear
+        outerRing.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
+        outerRing.lineWidth = 3
+        outerRing.glowWidth = 8
+        portal.addChild(outerRing)
+
+        // Inner glow circle
+        let innerGlow = SKShapeNode(circleOfRadius: 3)
+        innerGlow.fillColor = DesignColors.dangerUI.withAlphaComponent(0.6)
+        innerGlow.strokeColor = .clear
+        innerGlow.glowWidth = 15
+        portal.addChild(innerGlow)
+
+        // Swirl particles
+        let swirlCount = 6
+        for i in 0..<swirlCount {
+            let angle = CGFloat(i) * (.pi * 2 / CGFloat(swirlCount))
+            let swirl = SKShapeNode(circleOfRadius: 2)
+            swirl.fillColor = DesignColors.warningUI
+            swirl.strokeColor = .clear
+            swirl.glowWidth = 3
+            swirl.position = CGPoint(x: cos(angle) * 8, y: sin(angle) * 8)
+            portal.addChild(swirl)
+
+            // Spiral inward animation
+            let spiralIn = SKAction.customAction(withDuration: portalDuration * 0.7) { node, elapsed in
+                let progress = elapsed / CGFloat(portalDuration * 0.7)
+                let currentRadius = 8 * (1 - progress) + 2
+                let rotationOffset = progress * .pi * 3
+                let currentAngle = angle + rotationOffset
+                node.position = CGPoint(x: cos(currentAngle) * currentRadius, y: sin(currentAngle) * currentRadius)
+                node.alpha = 1 - progress * 0.5
+            }
+            swirl.run(spiralIn)
+        }
+
+        // Animate outer ring expanding
+        let expandRing = SKAction.scale(to: 3.5, duration: portalDuration * 0.6)
+        expandRing.timingMode = .easeOut
+        let fadeRing = SKAction.fadeAlpha(to: 0, duration: portalDuration * 0.4)
+        outerRing.run(SKAction.sequence([expandRing, fadeRing]))
+
+        // Animate inner glow pulsing then contracting
+        let pulseIn = SKAction.scale(to: 2.0, duration: portalDuration * 0.3)
+        let pulseOut = SKAction.scale(to: 0.5, duration: portalDuration * 0.3)
+        let contract = SKAction.scale(to: 0.1, duration: portalDuration * 0.2)
+        let fadeOut = SKAction.fadeOut(withDuration: portalDuration * 0.2)
+        pulseIn.timingMode = .easeOut
+        pulseOut.timingMode = .easeIn
+        innerGlow.run(SKAction.sequence([pulseIn, pulseOut, SKAction.group([contract, fadeOut])]))
+
+        // Remove portal and call completion
+        let wait = SKAction.wait(forDuration: portalDuration)
+        let remove = SKAction.removeFromParent()
+        let completeAction = SKAction.run {
+            completion?()
+        }
+        portal.run(SKAction.sequence([wait, completeAction, remove]))
+    }
 
     /// Spawn enemy death particles
     func spawnDeathParticles(at position: CGPoint, color: UIColor, isBoss: Bool = false) {
@@ -2015,6 +3256,84 @@ class TDGameScene: SKScene {
         self.state = state
     }
 
+    // MARK: - Motherboard City (placeholder for new system)
+    // Will implement: setupMotherboard(), updateComponentVisibility(), playInstallAnimation()
+
+    /// Restore efficiency by setting the leak counter
+    /// - Parameter leakCount: The new leak count (0 = 100%, 10 = 50%, 20 = 0%)
+    func restoreEfficiency(to leakCount: Int) {
+        state?.leakCounter = leakCount
+        if let state = state {
+            gameStateDelegate?.gameStateUpdated(state)
+        }
+    }
+
+    /// Recover from System Freeze (0% efficiency state)
+    /// Called when player chooses "Flush Memory" or completes "Manual Override"
+    /// - Parameter restoreToEfficiency: Target efficiency (50 = 50%, i.e., leakCounter = 10)
+    func recoverFromFreeze(restoreToEfficiency: CGFloat = 50) {
+        guard var state = state, state.isSystemFrozen else { return }
+
+        // Clear freeze state
+        state.isSystemFrozen = false
+
+        // Restore efficiency (50% = leakCounter of 10)
+        // efficiency = 100 - leakCounter * 5
+        // leakCounter = (100 - targetEfficiency) / 5
+        let targetLeakCount = Int((100 - restoreToEfficiency) / 5)
+        state.leakCounter = max(0, targetLeakCount)
+
+        // Clear all enemies that were on the field (system "rebooted")
+        for i in 0..<state.enemies.count {
+            state.enemies[i].isDead = true
+        }
+
+        self.state = state
+        gameStateDelegate?.gameStateUpdated(state)
+
+        // Play recovery feedback
+        HapticsService.shared.play(.success)
+
+        // Visual recovery effect
+        playRecoveryEffect()
+    }
+
+    /// Play visual effect for system recovery
+    private func playRecoveryEffect() {
+        guard let coreContainer = backgroundLayer.childNode(withName: "core") else { return }
+
+        // Flash the core green
+        let flashGreen = SKAction.run {
+            if let cpuBody = coreContainer.childNode(withName: "cpuBody") as? SKShapeNode {
+                cpuBody.strokeColor = DesignColors.successUI
+                cpuBody.glowWidth = 30
+            }
+        }
+        let wait = SKAction.wait(forDuration: 0.3)
+        let reset = SKAction.run { [weak self] in
+            guard let self = self, let state = self.state else { return }
+            self.updateCoreVisual(state: state, currentTime: CACurrentMediaTime())
+        }
+        let sequence = SKAction.sequence([flashGreen, wait, reset])
+        coreContainer.run(sequence)
+
+        // Expanding ring effect
+        let ringNode = SKShapeNode(circleOfRadius: 10)
+        ringNode.position = coreContainer.position
+        ringNode.strokeColor = DesignColors.successUI
+        ringNode.fillColor = .clear
+        ringNode.lineWidth = 4
+        ringNode.glowWidth = 8
+        ringNode.zPosition = 100
+        backgroundLayer.addChild(ringNode)
+
+        let expand = SKAction.scale(to: 20, duration: 0.8)
+        let fade = SKAction.fadeOut(withDuration: 0.8)
+        let group = SKAction.group([expand, fade])
+        let remove = SKAction.removeFromParent()
+        ringNode.run(SKAction.sequence([group, remove]))
+    }
+
     func placeTower(weaponType: String, slotId: String, profile: PlayerProfile) {
         guard var state = state else { return }
 
@@ -2035,6 +3354,9 @@ class TDGameScene: SKScene {
             }
             self.state = state
             gameStateDelegate?.gameStateUpdated(state)
+
+            // Persist tower placement
+            StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
         }
     }
 
@@ -2044,6 +3366,9 @@ class TDGameScene: SKScene {
         if TowerSystem.upgradeTower(state: &state, towerId: towerId) {
             self.state = state
             gameStateDelegate?.gameStateUpdated(state)
+
+            // Persist upgrade
+            StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
         }
     }
 
@@ -2055,6 +3380,9 @@ class TDGameScene: SKScene {
 
         self.state = state
         gameStateDelegate?.gameStateUpdated(state)
+
+        // Persist sale
+        StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
     }
 
     // MARK: - Blocker Actions
@@ -2118,6 +3446,52 @@ class TDGameScene: SKScene {
         return BlockerSystem.previewPathsWithBlocker(state: state, slotId: slotId)
     }
 
+    // MARK: - Camera Info (for SwiftUI coordinate conversion)
+
+    /// Get current camera position in game coordinates
+    var cameraPosition: CGPoint {
+        cameraNode?.position ?? CGPoint(x: size.width / 2, y: size.height / 2)
+    }
+
+    /// Get current camera scale (zoom level)
+    var cameraScale: CGFloat {
+        currentScale
+    }
+
+    /// Convert screen touch position to game coordinates, accounting for camera
+    /// Uses SpriteKit's built-in conversion which handles aspectFill and camera correctly
+    func convertScreenToGame(screenPoint: CGPoint, viewSize: CGSize) -> CGPoint {
+        guard let _ = self.view else {
+            // Fallback if no view
+            return screenPoint
+        }
+
+        // Use SpriteKit's built-in conversion - this handles aspectFill scaling and camera
+        let scenePoint = convertPoint(fromView: screenPoint)
+
+        // Slot visuals are rendered using convertToScene() which flips Y: visual.y = size.height - state.y
+        // Touch gives SpriteKit coordinates (visual position)
+        // To match state coordinates: state.y = size.height - visual.y
+        let gameY = size.height - scenePoint.y
+
+        return CGPoint(x: scenePoint.x, y: gameY)
+    }
+
+    /// Convert game coordinates to screen position, accounting for camera
+    func convertGameToScreen(gamePoint: CGPoint, viewSize: CGSize) -> CGPoint {
+        guard let _ = self.view else {
+            return gamePoint
+        }
+
+        // Game state coordinates have Y that needs to be flipped to SpriteKit coordinates
+        // (reverse of convertScreenToGame)
+        let scenePoint = CGPoint(x: gamePoint.x, y: size.height - gamePoint.y)
+
+        // Use SpriteKit's built-in conversion to get screen coordinates
+        let screenPoint = convertPoint(toView: scenePoint)
+        return screenPoint
+    }
+
     // MARK: - Helpers
 
     private func convertToScene(_ point: CGPoint) -> CGPoint {
@@ -2127,13 +3501,13 @@ class TDGameScene: SKScene {
 
     private func updateSlotVisual(slot: TowerSlot) {
         // Update grid dot visibility based on occupation
-        if let dotNode = gridDotsLayer.childNode(withName: "gridDot_\(slot.id)") as? SKShapeNode {
+        // Grid dot is now a container (SKNode) not SKShapeNode
+        if let dotNode = gridDotsLayer.childNode(withName: "gridDot_\(slot.id)") {
             if slot.occupied {
-                dotNode.fillColor = .clear
                 dotNode.alpha = 0
             } else {
-                dotNode.fillColor = DesignColors.mutedUI.withAlphaComponent(DesignLayout.gridDotOpacity)
-                dotNode.alpha = isInPlacementMode ? 1 : 0
+                // Always slightly visible (0.3 base), brighter during placement mode
+                dotNode.alpha = isInPlacementMode ? 1 : 0.3
             }
         }
     }
@@ -2154,6 +3528,8 @@ protocol TDGameSceneDelegate: AnyObject {
     func gameStateUpdated(_ state: TDGameState)
     func slotSelected(_ slotId: String)
     func towerSelected(_ towerId: String?)
+    func gateSelected(_ sectorId: String)  // Mega-board encryption gate tapped
+    func systemFrozen()                     // Efficiency hit 0% - show recovery UI
 }
 
 // MARK: - UIColor Extension

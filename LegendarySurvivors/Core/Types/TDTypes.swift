@@ -16,6 +16,10 @@ struct TDGameState {
     var map: TDMap
     var paths: [EnemyPath]
 
+    // Motherboard City (component-based map system)
+    // Will be implemented in MotherboardTypes.swift
+    // var motherboardConfig: MotherboardConfig?
+
     // Core (The Guardian in TD mode)
     var core: TDCore
 
@@ -38,9 +42,33 @@ struct TDGameState {
     var nextWaveCountdown: TimeInterval = 0
     var wavesCompleted: Int = 0
 
-    // Resources (System: Reboot - Watts currency)
-    var gold: Int = 100  // Watts - primary currency
+    // Resources (System: Reboot currencies)
+    var hash: Int = 100  // Hash (Ħ) - soft currency for purchases
     var lives: Int = 20  // Legacy - kept for compatibility, represents max efficiency baseline
+
+    // Power System (System: Reboot - PSU Capacity)
+    // Power is a CEILING, not consumed. Towers allocate power while placed.
+    var powerCapacity: Int = 450    // PSU capacity (upgradeable)
+    var powerUsed: Int {
+        // Sum of all placed towers' power draw
+        return towers.reduce(0) { $0 + $1.powerDraw }
+    }
+    var powerAvailable: Int {
+        return max(0, powerCapacity - powerUsed)
+    }
+
+    // Hash Storage Cap (System: Reboot)
+    var hashStorageCapacity: Int = 25000  // Set from player's HDD level
+
+    /// Add hash with storage cap enforcement
+    /// Returns the actual amount added
+    @discardableResult
+    mutating func addHash(_ amount: Int) -> Int {
+        let spaceAvailable = max(0, hashStorageCapacity - hash)
+        let actualAdded = min(amount, spaceAvailable)
+        hash += actualAdded
+        return actualAdded
+    }
 
     // Efficiency System (System: Reboot core mechanic)
     // Efficiency determines Watts income rate - no death, just reduced income
@@ -51,14 +79,14 @@ struct TDGameState {
         // Each leaked virus reduces efficiency by 5%
         return max(0, min(100, 100 - CGFloat(leakCounter) * 5))
     }
-    var baseWattsPerSecond: CGFloat = 10  // Base income rate at 100% efficiency
+    var baseHashPerSecond: CGFloat = 10  // Base income rate at 100% efficiency
     var cpuMultiplier: CGFloat = 1.0      // CPU tier multiplier (1x, 2x, 4x, 8x, 16x)
     var cpuTier: Int = 1                  // Current CPU tier for display
     var efficiencyRegenMultiplier: CGFloat = 1.0  // RAM upgrade bonus to efficiency recovery
-    var wattsPerSecond: CGFloat {
-        return baseWattsPerSecond * cpuMultiplier * (efficiency / 100)
+    var hashPerSecond: CGFloat {
+        return baseHashPerSecond * cpuMultiplier * (efficiency / 100)
     }
-    var wattsAccumulator: CGFloat = 0  // Accumulates fractional watts
+    var hashAccumulator: CGFloat = 0  // Accumulates fractional hash
 
     // Passive Data generation (soft-lock prevention)
     var virusesKilledTotal: Int = 0    // Total viruses killed by firewalls
@@ -75,6 +103,10 @@ struct TDGameState {
     var victory: Bool = false
     var selectedTowerSlot: String?  // Currently selected slot for placement
     var selectedTowerId: String?    // Currently selected tower for info/upgrade
+
+    // System Freeze (0% efficiency state)
+    var isSystemFrozen: Bool = false    // True when efficiency hits 0%
+    var freezeCount: Int = 0             // Number of times system has frozen this session
 
     // Drag state for tower merging and placement
     var dragState: TowerDragState?
@@ -117,6 +149,41 @@ struct TDGameState {
     var isZeroDayAlive: Bool {
         guard let bossId = zeroDayBossId else { return false }
         return enemies.contains { $0.id == bossId && !$0.isDead && !$0.reachedCore }
+    }
+}
+
+// MARK: - TD Session State (Lightweight Persistence)
+// Persists towers and slots across app restarts
+
+struct TDSessionState: Codable {
+    var towers: [Tower]
+    var towerSlots: [TowerSlot]
+    var hash: Int
+    var wavesCompleted: Int
+    var efficiency: CGFloat
+    var leakCounter: Int
+    var lastSaveTime: TimeInterval
+
+    /// Create session state from current game state
+    static func from(gameState: TDGameState) -> TDSessionState {
+        return TDSessionState(
+            towers: gameState.towers,
+            towerSlots: gameState.towerSlots,
+            hash: gameState.hash,
+            wavesCompleted: gameState.wavesCompleted,
+            efficiency: gameState.efficiency,
+            leakCounter: gameState.leakCounter,
+            lastSaveTime: Date().timeIntervalSince1970
+        )
+    }
+
+    /// Apply session state to game state
+    func apply(to state: inout TDGameState) {
+        state.towers = towers
+        state.towerSlots = towerSlots
+        state.hash = hash
+        state.wavesCompleted = wavesCompleted
+        state.leakCounter = leakCounter
     }
 }
 
@@ -210,7 +277,7 @@ struct TDMap {
 
 // MARK: - Tower
 
-struct Tower: Identifiable {
+struct Tower: Identifiable, Codable {
     var id: String
     var weaponType: String  // Links to WeaponTower
     var level: Int = 1
@@ -243,6 +310,9 @@ struct Tower: Identifiable {
 
     // Tower name for display
     var towerName: String
+
+    // Power consumption (System: Reboot)
+    var powerDraw: Int = 20  // Watts consumed while this tower is placed
 
     // Merge system (1-3 stars)
     var mergeLevel: Int = 1
@@ -324,6 +394,7 @@ struct Tower: Identifiable {
             chain: stats.special == .chain ? 3 : nil,  // Chain hits 3 enemies
             color: proto.color,
             towerName: proto.name,
+            powerDraw: stats.powerDraw,  // Power consumption from Protocol
             mergeLevel: mergeLevel
         )
     }
@@ -521,6 +592,7 @@ enum TDAction {
 enum TowerPlacementResult {
     case success(tower: Tower)
     case insufficientGold(required: Int, available: Int)
+    case insufficientPower(required: Int, available: Int)
     case slotOccupied
     case weaponLocked
     case invalidSlot
@@ -610,9 +682,13 @@ class TDGameStateFactory {
         )
 
         // Apply Global Upgrades
-        // CPU level determines base Watts generation rate
-        state.baseWattsPerSecond = playerProfile.globalUpgrades.wattsPerSecond
-        state.cpuMultiplier = 1.0  // Level scaling is now in baseWattsPerSecond
+        // PSU level determines power capacity
+        state.powerCapacity = playerProfile.globalUpgrades.powerCapacity
+        // HDD level determines hash storage capacity
+        state.hashStorageCapacity = playerProfile.globalUpgrades.hashStorageCapacity
+        // CPU level determines base Hash generation rate
+        state.baseHashPerSecond = playerProfile.globalUpgrades.hashPerSecond
+        state.cpuMultiplier = 1.0  // Level scaling is now in baseHashPerSecond
         state.cpuTier = playerProfile.globalUpgrades.cpuLevel
         // RAM level determines efficiency recovery speed
         state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
@@ -794,5 +870,250 @@ class TDGameStateFactory {
         }
 
         return slots
+    }
+
+    // MARK: - Motherboard City Map
+
+    /// Create game state for the Motherboard City map (4000x4000 PCB canvas)
+    static func createMotherboardGameState(
+        playerProfile: PlayerProfile
+    ) -> TDGameState? {
+        // Create the motherboard configuration
+        let mbConfig = MotherboardConfig.createDefault()
+
+        // Create the map
+        let map = TDMap(
+            id: "motherboard",
+            name: "Motherboard City",
+            width: mbConfig.canvasWidth,
+            height: mbConfig.canvasHeight,
+            backgroundColor: MotherboardColors.substrate,
+            theme: "motherboard",
+            particleEffect: nil,
+            obstacles: [],
+            hazards: [],
+            effectZones: [],
+            spawnPoints: [CGPoint(x: 400, y: 2000), CGPoint(x: 2000, y: 3600)],
+            corePosition: CGPoint(x: 2000, y: 2000),
+            globalModifier: nil
+        )
+
+        // Create Manhattan-style paths (90-degree turns only)
+        let paths = createMotherboardPaths()
+
+        // Create core at CPU position (center of the board)
+        let core = TDCore(
+            x: 2000,
+            y: 2000,
+            health: 100,
+            maxHealth: 100
+        )
+
+        // Create tower slots around the CPU district
+        let slots = createMotherboardTowerSlots(avoiding: paths)
+
+        // Create blocker slots at path turns
+        let blockerSlots = createBlockerSlots(for: paths)
+
+        var state = TDGameState(
+            sessionId: RandomUtils.generateId(),
+            playerId: playerProfile.id,
+            startTime: Date().timeIntervalSince1970,
+            map: map,
+            paths: paths,
+            core: core,
+            towers: [],
+            towerSlots: slots,
+            enemies: [],
+            projectiles: [],
+            particles: [],
+            blockerSlots: blockerSlots,
+            basePaths: paths
+        )
+
+        // Apply Global Upgrades
+        state.baseHashPerSecond = playerProfile.globalUpgrades.hashPerSecond
+        state.cpuMultiplier = 1.0
+        state.cpuTier = playerProfile.globalUpgrades.cpuLevel
+        state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
+
+        return state
+    }
+
+    /// Create Manhattan-style paths for the motherboard (90-degree turns only)
+    /// Initially only ONE path is active - more paths unlock with sectors
+    private static func createMotherboardPaths() -> [EnemyPath] {
+        // Main path: From left edge (I/O area) to CPU District
+        // CPU is centered at (2000, 2000) with size 300x300 (bounds: 1850-2150, 1850-2150)
+        // Path enters from the left side of the CPU, stopping just inside the boundary
+        let mainPath = EnemyPath(
+            id: "main_bus",
+            waypoints: [
+                CGPoint(x: 100, y: 2100),     // Start at left edge (spawn point)
+                CGPoint(x: 700, y: 2100),     // East along path
+                CGPoint(x: 700, y: 1700),     // Turn south
+                CGPoint(x: 1100, y: 1700),    // Turn east
+                CGPoint(x: 1100, y: 2000),    // Turn north toward CPU level
+                CGPoint(x: 1850, y: 2000),    // Continue east to CPU left edge
+                CGPoint(x: 1900, y: 2000)     // End just inside CPU (not at center)
+            ]
+        )
+
+        // Note: Additional paths will be added when sectors are unlocked:
+        // - north_bus: From Cache sector (when Cache is unlocked)
+        // - south_bus: From GPU sector (when GPU is unlocked)
+
+        return [mainPath]
+    }
+
+    /// Create tower slots for the motherboard map dynamically along paths
+    /// Slots are placed adjacent to paths (within range to hit enemies)
+    /// Uses path-proximity algorithm for dynamic slot generation
+    private static func createMotherboardTowerSlots(avoiding paths: [EnemyPath]) -> [TowerSlot] {
+        var slots: [TowerSlot] = []
+        let slotSpacing: CGFloat = 80     // Distance between slots along path
+        let pathDistance: CGFloat = 100   // Max distance from path center to slot
+        let slotSize: CGFloat = 60
+        let minSlotDistance: CGFloat = 70 // Minimum distance between slots
+
+        // CPU exclusion zone (don't place slots on the CPU)
+        let cpuCenter = CGPoint(x: 2000, y: 2000)
+        let cpuRadius: CGFloat = 200
+
+        for path in paths {
+            // Walk along each path segment
+            guard path.waypoints.count > 1 else { continue }
+
+            for i in 0..<path.waypoints.count - 1 {
+                let start = path.waypoints[i]
+                let end = path.waypoints[i + 1]
+
+                // Calculate segment properties
+                let dx = end.x - start.x
+                let dy = end.y - start.y
+                let segmentLength = sqrt(dx * dx + dy * dy)
+
+                guard segmentLength > 0 else { continue }
+
+                // Direction along segment (normalized)
+                let dirX = dx / segmentLength
+                let dirY = dy / segmentLength
+
+                // Perpendicular direction (for placing slots on both sides)
+                let perpX = -dirY
+                let perpY = dirX
+
+                // Walk along segment
+                var distance: CGFloat = slotSpacing / 2  // Start slightly offset from corner
+                while distance < segmentLength - slotSpacing / 2 {
+                    // Center point on path at this distance
+                    let centerX = start.x + dirX * distance
+                    let centerY = start.y + dirY * distance
+
+                    // Place slots on both sides of path
+                    for side in [-1.0, 1.0] as [CGFloat] {
+                        let slotX = centerX + perpX * pathDistance * side
+                        let slotY = centerY + perpY * pathDistance * side
+                        let slotCenter = CGPoint(x: slotX, y: slotY)
+
+                        // Skip if too close to CPU
+                        let cpuDist = sqrt(pow(slotX - cpuCenter.x, 2) + pow(slotY - cpuCenter.y, 2))
+                        if cpuDist < cpuRadius {
+                            continue
+                        }
+
+                        // Skip if too close to existing slots
+                        if tooCloseToExisting(slotCenter, slots, minDistance: minSlotDistance) {
+                            continue
+                        }
+
+                        // Skip if too close to the path itself (for safety)
+                        var tooCloseToPath = false
+                        for checkPath in paths {
+                            for j in 0..<checkPath.waypoints.count - 1 {
+                                let p1 = checkPath.waypoints[j]
+                                let p2 = checkPath.waypoints[j + 1]
+                                let dist = distanceToSegment(point: slotCenter, segStart: p1, segEnd: p2)
+                                if dist < 60 {  // Minimum clearance from path
+                                    tooCloseToPath = true
+                                    break
+                                }
+                            }
+                            if tooCloseToPath { break }
+                        }
+
+                        if tooCloseToPath { continue }
+
+                        slots.append(TowerSlot(
+                            id: "mb_slot_\(slots.count)",
+                            x: slotX,
+                            y: slotY,
+                            size: slotSize
+                        ))
+                    }
+
+                    distance += slotSpacing
+                }
+            }
+        }
+
+        // Add CPU defense area slots (around CPU perimeter)
+        let cpuDefenseSlots: [(CGFloat, CGFloat)] = [
+            (cpuCenter.x - 180, cpuCenter.y - 150),  // Left of CPU, lower
+            (cpuCenter.x - 180, cpuCenter.y + 100),  // Left of CPU, upper
+            (cpuCenter.x + 180, cpuCenter.y - 150),  // Right of CPU, lower
+            (cpuCenter.x + 180, cpuCenter.y + 100),  // Right of CPU, upper
+            (cpuCenter.x - 80, cpuCenter.y + 180),   // Above CPU (left)
+            (cpuCenter.x + 80, cpuCenter.y + 180),   // Above CPU (right)
+        ]
+
+        for (x, y) in cpuDefenseSlots {
+            let point = CGPoint(x: x, y: y)
+            if !tooCloseToExisting(point, slots, minDistance: minSlotDistance) {
+                slots.append(TowerSlot(
+                    id: "mb_slot_\(slots.count)",
+                    x: x,
+                    y: y,
+                    size: slotSize
+                ))
+            }
+        }
+
+        return slots
+    }
+
+    /// Check if a point is too close to existing slots
+    private static func tooCloseToExisting(_ point: CGPoint, _ slots: [TowerSlot], minDistance: CGFloat) -> Bool {
+        for slot in slots {
+            let dx = point.x - slot.x
+            let dy = point.y - slot.y
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist < minDistance {
+                return true
+            }
+        }
+        return false
+    }
+
+    /// Calculate distance from a point to a line segment
+    private static func distanceToSegment(point: CGPoint, segStart: CGPoint, segEnd: CGPoint) -> CGFloat {
+        let dx = segEnd.x - segStart.x
+        let dy = segEnd.y - segStart.y
+
+        if dx == 0 && dy == 0 {
+            // Segment is a point
+            let px = point.x - segStart.x
+            let py = point.y - segStart.y
+            return sqrt(px * px + py * py)
+        }
+
+        // Calculate projection
+        let t = max(0, min(1, ((point.x - segStart.x) * dx + (point.y - segStart.y) * dy) / (dx * dx + dy * dy)))
+        let projX = segStart.x + t * dx
+        let projY = segStart.y + t * dy
+
+        let px = point.x - projX
+        let py = point.y - projY
+        return sqrt(px * px + py * py)
     }
 }

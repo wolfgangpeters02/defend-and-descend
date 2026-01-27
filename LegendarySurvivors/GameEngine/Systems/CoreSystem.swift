@@ -118,9 +118,9 @@ class CoreSystem {
 
     /// Upgrade core stat
     static func upgradeCoreStat(state: inout TDGameState, stat: CoreUpgrade, cost: Int) -> Bool {
-        guard state.gold >= cost else { return false }
+        guard state.hash >= cost else { return false }
 
-        state.gold -= cost
+        state.hash -= cost
         state.stats.goldSpent += cost
 
         switch stat {

@@ -39,7 +39,8 @@ struct Protocol: Identifiable, Codable, Equatable {
             splash: firewallBaseStats.splash * multiplier,
             slow: firewallBaseStats.slow,
             slowDuration: firewallBaseStats.slowDuration,
-            special: firewallBaseStats.special
+            special: firewallBaseStats.special,
+            powerDraw: firewallBaseStats.powerDraw  // Power doesn't scale with level
         )
     }
 
@@ -154,10 +155,11 @@ struct FirewallStats: Codable, Equatable {
     var slow: CGFloat                 // Slow percentage (0-1)
     var slowDuration: TimeInterval    // How long slow lasts
     var special: ProtocolFirewallAbility?     // Unique ability
+    var powerDraw: Int                // Power consumption in Watts
 
     static let zero = FirewallStats(
         damage: 0, range: 0, fireRate: 0, projectileCount: 0,
-        pierce: 0, splash: 0, slow: 0, slowDuration: 0, special: nil
+        pierce: 0, splash: 0, slow: 0, slowDuration: 0, special: nil, powerDraw: 0
     )
 }
 
@@ -211,14 +213,18 @@ struct ProtocolLibrary {
         nullPointer
     ]
 
-    /// Get a protocol by ID
+    /// Get a protocol by ID (type-safe)
+    static func get(_ id: ProtocolID) -> Protocol? {
+        return all.first { $0.id == id.rawValue }
+    }
+
+    /// Get a protocol by string ID (for legacy code/JSON loading)
     static func get(_ id: String) -> Protocol? {
         return all.first { $0.id == id }
     }
 
     /// Starting protocol (player begins with this compiled)
-    /// Note: Must match PlayerProfile.defaultProtocolId
-    static let starterProtocolId = "kernel_pulse"
+    static let starterProtocolId = ProtocolID.starter.rawValue
 
     // MARK: - Protocol Definitions
 
@@ -241,7 +247,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0,
             slowDuration: 0,
-            special: nil
+            special: nil,
+            powerDraw: 15  // Common: 15W
         ),
         weaponBaseStats: WeaponStats(
             damage: 8,
@@ -275,7 +282,8 @@ struct ProtocolLibrary {
             splash: 40,
             slow: 0,
             slowDuration: 0,
-            special: nil
+            special: nil,
+            powerDraw: 20  // Common: 20W
         ),
         weaponBaseStats: WeaponStats(
             damage: 6,
@@ -309,7 +317,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0,
             slowDuration: 0,
-            special: nil
+            special: nil,
+            powerDraw: 35  // Rare: 35W
         ),
         weaponBaseStats: WeaponStats(
             damage: 40,
@@ -343,7 +352,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0.5,
             slowDuration: 2.0,
-            special: nil
+            special: nil,
+            powerDraw: 30  // Rare: 30W
         ),
         weaponBaseStats: WeaponStats(
             damage: 4,
@@ -377,7 +387,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0,
             slowDuration: 0,
-            special: nil
+            special: nil,
+            powerDraw: 60  // Epic: 60W
         ),
         weaponBaseStats: WeaponStats(
             damage: 10,
@@ -411,7 +422,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0,
             slowDuration: 0,
-            special: nil
+            special: nil,
+            powerDraw: 75  // Epic: 75W
         ),
         weaponBaseStats: WeaponStats(
             damage: 60,
@@ -445,7 +457,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0,
             slowDuration: 0,
-            special: .chain
+            special: .chain,
+            powerDraw: 120  // Legendary: 120W
         ),
         weaponBaseStats: WeaponStats(
             damage: 12,
@@ -479,7 +492,8 @@ struct ProtocolLibrary {
             splash: 0,
             slow: 0,
             slowDuration: 0,
-            special: .execute
+            special: .execute,
+            powerDraw: 100  // Legendary: 100W
         ),
         weaponBaseStats: WeaponStats(
             damage: 20,

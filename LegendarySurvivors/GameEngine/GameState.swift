@@ -87,8 +87,17 @@ class GameStateFactory {
         let config = GameConfigLoader.shared
 
         // Use sector's visual theme to determine arena (or use a default debug arena)
-        let arenaType = sector.visualTheme
-        let arenaConfig = config.getArena(arenaType) ?? config.getArena("city")!
+        // Map sector themes to actual arena configs, falling back to "grasslands"
+        let themeToArena: [String: String] = [
+            "ram": "ice_cave",      // RAM = cool blue memory banks
+            "drive": "castle",      // Drive = structured storage
+            "gpu": "volcano",       // GPU = hot processing
+            "bios": "space"         // BIOS = deep system space
+        ]
+        let arenaType = themeToArena[sector.visualTheme] ?? "grasslands"
+        guard let arenaConfig = config.getArena(arenaType) else {
+            fatalError("Arena \(arenaType) not found in config")
+        }
 
         // Create arena data
         var arena = config.createArenaData(from: arenaConfig)
@@ -238,21 +247,47 @@ class GameStateFactory {
         weaponType: String = "bow",
         powerUpType: String = "tank",
         arenaType: String = "city",
-        playerProfile: PlayerProfile? = nil
+        playerProfile: PlayerProfile? = nil,
+        dungeonType: String? = nil,  // Optional: specific dungeon progression (cathedral, frozen, volcanic, heist, void_raid)
+        gameProtocol: Protocol? = nil,  // Optional: use Protocol-based weapon instead of config lookup
+        sector: Sector? = nil  // Optional: sector for Protocol-based gameplay
     ) -> GameState {
-        // Start with arena state, then add dungeon features
-        var state = createArenaGameState(
-            weaponType: weaponType,
-            powerUpType: powerUpType,
-            arenaType: arenaType,
-            playerProfile: playerProfile
-        )
+        // Map dungeon types to valid arena configs for base state
+        let baseArenaType: String
+        switch dungeonType ?? arenaType {
+        case "cathedral": baseArenaType = "castle"
+        case "frozen": baseArenaType = "ice_cave"
+        case "volcanic": baseArenaType = "volcano"
+        case "heist": baseArenaType = "space"
+        case "void_raid": baseArenaType = "space"
+        default: baseArenaType = arenaType
+        }
+
+        var state: GameState
+
+        // If a Protocol and sector are provided, create state using Protocol's weapon
+        if let proto = gameProtocol, let sec = sector {
+            state = createDebugGameState(
+                gameProtocol: proto,
+                sector: sec,
+                playerProfile: playerProfile ?? PlayerProfile.defaultProfile
+            )
+        } else {
+            // Start with arena state using weapon config
+            state = createArenaGameState(
+                weaponType: weaponType,
+                powerUpType: powerUpType,
+                arenaType: baseArenaType,
+                playerProfile: playerProfile
+            )
+        }
 
         // Change mode to dungeon
         state.gameMode = .dungeon
 
-        // Create dungeon rooms
-        state.rooms = DungeonSystem.createDungeonRooms(arenaId: arenaType)
+        // Create dungeon rooms based on dungeon type (or arena type for backwards compatibility)
+        let progressionType = dungeonType ?? arenaType
+        state.rooms = DungeonSystem.createDungeonRooms(arenaId: progressionType)
         state.currentRoomIndex = 0
 
         // Set current room

@@ -160,21 +160,34 @@ class EntityRenderer {
 
         switch pickup.type {
         case "coin":
-            let coin = SKShapeNode(circleOfRadius: 6)
-            coin.fillColor = SKColor.yellow
-            coin.strokeColor = SKColor(red: 1, green: 0.8, blue: 0, alpha: 1)
-            coin.lineWidth = 2
-            coin.glowWidth = 2
-            container.addChild(coin)
+            // Blue data triangle (◈ shape) - Dark Terminal aesthetic
+            let dataColor = SKColor(red: 0, green: 0.831, blue: 1, alpha: 1) // #00d4ff cyan
+            let dataColorLight = SKColor(red: 0.4, green: 0.9, blue: 1, alpha: 1) // lighter cyan for stroke
+
+            // Create diamond/rhombus shape (◈)
+            let size: CGFloat = 8
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: 0, y: size))           // top
+            path.addLine(to: CGPoint(x: size * 0.7, y: 0))  // right
+            path.addLine(to: CGPoint(x: 0, y: -size))       // bottom
+            path.addLine(to: CGPoint(x: -size * 0.7, y: 0)) // left
+            path.closeSubpath()
+
+            let dataTriangle = SKShapeNode(path: path)
+            dataTriangle.fillColor = dataColor
+            dataTriangle.strokeColor = dataColorLight
+            dataTriangle.lineWidth = 1.5
+            dataTriangle.glowWidth = 3
+            container.addChild(dataTriangle)
 
             // Spinning animation
-            let spin = SKAction.rotate(byAngle: .pi * 2, duration: 1.0)
+            let spin = SKAction.rotate(byAngle: .pi * 2, duration: 2.0)
             container.run(SKAction.repeatForever(spin))
 
-            // Bobbing animation
+            // Bobbing animation (float effect)
             let bob = SKAction.sequence([
-                SKAction.moveBy(x: 0, y: 3, duration: 0.3),
-                SKAction.moveBy(x: 0, y: -3, duration: 0.3)
+                SKAction.moveBy(x: 0, y: 3, duration: 0.4),
+                SKAction.moveBy(x: 0, y: -3, duration: 0.4)
             ])
             container.run(SKAction.repeatForever(bob))
 

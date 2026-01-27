@@ -55,8 +55,8 @@ class GameScene: SKScene {
         self.gameState = gameState
         self.entityRenderer = EntityRenderer()
 
-        // Use screen size if provided, otherwise fall back to arena size
-        if let screenSize = screenSize {
+        // Use screen size if provided and valid, otherwise fall back to arena size
+        if let screenSize = screenSize, screenSize.width > 0, screenSize.height > 0 {
             self.screenSize = screenSize
             // Update arena dimensions to match screen
             self.gameState.arena.width = screenSize.width
@@ -65,11 +65,32 @@ class GameScene: SKScene {
             self.gameState.player.x = screenSize.width / 2
             self.gameState.player.y = screenSize.height / 2
         } else {
-            self.screenSize = CGSize(width: gameState.arena.width, height: gameState.arena.height)
+            // Fall back to arena dimensions or use reasonable defaults
+            let width = gameState.arena.width > 0 ? gameState.arena.width : 390
+            let height = gameState.arena.height > 0 ? gameState.arena.height : 844
+            self.screenSize = CGSize(width: width, height: height)
+            self.gameState.arena.width = width
+            self.gameState.arena.height = height
+            self.gameState.player.x = width / 2
+            self.gameState.player.y = height / 2
         }
 
         setupScene()
         isInitialized = true
+    }
+
+    override func didMove(to view: SKView) {
+        // CRITICAL: Set anchor point in didMove after scene is attached to view
+        // Without this, default (0.5, 0.5) makes (0,0) the center
+        self.anchorPoint = CGPoint(x: 0, y: 0)
+
+        // Update scene size to match view if needed
+        if size.width <= 0 || size.height <= 0 {
+            size = view.bounds.size
+            print("[GameScene] didMove - using view bounds: \(view.bounds.size)")
+        }
+
+        print("[GameScene] didMove - view: \(view.bounds.size), scene size: \(size), anchorPoint: \(anchorPoint)")
     }
 
     private func setupScene() {
@@ -78,6 +99,11 @@ class GameScene: SKScene {
         // Scene fills the screen
         self.size = screenSize
         self.scaleMode = .resizeFill
+
+        // Also set anchorPoint here (will be reinforced in didMove)
+        self.anchorPoint = CGPoint(x: 0, y: 0)
+
+        print("[GameScene] setupScene - screenSize: \(screenSize), arena: \(gameState.arena.width)x\(gameState.arena.height)")
 
         // Setup camera for screen shake
         setupCamera()
@@ -99,12 +125,59 @@ class GameScene: SKScene {
     }
 
     private func setupBackground() {
+        // Force dark terminal background regardless of arena config
+        let darkBackground = SKColor(red: 10/255, green: 10/255, blue: 15/255, alpha: 1.0) // #0a0a0f
+
         backgroundNode = SKShapeNode(rectOf: CGSize(width: gameState.arena.width, height: gameState.arena.height))
-        backgroundNode?.fillColor = colorFromHex(gameState.arena.backgroundColor)
+        backgroundNode?.fillColor = darkBackground
         backgroundNode?.strokeColor = .clear
         backgroundNode?.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height / 2)
         backgroundNode?.zPosition = -100
         addChild(backgroundNode!)
+
+        // Add green wireframe grid overlay (subtle terminal aesthetic)
+        let gridNode = createWireframeGrid(
+            size: CGSize(width: gameState.arena.width, height: gameState.arena.height),
+            spacing: 50,
+            color: SKColor(red: 0, green: 1, blue: 0.255, alpha: 0.08) // #00ff41 at 8% opacity
+        )
+        gridNode.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height / 2)
+        gridNode.zPosition = -99
+        addChild(gridNode)
+    }
+
+    private func createWireframeGrid(size: CGSize, spacing: CGFloat, color: SKColor) -> SKNode {
+        let container = SKNode()
+
+        // Vertical lines
+        var x: CGFloat = -size.width / 2
+        while x <= size.width / 2 {
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: x, y: -size.height / 2))
+            path.addLine(to: CGPoint(x: x, y: size.height / 2))
+
+            let line = SKShapeNode(path: path)
+            line.strokeColor = color
+            line.lineWidth = 1
+            container.addChild(line)
+            x += spacing
+        }
+
+        // Horizontal lines
+        var y: CGFloat = -size.height / 2
+        while y <= size.height / 2 {
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: -size.width / 2, y: y))
+            path.addLine(to: CGPoint(x: size.width / 2, y: y))
+
+            let line = SKShapeNode(path: path)
+            line.strokeColor = color
+            line.lineWidth = 1
+            container.addChild(line)
+            y += spacing
+        }
+
+        return container
     }
 
     private func setupObstacles() {

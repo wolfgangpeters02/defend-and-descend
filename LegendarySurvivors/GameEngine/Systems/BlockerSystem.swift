@@ -45,8 +45,8 @@ class BlockerSystem {
         state.blockerSlots[slotIndex].blockerId = newBlocker.id
         state.blockerNodes.append(newBlocker)
 
-        // Update paths
-        state.paths = newPaths
+        // Update paths and recalculate enemy progress
+        updatePathsAndEnemyProgress(state: &state, newPaths: newPaths)
 
         return .success(blocker: newBlocker)
     }
@@ -66,8 +66,9 @@ class BlockerSystem {
             state.blockerSlots[slotIndex].blockerId = nil
         }
 
-        // Recalculate paths
-        state.paths = recalculatePaths(basePaths: state.basePaths, blockers: state.blockerNodes, core: state.core.position)
+        // Recalculate paths and update enemy progress
+        let newPaths = recalculatePaths(basePaths: state.basePaths, blockers: state.blockerNodes, core: state.core.position)
+        updatePathsAndEnemyProgress(state: &state, newPaths: newPaths)
     }
 
     /// Move a blocker from one slot to another
@@ -114,10 +115,46 @@ class BlockerSystem {
         state.blockerSlots[targetSlotIndex].occupied = true
         state.blockerSlots[targetSlotIndex].blockerId = blockerId
 
-        // Update paths
-        state.paths = newPaths
+        // Update paths and enemy progress
+        updatePathsAndEnemyProgress(state: &state, newPaths: newPaths)
 
         return .success(blocker: state.blockerNodes[blockerIndex])
+    }
+
+    // MARK: - Path Updates with Enemy Progress Preservation
+
+    /// Update paths and recalculate all enemy progress to preserve their physical positions
+    /// This prevents enemies from teleporting when paths are rerouted
+    private static func updatePathsAndEnemyProgress(state: inout TDGameState, newPaths: [EnemyPath]) {
+        let oldPaths = state.paths
+
+        // For each enemy, convert their current position to progress on the new path
+        for i in 0..<state.enemies.count {
+            let enemy = state.enemies[i]
+            if enemy.isDead || enemy.reachedCore {
+                continue
+            }
+
+            // Get enemy's current physical position
+            let currentPosition = CGPoint(x: enemy.x, y: enemy.y)
+
+            // Find the corresponding new path (may have different ID due to rerouting)
+            // Use the first path that shares waypoints with the old path
+            let newPathIndex = min(enemy.pathIndex, newPaths.count - 1)
+            guard newPathIndex >= 0 else { continue }
+
+            let newPath = newPaths[newPathIndex]
+
+            // Find the closest point on the new path and convert to progress
+            let (_, newProgress) = PathSystem.closestPointOnPath(point: currentPosition, path: newPath)
+
+            // Update enemy's progress on the new path
+            state.enemies[i].pathProgress = max(enemy.pathProgress, newProgress) // Never move backwards
+            state.enemies[i].pathIndex = newPathIndex
+        }
+
+        // Now update the paths
+        state.paths = newPaths
     }
 
     // MARK: - Path Recalculation
