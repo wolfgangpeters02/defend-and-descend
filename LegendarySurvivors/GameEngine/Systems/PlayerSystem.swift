@@ -5,11 +5,9 @@ import CoreGraphics
 
 class PlayerSystem {
     /// Update player based on input
-    static func update(state: inout GameState, input: InputState, deltaTime: TimeInterval) {
-        let now = Date().timeIntervalSince1970
-
+    static func update(state: inout GameState, input: InputState, context: FrameContext) {
         // Check invulnerability
-        if state.player.invulnerable && now > state.player.invulnerableUntil {
+        if state.player.invulnerable && context.timestamp > state.player.invulnerableUntil {
             state.player.invulnerable = false
         }
 
@@ -17,7 +15,7 @@ class PlayerSystem {
         if state.player.regen > 0 {
             state.player.health = min(
                 state.player.maxHealth,
-                state.player.health + state.player.regen * CGFloat(deltaTime)
+                state.player.health + state.player.regen * CGFloat(context.deltaTime)
             )
         }
 
@@ -54,15 +52,16 @@ class PlayerSystem {
             // Effect zone modifiers
             let iceMultiplier = state.player.onIce ? state.player.iceSpeedMultiplier : 1.0
             let speedZoneMultiplier = state.player.inSpeedZone ? state.player.speedZoneMultiplier : 1.0
-            let effectiveSpeed = state.player.speed * iceMultiplier * speedZoneMultiplier
+            let survivalModifier = SurvivalArenaSystem.getSpeedModifier(state: state)
+            let effectiveSpeed = state.player.speed * iceMultiplier * speedZoneMultiplier * survivalModifier
 
             state.player.velocityX = moveX * effectiveSpeed
             state.player.velocityY = moveY * effectiveSpeed
 
             let oldX = state.player.x
             let oldY = state.player.y
-            var newX = state.player.x + state.player.velocityX * CGFloat(deltaTime)
-            var newY = state.player.y + state.player.velocityY * CGFloat(deltaTime)
+            var newX = state.player.x + state.player.velocityX * CGFloat(context.deltaTime)
+            var newY = state.player.y + state.player.velocityY * CGFloat(context.deltaTime)
 
             // Check obstacle collision and resolve
             if !state.arena.obstacles.isEmpty {
@@ -91,7 +90,7 @@ class PlayerSystem {
                     x: state.player.x,
                     y: state.player.y,
                     lifetime: GameConstants.trailLifetime,
-                    createdAt: now
+                    createdAt: context.timestamp
                 ))
             }
         } else {
@@ -100,16 +99,16 @@ class PlayerSystem {
         }
 
         // Update trail
-        state.player.trail = state.player.trail.filter { now - $0.createdAt < $0.lifetime }
+        state.player.trail = state.player.trail.filter { context.timestamp - $0.createdAt < $0.lifetime }
 
         // Collision with obstacles
         checkObstacleCollision(player: &state.player, obstacles: state.arena.obstacles)
 
         // Collision with hazards
-        checkHazardCollision(state: &state, deltaTime: deltaTime)
+        checkHazardCollision(state: &state, context: context)
 
         // Effect zone checks
-        checkEffectZones(state: &state, deltaTime: deltaTime)
+        checkEffectZones(state: &state, context: context)
 
         // Enemy collision (contact damage)
         checkEnemyCollision(state: &state)
@@ -170,7 +169,7 @@ class PlayerSystem {
     }
 
     /// Check collision with hazards and deal damage
-    private static func checkHazardCollision(state: inout GameState, deltaTime: TimeInterval) {
+    private static func checkHazardCollision(state: inout GameState, context: FrameContext) {
         for hazard in state.arena.hazards {
             let closestX = MathUtils.clamp(value: state.player.x, min: hazard.x, max: hazard.x + hazard.width)
             let closestY = MathUtils.clamp(value: state.player.y, min: hazard.y, max: hazard.y + hazard.height)
@@ -181,13 +180,13 @@ class PlayerSystem {
 
             if distSq < state.player.size * state.player.size {
                 // Deal damage over time
-                damagePlayer(state: &state, rawDamage: hazard.damage * CGFloat(deltaTime))
+                damagePlayer(state: &state, rawDamage: hazard.damage * CGFloat(context.deltaTime))
             }
         }
     }
 
     /// Check effect zones (ice, speed, healing)
-    private static func checkEffectZones(state: inout GameState, deltaTime: TimeInterval) {
+    private static func checkEffectZones(state: inout GameState, context: FrameContext) {
         // Reset zone states
         state.player.onIce = false
         state.player.inSpeedZone = false
@@ -202,20 +201,20 @@ class PlayerSystem {
 
             if inZone {
                 switch zone.type {
-                case "ice":
+                case .ice:
                     state.player.onIce = true
                     state.player.iceSpeedMultiplier = zone.speedMultiplier ?? 1.5
-                case "speedBoost":
+                case .speedBoost:
                     state.player.inSpeedZone = true
                     state.player.speedZoneMultiplier = zone.speedMultiplier ?? 1.5
-                case "healing":
+                case .healing:
                     if let healPerSec = zone.healPerSecond {
                         state.player.health = min(
                             state.player.maxHealth,
-                            state.player.health + healPerSec * CGFloat(deltaTime)
+                            state.player.health + healPerSec * CGFloat(context.deltaTime)
                         )
                     }
-                default:
+                case .damage, .slow, .powerZone:
                     break
                 }
             }
@@ -248,9 +247,10 @@ class PlayerSystem {
                     }
                 }
 
-                // Brief invulnerability
+                // Brief invulnerability (use state time instead of Date())
+                let currentTime = state.startTime + state.timeElapsed
                 state.player.invulnerable = true
-                state.player.invulnerableUntil = Date().timeIntervalSince1970 + GameConstants.invulnerabilityDuration
+                state.player.invulnerableUntil = currentTime + GameConstants.invulnerabilityDuration
 
                 break // Only one enemy hits per frame
             }
@@ -264,6 +264,18 @@ class PlayerSystem {
         state.player.health -= damage
         state.stats.damageTaken += damage
 
+        // Use state time instead of Date()
+        let currentTime = state.startTime + state.timeElapsed
+
+        // Emit scrolling combat text event for player damage
+        let damageEvent = DamageEvent(
+            type: .playerDamage,
+            amount: Int(damage),
+            position: CGPoint(x: state.player.x, y: state.player.y),
+            timestamp: currentTime
+        )
+        state.damageEvents.append(damageEvent)
+
         // Create hit particle
         state.particles.append(Particle(
             id: RandomUtils.generateId(),
@@ -271,7 +283,7 @@ class PlayerSystem {
             x: state.player.x,
             y: state.player.y,
             lifetime: 0.3,
-            createdAt: Date().timeIntervalSince1970,
+            createdAt: currentTime,
             color: "#ff4444",
             size: 10
         ))
@@ -283,7 +295,7 @@ class PlayerSystem {
                 state.player.abilities?.revive = revives - 1
                 state.player.health = state.player.maxHealth
                 state.player.invulnerable = true
-                state.player.invulnerableUntil = Date().timeIntervalSince1970 + GameConstants.reviveInvulnerabilityDuration
+                state.player.invulnerableUntil = currentTime + GameConstants.reviveInvulnerabilityDuration
 
                 // Phoenix particle effect
                 for i in 0..<50 {
@@ -295,7 +307,7 @@ class PlayerSystem {
                         x: state.player.x,
                         y: state.player.y,
                         lifetime: 1.0,
-                        createdAt: Date().timeIntervalSince1970,
+                        createdAt: currentTime,
                         color: "#ff6600",
                         size: 8,
                         velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed)

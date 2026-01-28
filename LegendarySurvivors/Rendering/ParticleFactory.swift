@@ -5,6 +5,11 @@ import CoreGraphics
 
 class ParticleFactory {
 
+    /// Get current timestamp from game state (avoids Date() calls)
+    private static func timestamp(from state: GameState) -> TimeInterval {
+        return state.startTime + state.timeElapsed
+    }
+
     /// Create explosion particles
     static func createExplosion(
         state: inout GameState,
@@ -14,7 +19,7 @@ class ParticleFactory {
         count: Int,
         size: CGFloat
     ) {
-        let now = Date().timeIntervalSince1970
+        let now = timestamp(from: state)
 
         for i in 0..<count {
             let angle = CGFloat.random(in: 0...(2 * .pi))
@@ -23,7 +28,7 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-explosion-\(i)",
-                type: "explosion",
+                type: .explosion,
                 x: x,
                 y: y,
                 lifetime: Double.random(in: 0.3...0.8),
@@ -46,7 +51,7 @@ class ParticleFactory {
         y: CGFloat,
         count: Int
     ) {
-        let now = Date().timeIntervalSince1970
+        let now = timestamp(from: state)
 
         for i in 0..<count {
             let angle = CGFloat.random(in: 0...(2 * .pi))
@@ -54,7 +59,7 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-blood-\(i)",
-                type: "hit",
+                type: .blood,
                 x: x,
                 y: y,
                 lifetime: Double.random(in: 0.2...0.5),
@@ -73,7 +78,7 @@ class ParticleFactory {
         x: CGFloat,
         y: CGFloat
     ) {
-        let now = Date().timeIntervalSince1970
+        let now = timestamp(from: state)
 
         for i in 0..<5 {
             let angle = CGFloat.random(in: 0...(2 * .pi))
@@ -81,7 +86,7 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-sparkle-\(i)",
-                type: "coin",
+                type: .coin,
                 x: x,
                 y: y,
                 lifetime: 0.4,
@@ -102,7 +107,7 @@ class ParticleFactory {
         angle: CGFloat,
         weaponType: String
     ) {
-        let now = Date().timeIntervalSince1970
+        let now = timestamp(from: state)
         let color = getWeaponColor(weaponType)
 
         for i in 0..<3 {
@@ -111,7 +116,7 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-muzzle-\(i)",
-                type: "hit",
+                type: .muzzle,
                 x: x + cos(angle) * 15,
                 y: y + sin(angle) * 15,
                 lifetime: 0.15,
@@ -134,7 +139,7 @@ class ParticleFactory {
         y: CGFloat,
         weaponType: String
     ) {
-        let now = Date().timeIntervalSince1970
+        let now = timestamp(from: state)
         let color = getWeaponColor(weaponType)
 
         for i in 0..<5 {
@@ -143,7 +148,7 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-impact-\(i)",
-                type: "hit",
+                type: .impact,
                 x: x,
                 y: y,
                 lifetime: 0.2,
@@ -165,12 +170,12 @@ class ParticleFactory {
         // Only spawn trail particles occasionally
         guard RandomUtils.randomBool(probability: 0.3) else { return }
 
-        let now = Date().timeIntervalSince1970
+        let now = timestamp(from: state)
         let color = getWeaponColor(weaponType)
 
         state.particles.append(Particle(
             id: "\(RandomUtils.generateId())-trail",
-            type: "hit",
+            type: .trail,
             x: x + CGFloat.random(in: -2...2),
             y: y + CGFloat.random(in: -2...2),
             lifetime: 0.15,

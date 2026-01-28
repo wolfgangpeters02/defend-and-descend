@@ -333,13 +333,13 @@ class CyberbossAI {
         let count = Int.random(in: 3...5)
 
         for _ in 0..<count {
-            let roomWidth = gameState.currentRoom?.width ?? 2400
-            let roomHeight = gameState.currentRoom?.height ?? 1600
+            let arenaWidth = gameState.arena.width
+            let arenaHeight = gameState.arena.height
 
             let puddle = DamagePuddle(
                 id: RandomUtils.generateId(),
-                x: CGFloat.random(in: 100...(roomWidth - 100)),
-                y: CGFloat.random(in: 100...(roomHeight - 100)),
+                x: CGFloat.random(in: 100...(arenaWidth - 100)),
+                y: CGFloat.random(in: 100...(arenaHeight - 100)),
                 radius: 60,
                 damage: 30,
                 damageInterval: 1.0,

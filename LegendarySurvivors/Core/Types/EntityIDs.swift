@@ -212,6 +212,109 @@ enum CurrencyID: String, CaseIterable, Codable {
     }
 }
 
+// MARK: - Upgrade Target Types
+
+/// Target types for stat/weapon/ability upgrades
+enum UpgradeTargetType: String, Codable, CaseIterable {
+    // Stat upgrades
+    case damage
+    case maxHealth
+    case speed
+    case regen
+    case armor
+    case pickupRange
+
+    // Weapon upgrades
+    case attackSpeed
+    case range
+    case projectileCount
+    case pierce
+    case splash
+    case homing
+
+    // Ability upgrades
+    case lifesteal
+    case revive
+    case thorns
+    case explosionOnKill
+    case orbitalStrike
+    case timeFreeze
+    case allStats
+}
+
+// MARK: - Hazard Damage Types
+
+/// Damage types for arena hazards
+enum HazardDamageType: String, Codable, CaseIterable {
+    case fire
+    case ice
+    case cold       // Alias for ice effects
+    case poison
+    case physical
+    case void
+    case laser
+    case lava
+    case corruption
+    case necrotic
+    case generic
+
+    /// Alternative initializer for backwards compatibility
+    init(from string: String) {
+        self = HazardDamageType(rawValue: string) ?? .generic
+    }
+}
+
+// MARK: - Effect Zone Types
+
+/// Types of effect zones in arenas
+enum EffectZoneType: String, Codable, CaseIterable {
+    case ice
+    case speedBoost
+    case healing
+    case damage
+    case slow
+    case powerZone = "power_zone"
+
+    /// Alternative initializer for backwards compatibility
+    init(from string: String) {
+        self = EffectZoneType(rawValue: string) ?? .damage
+    }
+}
+
+// MARK: - Particle Types
+
+/// Types of visual particles
+enum ParticleType: String, Codable, CaseIterable {
+    case explosion
+    case hit
+    case coin
+    case blood
+    case muzzle
+    case impact
+    case trail
+    case legendary
+
+    /// Alternative initializer for backwards compatibility
+    init(from string: String) {
+        self = ParticleType(rawValue: string) ?? .hit
+    }
+}
+
+// MARK: - Pickup Types
+
+/// Types of collectible pickups
+enum PickupType: String, Codable, CaseIterable {
+    case coin
+    case health
+    case xp
+    case powerup
+
+    /// Alternative initializer for backwards compatibility
+    init(from string: String) {
+        self = PickupType(rawValue: string) ?? .coin
+    }
+}
+
 // MARK: - Validation Extension
 
 #if DEBUG

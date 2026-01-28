@@ -6,7 +6,7 @@ import CoreGraphics
 class SpawnSystem {
 
     /// Update enemy spawning based on time elapsed
-    static func update(state: inout GameState) {
+    static func update(state: inout GameState, context: FrameContext) {
         let config = GameConfigLoader.shared
 
         // Get max enemies on screen
@@ -27,8 +27,9 @@ class SpawnSystem {
             }
         }
 
-        // Calculate spawn rate
-        let enemiesPerSecond = currentWave.enemiesPerMinute / 60.0
+        // Calculate spawn rate with survival event modifier
+        let survivalSpawnModifier = Double(SurvivalArenaSystem.getSpawnRateModifier(state: state))
+        let enemiesPerSecond = (currentWave.enemiesPerMinute / 60.0) * survivalSpawnModifier
         let spawnChance = enemiesPerSecond / 60.0 // Assuming 60fps
 
         if Double.random(in: 0...1) < spawnChance {
@@ -58,7 +59,7 @@ class SpawnSystem {
     }
 
     /// Spawn a boss enemy
-    static func spawnBoss(state: inout GameState, type: String = "boss") {
+    static func spawnBoss(state: inout GameState, context: FrameContext? = nil, type: String = "boss") {
         let config = GameConfigLoader.shared
 
         guard let bossConfig = config.getEnemy(type) else { return }

@@ -159,7 +159,7 @@ class EntityRenderer {
         let container = SKNode()
 
         switch pickup.type {
-        case "coin":
+        case .coin:
             // Blue data triangle (◈ shape) - Dark Terminal aesthetic
             let dataColor = SKColor(red: 0, green: 0.831, blue: 1, alpha: 1) // #00d4ff cyan
             let dataColorLight = SKColor(red: 0.4, green: 0.9, blue: 1, alpha: 1) // lighter cyan for stroke
@@ -191,7 +191,7 @@ class EntityRenderer {
             ])
             container.run(SKAction.repeatForever(bob))
 
-        case "health":
+        case .health:
             let heart = SKLabelNode(text: "♥")
             heart.fontSize = 16
             heart.fontColor = SKColor.red
@@ -204,7 +204,7 @@ class EntityRenderer {
             ])
             container.run(SKAction.repeatForever(pulse))
 
-        default:
+        case .xp, .powerup:
             let orb = SKShapeNode(circleOfRadius: 5)
             orb.fillColor = SKColor.blue
             orb.strokeColor = SKColor.cyan

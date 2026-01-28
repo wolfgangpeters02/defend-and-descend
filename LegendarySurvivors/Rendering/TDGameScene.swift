@@ -63,8 +63,13 @@ class TDGameScene: SKScene {
     // Camera for zoom/pan
     private var cameraNode: SKCameraNode!
     private var currentScale: CGFloat = 1.0
-    private let minScale: CGFloat = 0.25  // Zoom IN limit (smaller = towers appear much bigger)
+    private let minScale: CGFloat = 0.15  // Zoom IN limit - closer for detail inspection
     private let maxScale: CGFloat = 1.8   // Zoom OUT limit (see more map but not too much black)
+
+    /// Expose camera scale for coordinate conversion from SwiftUI layer
+    var cameraScale: CGFloat {
+        return currentScale
+    }
 
     // Inertia camera physics
     private var cameraVelocity: CGPoint = .zero
@@ -79,6 +84,12 @@ class TDGameScene: SKScene {
     // Projectile trails
     private var projectileTrails: [String: [CGPoint]] = [:]
     private let maxTrailLength: Int = 8
+
+    // Projectile previous positions for swept collision detection
+    private var projectilePrevPositions: [String: CGPoint] = [:]
+
+    // Tower attack tracking for firing animations
+    private var towerLastAttackTimes: [String: TimeInterval] = [:]
 
     // Motherboard City rendering
     private var isMotherboardMap: Bool {
@@ -204,6 +215,13 @@ class TDGameScene: SKScene {
 
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
         guard let cameraNode = cameraNode, let view = gesture.view else { return }
+
+        // CRITICAL: Suppress camera panning when in tower placement mode
+        // This prevents the "wishy-washy" UX where map moves while placing towers
+        if isInPlacementMode {
+            gesture.setTranslation(.zero, in: view)
+            return
+        }
 
         switch gesture.state {
         case .began:
@@ -1742,6 +1760,12 @@ class TDGameScene: SKScene {
         updateProjectileVisuals(state: state)
         updateCoreVisual(state: state, currentTime: currentTime)
 
+        // Update Level of Detail based on zoom
+        updateTowerLOD()
+
+        // Render scrolling combat text
+        renderDamageEvents(state: &state)
+
         // Save state and notify delegate
         self.state = state
         gameStateDelegate?.gameStateUpdated(state)
@@ -1779,6 +1803,9 @@ class TDGameScene: SKScene {
     private func updateProjectiles(state: inout TDGameState, deltaTime: TimeInterval, currentTime: TimeInterval) {
         for i in (0..<state.projectiles.count).reversed() {
             var proj = state.projectiles[i]
+
+            // Store previous position for swept collision detection
+            projectilePrevPositions[proj.id] = CGPoint(x: proj.x, y: proj.y)
 
             // Move projectile
             proj.x += proj.velocityX * CGFloat(deltaTime)
@@ -1822,6 +1849,7 @@ class TDGameScene: SKScene {
 
     // MARK: - Collision Processing
 
+    /// Swept collision detection to prevent projectile tunneling through fast-moving objects
     private func processCollisions(state: inout TDGameState) {
         for projIndex in (0..<state.projectiles.count).reversed() {
             var proj = state.projectiles[projIndex]
@@ -1829,20 +1857,39 @@ class TDGameScene: SKScene {
             // Skip enemy projectiles
             if proj.isEnemyProjectile { continue }
 
+            // Get previous position for swept collision (fallback to current if first frame)
+            let prevPos = projectilePrevPositions[proj.id] ?? CGPoint(x: proj.x, y: proj.y)
+            let currPos = CGPoint(x: proj.x, y: proj.y)
+
             for enemyIndex in 0..<state.enemies.count {
                 var enemy = state.enemies[enemyIndex]
                 if enemy.isDead || enemy.reachedCore { continue }
 
-                // Check collision
-                let dx = proj.x - enemy.x
-                let dy = proj.y - enemy.y
-                let distance = sqrt(dx*dx + dy*dy)
-                let hitRadius = (proj.radius) + (enemy.size / 2)
+                // Swept collision: check if projectile path intersects enemy circle
+                let hitRadius = proj.radius + (enemy.size / 2)
+                let enemyCenter = CGPoint(x: enemy.x, y: enemy.y)
 
-                if distance < hitRadius && !proj.hitEnemies.contains(enemy.id) {
+                // Use swept sphere collision (line segment vs circle)
+                let collision = lineIntersectsCircle(
+                    lineStart: prevPos,
+                    lineEnd: currPos,
+                    circleCenter: enemyCenter,
+                    circleRadius: hitRadius
+                )
+
+                if collision && !proj.hitEnemies.contains(enemy.id) {
                     // Apply damage
                     enemy.health -= proj.damage
                     state.stats.damageDealt += proj.damage
+
+                    // Emit scrolling combat text event
+                    let damageEvent = DamageEvent(
+                        type: .damage,
+                        amount: Int(proj.damage),
+                        position: CGPoint(x: enemy.x, y: enemy.y),
+                        timestamp: state.gameTime
+                    )
+                    state.damageEvents.append(damageEvent)
 
                     // Apply slow
                     if let slow = proj.slow, let duration = proj.slowDuration {
@@ -1894,6 +1941,47 @@ class TDGameScene: SKScene {
         }
     }
 
+    /// Check if a line segment intersects a circle (for swept collision detection)
+    /// This catches fast-moving projectiles that would otherwise tunnel through enemies
+    private func lineIntersectsCircle(lineStart: CGPoint, lineEnd: CGPoint, circleCenter: CGPoint, circleRadius: CGFloat) -> Bool {
+        // Vector from line start to circle center
+        let d = CGPoint(x: lineEnd.x - lineStart.x, y: lineEnd.y - lineStart.y)
+        let f = CGPoint(x: lineStart.x - circleCenter.x, y: lineStart.y - circleCenter.y)
+
+        let a = d.x * d.x + d.y * d.y
+        let b = 2 * (f.x * d.x + f.y * d.y)
+        let c = f.x * f.x + f.y * f.y - circleRadius * circleRadius
+
+        var discriminant = b * b - 4 * a * c
+
+        // No intersection at all
+        if discriminant < 0 {
+            return false
+        }
+
+        discriminant = sqrt(discriminant)
+
+        // Check if intersection is within the line segment (t between 0 and 1)
+        let t1 = (-b - discriminant) / (2 * a)
+        let t2 = (-b + discriminant) / (2 * a)
+
+        // Either intersection point is on the segment, or segment is inside the circle
+        if t1 >= 0 && t1 <= 1 {
+            return true
+        }
+        if t2 >= 0 && t2 <= 1 {
+            return true
+        }
+
+        // Also check if either endpoint is inside the circle (segment fully inside)
+        let startDist = sqrt(f.x * f.x + f.y * f.y)
+        let endDx = lineEnd.x - circleCenter.x
+        let endDy = lineEnd.y - circleCenter.y
+        let endDist = sqrt(endDx * endDx + endDy * endDy)
+
+        return startDist <= circleRadius || endDist <= circleRadius
+    }
+
     private func applySplashDamage(state: inout TDGameState, center: CGPoint, radius: CGFloat, damage: CGFloat, slow: CGFloat?, slowDuration: TimeInterval?) {
         for i in 0..<state.enemies.count {
             var enemy = state.enemies[i]
@@ -1906,6 +1994,15 @@ class TDGameScene: SKScene {
             if distance < radius {
                 enemy.health -= damage
                 state.stats.damageDealt += damage
+
+                // Emit splash damage event
+                let splashEvent = DamageEvent(
+                    type: .damage,
+                    amount: Int(damage),
+                    position: CGPoint(x: enemy.x, y: enemy.y),
+                    timestamp: state.gameTime
+                )
+                state.damageEvents.append(splashEvent)
 
                 if let slow = slow, let duration = slowDuration {
                     enemy.applySlow(amount: slow, duration: duration, currentTime: state.gameTime)
@@ -1925,11 +2022,62 @@ class TDGameScene: SKScene {
         }
     }
 
+    // MARK: - Scrolling Combat Text
+
+    private func renderDamageEvents(state: inout TDGameState) {
+        // Process and display new damage events
+        for i in 0..<state.damageEvents.count {
+            guard !state.damageEvents[i].displayed else { continue }
+
+            let event = state.damageEvents[i]
+
+            // Convert game position to scene position
+            let scenePosition = convertToScene(event.position)
+
+            // Map DamageEventType to SCTType and display
+            switch event.type {
+            case .damage:
+                combatText.showDamage(event.amount, at: scenePosition, isCritical: false)
+            case .critical:
+                combatText.showDamage(event.amount, at: scenePosition, isCritical: true)
+            case .healing:
+                combatText.showHealing(event.amount, at: scenePosition)
+            case .playerDamage:
+                combatText.show("-\(event.amount)", type: .damage, at: scenePosition)
+            case .freeze:
+                combatText.showFreeze(at: scenePosition)
+            case .burn:
+                combatText.showBurn(event.amount, at: scenePosition)
+            case .chain:
+                combatText.showChain(event.amount, at: scenePosition)
+            case .execute:
+                combatText.showExecute(at: scenePosition)
+            case .xp:
+                combatText.showXP(event.amount, at: scenePosition)
+            case .currency:
+                combatText.showCurrency(event.amount, at: scenePosition)
+            case .miss:
+                combatText.showMiss(at: scenePosition)
+            case .shield:
+                combatText.show("BLOCKED", type: .shield, at: scenePosition)
+            }
+
+            state.damageEvents[i].displayed = true
+        }
+
+        // Clean up old damage events (older than 2 seconds)
+        state.damageEvents.removeAll { state.gameTime - $0.timestamp > 2.0 }
+    }
+
     // MARK: - Cleanup
 
     private func cleanupDeadEntities(state: inout TDGameState) {
         // Remove dead enemies
         state.enemies.removeAll { $0.isDead || $0.reachedCore }
+
+        // Clean up previous positions for removed projectiles
+        let activeProjectileIds = Set(state.projectiles.map { $0.id })
+        projectilePrevPositions = projectilePrevPositions.filter { activeProjectileIds.contains($0.key) }
     }
 
     // MARK: - Visual Updates
@@ -1940,6 +2088,7 @@ class TDGameScene: SKScene {
             if !state.towers.contains(where: { $0.id == id }) {
                 node.removeFromParent()
                 towerNodes.removeValue(forKey: id)
+                towerLastAttackTimes.removeValue(forKey: id)
             }
         }
 
@@ -1949,11 +2098,13 @@ class TDGameScene: SKScene {
                 // Update existing
                 node.position = convertToScene(tower.position)
 
-                // Update range indicator visibility
-                if let rangeNode = node.childNode(withName: "range") as? SKShapeNode {
-                    let shouldShow = tower.id == selectedTowerId || isDragging
-                    if shouldShow != !rangeNode.isHidden {
-                        rangeNode.isHidden = !shouldShow
+                // Update range indicator visibility with animation
+                let shouldShowRange = tower.id == selectedTowerId || isDragging
+                if let rangeNode = node.childNode(withName: "range") {
+                    if shouldShowRange && rangeNode.isHidden {
+                        TowerAnimations.showRange(node: node, animated: true)
+                    } else if !shouldShowRange && !rangeNode.isHidden {
+                        TowerAnimations.hideRange(node: node, animated: true)
                     }
                 }
 
@@ -1962,20 +2113,34 @@ class TDGameScene: SKScene {
                     barrel.zRotation = tower.rotation - .pi/2
                 }
 
-                // Update merge stars if level changed
+                // Update merge indicators if level changed
                 if let starsNode = node.childNode(withName: "stars") {
                     let currentStarCount = starsNode.children.count
                     if currentStarCount != tower.mergeLevel {
                         starsNode.removeFromParent()
-                        let newStars = createMergeStars(count: tower.mergeLevel)
-                        newStars.name = "stars"
-                        newStars.position = CGPoint(x: 0, y: -22)
-                        node.addChild(newStars)
+                        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                        let archetype = TowerVisualFactory.TowerArchetype.from(weaponType: tower.weaponType)
+                        let newIndicator = TowerVisualFactory.createMergeIndicator(
+                            count: tower.mergeLevel,
+                            archetype: archetype,
+                            color: towerColor
+                        )
+                        newIndicator.name = "stars"
+                        newIndicator.position = CGPoint(x: 0, y: -24)
+                        node.addChild(newIndicator)
                     }
                 }
 
                 // Update cooldown arc
                 updateCooldownArc(for: tower, node: node, currentTime: state.gameTime)
+
+                // Detect firing (lastAttackTime changed) and trigger animation
+                if let prevAttackTime = towerLastAttackTimes[tower.id] {
+                    if tower.lastAttackTime > prevAttackTime {
+                        triggerTowerFireAnimation(node: node, tower: tower)
+                    }
+                }
+                towerLastAttackTimes[tower.id] = tower.lastAttackTime
 
             } else {
                 // Create new tower node
@@ -1990,6 +2155,48 @@ class TDGameScene: SKScene {
                 // Haptic feedback
                 HapticsService.shared.play(.towerPlace)
             }
+        }
+    }
+
+    /// Trigger tower firing animation (recoil + muzzle flash)
+    private func triggerTowerFireAnimation(node: SKNode, tower: Tower) {
+        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+        let archetype = TowerVisualFactory.TowerArchetype.from(weaponType: tower.weaponType)
+
+        // Use the new animation system for muzzle flash and recoil
+        TowerAnimations.playMuzzleFlash(node: node, duration: TowerEffects.muzzleFlashDuration)
+        TowerAnimations.playRecoil(node: node, intensity: archetype == .artillery ? 5.0 : 3.0)
+
+        // Special effects for certain archetypes
+        switch archetype {
+        case .legendary:
+            // Excalibur golden flash on attack
+            if Bool.random() && Bool.random() {  // ~25% chance for special effect
+                TowerAnimations.playLegendarySpecialEffect(node: node)
+            }
+        case .execute:
+            // Null pointer glitch effect
+            TowerAnimations.playExecuteEffect(node: node)
+        case .tesla:
+            // Tesla arc flash handled by idle animation
+            break
+        default:
+            break
+        }
+
+        // Glow intensify on fire
+        if let glow = node.childNode(withName: "glow") {
+            glow.removeAction(forKey: "fireGlow")
+            let intensify = SKAction.group([
+                SKAction.scale(to: 1.3, duration: 0.05),
+                SKAction.fadeAlpha(to: 1.3, duration: 0.05)
+            ])
+            let restore = SKAction.group([
+                SKAction.scale(to: 1.0, duration: 0.15),
+                SKAction.fadeAlpha(to: 1.0, duration: 0.15)
+            ])
+            restore.timingMode = .easeOut
+            glow.run(SKAction.sequence([intensify, restore]), withKey: "fireGlow")
         }
     }
 
@@ -2043,159 +2250,54 @@ class TDGameScene: SKScene {
     }
 
     private func createTowerNode(tower: Tower) -> SKNode {
-        let container = SKNode()
-        let towerColor = UIColor(hex: tower.color) ?? .blue
-
-        // Tower base/body - weapon-specific style
-        let body = createWeaponBody(for: tower.weaponType, color: towerColor)
-        body.name = "body"
-        container.addChild(body)
-
-        // Barrel/turret
-        let barrel = createWeaponBarrel(for: tower.weaponType, color: towerColor)
-        barrel.name = "barrel"
-        barrel.anchorPoint = CGPoint(x: 0.5, y: 0)
-        container.addChild(barrel)
-
-        // Merge stars (1-3)
-        let starsNode = createMergeStars(count: tower.mergeLevel)
-        starsNode.name = "stars"
-        starsNode.position = CGPoint(x: 0, y: -22)
-        container.addChild(starsNode)
-
-        // Range indicator (hidden by default)
-        let range = SKShapeNode(circleOfRadius: tower.range)
-        range.fillColor = towerColor.withAlphaComponent(0.1)
-        range.strokeColor = towerColor.withAlphaComponent(0.4)
-        range.lineWidth = 2
-        range.name = "range"
-        range.isHidden = true
-        container.addChild(range)
-
-        // Cooldown arc (hidden by default, fills when on cooldown)
-        let cooldownArc = SKShapeNode()
-        cooldownArc.strokeColor = towerColor.withAlphaComponent(0.8)
-        cooldownArc.lineWidth = 3
-        cooldownArc.lineCap = .round
-        cooldownArc.name = "cooldown"
-        cooldownArc.isHidden = true
-        container.addChild(cooldownArc)
-
-        // Merge highlight (for valid merge targets)
-        let mergeHighlight = SKShapeNode(circleOfRadius: 25)
-        mergeHighlight.fillColor = .clear
-        mergeHighlight.strokeColor = .green
-        mergeHighlight.lineWidth = 3
-        mergeHighlight.glowWidth = 5
-        mergeHighlight.name = "mergeHighlight"
-        mergeHighlight.isHidden = true
-        container.addChild(mergeHighlight)
-
-        return container
-    }
-
-    /// Create weapon-specific body shape
-    private func createWeaponBody(for weaponType: String, color: UIColor) -> SKShapeNode {
-        let body: SKShapeNode
-
-        switch weaponType {
-        case "bow", "crossbow":
-            // Archer platform - circle
-            body = SKShapeNode(circleOfRadius: 15)
-            body.fillColor = color
-            body.strokeColor = .white
-            body.lineWidth = 2
-        case "wand", "staff":
-            // Mage tower - hexagon
-            let path = createHexagonPath(radius: 16)
-            body = SKShapeNode(path: path)
-            body.fillColor = color
-            body.strokeColor = .cyan
-            body.lineWidth = 2
-            body.glowWidth = 3
-        case "cannon", "bomb":
-            // Artillery - large square
-            body = SKShapeNode(rectOf: CGSize(width: 32, height: 32), cornerRadius: 4)
-            body.fillColor = color
-            body.strokeColor = .gray
-            body.lineWidth = 3
-        case "ice_shard":
-            // Crystal spire - diamond
-            let path = createDiamondPath(size: 30)
-            body = SKShapeNode(path: path)
-            body.fillColor = color
-            body.strokeColor = .cyan
-            body.lineWidth = 2
-            body.glowWidth = 4
-        case "laser", "flamethrower":
-            // Tech tower - rounded rect
-            body = SKShapeNode(rectOf: CGSize(width: 28, height: 28), cornerRadius: 8)
-            body.fillColor = color
-            body.strokeColor = .white
-            body.lineWidth = 2
-        default:
-            // Default square
-            body = SKShapeNode(rectOf: CGSize(width: 30, height: 30), cornerRadius: 5)
-            body.fillColor = color
-            body.strokeColor = .white
-            body.lineWidth = 2
+        // Use the new AAA Tower Visual Factory for rich, multi-layered visuals
+        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+        let rarityString: String
+        switch tower.rarity {
+        case .common: rarityString = "common"
+        case .rare: rarityString = "rare"
+        case .epic: rarityString = "epic"
+        case .legendary: rarityString = "legendary"
         }
 
-        return body
+        return TowerVisualFactory.createTowerNode(
+            weaponType: tower.weaponType,
+            color: towerColor,
+            range: tower.range,
+            mergeLevel: tower.mergeLevel,
+            level: tower.level,
+            damage: tower.damage,
+            attackSpeed: tower.attackSpeed,
+            projectileCount: tower.projectileCount,
+            rarity: rarityString
+        )
     }
 
-    /// Create weapon-specific barrel/projectile indicator
-    private func createWeaponBarrel(for weaponType: String, color: UIColor) -> SKSpriteNode {
-        let barrel: SKSpriteNode
+    /// Update Level of Detail visibility based on camera zoom
+    private func updateTowerLOD() {
+        // Show details when zoomed in (scale < 0.4 means close-up)
+        let showDetail = currentScale < 0.4
+        let targetAlpha: CGFloat = showDetail ? 1.0 : 0.0
 
-        switch weaponType {
-        case "cannon", "bomb":
-            barrel = SKSpriteNode(color: .darkGray, size: CGSize(width: 10, height: 18))
-        case "laser", "flamethrower":
-            barrel = SKSpriteNode(color: color.withAlphaComponent(0.8), size: CGSize(width: 6, height: 22))
-        case "wand", "staff":
-            barrel = SKSpriteNode(color: .clear, size: CGSize(width: 4, height: 16))
-            // Add glowing orb at top
-            let orb = SKShapeNode(circleOfRadius: 5)
-            orb.fillColor = color
-            orb.glowWidth = 6
-            orb.position = CGPoint(x: 0, y: 18)
-            barrel.addChild(orb)
-        default:
-            barrel = SKSpriteNode(color: .darkGray, size: CGSize(width: 8, height: 20))
+        for (_, node) in towerNodes {
+            if let lodDetail = node.childNode(withName: "lodDetail") {
+                // Only animate if needed
+                if abs(lodDetail.alpha - targetAlpha) > 0.01 {
+                    lodDetail.removeAction(forKey: "lodFade")
+                    let fadeAction = SKAction.fadeAlpha(to: targetAlpha, duration: 0.2)
+                    lodDetail.run(fadeAction, withKey: "lodFade")
+                }
+            }
         }
-
-        return barrel
     }
 
-    /// Create merge star indicators
-    private func createMergeStars(count: Int) -> SKNode {
-        let container = SKNode()
-        let starSpacing: CGFloat = 12
+    // MARK: - Deprecated Tower Methods (Now handled by TowerVisualFactory)
+    // The following methods have been replaced by TowerVisualFactory.swift:
+    // - createWeaponBody() -> TowerVisualFactory.createTowerBody()
+    // - createWeaponBarrel() -> TowerVisualFactory.createTowerBarrel()
+    // - createMergeStars() -> TowerVisualFactory.createMergeIndicator()
 
-        for i in 0..<count {
-            let xOffset = CGFloat(i - (count - 1)) * starSpacing / 2 + CGFloat(i) * starSpacing / 2
-            let star = SKShapeNode(circleOfRadius: 4)
-            star.fillColor = .yellow
-            star.strokeColor = .orange
-            star.lineWidth = 1
-            star.glowWidth = 2
-            star.position = CGPoint(x: xOffset - CGFloat(count - 1) * starSpacing / 2, y: 0)
-
-            // Animate stars with subtle pulse
-            let pulse = SKAction.sequence([
-                SKAction.scale(to: 1.2, duration: 0.5),
-                SKAction.scale(to: 1.0, duration: 0.5)
-            ])
-            star.run(SKAction.repeatForever(pulse))
-
-            container.addChild(star)
-        }
-
-        return container
-    }
-
-    /// Create hexagon path
+    /// Create hexagon path (used by enemy nodes)
     private func createHexagonPath(radius: CGFloat) -> CGPath {
         let path = UIBezierPath()
         for i in 0..<6 {
@@ -3564,5 +3666,15 @@ extension UIColor {
             blue: b1 * (1 - clampedRatio) + b2 * clampedRatio,
             alpha: a1 * (1 - clampedRatio) + a2 * clampedRatio
         )
+    }
+
+    /// Create a lighter version of this color
+    func lighter(by percentage: CGFloat = 0.3) -> UIColor {
+        return blended(with: .white, ratio: percentage)
+    }
+
+    /// Create a darker version of this color
+    func darker(by percentage: CGFloat = 0.3) -> UIColor {
+        return blended(with: .black, ratio: percentage)
     }
 }

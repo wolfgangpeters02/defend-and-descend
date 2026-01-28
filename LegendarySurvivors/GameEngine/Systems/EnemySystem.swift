@@ -163,8 +163,7 @@ class EnemySystem {
     // MARK: - Update
 
     /// Update all enemies
-    static func update(state: inout GameState, deltaTime: TimeInterval) {
-        let now = Date().timeIntervalSince1970
+    static func update(state: inout GameState, context: FrameContext) {
         let player = state.player
 
         for i in 0..<state.enemies.count {
@@ -185,7 +184,7 @@ class EnemySystem {
             }
 
             // Update slow status
-            if state.enemies[i].isSlowed && now > state.enemies[i].slowEndTime {
+            if state.enemies[i].isSlowed && context.timestamp > state.enemies[i].slowEndTime {
                 state.enemies[i].isSlowed = false
                 state.enemies[i].slowAmount = 0
                 state.enemies[i].currentSpeed = state.enemies[i].speed
@@ -236,8 +235,8 @@ class EnemySystem {
 
             if dist > enemySize + player.size {
                 let speed = state.enemies[i].currentSpeed ?? state.enemies[i].speed
-                let moveX = (dx / dist) * speed * CGFloat(deltaTime)
-                let moveY = (dy / dist) * speed * CGFloat(deltaTime)
+                let moveX = (dx / dist) * speed * CGFloat(context.deltaTime)
+                let moveY = (dy / dist) * speed * CGFloat(context.deltaTime)
 
                 var newX = state.enemies[i].x + moveX
                 var newY = state.enemies[i].y + moveY
@@ -295,13 +294,24 @@ class EnemySystem {
     // MARK: - Damage
 
     /// Damage an enemy
-    static func damageEnemy(state: inout GameState, enemyIndex: Int, damage: CGFloat) {
+    static func damageEnemy(state: inout GameState, enemyIndex: Int, damage: CGFloat, isCritical: Bool = false, damageType: DamageEventType = .damage) {
         guard enemyIndex < state.enemies.count else { return }
 
+        let enemy = state.enemies[enemyIndex]
         state.enemies[enemyIndex].health -= damage
         state.stats.damageDealt += damage
 
-        // Hit particle
+        // Emit scrolling combat text event
+        let eventType: DamageEventType = isCritical ? .critical : damageType
+        let damageEvent = DamageEvent(
+            type: eventType,
+            amount: Int(damage),
+            position: CGPoint(x: enemy.x, y: enemy.y),
+            timestamp: state.startTime + state.timeElapsed
+        )
+        state.damageEvents.append(damageEvent)
+
+        // Hit particle (use state time instead of Date())
         let enemySize = state.enemies[enemyIndex].size ?? 20
         state.particles.append(Particle(
             id: RandomUtils.generateId(),
@@ -309,7 +319,7 @@ class EnemySystem {
             x: state.enemies[enemyIndex].x,
             y: state.enemies[enemyIndex].y,
             lifetime: 0.2,
-            createdAt: Date().timeIntervalSince1970,
+            createdAt: state.startTime + state.timeElapsed,
             color: state.enemies[enemyIndex].color,
             size: enemySize / 2
         ))
@@ -326,6 +336,12 @@ class EnemySystem {
         let enemySize = enemy.size ?? 20
         state.enemies[enemyIndex].isDead = true
         state.stats.enemiesKilled += 1
+
+        // Survival mode: Earn Data for kills
+        if state.gameMode == .survival || state.gameMode == .arena {
+            let dataValue = enemy.isBoss ? 50 : (enemy.coinValue ?? 1)
+            state.stats.dataEarned += dataValue
+        }
 
         // Death explosion
         ParticleFactory.createExplosion(
@@ -378,11 +394,12 @@ class EnemySystem {
     static func slowEnemy(state: inout GameState, enemyIndex: Int, slowAmount: CGFloat, duration: TimeInterval) {
         guard enemyIndex < state.enemies.count else { return }
 
+        let currentTime = state.startTime + state.timeElapsed
         state.enemies[enemyIndex].isSlowed = true
         state.enemies[enemyIndex].slowAmount = max(state.enemies[enemyIndex].slowAmount, slowAmount)
         state.enemies[enemyIndex].slowEndTime = max(
             state.enemies[enemyIndex].slowEndTime,
-            Date().timeIntervalSince1970 + duration
+            currentTime + duration
         )
         state.enemies[enemyIndex].currentSpeed = state.enemies[enemyIndex].speed * (1 - state.enemies[enemyIndex].slowAmount)
     }

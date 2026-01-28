@@ -24,13 +24,19 @@ class StorageService {
         if let data = userDefaults.data(forKey: Keys.playerProfile) {
             // First try to decode with current schema
             if let profile = try? JSONDecoder().decode(PlayerProfile.self, from: data) {
-                return profile
+                // Apply migrations (unlocks all arenas for testing)
+                let migratedProfile = PlayerProfile.migrate(profile)
+                if migratedProfile.unlocks.arenas.count != profile.unlocks.arenas.count {
+                    savePlayer(migratedProfile)
+                }
+                return migratedProfile
             }
 
             // If that fails, try to migrate from legacy format
             if let legacyProfile = migrateFromLegacyProfile(data: data) {
-                savePlayer(legacyProfile)
-                return legacyProfile
+                let migratedProfile = PlayerProfile.migrate(legacyProfile)
+                savePlayer(migratedProfile)
+                return migratedProfile
             }
         }
 

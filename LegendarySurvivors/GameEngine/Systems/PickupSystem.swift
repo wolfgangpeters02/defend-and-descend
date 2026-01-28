@@ -6,15 +6,14 @@ import CoreGraphics
 class PickupSystem {
 
     /// Update all pickups - magnetize and collect
-    static func update(state: inout GameState, deltaTime: TimeInterval) {
+    static func update(state: inout GameState, context: FrameContext) {
         let player = state.player
-        let now = Date().timeIntervalSince1970
 
         var indicesToRemove: [Int] = []
 
         for i in 0..<state.pickups.count {
             // Check lifetime
-            if now - state.pickups[i].createdAt > state.pickups[i].lifetime {
+            if context.timestamp - state.pickups[i].createdAt > state.pickups[i].lifetime {
                 indicesToRemove.append(i)
                 continue
             }
@@ -29,8 +28,8 @@ class PickupSystem {
                 // Magnetize toward player
                 state.pickups[i].magnetized = true
                 let speed: CGFloat = GameConstants.coinMagnetSpeed
-                state.pickups[i].x += (dx / dist) * speed * CGFloat(deltaTime)
-                state.pickups[i].y += (dy / dist) * speed * CGFloat(deltaTime)
+                state.pickups[i].x += (dx / dist) * speed * CGFloat(context.deltaTime)
+                state.pickups[i].y += (dy / dist) * speed * CGFloat(context.deltaTime)
 
                 // Collect if touching player
                 if dist < player.size + 5 {
@@ -50,14 +49,17 @@ class PickupSystem {
 
     /// Drop a coin pickup
     static func dropCoin(state: inout GameState, x: CGFloat, y: CGFloat, value: Int) {
+        // Use state time instead of Date()
+        let currentTime = state.startTime + state.timeElapsed
+
         state.pickups.append(Pickup(
             id: RandomUtils.generateId(),
-            type: "coin",
+            type: .coin,
             x: x,
             y: y,
             value: value,
             lifetime: GameConstants.pickupLifetime,
-            createdAt: Date().timeIntervalSince1970,
+            createdAt: currentTime,
             magnetized: false
         ))
 
@@ -69,25 +71,32 @@ class PickupSystem {
     private static func collectPickup(state: inout GameState, pickupIndex: Int) {
         let pickup = state.pickups[pickupIndex]
 
-        if pickup.type == "coin" {
+        switch pickup.type {
+        case .coin:
             state.coins += pickup.value
             state.stats.coinsCollected += pickup.value
 
             // Charge potions
             chargePotions(state: &state, amount: pickup.value)
 
-            // Collection particle
+            // Collection particle (use state time instead of Date())
             state.particles.append(Particle(
                 id: RandomUtils.generateId(),
-                type: "coin",
+                type: .coin,
                 x: pickup.x,
                 y: pickup.y,
                 lifetime: 0.5,
-                createdAt: Date().timeIntervalSince1970,
+                createdAt: state.startTime + state.timeElapsed,
                 color: "#ffcc00",
                 size: 12,
                 velocity: CGPoint(x: 0, y: -50)
             ))
+
+        case .health:
+            state.player.health = min(state.player.maxHealth, state.player.health + CGFloat(pickup.value))
+
+        case .xp, .powerup:
+            break // Not implemented yet
         }
     }
 

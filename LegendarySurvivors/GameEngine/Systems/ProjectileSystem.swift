@@ -6,15 +6,13 @@ import CoreGraphics
 class ProjectileSystem {
 
     /// Update all projectiles - movement and collision
-    static func update(state: inout GameState, deltaTime: TimeInterval) {
-        let now = Date().timeIntervalSince1970
-
+    static func update(state: inout GameState, context: FrameContext) {
         var indicesToRemove: [Int] = []
 
         for i in 0..<state.projectiles.count {
             // Check lifetime
-            let createdAt = state.projectiles[i].createdAt ?? now
-            if now - createdAt > state.projectiles[i].lifetime {
+            let createdAt = state.projectiles[i].createdAt ?? context.timestamp
+            if context.timestamp - createdAt > state.projectiles[i].lifetime {
                 indicesToRemove.append(i)
                 continue
             }
@@ -35,8 +33,8 @@ class ProjectileSystem {
             }
 
             // Move projectile
-            state.projectiles[i].x += state.projectiles[i].velocityX * CGFloat(deltaTime)
-            state.projectiles[i].y += state.projectiles[i].velocityY * CGFloat(deltaTime)
+            state.projectiles[i].x += state.projectiles[i].velocityX * CGFloat(context.deltaTime)
+            state.projectiles[i].y += state.projectiles[i].velocityY * CGFloat(context.deltaTime)
 
             // Check obstacle collision
             var hitObstacle = false
@@ -74,15 +72,28 @@ class ProjectileSystem {
                 )
             }
 
-            // Check collision with enemies
+            // Check collision with enemies using spatial grid (Phase 3: O(n) instead of O(n×m))
             var hit = false
-            for j in 0..<state.enemies.count {
-                if state.enemies[j].isDead { continue }
+            let searchRadius = projectileSize + 30 // Max enemy size + buffer
 
-                let dx = state.enemies[j].x - state.projectiles[i].x
-                let dy = state.enemies[j].y - state.projectiles[i].y
+            // Use spatial grid if available, otherwise fall back to brute force
+            let candidates: [Enemy]
+            if let grid = state.enemyGrid {
+                candidates = grid.query(x: state.projectiles[i].x, y: state.projectiles[i].y, radius: searchRadius)
+            } else {
+                candidates = state.enemies
+            }
+
+            for enemy in candidates {
+                if enemy.isDead { continue }
+
+                // Find enemy index for damage handling
+                guard let j = state.enemies.firstIndex(where: { $0.id == enemy.id }) else { continue }
+
+                let dx = enemy.x - state.projectiles[i].x
+                let dy = enemy.y - state.projectiles[i].y
                 let dist = sqrt(dx * dx + dy * dy)
-                let enemySize = state.enemies[j].size ?? 20
+                let enemySize = enemy.size ?? 20
 
                 if dist < enemySize + projectileSize {
                     handleProjectileHit(state: &state, projectileIndex: i, enemyIndex: j)
@@ -143,8 +154,8 @@ class ProjectileSystem {
         let isCritical = Double.random(in: 0...1) < 0.15
         let damage = isCritical ? proj.damage * 2 : proj.damage
 
-        // Deal damage
-        EnemySystem.damageEnemy(state: &state, enemyIndex: enemyIndex, damage: damage)
+        // Deal damage (with critical hit indicator for scrolling combat text)
+        EnemySystem.damageEnemy(state: &state, enemyIndex: enemyIndex, damage: damage, isCritical: isCritical)
 
         // Impact effect
         ParticleFactory.createImpactEffect(
@@ -159,14 +170,23 @@ class ProjectileSystem {
             let healAmount = proj.damage * lifesteal
             PlayerSystem.healPlayer(player: &state.player, amount: healAmount)
 
-            // Healing particle
+            // Emit healing event for scrolling combat text
+            let healEvent = DamageEvent(
+                type: .healing,
+                amount: Int(healAmount),
+                position: CGPoint(x: state.player.x, y: state.player.y),
+                timestamp: state.startTime + state.timeElapsed
+            )
+            state.damageEvents.append(healEvent)
+
+            // Healing particle (use state time instead of Date())
             state.particles.append(Particle(
                 id: RandomUtils.generateId(),
                 type: "coin",
                 x: state.player.x,
                 y: state.player.y - 20,
                 lifetime: 0.5,
-                createdAt: Date().timeIntervalSince1970,
+                createdAt: state.startTime + state.timeElapsed,
                 color: "#00ff00",
                 size: 6,
                 velocity: CGPoint(x: 0, y: -50)

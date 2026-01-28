@@ -4,9 +4,13 @@ import CoreGraphics
 // MARK: - Game Mode
 
 enum GameMode: String, Codable {
-    case arena
-    case dungeon
-    case towerDefense
+    case survival      // Endless survival in Memory Core arena
+    case boss          // Direct boss encounter
+    case towerDefense  // Motherboard tower defense
+
+    // Legacy support
+    case arena         // Maps to survival
+    case dungeon       // Maps to boss
 }
 
 // MARK: - Rarity
@@ -62,25 +66,27 @@ struct GameState {
     var particles: [Particle] = []
     var pickups: [Pickup] = []
 
+    // Spatial partitioning (Phase 3: O(n) collision detection)
+    var enemyGrid: SpatialGrid<Enemy>?
+
+    // Object pools (Phase 4: reduced GC pressure)
+    var particlePool: ObjectPool<Particle>?
+    var projectilePool: ObjectPool<Projectile>?
+
     // Upgrades
     var upgradeLevel: Int = 0
     var pendingUpgrade: Bool = false
     var upgradeChoices: [UpgradeChoice] = []
 
-    // Dungeon mode
-    var rooms: [DungeonRoom]?
-    var currentRoomIndex: Int?
-    var currentRoom: DungeonRoom?
-    var roomCleared: Bool?
-    var doors: [Door]?
-    var dungeonCountdown: Int?
-    var dungeonCountdownActive: Bool?
-
-    // Advanced dungeon features
-    var movingHazards: [MovingHazard]?
-    var securityCameras: [SecurityCamera]?
+    // Boss encounter
+    var bossDifficulty: BossDifficulty?
     var bossPuddles: [DamagePuddle]?
     var bossLasers: [BossLaser]?
+
+    // Survival mode events
+    var activeEvent: SurvivalEventType?
+    var eventEndTime: TimeInterval?
+    var eventData: SurvivalEventData?
 
     // WoW raid mechanics
     var voidZones: [VoidZone]?
@@ -99,10 +105,71 @@ struct GameState {
     // Combat text
     var combatTexts: [CombatText]?
 
+    // Scrolling combat text events (damage numbers, healing, etc.)
+    var damageEvents: [DamageEvent] = []
+
+    // Boss AI state tracking
+    var activeBossId: String?
+    var activeBossType: BossType?
+    var cyberbossState: CyberbossAI.CyberbossState?
+    var voidHarbingerState: VoidHarbingerAI.VoidHarbingerState?
+
     // UI state
     var isGameOver: Bool = false
     var isPaused: Bool = false
     var victory: Bool = false
+}
+
+// MARK: - Boss Types
+
+enum BossType: String {
+    case cyberboss = "cyberboss"
+    case voidHarbinger = "voidharbinger"
+    case frostTitan = "frost_titan"      // Future
+    case infernoLord = "inferno_lord"    // Future
+}
+
+// MARK: - Boss Difficulty
+
+enum BossDifficulty: String, Codable, CaseIterable {
+    case normal = "Normal"
+    case hard = "Hard"
+    case nightmare = "Nightmare"
+
+    var healthMultiplier: CGFloat {
+        switch self {
+        case .normal: return 1.0
+        case .hard: return 1.5
+        case .nightmare: return 2.5
+        }
+    }
+
+    var damageMultiplier: CGFloat {
+        switch self {
+        case .normal: return 1.0
+        case .hard: return 1.3
+        case .nightmare: return 1.8
+        }
+    }
+}
+
+// MARK: - Survival Events
+
+enum SurvivalEventType: String, Codable {
+    case memorySurge       // Speed boost + increased spawns
+    case bufferOverflow    // Arena shrinks temporarily
+    case cacheFlush        // Clears all enemies
+    case thermalThrottle   // Slow movement + damage boost
+    case dataCorruption    // Obstacles become hazards
+    case virusSwarm        // 50 fast weak enemies
+    case systemRestore     // Healing zone spawns
+}
+
+struct SurvivalEventData: Codable {
+    var shrinkAmount: CGFloat?           // For buffer overflow
+    var corruptedObstacles: [String]?    // For data corruption
+    var healingZonePosition: CGPoint?    // For system restore
+    var swarmDirection: CGFloat?         // For virus swarm (angle)
 }
 
 // MARK: - Session Stats
@@ -114,6 +181,20 @@ struct SessionStats {
     var damageTaken: CGFloat = 0
     var upgradesChosen: Int = 0
     var maxCombo: Int = 0
+
+    // Economy - Data (◈) earned this session
+    var dataEarned: Int = 0              // Running total of Data collected
+    var extractionAvailable: Bool = false // True after 3 minutes survival
+    var extracted: Bool = false           // True if player chose to extract
+
+    /// Calculate final Data reward based on exit type
+    func finalDataReward() -> Int {
+        if extracted {
+            return dataEarned  // 100% on extraction
+        } else {
+            return dataEarned / 2  // 50% on death
+        }
+    }
 }
 
 // MARK: - Potions
@@ -255,6 +336,7 @@ struct Obstacle: Identifiable {
     var height: CGFloat
     var color: String
     var type: String
+    var isCorrupted: Bool = false  // For survival event: data corruption
 }
 
 struct Hazard: Identifiable {
@@ -264,8 +346,34 @@ struct Hazard: Identifiable {
     var width: CGFloat
     var height: CGFloat
     var damage: CGFloat
-    var damageType: String
+    var damageType: HazardDamageType
     var type: String
+
+    /// Convenience initializer for backwards compatibility with string damageType
+    init(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat,
+         damage: CGFloat, damageType: String, type: String) {
+        self.id = id
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.damage = damage
+        self.damageType = HazardDamageType(from: damageType)
+        self.type = type
+    }
+
+    /// Primary initializer with typed damageType
+    init(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat,
+         damage: CGFloat, damageType: HazardDamageType, type: String) {
+        self.id = id
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.damage = damage
+        self.damageType = damageType
+        self.type = type
+    }
 }
 
 struct ArenaEffectZone: Identifiable {
@@ -275,10 +383,42 @@ struct ArenaEffectZone: Identifiable {
     var width: CGFloat
     var height: CGFloat
     var effects: [String: CGFloat]
-    var type: String
+    var type: EffectZoneType
     var speedMultiplier: CGFloat?
     var healPerSecond: CGFloat?
     var visualEffect: String?
+
+    /// Convenience initializer for backwards compatibility with string type
+    init(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat,
+         effects: [String: CGFloat], type: String, speedMultiplier: CGFloat? = nil,
+         healPerSecond: CGFloat? = nil, visualEffect: String? = nil) {
+        self.id = id
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.effects = effects
+        self.type = EffectZoneType(from: type)
+        self.speedMultiplier = speedMultiplier
+        self.healPerSecond = healPerSecond
+        self.visualEffect = visualEffect
+    }
+
+    /// Primary initializer with typed effect zone type
+    init(id: String, x: CGFloat, y: CGFloat, width: CGFloat, height: CGFloat,
+         effects: [String: CGFloat], type: EffectZoneType, speedMultiplier: CGFloat? = nil,
+         healPerSecond: CGFloat? = nil, visualEffect: String? = nil) {
+        self.id = id
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.effects = effects
+        self.type = type
+        self.speedMultiplier = speedMultiplier
+        self.healPerSecond = healPerSecond
+        self.visualEffect = visualEffect
+    }
 }
 
 struct ArenaEvent {
@@ -298,49 +438,6 @@ struct Decoration: Identifiable {
     var y: CGFloat
     var type: String
     var color: String?
-}
-
-// MARK: - Dungeon
-
-struct DungeonRoom: Identifiable {
-    var id: String
-    var type: String
-    var width: CGFloat
-    var height: CGFloat
-    var enemies: [EnemySpawn]
-    var obstacles: [Obstacle]
-    var effectZones: [ArenaEffectZone]
-    var hazards: [Hazard]
-    var backgroundColor: String
-    var decorations: [Decoration]
-    var doors: [Door]
-    var securityCameras: [SecurityCamera]?
-    var isBossRoom: Bool = false
-    var bossId: String?
-    var cleared: Bool = false
-}
-
-struct EnemySpawn: Identifiable {
-    var id: String
-    var type: String
-    var delay: Double
-}
-
-struct RoomEnemyWave {
-    var enemyType: String
-    var count: Int
-    var delay: TimeInterval?
-}
-
-struct Door: Identifiable {
-    var id: String
-    var x: CGFloat
-    var y: CGFloat
-    var width: CGFloat
-    var height: CGFloat
-    var locked: Bool
-    var targetRoomIndex: Int
-    var direction: String
 }
 
 // MARK: - Enemy
@@ -446,20 +543,46 @@ struct Projectile: Identifiable {
 
 struct Pickup {
     var id: String
-    var type: String
+    var type: PickupType
     var x: CGFloat
     var y: CGFloat
     var value: Int
     var lifetime: TimeInterval
     var createdAt: TimeInterval
     var magnetized: Bool
+
+    /// Convenience initializer for backwards compatibility with string type
+    init(id: String, type: String, x: CGFloat, y: CGFloat, value: Int,
+         lifetime: TimeInterval, createdAt: TimeInterval, magnetized: Bool) {
+        self.id = id
+        self.type = PickupType(from: type)
+        self.x = x
+        self.y = y
+        self.value = value
+        self.lifetime = lifetime
+        self.createdAt = createdAt
+        self.magnetized = magnetized
+    }
+
+    /// Primary initializer with typed pickup type
+    init(id: String, type: PickupType, x: CGFloat, y: CGFloat, value: Int,
+         lifetime: TimeInterval, createdAt: TimeInterval, magnetized: Bool) {
+        self.id = id
+        self.type = type
+        self.x = x
+        self.y = y
+        self.value = value
+        self.lifetime = lifetime
+        self.createdAt = createdAt
+        self.magnetized = magnetized
+    }
 }
 
 // MARK: - Particle
 
 struct Particle {
     var id: String
-    var type: String
+    var type: ParticleType
     var x: CGFloat
     var y: CGFloat
     var lifetime: TimeInterval
@@ -474,6 +597,48 @@ struct Particle {
     var drag: CGFloat?
     var shape: ParticleShape?
     var scale: CGFloat?
+
+    /// Convenience initializer for backwards compatibility with string type
+    init(id: String, type: String, x: CGFloat, y: CGFloat, lifetime: TimeInterval,
+         createdAt: TimeInterval, color: String? = nil, size: CGFloat? = nil,
+         velocity: CGPoint? = nil, rotation: CGFloat? = nil, rotationSpeed: CGFloat? = nil,
+         drag: CGFloat? = nil, shape: ParticleShape? = nil, scale: CGFloat? = nil) {
+        self.id = id
+        self.type = ParticleType(from: type)
+        self.x = x
+        self.y = y
+        self.lifetime = lifetime
+        self.createdAt = createdAt
+        self.color = color
+        self.size = size
+        self.velocity = velocity
+        self.rotation = rotation
+        self.rotationSpeed = rotationSpeed
+        self.drag = drag
+        self.shape = shape
+        self.scale = scale
+    }
+
+    /// Primary initializer with typed particle type
+    init(id: String, type: ParticleType, x: CGFloat, y: CGFloat, lifetime: TimeInterval,
+         createdAt: TimeInterval, color: String? = nil, size: CGFloat? = nil,
+         velocity: CGPoint? = nil, rotation: CGFloat? = nil, rotationSpeed: CGFloat? = nil,
+         drag: CGFloat? = nil, shape: ParticleShape? = nil, scale: CGFloat? = nil) {
+        self.id = id
+        self.type = type
+        self.x = x
+        self.y = y
+        self.lifetime = lifetime
+        self.createdAt = createdAt
+        self.color = color
+        self.size = size
+        self.velocity = velocity
+        self.rotation = rotation
+        self.rotationSpeed = rotationSpeed
+        self.drag = drag
+        self.shape = shape
+        self.scale = scale
+    }
 }
 
 enum ParticleShape: String {
@@ -666,6 +831,40 @@ struct CombatText {
     var progress: (current: Int, total: Int)?
     var color: String?
     var icon: String?
+}
+
+// MARK: - Scrolling Combat Text Events
+
+enum DamageEventType: String, Codable {
+    case damage           // Standard damage dealt
+    case critical         // Critical hit damage
+    case healing          // Health restored
+    case shield           // Damage absorbed
+    case freeze           // Freeze/slow applied
+    case burn             // Burn/DoT damage
+    case chain            // Chain lightning damage
+    case execute          // Execute/instant kill
+    case xp               // XP gained
+    case currency         // Currency/hash gained
+    case miss             // Missed/dodged
+    case playerDamage     // Damage taken by player
+}
+
+struct DamageEvent: Identifiable {
+    let id: String
+    let type: DamageEventType
+    let amount: Int
+    let position: CGPoint
+    let timestamp: TimeInterval
+    var displayed: Bool = false
+
+    init(type: DamageEventType, amount: Int, position: CGPoint, timestamp: TimeInterval) {
+        self.id = UUID().uuidString
+        self.type = type
+        self.amount = amount
+        self.position = position
+        self.timestamp = timestamp
+    }
 }
 
 // MARK: - Input
@@ -955,11 +1154,11 @@ extension PlayerProfile {
             lastActiveTimestamp: Date(),
             offlineEfficiencySnapshot: 1.0,
             unlocks: PlayerUnlocks(
-                arenas: ["grasslands"],
-                weapons: ["bow"],
+                arenas: ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"],  // All arenas unlocked for testing
+                weapons: ["kernel_pulse"],  // Default Protocol (unified weapon system)
                 powerups: ["tank"]
             ),
-            weaponLevels: ["bow": 1],
+            weaponLevels: ["kernel_pulse": 1],  // Default Protocol level
             powerupLevels: ["tank": 1],
             survivorStats: SurvivorModeStats(),
             tdStats: TDModeStats(),
@@ -990,6 +1189,14 @@ extension PlayerProfile {
         }
         if !profile.unlockedSectors.contains("cathedral") {
             profile.unlockedSectors.append("cathedral")
+        }
+
+        // Unlock all arenas/dungeons for testing
+        let allArenas = ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"]
+        for arena in allArenas {
+            if !profile.unlocks.arenas.contains(arena) {
+                profile.unlocks.arenas.append(arena)
+            }
         }
 
         // Migrate legacy gold to hash if needed

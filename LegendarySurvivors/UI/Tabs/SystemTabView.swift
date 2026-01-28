@@ -2,38 +2,49 @@ import SwiftUI
 import SpriteKit
 
 // MARK: - System Tab View
-// Main container with 4 tabs: BOARD, ARSENAL, UPGRADES, DEBUG
+// Main hub with 4 modes: DEBUGGER (Survival), BOSS, MOTHERBOARD (TD), ARSENAL
 
 enum SystemTab: String, CaseIterable {
-    case board = "BOARD"
+    case debugger = "DEBUGGER"
+    case boss = "BOSS"
+    case motherboard = "BOARD"
     case arsenal = "ARSENAL"
-    case upgrades = "UPGRADES"
-    case debug = "DEBUG"
 
     var icon: String {
         switch self {
-        case .board: return "cpu"
+        case .debugger: return "play.circle.fill"
+        case .boss: return "flame.fill"
+        case .motherboard: return "cpu"
         case .arsenal: return "shield.lefthalf.filled"
-        case .upgrades: return "arrow.up.circle.fill"
-        case .debug: return "play.circle.fill"
         }
     }
 
     var color: Color {
         switch self {
-        case .board: return DesignColors.primary
+        case .debugger: return DesignColors.primary
+        case .boss: return DesignColors.warning
+        case .motherboard: return DesignColors.success
         case .arsenal: return DesignColors.secondary
-        case .upgrades: return DesignColors.success
-        case .debug: return DesignColors.warning
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .debugger: return "SURVIVAL"
+        case .boss: return "ENCOUNTERS"
+        case .motherboard: return "TD MODE"
+        case .arsenal: return "PROTOCOLS"
         }
     }
 }
 
 struct SystemTabView: View {
     @ObservedObject var appState = AppState.shared
-    @State private var selectedTab: SystemTab = .board
-    @State private var showDebugGame = false
-    @State private var selectedSector: Sector?
+    @State private var selectedTab: SystemTab = .debugger
+    @State private var showSurvivalGame = false
+    @State private var showBossGame = false
+    @State private var selectedBoss: BossEncounter?
+    @State private var selectedDifficulty: BossDifficulty = .normal
 
     var onExit: (() -> Void)? = nil
 
@@ -54,13 +65,22 @@ struct SystemTabView: View {
                 customTabBar
             }
         }
-        .fullScreenCover(item: $selectedSector) { sector in
-            let _ = print("[SystemTabView] fullScreenCover showing DebugGameView for sector: \(sector.name)")
+        .fullScreenCover(isPresented: $showSurvivalGame) {
             DebugGameView(
-                sector: sector,
+                sector: SectorLibrary.theRam,  // Memory Core arena
                 protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
                 onExit: {
-                    selectedSector = nil
+                    showSurvivalGame = false
+                }
+            )
+        }
+        .fullScreenCover(item: $selectedBoss) { boss in
+            BossGameView(
+                boss: boss,
+                difficulty: selectedDifficulty,
+                protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
+                onExit: {
+                    selectedBoss = nil
                 }
             )
         }
@@ -71,20 +91,21 @@ struct SystemTabView: View {
     @ViewBuilder
     private var contentView: some View {
         switch selectedTab {
-        case .board:
+        case .debugger:
+            DebuggerModeView(onLaunch: {
+                showSurvivalGame = true
+            })
+        case .boss:
+            BossEncountersView(
+                selectedDifficulty: $selectedDifficulty,
+                onLaunch: { boss in
+                    selectedBoss = boss
+                }
+            )
+        case .motherboard:
             MotherboardView()
         case .arsenal:
             ArsenalView()
-        case .upgrades:
-            UpgradesView()
-        case .debug:
-            DebugView(
-                onLaunch: { sector in
-                    print("[SystemTabView] Launching debug game with sector: \(sector.name)")
-                    selectedSector = sector
-                    showDebugGame = true
-                }
-            )
         }
     }
 
@@ -155,14 +176,18 @@ struct SystemTabView: View {
                 selectedTab = tab
             }
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 22, weight: selectedTab == tab ? .bold : .regular))
+                    .font(.system(size: 20, weight: selectedTab == tab ? .bold : .regular))
                     .foregroundColor(selectedTab == tab ? tab.color : DesignColors.muted)
 
                 Text(tab.rawValue)
-                    .font(DesignTypography.caption(10))
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundColor(selectedTab == tab ? tab.color : DesignColors.muted)
+
+                Text(tab.subtitle)
+                    .font(.system(size: 7, weight: .medium, design: .monospaced))
+                    .foregroundColor(selectedTab == tab ? tab.color.opacity(0.7) : DesignColors.muted.opacity(0.5))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
@@ -1732,7 +1757,507 @@ struct UpgradeCard: View {
     }
 }
 
-// MARK: - Debug View (DEBUG Tab)
+// MARK: - Boss Encounter Model
+
+struct BossEncounter: Identifiable {
+    let id: String
+    let name: String
+    let subtitle: String
+    let description: String
+    let iconName: String
+    let color: String
+    let bossId: String  // Maps to boss AI type
+    let rewards: [String]  // Protocol IDs that can drop
+    let unlockCost: Int
+
+    static let all: [BossEncounter] = [
+        BossEncounter(
+            id: "rogue_process",
+            name: "ROGUE PROCESS",
+            subtitle: "Cyberboss",
+            description: "A corrupted system process. Spawns minions and fires laser beams.",
+            iconName: "bolt.shield.fill",
+            color: "#ff4444",
+            bossId: "cyberboss",
+            rewards: ["burst_protocol", "trace_route"],
+            unlockCost: 0
+        ),
+        BossEncounter(
+            id: "memory_leak",
+            name: "MEMORY LEAK",
+            subtitle: "Void Harbinger",
+            description: "A void entity consuming memory. Creates gravity wells and shrinking arenas.",
+            iconName: "tornado",
+            color: "#a855f7",
+            bossId: "void_harbinger",
+            rewards: ["fork_bomb", "overflow"],
+            unlockCost: 200
+        )
+    ]
+}
+
+// MARK: - Debugger Mode View (Survival)
+
+struct DebuggerModeView: View {
+    @ObservedObject var appState = AppState.shared
+    let onLaunch: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("DEBUGGER_MODE")
+                        .font(DesignTypography.display(28))
+                        .foregroundColor(.white)
+                    Text("Memory Core Survival")
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(DesignColors.muted)
+                }
+
+                Spacer()
+
+                // Data balance
+                HStack(spacing: 6) {
+                    Text("◈")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(DesignColors.primary)
+                    Text("\(appState.currentPlayer.data)")
+                        .font(DesignTypography.headline(18))
+                        .foregroundColor(DesignColors.primary)
+                }
+            }
+            .padding()
+
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Loadout preview
+                    loadoutSection
+
+                    // Arena preview
+                    arenaPreview
+
+                    // Stats
+                    statsSection
+
+                    // Launch button
+                    launchButton
+                }
+                .padding()
+            }
+        }
+    }
+
+    private var loadoutSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("LOADOUT")
+                .font(DesignTypography.caption(12))
+                .foregroundColor(DesignColors.muted)
+
+            if let equipped = appState.currentPlayer.equippedProtocol() {
+                HStack {
+                    Image(systemName: equipped.iconName)
+                        .font(.system(size: 32))
+                        .foregroundColor(Color(hex: equipped.color) ?? .cyan)
+                        .frame(width: 50, height: 50)
+                        .background(DesignColors.surface)
+                        .cornerRadius(10)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(equipped.name)
+                            .font(DesignTypography.headline(16))
+                            .foregroundColor(.white)
+
+                        Text("DMG: \(Int(equipped.weaponStats.damage)) | RATE: \(String(format: "%.1f", equipped.weaponStats.fireRate))/s")
+                            .font(DesignTypography.caption(11))
+                            .foregroundColor(DesignColors.muted)
+                    }
+
+                    Spacer()
+
+                    Text("LV \(equipped.level)")
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(DesignColors.primary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(DesignColors.primary.opacity(0.2))
+                        .cornerRadius(8)
+                }
+                .padding()
+                .background(DesignColors.surface)
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    private var arenaPreview: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("ARENA")
+                .font(DesignTypography.caption(12))
+                .foregroundColor(DesignColors.muted)
+
+            VStack(spacing: 12) {
+                // Arena visual preview
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(hex: "#0a0a0f") ?? .black)
+                        .frame(height: 120)
+
+                    // Grid pattern
+                    Image(systemName: "square.grid.3x3")
+                        .font(.system(size: 60))
+                        .foregroundColor(DesignColors.primary.opacity(0.1))
+
+                    // RAM module icons
+                    HStack(spacing: 30) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            Image(systemName: "memorychip")
+                                .font(.system(size: 20))
+                                .foregroundColor(DesignColors.primary.opacity(0.3))
+                        }
+                    }
+                }
+
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("MEMORY CORE")
+                            .font(DesignTypography.headline(16))
+                            .foregroundColor(.white)
+                        Text("Endless survival with dynamic events")
+                            .font(DesignTypography.caption(11))
+                            .foregroundColor(DesignColors.muted)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("1000 × 800")
+                            .font(DesignTypography.caption(10))
+                            .foregroundColor(DesignColors.muted)
+                        Text("6 RAM MODULES")
+                            .font(DesignTypography.caption(10))
+                            .foregroundColor(DesignColors.muted)
+                    }
+                }
+            }
+            .padding()
+            .background(DesignColors.surface)
+            .cornerRadius(12)
+        }
+    }
+
+    private var statsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("PERSONAL BEST")
+                .font(DesignTypography.caption(12))
+                .foregroundColor(DesignColors.muted)
+
+            HStack(spacing: 16) {
+                statBox(
+                    label: "LONGEST UPTIME",
+                    value: formatTime(appState.currentPlayer.survivorStats.longestSurvival),
+                    icon: "clock.fill",
+                    color: DesignColors.primary
+                )
+
+                statBox(
+                    label: "TOTAL KILLS",
+                    value: "\(appState.currentPlayer.survivorStats.totalSurvivorKills)",
+                    icon: "flame.fill",
+                    color: DesignColors.warning
+                )
+
+                statBox(
+                    label: "RUNS",
+                    value: "\(appState.currentPlayer.survivorStats.arenaRuns)",
+                    icon: "play.circle.fill",
+                    color: DesignColors.success
+                )
+            }
+        }
+    }
+
+    private func statBox(label: String, value: String, icon: String, color: Color) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(color)
+
+            Text(value)
+                .font(DesignTypography.headline(16))
+                .foregroundColor(.white)
+
+            Text(label)
+                .font(DesignTypography.caption(8))
+                .foregroundColor(DesignColors.muted)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(DesignColors.surface)
+        .cornerRadius(10)
+    }
+
+    private var launchButton: some View {
+        Button {
+            HapticsService.shared.play(.medium)
+            onLaunch()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 20, weight: .bold))
+                Text("START DEBUG SESSION")
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+            }
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 18)
+            .background(
+                LinearGradient(
+                    colors: [DesignColors.primary, DesignColors.primary.opacity(0.8)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(12)
+        }
+    }
+
+    private func formatTime(_ seconds: TimeInterval) -> String {
+        let mins = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%d:%02d", mins, secs)
+    }
+}
+
+// MARK: - Boss Encounters View
+
+struct BossEncountersView: View {
+    @ObservedObject var appState = AppState.shared
+    @Binding var selectedDifficulty: BossDifficulty
+    let onLaunch: (BossEncounter) -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("BOSS_ENCOUNTERS")
+                        .font(DesignTypography.display(28))
+                        .foregroundColor(.white)
+                    Text("Direct boss fights for blueprints")
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(DesignColors.muted)
+                }
+
+                Spacer()
+
+                // Data balance
+                HStack(spacing: 6) {
+                    Text("◈")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(DesignColors.primary)
+                    Text("\(appState.currentPlayer.data)")
+                        .font(DesignTypography.headline(18))
+                        .foregroundColor(DesignColors.primary)
+                }
+            }
+            .padding()
+
+            // Difficulty selector
+            difficultySelector
+
+            ScrollView {
+                VStack(spacing: 16) {
+                    ForEach(BossEncounter.all) { boss in
+                        BossCard(
+                            boss: boss,
+                            difficulty: selectedDifficulty,
+                            isUnlocked: isBossUnlocked(boss),
+                            onSelect: { onLaunch(boss) },
+                            onUnlock: { unlockBoss(boss) }
+                        )
+                    }
+                }
+                .padding()
+            }
+        }
+    }
+
+    private var difficultySelector: some View {
+        HStack(spacing: 8) {
+            ForEach(BossDifficulty.allCases, id: \.self) { difficulty in
+                Button {
+                    HapticsService.shared.play(.selection)
+                    selectedDifficulty = difficulty
+                } label: {
+                    VStack(spacing: 4) {
+                        Text(difficulty.rawValue.uppercased())
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        Text(difficultyReward(difficulty))
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    }
+                    .foregroundColor(selectedDifficulty == difficulty ? .black : difficultyColor(difficulty))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                    .background(
+                        selectedDifficulty == difficulty ?
+                            difficultyColor(difficulty) : difficultyColor(difficulty).opacity(0.2)
+                    )
+                    .cornerRadius(8)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 8)
+    }
+
+    private func difficultyColor(_ difficulty: BossDifficulty) -> Color {
+        switch difficulty {
+        case .normal: return DesignColors.success
+        case .hard: return DesignColors.warning
+        case .nightmare: return DesignColors.error
+        }
+    }
+
+    private func difficultyReward(_ difficulty: BossDifficulty) -> String {
+        switch difficulty {
+        case .normal: return "+50◈"
+        case .hard: return "+150◈"
+        case .nightmare: return "+300◈"
+        }
+    }
+
+    private func isBossUnlocked(_ boss: BossEncounter) -> Bool {
+        boss.unlockCost == 0 || appState.currentPlayer.data >= boss.unlockCost ||
+            appState.currentPlayer.survivorStats.bossesDefeated > 0
+    }
+
+    private func unlockBoss(_ boss: BossEncounter) {
+        guard appState.currentPlayer.data >= boss.unlockCost else { return }
+        HapticsService.shared.play(.medium)
+        // For now, bosses unlock by defeating the first one
+    }
+}
+
+// MARK: - Boss Card
+
+struct BossCard: View {
+    let boss: BossEncounter
+    let difficulty: BossDifficulty
+    let isUnlocked: Bool
+    let onSelect: () -> Void
+    let onUnlock: () -> Void
+
+    @ObservedObject var appState = AppState.shared
+
+    var body: some View {
+        Button(action: isUnlocked ? onSelect : onUnlock) {
+            HStack(spacing: 16) {
+                // Boss icon
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: boss.color)?.opacity(0.2) ?? Color.red.opacity(0.2))
+                        .frame(width: 60, height: 60)
+
+                    Image(systemName: boss.iconName)
+                        .font(.system(size: 28))
+                        .foregroundColor(Color(hex: boss.color) ?? .red)
+                }
+
+                // Boss info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(boss.name)
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(isUnlocked ? .white : DesignColors.muted)
+
+                    Text(boss.subtitle)
+                        .font(DesignTypography.caption(11))
+                        .foregroundColor(Color(hex: boss.color) ?? .red)
+
+                    Text(boss.description)
+                        .font(DesignTypography.caption(10))
+                        .foregroundColor(DesignColors.muted)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                // Right side: Rewards or lock
+                if isUnlocked {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("REWARDS")
+                            .font(DesignTypography.caption(8))
+                            .foregroundColor(DesignColors.muted)
+
+                        HStack(spacing: 4) {
+                            ForEach(boss.rewards.prefix(2), id: \.self) { protocolId in
+                                if let proto = ProtocolLibrary.get(protocolId) {
+                                    Image(systemName: proto.iconName)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color(hex: proto.color) ?? .cyan)
+                                }
+                            }
+                        }
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14))
+                            .foregroundColor(DesignColors.muted)
+                    }
+                } else {
+                    VStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(DesignColors.muted)
+
+                        Text("\(boss.unlockCost)◈")
+                            .font(DesignTypography.caption(10))
+                            .foregroundColor(DesignColors.muted)
+                    }
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(DesignColors.surface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(
+                                isUnlocked ? Color(hex: boss.color)?.opacity(0.3) ?? Color.red.opacity(0.3) : Color.clear,
+                                lineWidth: 1
+                            )
+                    )
+            )
+            .opacity(isUnlocked ? 1 : 0.6)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Boss Game View
+
+struct BossGameView: View {
+    let boss: BossEncounter
+    let difficulty: BossDifficulty
+    let `protocol`: Protocol
+    let onExit: () -> Void
+
+    @ObservedObject var appState = AppState.shared
+
+    var body: some View {
+        GameContainerView(
+            gameMode: .boss,
+            bossDifficulty: difficulty,
+            onExit: onExit
+        )
+        .onAppear {
+            // Set the boss type in AppState for GameContainerView to use
+            appState.selectedArena = boss.bossId
+        }
+    }
+}
+
+// MARK: - Legacy Debug View (kept for fallback)
 
 struct DebugView: View {
     @ObservedObject var appState = AppState.shared
@@ -2265,27 +2790,24 @@ struct DebugGameView: View {
         print("[DebugGameView] setupDebugGame - screenSize: \(screenSize), sector.gameMode: \(sector.gameMode)")
 
         // Create game state based on sector's game mode
-        let state: GameState
-        if sector.gameMode == .dungeon, let dungeonType = sector.dungeonType {
-            // Use dungeon mode with room progression and boss fights
-            state = GameStateFactory.shared.createDungeonGameState(
-                weaponType: "bow",  // Fallback only, Protocol takes precedence
-                powerUpType: "none",
-                arenaType: "castle",  // Base arena for initial state
-                playerProfile: appState.currentPlayer,
-                dungeonType: dungeonType,  // Specific dungeon progression
-                gameProtocol: `protocol`,  // Use Protocol's weapon
-                sector: sector  // Pass the sector for proper theme/data multiplier
+        var state: GameState
+        if sector.gameMode == .dungeon, let bossType = sector.dungeonType {
+            // Use boss mode - direct boss encounter
+            state = GameStateFactory.shared.createBossGameState(
+                gameProtocol: `protocol`,
+                bossType: mapDungeonToBoss(bossType),
+                difficulty: .normal,
+                playerProfile: appState.currentPlayer
             )
-            print("[DebugGameView] Created DUNGEON state - rooms: \(state.rooms?.count ?? 0), currentRoom: \(state.currentRoom?.type ?? "none")")
+            print("[DebugGameView] Created BOSS state - boss: \(state.activeBossId ?? "none")")
         } else {
-            // Use arena mode (survival waves)
+            // Use survival mode (survival waves)
             state = GameStateFactory.shared.createDebugGameState(
                 gameProtocol: `protocol`,
                 sector: sector,
                 playerProfile: appState.currentPlayer
             )
-            print("[DebugGameView] Created ARENA state - arena: \(state.arena.width)x\(state.arena.height)")
+            print("[DebugGameView] Created SURVIVAL state - arena: \(state.arena.width)x\(state.arena.height)")
         }
         gameState = state
 
@@ -2308,6 +2830,18 @@ struct DebugGameView: View {
         }
 
         gameScene = scene
+    }
+
+    /// Map old dungeon types to boss encounter IDs
+    private func mapDungeonToBoss(_ dungeonType: String) -> String {
+        switch dungeonType {
+        case "cathedral": return "voidharbinger"
+        case "void_raid": return "voidharbinger"
+        case "heist": return "cyberboss"
+        case "frozen": return "frost_titan"
+        case "volcanic": return "inferno_lord"
+        default: return "cyberboss"
+        }
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {

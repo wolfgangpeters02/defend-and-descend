@@ -7,6 +7,7 @@ import SpriteKit
 
 struct GameContainerView: View {
     let gameMode: GameMode
+    var bossDifficulty: BossDifficulty = .normal
     let onExit: () -> Void
 
     @ObservedObject var appState = AppState.shared
@@ -19,6 +20,7 @@ struct GameContainerView: View {
     @State private var showGlitchEffect = false
     @State private var scanLineOffset: CGFloat = 0
     @State private var previousHealth: CGFloat = 0
+    @State private var awardedBlueprint: String?  // Protocol ID awarded from boss
 
     var body: some View {
         GeometryReader { geometry in
@@ -176,14 +178,46 @@ struct GameContainerView: View {
                             }
                             .frame(width: 100, height: 6)
 
-                            // Coins
-                            HStack(spacing: 4) {
-                                Image(systemName: "dollarsign.circle.fill")
-                                    .font(DesignTypography.headline(18))
-                                    .foregroundColor(.yellow)
-                                Text("\(state.coins)")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .foregroundColor(.yellow)
+                            // Data (◈) for survival mode, Coins for others
+                            if gameMode == .survival || gameMode == .arena {
+                                HStack(spacing: 4) {
+                                    Text("◈")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(DesignColors.primary)
+                                    Text("\(state.stats.dataEarned)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(DesignColors.primary)
+                                }
+                            } else {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "dollarsign.circle.fill")
+                                        .font(DesignTypography.headline(18))
+                                        .foregroundColor(.yellow)
+                                    Text("\(state.coins)")
+                                        .font(.system(size: 18, weight: .bold))
+                                        .foregroundColor(.yellow)
+                                }
+                            }
+
+                            // Extraction button (survival mode only, after 3 min)
+                            if (gameMode == .survival || gameMode == .arena) && state.stats.extractionAvailable {
+                                Button(action: {
+                                    HapticsService.shared.play(.medium)
+                                    gameScene?.triggerExtraction()
+                                }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "arrow.up.circle.fill")
+                                            .font(.system(size: 16, weight: .bold))
+                                        Text("EXTRACT")
+                                            .font(.system(size: 14, weight: .bold))
+                                    }
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(DesignColors.success)
+                                    .cornerRadius(8)
+                                }
+                                .transition(.scale.combined(with: .opacity))
                             }
                         }
                         .padding(.horizontal, 16)
@@ -191,6 +225,7 @@ struct GameContainerView: View {
                         .background(Color.black.opacity(0.5))
                         .cornerRadius(10)
                         .padding(.bottom, 100) // Above joystick
+                        .animation(.easeInOut(duration: 0.3), value: state.stats.extractionAvailable)
                     }
                 }
 
@@ -204,12 +239,16 @@ struct GameContainerView: View {
                             setupGame()
                         },
                         onExit: {
-                            // Save run stats
+                            // Save run stats with Data rewards
                             if let state = gameState {
-                                appState.recordRun(
-                                    kills: state.stats.enemiesKilled,
+                                appState.recordSurvivorRun(
                                     time: state.timeElapsed,
-                                    coins: state.coins
+                                    kills: state.stats.enemiesKilled,
+                                    coins: state.coins,
+                                    gameMode: gameMode,
+                                    victory: false,
+                                    dataEarned: state.stats.dataEarned,
+                                    extracted: state.stats.extracted
                                 )
                             }
                             onExit()
@@ -217,21 +256,27 @@ struct GameContainerView: View {
                     )
                 }
 
-                // Victory overlay
+                // Victory overlay (includes extraction and boss rewards)
                 if showVictory {
                     GameOverOverlay(
                         victory: true,
                         gameState: gameState,
+                        awardedBlueprint: awardedBlueprint,
                         onRetry: {
                             showVictory = false
+                            awardedBlueprint = nil
                             setupGame()
                         },
                         onExit: {
                             if let state = gameState {
-                                appState.recordRun(
-                                    kills: state.stats.enemiesKilled,
+                                appState.recordSurvivorRun(
                                     time: state.timeElapsed,
-                                    coins: state.coins
+                                    kills: state.stats.enemiesKilled,
+                                    coins: state.coins,
+                                    gameMode: gameMode,
+                                    victory: true,
+                                    dataEarned: state.stats.dataEarned,
+                                    extracted: state.stats.extracted
                                 )
                             }
                             onExit()
@@ -260,22 +305,33 @@ struct GameContainerView: View {
     private func setupGame() {
         print("[GameContainerView] setupGame - screenSize: \(screenSize)")
 
-        // Use selected loadout from AppState
-        let weaponType = appState.selectedWeapon
+        // Use selected Protocol from AppState (unified weapon system)
+        let gameProtocol = appState.selectedProtocolObject
         let powerUpType = appState.selectedPowerup
         let arenaType = appState.selectedArena
 
-        // Create game state based on mode
+        // Create game state based on mode using Protocol
         let state: GameState
-        if gameMode == .arena {
+        switch gameMode {
+        case .survival, .arena:
+            // Survival mode with dynamic events
             state = GameStateFactory.shared.createArenaGameState(
-                weaponType: weaponType,
+                gameProtocol: gameProtocol,
                 powerUpType: powerUpType,
-                arenaType: arenaType
+                arenaType: "memory_core"  // Use the survival arena
             )
-        } else {
-            state = GameStateFactory.shared.createDungeonGameState(
-                weaponType: weaponType,
+        case .boss, .dungeon:
+            // Boss encounter - map dungeon type to boss type
+            let bossType = mapArenaToBoss(arenaType)
+            state = GameStateFactory.shared.createBossGameState(
+                gameProtocol: gameProtocol,
+                bossType: bossType,
+                difficulty: bossDifficulty
+            )
+        case .towerDefense:
+            // Tower defense mode (unchanged)
+            state = GameStateFactory.shared.createArenaGameState(
+                gameProtocol: gameProtocol,
                 powerUpType: powerUpType,
                 arenaType: arenaType
             )
@@ -290,6 +346,17 @@ struct GameContainerView: View {
         scene.onGameOver = { finalState in
             gameState = finalState
             if finalState.victory {
+                // Handle boss rewards before showing victory
+                if gameMode == .boss || gameMode == .dungeon {
+                    if let bossId = finalState.activeBossId ?? mapArenaToBoss(appState.selectedArena) {
+                        awardedBlueprint = appState.recordBossDefeat(
+                            bossId: bossId,
+                            difficulty: finalState.bossDifficulty ?? .normal,
+                            time: finalState.timeElapsed,
+                            kills: finalState.stats.enemiesKilled
+                        )
+                    }
+                }
                 showVictory = true
             } else {
                 showGameOver = true
@@ -309,6 +376,24 @@ struct GameContainerView: View {
         previousHealth = state.player.health
 
         gameScene = scene
+    }
+
+    /// Maps arena/dungeon type to boss type for boss encounters
+    private func mapArenaToBoss(_ arenaType: String) -> String {
+        switch arenaType {
+        // New boss IDs from BossEncounter
+        case "cyberboss", "rogue_process":
+            return "cyberboss"
+        case "void_harbinger", "memory_leak":
+            return "void_harbinger"
+        // Legacy mappings
+        case "server_room", "mainframe", "network":
+            return "cyberboss"
+        case "void", "corruption", "dark":
+            return "void_harbinger"
+        default:
+            return "cyberboss"  // Default to cyberboss
+        }
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {
@@ -335,18 +420,31 @@ struct GameContainerView: View {
 struct GameOverOverlay: View {
     let victory: Bool
     let gameState: GameState?
+    var awardedBlueprint: String? = nil  // Protocol ID awarded from boss
     let onRetry: () -> Void
     let onExit: () -> Void
 
-    // Calculate Data reward (matches AppState.recordSurvivorRun formula)
+    // Calculate actual Data reward from session
     private var dataEarned: Int {
         guard let state = gameState else { return 0 }
-        let kills = state.stats.enemiesKilled
-        let time = state.timeElapsed
-        let dataFromKills = kills / 20
-        let dataFromTime = Int(time / 30)
-        let victoryBonus = victory ? 10 : 0
-        return max(1, dataFromKills + dataFromTime + victoryBonus)
+        return state.stats.dataEarned
+    }
+
+    // Final reward after extraction multiplier
+    private var finalDataReward: Int {
+        guard let state = gameState else { return 0 }
+        return state.stats.finalDataReward()
+    }
+
+    // Did player extract successfully?
+    private var didExtract: Bool {
+        gameState?.stats.extracted ?? false
+    }
+
+    // Get protocol name for display
+    private var awardedProtocolName: String? {
+        guard let id = awardedBlueprint else { return nil }
+        return ProtocolLibrary.get(id)?.name
     }
 
     var body: some View {
@@ -383,20 +481,59 @@ struct GameOverOverlay: View {
                         Divider().background(Color.white.opacity(0.3))
 
                         // Data reward - primary currency from Active mode
-                        HStack {
-                            HStack(spacing: 6) {
-                                Image(systemName: "memorychip")
-                                    .foregroundColor(.green)
-                                Text("DATA EXTRACTED")
+                        VStack(spacing: 8) {
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Text("◈")
+                                        .font(.system(size: 18))
+                                    Text("DATA COLLECTED")
+                                }
+                                .font(.system(size: 14))
+                                .foregroundColor(.gray)
+
+                                Spacer()
+
+                                Text("\(dataEarned)")
+                                    .font(.system(size: 18, weight: .medium, design: .monospaced))
+                                    .foregroundColor(.white.opacity(0.7))
                             }
-                            .font(.system(size: 16))
-                            .foregroundColor(.gray)
 
-                            Spacer()
+                            HStack {
+                                HStack(spacing: 6) {
+                                    Image(systemName: didExtract ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundColor(didExtract ? .green : .orange)
+                                    Text(didExtract ? "EXTRACTION BONUS (100%)" : "DEATH PENALTY (50%)")
+                                }
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(didExtract ? .green : .orange)
 
-                            Text("+\(dataEarned)")
-                                .font(.system(size: 24, weight: .bold, design: .monospaced))
-                                .foregroundColor(.green)
+                                Spacer()
+
+                                Text("+\(finalDataReward)")
+                                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                                    .foregroundColor(didExtract ? .green : .orange)
+                            }
+
+                            // Blueprint reward (boss mode only)
+                            if let protocolName = awardedProtocolName {
+                                Divider().background(Color.white.opacity(0.3))
+
+                                HStack {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "doc.badge.plus")
+                                            .foregroundColor(.purple)
+                                        Text("BLUEPRINT ACQUIRED")
+                                    }
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.purple)
+
+                                    Spacer()
+
+                                    Text(protocolName.uppercased())
+                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .foregroundColor(.purple)
+                                }
+                            }
                         }
                     }
                     .padding()
@@ -405,7 +542,7 @@ struct GameOverOverlay: View {
                             .fill(Color.white.opacity(0.1))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                                    .stroke(awardedBlueprint != nil ? Color.purple.opacity(0.5) : Color.green.opacity(0.3), lineWidth: 1)
                             )
                     )
                 }

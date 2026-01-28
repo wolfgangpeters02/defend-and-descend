@@ -8,11 +8,11 @@ class GameStateFactory {
 
     private init() {}
 
-    /// Create a new game state for arena mode
+    /// Create a new game state for arena mode using a Protocol
     func createArenaGameState(
-        weaponType: String = "bow",
+        gameProtocol: Protocol,
         powerUpType: String = "tank",
-        arenaType: String = "city",
+        arenaType: String = "grasslands",
         playerProfile: PlayerProfile? = nil
     ) -> GameState {
         let config = GameConfigLoader.shared
@@ -25,21 +25,8 @@ class GameStateFactory {
         // Create arena data
         let arena = config.createArenaData(from: arenaConfig)
 
-        // Get weapon config
-        guard let weaponConfig = config.getWeapon(weaponType) else {
-            fatalError("Weapon \(weaponType) not found in config")
-        }
-
-        // Create weapon
-        var weapon = config.createWeapon(from: weaponConfig)
-
-        // Apply weapon level from profile
-        if let profile = playerProfile {
-            let level = profile.weaponLevels[weaponType] ?? 1
-            let multiplier = getLevelMultiplier(level: level)
-            weapon.damage *= multiplier
-            weapon.level = level
-        }
+        // Create weapon from Protocol (unified weapon system)
+        let weapon = gameProtocol.toWeapon()
 
         // Create player at arena center
         var player = createPlayer(
@@ -60,6 +47,14 @@ class GameStateFactory {
             }
         }
 
+        // Apply global upgrades from profile
+        if let profile = playerProfile {
+            player.maxHealth = profile.globalUpgrades.healthBonus
+            player.health = player.maxHealth
+            let fireRateMultiplier = profile.globalUpgrades.fireRateMultiplier
+            player.weapons[0].attackSpeed *= fireRateMultiplier
+        }
+
         let now = Date().timeIntervalSince1970
 
         return GameState(
@@ -69,10 +64,28 @@ class GameStateFactory {
             gameMode: .arena,
             arena: arena,
             player: player,
-            currentWeaponType: weaponType,
+            currentWeaponType: gameProtocol.id,
             currentPowerUpType: powerUpType,
             activeSynergy: nil,
             runStartTime: now
+        )
+    }
+
+    /// Legacy arena creation - kept for backward compatibility, defaults to kernel_pulse
+    @available(*, deprecated, message: "Use createArenaGameState(gameProtocol:) instead")
+    func createArenaGameState(
+        weaponType: String = "kernel_pulse",
+        powerUpType: String = "tank",
+        arenaType: String = "grasslands",
+        playerProfile: PlayerProfile? = nil
+    ) -> GameState {
+        // Find the Protocol matching the weaponType, default to kernel_pulse
+        let proto = ProtocolLibrary.all.first { $0.id == weaponType } ?? ProtocolLibrary.kernelPulse
+        return createArenaGameState(
+            gameProtocol: proto,
+            powerUpType: powerUpType,
+            arenaType: arenaType,
+            playerProfile: playerProfile
         )
     }
 
@@ -242,73 +255,72 @@ class GameStateFactory {
                CGFloat(level - 1) * WeaponMasteryConstants.damagePerLevel
     }
 
-    /// Create a new game state for dungeon mode
-    func createDungeonGameState(
-        weaponType: String = "bow",
-        powerUpType: String = "tank",
-        arenaType: String = "city",
-        playerProfile: PlayerProfile? = nil,
-        dungeonType: String? = nil,  // Optional: specific dungeon progression (cathedral, frozen, volcanic, heist, void_raid)
-        gameProtocol: Protocol? = nil,  // Optional: use Protocol-based weapon instead of config lookup
-        sector: Sector? = nil  // Optional: sector for Protocol-based gameplay
+    /// Create a new game state for boss encounter mode
+    func createBossGameState(
+        gameProtocol: Protocol,
+        bossType: String,
+        difficulty: BossDifficulty = .normal,
+        playerProfile: PlayerProfile? = nil
     ) -> GameState {
-        // Map dungeon types to valid arena configs for base state
-        let baseArenaType: String
-        switch dungeonType ?? arenaType {
-        case "cathedral": baseArenaType = "castle"
-        case "frozen": baseArenaType = "ice_cave"
-        case "volcanic": baseArenaType = "volcano"
-        case "heist": baseArenaType = "space"
-        case "void_raid": baseArenaType = "space"
-        default: baseArenaType = arenaType
+        let config = GameConfigLoader.shared
+
+        // Boss arenas are simple circular arenas
+        let arenaConfig = config.getArena("memory_core") ?? config.getArena("grasslands")!
+        var arena = config.createArenaData(from: arenaConfig)
+
+        // Boss arena is smaller and more intense
+        arena.width = 600
+        arena.height = 600
+        arena.obstacles = []  // No obstacles in boss fights - mechanics ARE the challenge
+
+        // Create weapon from Protocol
+        let weapon = gameProtocol.toWeapon()
+
+        // Create player at arena center
+        var player = createPlayer(
+            x: arena.width / 2,
+            y: arena.height * 0.75,  // Player starts in bottom half
+            weapon: weapon
+        )
+
+        // Apply difficulty modifiers
+        switch difficulty {
+        case .normal:
+            break  // No changes
+        case .hard:
+            player.maxHealth *= 0.8  // 20% less health
+            player.health = player.maxHealth
+        case .nightmare:
+            player.maxHealth *= 0.6  // 40% less health
+            player.health = player.maxHealth
         }
 
-        var state: GameState
-
-        // If a Protocol and sector are provided, create state using Protocol's weapon
-        if let proto = gameProtocol, let sec = sector {
-            state = createDebugGameState(
-                gameProtocol: proto,
-                sector: sec,
-                playerProfile: playerProfile ?? PlayerProfile.defaultProfile
-            )
-        } else {
-            // Start with arena state using weapon config
-            state = createArenaGameState(
-                weaponType: weaponType,
-                powerUpType: powerUpType,
-                arenaType: baseArenaType,
-                playerProfile: playerProfile
-            )
+        // Apply global upgrades from profile
+        if let profile = playerProfile {
+            player.maxHealth = profile.globalUpgrades.healthBonus * (player.maxHealth / 100)
+            player.health = player.maxHealth
+            let fireRateMultiplier = profile.globalUpgrades.fireRateMultiplier
+            player.weapons[0].attackSpeed *= fireRateMultiplier
         }
 
-        // Change mode to dungeon
-        state.gameMode = .dungeon
+        let now = Date().timeIntervalSince1970
 
-        // Create dungeon rooms based on dungeon type (or arena type for backwards compatibility)
-        let progressionType = dungeonType ?? arenaType
-        state.rooms = DungeonSystem.createDungeonRooms(arenaId: progressionType)
-        state.currentRoomIndex = 0
+        var state = GameState(
+            sessionId: RandomUtils.generateId(),
+            playerId: playerProfile?.id ?? "default",
+            startTime: now,
+            gameMode: .boss,
+            arena: arena,
+            player: player,
+            currentWeaponType: gameProtocol.id,
+            currentPowerUpType: "none",
+            activeSynergy: nil,
+            runStartTime: now
+        )
 
-        // Set current room
-        if let firstRoom = state.rooms?.first {
-            state.currentRoom = firstRoom
-
-            // Update arena dimensions to match room
-            state.arena.width = firstRoom.width
-            state.arena.height = firstRoom.height
-            state.arena.backgroundColor = firstRoom.backgroundColor
-            state.arena.obstacles = firstRoom.obstacles
-            state.arena.hazards = firstRoom.hazards
-            state.arena.effectZones = firstRoom.effectZones
-
-            // Position player at room center
-            state.player.x = firstRoom.width / 2
-            state.player.y = firstRoom.height / 2
-        }
-
-        state.dungeonCountdown = nil
-        state.dungeonCountdownActive = false
+        // Set up boss encounter
+        state.activeBossId = bossType
+        state.bossDifficulty = difficulty
 
         return state
     }

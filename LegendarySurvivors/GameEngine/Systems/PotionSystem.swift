@@ -99,6 +99,9 @@ class PotionSystem {
         let healAmount = state.player.maxHealth * 0.5
         state.player.health = min(state.player.maxHealth, state.player.health + healAmount)
 
+        // Use state time instead of Date()
+        let currentTime = state.startTime + state.timeElapsed
+
         // Healing particles
         for i in 0..<20 {
             let angle = CGFloat.random(in: 0...(2 * .pi))
@@ -110,7 +113,7 @@ class PotionSystem {
                 x: state.player.x,
                 y: state.player.y,
                 lifetime: 0.8,
-                createdAt: Date().timeIntervalSince1970,
+                createdAt: currentTime,
                 color: "#00ff00",
                 size: CGFloat.random(in: 4...8),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed - 30)
@@ -163,6 +166,9 @@ class PotionSystem {
     private static func useMagnetPotion(state: inout GameState) -> Bool {
         state.potions.magnet = 0
 
+        // Use state time instead of Date()
+        let currentTime = state.startTime + state.timeElapsed
+
         // Magnetize all pickups to player
         for i in 0..<state.pickups.count {
             state.pickups[i].magnetized = true
@@ -174,7 +180,7 @@ class PotionSystem {
                 x: state.pickups[i].x,
                 y: state.pickups[i].y,
                 lifetime: 0.3,
-                createdAt: Date().timeIntervalSince1970,
+                createdAt: currentTime,
                 color: "#ffff00",
                 size: 4
             ))
@@ -197,10 +203,12 @@ class PotionSystem {
     private static func useShieldPotion(state: inout GameState) -> Bool {
         state.potions.shield = 0
 
+        // Use state time instead of Date()
+        let currentTime = state.startTime + state.timeElapsed
         let shieldDuration: TimeInterval = 5.0
         state.player.invulnerable = true
-        state.player.invulnerableUntil = Date().timeIntervalSince1970 + shieldDuration
-        state.activePotionEffects.shieldUntil = Date().timeIntervalSince1970 + shieldDuration
+        state.player.invulnerableUntil = currentTime + shieldDuration
+        state.activePotionEffects.shieldUntil = currentTime + shieldDuration
 
         // Shield activation particles
         for i in 0..<30 {
@@ -213,7 +221,7 @@ class PotionSystem {
                 x: state.player.x + cos(angle) * radius,
                 y: state.player.y + sin(angle) * radius,
                 lifetime: 0.5,
-                createdAt: Date().timeIntervalSince1970,
+                createdAt: currentTime,
                 color: "#00ffff",
                 size: 6,
                 velocity: CGPoint(x: cos(angle) * 50, y: sin(angle) * 50)
@@ -225,8 +233,9 @@ class PotionSystem {
     }
 
     /// Update active potion effects
-    static func updatePotionEffects(state: inout GameState) {
-        let now = Date().timeIntervalSince1970
+    static func updatePotionEffects(state: inout GameState, context: FrameContext? = nil) {
+        // Use context timestamp if available, otherwise use state time
+        let now = context?.timestamp ?? (state.startTime + state.timeElapsed)
 
         // Check shield expiration
         if let shieldUntil = state.activePotionEffects.shieldUntil {

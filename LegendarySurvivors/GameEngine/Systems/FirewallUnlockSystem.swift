@@ -8,21 +8,21 @@ struct FirewallUnlockSystem {
 
     // MARK: - Firewall Definitions
 
-    /// All firewall types with their unlock requirements
+    /// All firewall types with their unlock requirements (Protocol-based unified system)
     static let firewallDefinitions: [FirewallDefinition] = [
-        // Default unlocked firewalls
+        // Default unlocked protocols
         FirewallDefinition(
-            weaponId: "bow",
-            firewallName: "Signal Firewall",
-            description: "Basic single-target firewall. Reliable damage.",
+            weaponId: "kernel_pulse",
+            firewallName: "Kernel Pulse",
+            description: "Standard single-target protocol. Reliable damage.",
             dataCost: 0,  // Free - default
             isDefault: true,
             tier: 0
         ),
         FirewallDefinition(
-            weaponId: "ice_shard",
-            firewallName: "Freeze Firewall",
-            description: "Slows viruses, reducing their speed.",
+            weaponId: "burst_protocol",
+            firewallName: "Burst Protocol",
+            description: "Shotgun-style spread. Hits multiple targets.",
             dataCost: 0,  // Free - default
             isDefault: true,
             tier: 0
@@ -30,74 +30,56 @@ struct FirewallUnlockSystem {
 
         // Tier 1 - Early game unlocks (50 Data)
         FirewallDefinition(
-            weaponId: "wand",
-            firewallName: "Scan Firewall",
-            description: "Magic-based firewall with homing projectiles.",
+            weaponId: "trace_route",
+            firewallName: "Trace Route",
+            description: "Sniper protocol. Pierces through multiple viruses.",
             dataCost: 50,
             isDefault: false,
             tier: 1
         ),
         FirewallDefinition(
-            weaponId: "crossbow",
-            firewallName: "Piercing Firewall",
-            description: "Projectiles pierce through multiple viruses.",
+            weaponId: "ice_shard",
+            firewallName: "Freeze Protocol",
+            description: "Slows viruses, reducing their speed.",
             dataCost: 50,
             isDefault: false,
             tier: 1
         ),
 
-        // Tier 2 - Mid game unlocks (100 Data)
+        // Tier 2 - Mid game unlocks (150 Data)
         FirewallDefinition(
-            weaponId: "cannon",
-            firewallName: "Burst Firewall",
-            description: "Area damage that hits groups of viruses.",
-            dataCost: 100,
+            weaponId: "fork_bomb",
+            firewallName: "Fork Bomb",
+            description: "Multi-shot spread. Fires multiple projectiles.",
+            dataCost: 150,
             isDefault: false,
             tier: 2
         ),
         FirewallDefinition(
-            weaponId: "sword",
-            firewallName: "Chain Firewall",
-            description: "Attacks chain to nearby viruses.",
-            dataCost: 100,
+            weaponId: "root_access",
+            firewallName: "Root Access",
+            description: "Railgun beam. Massive single-target damage.",
+            dataCost: 150,
             isDefault: false,
             tier: 2
         ),
 
-        // Tier 3 - Late game unlocks (200 Data)
+        // Tier 3 - End game unlocks (300 Data)
         FirewallDefinition(
-            weaponId: "laser",
-            firewallName: "Laser Firewall",
-            description: "High-speed continuous beam damage.",
-            dataCost: 200,
+            weaponId: "overflow",
+            firewallName: "Overflow",
+            description: "Chain lightning. Ricochets to nearby targets.",
+            dataCost: 300,
             isDefault: false,
             tier: 3
         ),
         FirewallDefinition(
-            weaponId: "staff",
-            firewallName: "Overload Firewall",
-            description: "Powerful magic with splash damage.",
-            dataCost: 200,
+            weaponId: "null_pointer",
+            firewallName: "Null Pointer",
+            description: "Execute protocol. Instant kill on low-HP targets.",
+            dataCost: 300,
             isDefault: false,
             tier: 3
-        ),
-
-        // Tier 4 - End game unlocks (500 Data)
-        FirewallDefinition(
-            weaponId: "flamethrower",
-            firewallName: "Purge Firewall",
-            description: "Devastating fire damage over time.",
-            dataCost: 500,
-            isDefault: false,
-            tier: 4
-        ),
-        FirewallDefinition(
-            weaponId: "katana",
-            firewallName: "Execute Firewall",
-            description: "Massive single-target damage. Boss killer.",
-            dataCost: 500,
-            isDefault: false,
-            tier: 4
         )
     ]
 
@@ -193,16 +175,17 @@ struct FirewallDefinition: Identifiable {
     let isDefault: Bool        // true if unlocked by default
     let tier: Int              // Unlock tier (0=default, 1-4=purchasable)
 
-    /// Icon for this firewall type
+    /// Icon for this firewall type (Protocol-based)
     var icon: String {
         switch weaponId {
-        case "bow", "crossbow": return "antenna.radiowaves.left.and.right"
-        case "wand", "staff": return "wand.and.rays"
-        case "cannon": return "burst.fill"
+        case "kernel_pulse": return "dot.circle"
+        case "burst_protocol": return "burst.fill"
+        case "trace_route": return "scope"
         case "ice_shard": return "snowflake"
-        case "laser": return "rays"
-        case "flamethrower": return "flame.fill"
-        case "sword", "katana": return "bolt.fill"
+        case "fork_bomb": return "arrow.triangle.branch"
+        case "root_access": return "terminal.fill"
+        case "overflow": return "bolt.horizontal"
+        case "null_pointer": return "exclamationmark.triangle.fill"
         default: return "shield.fill"
         }
     }
@@ -222,11 +205,10 @@ struct FirewallDefinition: Identifiable {
     /// Color for tier
     var tierColor: String {
         switch tier {
-        case 0: return "gray"
-        case 1: return "blue"
-        case 2: return "purple"
-        case 3: return "orange"
-        case 4: return "red"
+        case 0: return "gray"      // Default protocols
+        case 1: return "blue"      // Rare tier
+        case 2: return "purple"    // Epic tier
+        case 3: return "orange"    // Legendary tier
         default: return "white"
         }
     }

@@ -104,6 +104,9 @@ struct TDGameState {
     var selectedTowerSlot: String?  // Currently selected slot for placement
     var selectedTowerId: String?    // Currently selected tower for info/upgrade
 
+    // Scrolling combat text events (damage numbers, healing, etc.)
+    var damageEvents: [DamageEvent] = []
+
     // System Freeze (0% efficiency state)
     var isSystemFrozen: Bool = false    // True when efficiency hits 0%
     var freezeCount: Int = 0             // Number of times system has frozen this session

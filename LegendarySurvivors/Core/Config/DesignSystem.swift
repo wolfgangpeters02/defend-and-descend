@@ -483,6 +483,150 @@ enum SpriteKitDesign {
     }
 }
 
+// MARK: - Tower Visual Colors
+
+enum TowerColors {
+    // MARK: - Archetype Base Colors
+
+    /// Projectile towers (Bow, TraceRoute, KernelPulse) - Precision cyan
+    static let projectile = UIColor(hex: "00d4ff") ?? .cyan
+    static let projectileAccent = UIColor(hex: "67e8f9") ?? .cyan
+
+    /// Artillery towers (Cannon, Bomb, BurstProtocol) - Industrial orange/gray
+    static let artillery = UIColor(hex: "f97316") ?? .orange
+    static let artilleryAccent = UIColor(hex: "94a3b8") ?? .gray
+
+    /// Frost towers (IceShard) - Ice blue/cyan
+    static let frost = UIColor(hex: "06b6d4") ?? .cyan
+    static let frostAccent = UIColor(hex: "a5f3fc") ?? .white
+
+    /// Magic towers (Staff, Wand) - Arcane purple
+    static let magic = UIColor(hex: "a855f7") ?? .purple
+    static let magicAccent = UIColor(hex: "e879f9") ?? .magenta
+
+    /// Beam towers (Laser, RootAccess) - Tech red/orange
+    static let beam = UIColor(hex: "ef4444") ?? .red
+    static let beamAccent = UIColor(hex: "fca5a5") ?? .systemPink
+
+    /// Tesla towers (Lightning, Overflow) - Electric cyan/white
+    static let tesla = UIColor(hex: "22d3ee") ?? .cyan
+    static let teslaAccent = UIColor.white
+
+    /// Pyro towers (Flamethrower) - Fire orange/red
+    static let pyro = UIColor(hex: "f97316") ?? .orange
+    static let pyroAccent = UIColor(hex: "fbbf24") ?? .yellow
+
+    /// Legendary towers (Excalibur) - Divine gold
+    static let legendary = UIColor(hex: "f59e0b") ?? .orange
+    static let legendaryAccent = UIColor(hex: "fbbf24") ?? .yellow
+
+    /// Multishot towers (ForkBomb) - Tech purple
+    static let multishot = UIColor(hex: "8b5cf6") ?? .purple
+    static let multishotAccent = UIColor(hex: "c4b5fd") ?? .systemIndigo
+
+    /// Execute towers (NullPointer) - Error red
+    static let execute = UIColor(hex: "ef4444") ?? .red
+    static let executeAccent = UIColor(hex: "fecaca") ?? .systemPink
+
+    // MARK: - Get Color for Weapon Type
+
+    static func color(for weaponType: String) -> UIColor {
+        switch weaponType.lowercased() {
+        case "bow", "crossbow", "trace_route", "kernel_pulse":
+            return projectile
+        case "cannon", "bomb", "burst_protocol":
+            return artillery
+        case "ice_shard", "snowflake":
+            return frost
+        case "staff", "wand":
+            return magic
+        case "laser", "root_access":
+            return beam
+        case "lightning", "overflow":
+            return tesla
+        case "flamethrower":
+            return pyro
+        case "excalibur", "sword", "katana":
+            return legendary
+        case "fork_bomb":
+            return multishot
+        case "null_pointer":
+            return execute
+        default:
+            return projectile
+        }
+    }
+
+    static func accentColor(for weaponType: String) -> UIColor {
+        switch weaponType.lowercased() {
+        case "bow", "crossbow", "trace_route", "kernel_pulse":
+            return projectileAccent
+        case "cannon", "bomb", "burst_protocol":
+            return artilleryAccent
+        case "ice_shard", "snowflake":
+            return frostAccent
+        case "staff", "wand":
+            return magicAccent
+        case "laser", "root_access":
+            return beamAccent
+        case "lightning", "overflow":
+            return teslaAccent
+        case "flamethrower":
+            return pyroAccent
+        case "excalibur", "sword", "katana":
+            return legendaryAccent
+        case "fork_bomb":
+            return multishotAccent
+        case "null_pointer":
+            return executeAccent
+        default:
+            return projectileAccent
+        }
+    }
+}
+
+// MARK: - Tower Effect Constants
+
+enum TowerEffects {
+    // Glow intensities by rarity
+    static let commonGlow: CGFloat = 4
+    static let rareGlow: CGFloat = 6
+    static let epicGlow: CGFloat = 8
+    static let legendaryGlow: CGFloat = 12
+
+    // Animation durations
+    static let idlePulseDuration: TimeInterval = 1.8
+    static let targetingLockDuration: TimeInterval = 0.15
+    static let muzzleFlashDuration: TimeInterval = 0.12
+    static let recoilDuration: TimeInterval = 0.2
+
+    // Particle counts
+    static let frostParticleRate: TimeInterval = 0.3
+    static let divineParticleRate: TimeInterval = 0.2
+    static let electricArcRate: TimeInterval = 0.4
+
+    // Size multipliers by merge level
+    static func sizeMultiplier(for mergeLevel: Int) -> CGFloat {
+        switch mergeLevel {
+        case 1: return 1.0
+        case 2: return 1.1
+        case 3: return 1.2
+        default: return 1.0
+        }
+    }
+
+    // Glow multiplier by rarity
+    static func glowMultiplier(for rarity: String) -> CGFloat {
+        switch rarity.lowercased() {
+        case "common": return 1.0
+        case "rare": return 1.25
+        case "epic": return 1.5
+        case "legendary": return 2.0
+        default: return 1.0
+        }
+    }
+}
+
 // MARK: - SKShapeNode Extension
 
 import SpriteKit

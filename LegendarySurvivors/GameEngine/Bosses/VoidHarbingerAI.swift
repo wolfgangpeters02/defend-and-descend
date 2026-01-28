@@ -180,9 +180,9 @@ class VoidHarbingerAI {
         bossState.pylonsDestroyed = 0
 
         // Spawn 4 pylons around the arena
-        let roomWidth = gameState.currentRoom?.width ?? 3000
-        let roomHeight = gameState.currentRoom?.height ?? 3000
-        let center = CGPoint(x: roomWidth / 2, y: roomHeight / 2)
+        let arenaWidth = gameState.arena.width
+        let arenaHeight = gameState.arena.height
+        let center = CGPoint(x: arenaWidth / 2, y: arenaHeight / 2)
 
         bossState.pylons = []
         let pylonPositions: [(CGFloat, CGFloat)] = [

@@ -13,13 +13,13 @@ struct SynergyDefinition {
 
 class SynergySystem {
 
-    // Pre-defined synergies
+    // Pre-defined synergies (Protocol-based unified system)
     static let synergies: [SynergyDefinition] = [
-        // Bow + Sniper = Precision Strike
+        // kernel_pulse + sniper = Targeted Kill
         SynergyDefinition(
-            weapon: "bow",
+            weapon: "kernel_pulse",
             powerup: "sniper",
-            name: "Precision Strike",
+            name: "Targeted Kill",
             description: "+50% damage, +30% range"
         ) { player in
             for i in 0..<player.weapons.count {
@@ -28,52 +28,52 @@ class SynergySystem {
             }
         },
 
-        // Sword + Berserker = Blood Rage
+        // kernel_pulse + tank = Hardened Protocol
         SynergyDefinition(
-            weapon: "sword",
-            powerup: "berserker",
-            name: "Blood Rage",
-            description: "+100% damage, +50% attack speed"
+            weapon: "kernel_pulse",
+            powerup: "tank",
+            name: "Hardened Protocol",
+            description: "+30% damage, +20% armor"
+        ) { player in
+            for i in 0..<player.weapons.count {
+                player.weapons[i].damage *= 1.3
+            }
+            player.armor += 0.2
+        },
+
+        // burst_protocol + tank = Suppression Fire
+        SynergyDefinition(
+            weapon: "burst_protocol",
+            powerup: "tank",
+            name: "Suppression Fire",
+            description: "+100% splash radius, +20% damage"
+        ) { player in
+            for i in 0..<player.weapons.count {
+                let current = player.weapons[i].splash ?? 30
+                player.weapons[i].splash = current * 2.0
+                player.weapons[i].damage *= 1.2
+            }
+        },
+
+        // trace_route + sniper = Memory Dump
+        SynergyDefinition(
+            weapon: "trace_route",
+            powerup: "sniper",
+            name: "Memory Dump",
+            description: "+100% damage, +3 pierce"
         ) { player in
             for i in 0..<player.weapons.count {
                 player.weapons[i].damage *= 2.0
-                player.weapons[i].attackSpeed *= 1.5
+                let current = player.weapons[i].pierce ?? 1
+                player.weapons[i].pierce = current + 3
             }
         },
 
-        // Wand + Mage = Arcane Mastery
-        SynergyDefinition(
-            weapon: "wand",
-            powerup: "mage",
-            name: "Arcane Mastery",
-            description: "+3 projectiles, homing enabled"
-        ) { player in
-            for i in 0..<player.weapons.count {
-                let current = player.weapons[i].projectileCount ?? 1
-                player.weapons[i].projectileCount = current + 3
-                player.weapons[i].homing = true
-            }
-        },
-
-        // Flamethrower + Flame Aura = Inferno
-        SynergyDefinition(
-            weapon: "flamethrower",
-            powerup: "flame_aura",
-            name: "Inferno",
-            description: "+80% damage, enemies burn"
-        ) { player in
-            for i in 0..<player.weapons.count {
-                player.weapons[i].damage *= 1.8
-                let current = player.weapons[i].splash ?? 0
-                player.weapons[i].splash = current + 50
-            }
-        },
-
-        // Ice Shard + Ice Walker = Frozen Dominion
+        // ice_shard + ice_walker = System Freeze
         SynergyDefinition(
             weapon: "ice_shard",
             powerup: "ice_walker",
-            name: "Frozen Dominion",
+            name: "System Freeze",
             description: "Enemies permanently slowed, +40% damage"
         ) { player in
             for i in 0..<player.weapons.count {
@@ -81,102 +81,64 @@ class SynergySystem {
             }
         },
 
-        // Lightning + Thor = Storm Lord
+        // fork_bomb + berserker = Process Explosion
         SynergyDefinition(
-            weapon: "lightning",
-            powerup: "thor",
-            name: "Storm Lord",
-            description: "+5 pierce, chain lightning"
+            weapon: "fork_bomb",
+            powerup: "berserker",
+            name: "Process Explosion",
+            description: "+3 projectiles, +50% attack speed"
         ) { player in
             for i in 0..<player.weapons.count {
-                let current = player.weapons[i].pierce ?? 0
-                player.weapons[i].pierce = current + 5
-                player.weapons[i].damage *= 1.3
+                let current = player.weapons[i].projectileCount ?? 3
+                player.weapons[i].projectileCount = current + 3
+                player.weapons[i].attackSpeed *= 1.5
             }
         },
 
-        // Scythe + Necromancer = Death's Embrace
+        // root_access + sniper = Kernel Panic
         SynergyDefinition(
-            weapon: "scythe",
-            powerup: "necromancer",
-            name: "Death's Embrace",
-            description: "+15% lifesteal, explosion on kill"
+            weapon: "root_access",
+            powerup: "sniper",
+            name: "Kernel Panic",
+            description: "+150% damage, enemies stunned"
         ) { player in
-            if player.abilities == nil {
-                player.abilities = PlayerAbilities()
+            for i in 0..<player.weapons.count {
+                player.weapons[i].damage *= 2.5
             }
-            let currentLifesteal = player.abilities?.lifesteal ?? 0
-            player.abilities?.lifesteal = currentLifesteal + 0.15
-            let currentExplosion = player.abilities?.explosionOnKill ?? 0
-            player.abilities?.explosionOnKill = currentExplosion + 80
         },
 
-        // Excalibur + Paladin = Divine Champion
+        // overflow + thor = Stack Overflow
         SynergyDefinition(
-            weapon: "excalibur",
-            powerup: "paladin",
-            name: "Divine Champion",
-            description: "+100% damage, +1 revive"
+            weapon: "overflow",
+            powerup: "thor",
+            name: "Stack Overflow",
+            description: "+5 chain targets, +60% damage"
+        ) { player in
+            for i in 0..<player.weapons.count {
+                let current = player.weapons[i].pierce ?? 3
+                player.weapons[i].pierce = current + 5
+                player.weapons[i].damage *= 1.6
+            }
+        },
+
+        // null_pointer + berserker = Fatal Exception
+        SynergyDefinition(
+            weapon: "null_pointer",
+            powerup: "berserker",
+            name: "Fatal Exception",
+            description: "Execute threshold +20%, +100% damage"
         ) { player in
             for i in 0..<player.weapons.count {
                 player.weapons[i].damage *= 2.0
             }
-            if player.abilities == nil {
-                player.abilities = PlayerAbilities()
-            }
-            let currentRevives = player.abilities?.revive ?? 0
-            player.abilities?.revive = currentRevives + 1
+            // Execute threshold is handled separately in combat
         },
 
-        // Dual Guns + Gunslinger = Bullet Storm
-        SynergyDefinition(
-            weapon: "dual_guns",
-            powerup: "gunslinger",
-            name: "Bullet Storm",
-            description: "+4 projectiles, +100% attack speed"
-        ) { player in
-            for i in 0..<player.weapons.count {
-                let current = player.weapons[i].projectileCount ?? 1
-                player.weapons[i].projectileCount = current + 4
-                player.weapons[i].attackSpeed *= 2.0
-            }
-        },
-
-        // Bomb + Bomber = Demolition Expert
-        SynergyDefinition(
-            weapon: "bomb",
-            powerup: "bomber",
-            name: "Demolition Expert",
-            description: "+200% splash radius, screen shake"
-        ) { player in
-            for i in 0..<player.weapons.count {
-                let current = player.weapons[i].splash ?? 50
-                player.weapons[i].splash = current * 3.0
-            }
-        },
-
-        // Staff + Time Lord = Temporal Master
-        SynergyDefinition(
-            weapon: "staff",
-            powerup: "time_lord",
-            name: "Temporal Master",
-            description: "Time freeze on hit, +50% damage"
-        ) { player in
-            for i in 0..<player.weapons.count {
-                player.weapons[i].damage *= 1.5
-            }
-            if player.abilities == nil {
-                player.abilities = PlayerAbilities()
-            }
-            let current = player.abilities?.timeFreeze ?? 0
-            player.abilities?.timeFreeze = current + 2
-        },
-
-        // Any + Phoenix = Undying Flame
+        // Any + phoenix = Auto Recovery
         SynergyDefinition(
             weapon: "any",
             powerup: "phoenix",
-            name: "Undying Flame",
+            name: "Auto Recovery",
             description: "+2 revives, fire trail"
         ) { player in
             if player.abilities == nil {

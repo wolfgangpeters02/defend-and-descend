@@ -102,8 +102,11 @@ class UpgradeSystem {
 
     /// Apply stat upgrade (works in all modes)
     private static func applyStatUpgrade(state: inout GameState, target: String, value: CGFloat, isMultiplier: Bool) {
-        switch target {
-        case "damage":
+        // Convert string to enum for type safety
+        guard let targetType = UpgradeTargetType(rawValue: target) else { return }
+
+        switch targetType {
+        case .damage:
             for i in 0..<state.player.weapons.count {
                 if isMultiplier {
                     state.player.weapons[i].damage *= value
@@ -112,7 +115,7 @@ class UpgradeSystem {
                 }
             }
 
-        case "maxHealth":
+        case .maxHealth:
             let oldMax = state.player.maxHealth
             if isMultiplier {
                 state.player.maxHealth *= value
@@ -123,22 +126,22 @@ class UpgradeSystem {
             let healthRatio = state.player.health / oldMax
             state.player.health = state.player.maxHealth * healthRatio
 
-        case "speed":
+        case .speed:
             if isMultiplier {
                 state.player.speed *= value
             } else {
                 state.player.speed += value
             }
 
-        case "regen":
+        case .regen:
             state.player.regen += value
 
-        case "armor":
+        case .armor:
             state.player.armor += value
             // Cap armor at 75%
             state.player.armor = min(0.75, state.player.armor)
 
-        case "pickupRange":
+        case .pickupRange:
             if isMultiplier {
                 state.player.pickupRange *= value
             } else {
@@ -146,87 +149,93 @@ class UpgradeSystem {
             }
 
         default:
-            break
+            break // Non-stat upgrades handled elsewhere
         }
     }
 
     /// Apply weapon upgrade (works in all modes - shared between survivor and TD)
     private static func applyWeaponUpgrade(state: inout GameState, target: String, value: CGFloat, isMultiplier: Bool) {
+        // Convert string to enum for type safety
+        guard let targetType = UpgradeTargetType(rawValue: target) else { return }
+
         for i in 0..<state.player.weapons.count {
-            switch target {
-            case "attackSpeed":
+            switch targetType {
+            case .attackSpeed:
                 if isMultiplier {
                     state.player.weapons[i].attackSpeed *= value
                 } else {
                     state.player.weapons[i].attackSpeed += value
                 }
 
-            case "range":
+            case .range:
                 if isMultiplier {
                     state.player.weapons[i].range *= value
                 } else {
                     state.player.weapons[i].range += value
                 }
 
-            case "projectileCount":
+            case .projectileCount:
                 let current = state.player.weapons[i].projectileCount ?? 1
                 state.player.weapons[i].projectileCount = current + Int(value)
 
-            case "pierce":
+            case .pierce:
                 let current = state.player.weapons[i].pierce ?? 0
                 state.player.weapons[i].pierce = current + Int(value)
 
-            case "splash":
+            case .splash:
                 let current = state.player.weapons[i].splash ?? 0
                 state.player.weapons[i].splash = current + value
 
-            case "homing":
+            case .homing:
                 state.player.weapons[i].homing = true
 
             default:
-                break
+                break // Non-weapon upgrades handled elsewhere
             }
         }
     }
 
     /// Apply ability upgrade (dungeon-only abilities like lifesteal, thorns, phoenix)
     private static func applyAbilityUpgrade(state: inout GameState, target: String, value: CGFloat) {
+        // Convert string to enum for type safety
+        guard let targetType = UpgradeTargetType(rawValue: target) else { return }
+
         if state.player.abilities == nil {
             state.player.abilities = PlayerAbilities()
         }
 
-        switch target {
-        case "lifesteal":
+        switch targetType {
+        case .lifesteal:
             // Dungeon only - heal on damage dealt
             let current = state.player.abilities?.lifesteal ?? 0
             state.player.abilities?.lifesteal = current + value
 
-        case "revive":
+        case .revive:
             // Dungeon only - phoenix rebirth
             let current = state.player.abilities?.revive ?? 0
             state.player.abilities?.revive = current + Int(value)
 
-        case "thorns":
+        case .thorns:
             // Dungeon only - reflect damage
             let current = state.player.abilities?.thorns ?? 0
             state.player.abilities?.thorns = current + value
 
-        case "explosionOnKill":
+        case .explosionOnKill:
             // Dungeon only - enemies explode
             let current = state.player.abilities?.explosionOnKill ?? 0
             state.player.abilities?.explosionOnKill = current + value
 
-        case "orbitalStrike":
+        case .orbitalStrike:
             // Dungeon only - periodic screen damage
             let current = state.player.abilities?.orbitalStrike ?? 0
             state.player.abilities?.orbitalStrike = current + value
 
-        case "timeFreeze":
+        case .timeFreeze:
             // Dungeon only - freeze enemies
             let current = state.player.abilities?.timeFreeze ?? 0
             state.player.abilities?.timeFreeze = current + value
 
-        case "allStats":
+        case .allStats:
             // Universal - boost all stats (shared upgrade)
             for i in 0..<state.player.weapons.count {
                 state.player.weapons[i].damage *= value
@@ -236,7 +245,7 @@ class UpgradeSystem {
             state.player.speed *= value
 
         default:
-            break
+            break // Non-ability upgrades handled elsewhere
         }
     }
 

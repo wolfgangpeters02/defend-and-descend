@@ -1,151 +1,4 @@
 {
-  "weapons": {
-    "bow": {
-      "id": "bow",
-      "name": "Bow",
-      "description": "Shoots straight arrows",
-      "rarity": "common",
-      "icon": "bow_icon",
-      "damage": 15,
-      "range": 300,
-      "attackSpeed": 2.0,
-      "projectileType": "arrow",
-      "color": "#8b4513",
-      "towerName": "Archer Tower",
-      "special": {
-        "projectileCount": 2
-      }
-    },
-    "cannon": {
-      "id": "cannon",
-      "name": "Cannon",
-      "description": "Massive explosive shots",
-      "rarity": "rare",
-      "icon": "cannon_icon",
-      "damage": 60,
-      "range": 400,
-      "attackSpeed": 0.8,
-      "projectileType": "cannonball",
-      "color": "#333333",
-      "towerName": "Cannon Tower",
-      "special": {
-        "splash": 120
-      }
-    },
-    "ice_shard": {
-      "id": "ice_shard",
-      "name": "Ice Shard",
-      "description": "Freezing projectiles that slow enemies",
-      "rarity": "common",
-      "icon": "ice_icon",
-      "damage": 16,
-      "range": 300,
-      "attackSpeed": 2.5,
-      "projectileType": "ice",
-      "color": "#00ffff",
-      "towerName": "Ice Tower",
-      "special": {
-        "projectileCount": 3,
-        "slow": 0.5,
-        "slowDuration": 2.0
-      }
-    },
-    "laser": {
-      "id": "laser",
-      "name": "Laser Beam",
-      "description": "Continuous beam damage",
-      "rarity": "epic",
-      "icon": "laser_icon",
-      "damage": 30,
-      "range": 400,
-      "attackSpeed": 0.5,
-      "projectileType": "laser",
-      "color": "#ff0000",
-      "towerName": "Beam Tower"
-    },
-    "staff": {
-      "id": "staff",
-      "name": "Magic Staff",
-      "description": "Fires homing missiles",
-      "rarity": "rare",
-      "icon": "staff_icon",
-      "damage": 20,
-      "range": 350,
-      "attackSpeed": 1.5,
-      "projectileType": "magic",
-      "color": "#9370db",
-      "towerName": "Tracker Tower",
-      "special": {
-        "homing": true,
-        "projectileCount": 2
-      }
-    },
-    "bomb": {
-      "id": "bomb",
-      "name": "Bomber",
-      "description": "Area damage explosions",
-      "rarity": "rare",
-      "icon": "bomb_icon",
-      "damage": 40,
-      "range": 200,
-      "attackSpeed": 1.2,
-      "projectileType": "bomb",
-      "color": "#ff8800",
-      "towerName": "Bomb Tower",
-      "special": {
-        "splash": 100
-      }
-    },
-    "lightning": {
-      "id": "lightning",
-      "name": "Lightning Staff",
-      "description": "Chain lightning attacks",
-      "rarity": "epic",
-      "icon": "lightning_icon",
-      "damage": 35,
-      "range": 350,
-      "attackSpeed": 1.5,
-      "projectileType": "lightning",
-      "color": "#00ffff",
-      "towerName": "Lightning Tower",
-      "special": {
-        "chain": 3
-      }
-    },
-    "flamethrower": {
-      "id": "flamethrower",
-      "name": "Flamethrower",
-      "description": "Burn everything in range",
-      "rarity": "rare",
-      "icon": "flame_icon",
-      "damage": 18,
-      "range": 150,
-      "attackSpeed": 5,
-      "projectileType": "fire",
-      "color": "#ff4500",
-      "towerName": "Flame Tower",
-      "special": {
-        "projectileCount": 3
-      }
-    },
-    "excalibur": {
-      "id": "excalibur",
-      "name": "Excalibur",
-      "description": "Legendary whirlwind blade",
-      "rarity": "legendary",
-      "icon": "excalibur_icon",
-      "damage": 100,
-      "range": 150,
-      "attackSpeed": 2.0,
-      "projectileType": "slash",
-      "color": "#ffd700",
-      "towerName": "Holy Tower",
-      "special": {
-        "splash": 80,
-        "projectileCount": 3
-      }
-    }
-  },
   "powerups": {
     "tank": {
       "id": "tank",
@@ -244,6 +97,76 @@
     }
   },
   "arenas": {
+    "memory_core": {
+      "id": "memory_core",
+      "name": "Memory Core",
+      "rarity": "common",
+      "width": 1000,
+      "height": 800,
+      "backgroundColor": "#0a0a0f",
+      "theme": "terminal",
+      "particleEffect": "data_flow",
+      "obstacles": [
+        {
+          "x": 150,
+          "y": 150,
+          "width": 80,
+          "height": 50,
+          "color": "#00d4ff",
+          "type": "ram_module"
+        },
+        {
+          "x": 770,
+          "y": 150,
+          "width": 80,
+          "height": 50,
+          "color": "#00d4ff",
+          "type": "ram_module"
+        },
+        {
+          "x": 150,
+          "y": 600,
+          "width": 80,
+          "height": 50,
+          "color": "#00d4ff",
+          "type": "ram_module"
+        },
+        {
+          "x": 770,
+          "y": 600,
+          "width": 80,
+          "height": 50,
+          "color": "#00d4ff",
+          "type": "ram_module"
+        },
+        {
+          "x": 460,
+          "y": 150,
+          "width": 80,
+          "height": 50,
+          "color": "#00d4ff",
+          "type": "ram_module"
+        },
+        {
+          "x": 460,
+          "y": 600,
+          "width": 80,
+          "height": 50,
+          "color": "#00d4ff",
+          "type": "ram_module"
+        }
+      ]
+    },
+    "boss_arena": {
+      "id": "boss_arena",
+      "name": "Boss Arena",
+      "rarity": "legendary",
+      "width": 600,
+      "height": 600,
+      "backgroundColor": "#0d0d1a",
+      "theme": "boss",
+      "obstacles": []
+    },
     "grasslands": {
       "id": "grasslands",
       "name": "Grasslands",
