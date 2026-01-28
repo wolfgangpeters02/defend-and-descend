@@ -342,16 +342,16 @@ class SurvivalArenaSystem {
 
         // Get a fast, weak enemy config or create one
         let swarmConfig = config.getEnemy("fast") ?? EnemyConfig(
-            type: "swarm_virus",
+            id: "swarm_virus",
             name: "Swarm Virus",
             health: 5,
-            damage: 5,
             speed: 200,
-            color: "#ff00ff",
-            size: 8,
+            damage: 5,
             coinValue: 1,
-            isBoss: false,
-            shape: "diamond"
+            size: 8,
+            color: "#ff00ff",
+            shape: "diamond",
+            isBoss: false
         )
 
         // Spawn position at arena edge

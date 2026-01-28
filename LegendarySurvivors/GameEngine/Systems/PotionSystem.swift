@@ -109,7 +109,7 @@ class PotionSystem {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-heal-\(i)",
-                type: "coin",
+                type: "data",
                 x: state.player.x,
                 y: state.player.y,
                 lifetime: 0.8,
@@ -144,8 +144,8 @@ class PotionSystem {
                     size: state.enemies[i].size ?? 20
                 )
 
-                // Drop coin
-                PickupSystem.dropCoin(
+                // Drop Data pickup
+                PickupSystem.dropData(
                     state: &state,
                     x: state.enemies[i].x,
                     y: state.enemies[i].y,
@@ -176,7 +176,7 @@ class PotionSystem {
             // Visual trail to player
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-magnet-\(i)",
-                type: "coin",
+                type: "data",
                 x: state.pickups[i].x,
                 y: state.pickups[i].y,
                 lifetime: 0.3,

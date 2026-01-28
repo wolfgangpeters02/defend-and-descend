@@ -207,7 +207,7 @@ enum CurrencyID: String, CaseIterable, Codable {
     var icon: String {
         switch self {
         case .hash: return "number.circle.fill"
-        case .data: return "externaldrive.fill"
+        case .data: return "memorychip"
         }
     }
 }
@@ -287,7 +287,7 @@ enum EffectZoneType: String, Codable, CaseIterable {
 enum ParticleType: String, Codable, CaseIterable {
     case explosion
     case hit
-    case coin
+    case data  // Changed from coin - Data pickups
     case blood
     case muzzle
     case impact
@@ -304,14 +304,14 @@ enum ParticleType: String, Codable, CaseIterable {
 
 /// Types of collectible pickups
 enum PickupType: String, Codable, CaseIterable {
-    case coin
+    case data  // Changed from coin - Data currency pickups
     case health
     case xp
     case powerup
 
     /// Alternative initializer for backwards compatibility
     init(from string: String) {
-        self = PickupType(rawValue: string) ?? .coin
+        self = PickupType(rawValue: string) ?? .data
     }
 }
 

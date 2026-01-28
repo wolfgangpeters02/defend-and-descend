@@ -361,8 +361,8 @@ class EnemySystem {
             count: enemy.isBoss ? 20 : 10
         )
 
-        // Drop coin
-        PickupSystem.dropCoin(state: &state, x: enemy.x, y: enemy.y, value: enemy.coinValue ?? 1)
+        // Drop Data pickup
+        PickupSystem.dropData(state: &state, x: enemy.x, y: enemy.y, value: enemy.coinValue ?? 1)
 
         // Explosion on kill ability
         if let explosionRadius = state.player.abilities?.explosionOnKill {

@@ -71,7 +71,7 @@ class ObjectPool<T: Poolable> {
 
     /// Release an object back to the pool.
     /// - Parameter obj: The object to release
-    mutating func release(_ obj: inout T) {
+    func release(_ obj: inout T) {
         obj.reset()
         obj.isActive = false
         activeCount = max(0, activeCount - 1)

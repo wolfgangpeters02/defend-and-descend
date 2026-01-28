@@ -47,14 +47,14 @@ class PickupSystem {
         }
     }
 
-    /// Drop a coin pickup
-    static func dropCoin(state: inout GameState, x: CGFloat, y: CGFloat, value: Int) {
+    /// Drop a Data pickup (◈)
+    static func dropData(state: inout GameState, x: CGFloat, y: CGFloat, value: Int) {
         // Use state time instead of Date()
         let currentTime = state.startTime + state.timeElapsed
 
         state.pickups.append(Pickup(
             id: RandomUtils.generateId(),
-            type: .coin,
+            type: .data,
             x: x,
             y: y,
             value: value,
@@ -63,8 +63,8 @@ class PickupSystem {
             magnetized: false
         ))
 
-        // Coin sparkle effect
-        ParticleFactory.createCoinSparkle(state: &state, x: x, y: y)
+        // Data sparkle effect (green)
+        ParticleFactory.createDataSparkle(state: &state, x: x, y: y)
     }
 
     /// Collect a pickup
@@ -72,22 +72,23 @@ class PickupSystem {
         let pickup = state.pickups[pickupIndex]
 
         switch pickup.type {
-        case .coin:
-            state.coins += pickup.value
-            state.stats.coinsCollected += pickup.value
+        case .data:
+            state.sessionData += pickup.value
+            state.stats.dataCollected += pickup.value
+            state.stats.dataEarned += pickup.value
 
-            // Charge potions
+            // Charge potions with collected data
             chargePotions(state: &state, amount: pickup.value)
 
-            // Collection particle (use state time instead of Date())
+            // Collection particle - green for Data (use state time instead of Date())
             state.particles.append(Particle(
                 id: RandomUtils.generateId(),
-                type: .coin,
+                type: .data,
                 x: pickup.x,
                 y: pickup.y,
                 lifetime: 0.5,
                 createdAt: state.startTime + state.timeElapsed,
-                color: "#ffcc00",
+                color: "#22c55e",  // Green for Data
                 size: 12,
                 velocity: CGPoint(x: 0, y: -50)
             ))
@@ -100,7 +101,7 @@ class PickupSystem {
         }
     }
 
-    /// Charge potions based on collected coins
+    /// Charge potions based on collected Data
     private static func chargePotions(state: inout GameState, amount: Int) {
         let chargeAmount = CGFloat(amount)
 

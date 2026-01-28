@@ -182,7 +182,7 @@ class ProjectileSystem {
             // Healing particle (use state time instead of Date())
             state.particles.append(Particle(
                 id: RandomUtils.generateId(),
-                type: "coin",
+                type: "data",
                 x: state.player.x,
                 y: state.player.y - 20,
                 lifetime: 0.5,

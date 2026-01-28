@@ -15,7 +15,7 @@ class AudioService {
     enum SoundEffect: String {
         case hit = "hit"
         case explosion = "explosion"
-        case coinPickup = "coin"
+        case dataPickup = "data"
         case levelUp = "levelup"
         case upgrade = "upgrade"
         case potionUse = "potion"
@@ -58,7 +58,7 @@ class AudioService {
             HapticsService.shared.play(.light)
         case .explosion:
             HapticsService.shared.play(.heavy)
-        case .coinPickup:
+        case .dataPickup:
             HapticsService.shared.play(.selection)
         case .levelUp:
             HapticsService.shared.play(.success)

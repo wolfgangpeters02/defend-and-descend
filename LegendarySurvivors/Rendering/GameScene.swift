@@ -642,16 +642,16 @@ class GameScene: SKScene {
 
         // Get boss config or create a default powerful boss config
         let bossConfig = config.getEnemy(bossId) ?? EnemyConfig(
-            type: bossId,
+            id: bossId,
             name: "Boss",
             health: 10000,
-            damage: 50,
             speed: 80,
-            color: "#ff0000",
-            size: 60,
+            damage: 50,
             coinValue: 100,
-            isBoss: true,
-            shape: "hexagon"
+            size: 60,
+            color: "#ff0000",
+            shape: "hexagon",
+            isBoss: true
         )
 
         // Apply difficulty scaling
@@ -700,25 +700,35 @@ class GameScene: SKScene {
         switch bossType {
         case .cyberboss:
             if var bossState = gameState.cyberbossState {
+                // Extract boss to avoid overlapping inout access
+                var boss = gameState.enemies[bossIndex]
                 CyberbossAI.update(
-                    boss: &gameState.enemies[bossIndex],
+                    boss: &boss,
                     bossState: &bossState,
                     gameState: &gameState,
                     deltaTime: context.deltaTime
                 )
+                gameState.enemies[bossIndex] = boss
                 gameState.cyberbossState = bossState
             }
 
         case .voidHarbinger:
             if var bossState = gameState.voidHarbingerState {
+                // Extract boss to avoid overlapping inout access
+                var boss = gameState.enemies[bossIndex]
                 VoidHarbingerAI.update(
-                    boss: &gameState.enemies[bossIndex],
+                    boss: &boss,
                     bossState: &bossState,
                     gameState: &gameState,
                     deltaTime: context.deltaTime
                 )
+                gameState.enemies[bossIndex] = boss
                 gameState.voidHarbingerState = bossState
             }
+
+        case .frostTitan, .infernoLord:
+            // Future bosses - not implemented yet
+            break
         }
     }
 
@@ -762,7 +772,7 @@ class GameScene: SKScene {
         if gameState.voidHarbingerState != nil {
             // Void zones
             if let voidZones = gameState.voidZones {
-                for zone in voidZones where zone.isActive {
+                for zone in voidZones where zone.activated {
                     let dx = gameState.player.x - zone.x
                     let dy = gameState.player.y - zone.y
                     let distance = sqrt(dx * dx + dy * dy)
@@ -1340,21 +1350,5 @@ class GameScene: SKScene {
             return SKColor.gray
         }
         return SKColor(red: r, green: g, blue: b, alpha: 1.0)
-    }
-}
-
-// MARK: - SKColor Extension
-
-extension SKColor {
-    func darker(by percentage: CGFloat) -> SKColor {
-        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        getHue(&h, saturation: &s, brightness: &b, alpha: &a)
-        return SKColor(hue: h, saturation: s, brightness: max(b - percentage, 0), alpha: a)
-    }
-
-    func lighter(by percentage: CGFloat) -> SKColor {
-        var h: CGFloat = 0, s: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        getHue(&h, saturation: &s, brightness: &b, alpha: &a)
-        return SKColor(hue: h, saturation: s, brightness: min(b + percentage, 1), alpha: a)
     }
 }

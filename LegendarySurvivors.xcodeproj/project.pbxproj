@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FRMCTXBLD /* FrameContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRMCTX001 /* FrameContext.swift */; };
+		OBJPOLBLD /* ObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJPOOL01 /* ObjectPool.swift */; };
+		SPTGRDBLD /* SpatialGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPTGRID01 /* SpatialGrid.swift */; };
+		SURVARBLD /* SurvivalArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = SURVARENA /* SurvivalArenaSystem.swift */; };
+		NODEPLBLD /* NodePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = NODEPOOL1 /* NodePool.swift */; };
+		SCRLCTBLD /* ScrollingCombatText.swift in Sources */ = {isa = PBXBuildFile; fileRef = SCROLLCT1 /* ScrollingCombatText.swift */; };
+		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
+		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
+		TWRGALBLD /* TowerGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERGAL1 /* TowerGalleryView.swift */; };
 		132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */; };
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
 		2096E9DBF01F2416463E54D1 /* MegaBoardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642FC35778370BD58869415C /* MegaBoardTypes.swift */; };
@@ -57,7 +66,6 @@
 		AA000029 /* UpgradeModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030 /* UpgradeModalView.swift */; };
 		AA000030 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100031 /* AppState.swift */; };
 		AA000031 /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100032 /* StorageService.swift */; };
-		AA000036 /* DungeonSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100037 /* DungeonSystem.swift */; };
 		AA000037 /* ArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100038 /* ArenaSystem.swift */; };
 		AA000038 /* CyberbossAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100039 /* CyberbossAI.swift */; };
 		AA000039 /* VoidHarbingerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100040 /* VoidHarbingerAI.swift */; };
@@ -71,6 +79,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		FRMCTX001 /* FrameContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameContext.swift; sourceTree = "<group>"; };
+		OBJPOOL01 /* ObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectPool.swift; sourceTree = "<group>"; };
+		SPTGRID01 /* SpatialGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialGrid.swift; sourceTree = "<group>"; };
+		SURVARENA /* SurvivalArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurvivalArenaSystem.swift; sourceTree = "<group>"; };
+		NODEPOOL1 /* NodePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodePool.swift; sourceTree = "<group>"; };
+		SCROLLCT1 /* ScrollingCombatText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCombatText.swift; sourceTree = "<group>"; };
+		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
+		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
+		TOWERGAL1 /* TowerGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerGalleryView.swift; sourceTree = "<group>"; };
 		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MegaBoardSystem.swift; path = Systems/MegaBoardSystem.swift; sourceTree = "<group>"; };
 		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		09DD228498839C35BD9C1D41 /* PathSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PathSystem.swift; sourceTree = "<group>"; };
@@ -118,7 +135,6 @@
 		AA100030 /* UpgradeModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeModalView.swift; sourceTree = "<group>"; };
 		AA100031 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		AA100032 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
-		AA100037 /* DungeonSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DungeonSystem.swift; sourceTree = "<group>"; };
 		AA100038 /* ArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaSystem.swift; sourceTree = "<group>"; };
 		AA100039 /* CyberbossAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberbossAI.swift; sourceTree = "<group>"; };
 		AA100040 /* VoidHarbingerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoidHarbingerAI.swift; sourceTree = "<group>"; };
@@ -220,6 +236,10 @@
 				AA100024 /* ArenaRenderer.swift */,
 				529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */,
 				F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */,
+				NODEPOOL1 /* NodePool.swift */,
+				SCROLLCT1 /* ScrollingCombatText.swift */,
+				TOWERANIM /* TowerAnimations.swift */,
+				TOWERVF01 /* TowerVisualFactory.swift */,
 			);
 			path = Rendering;
 			sourceTree = "<group>";
@@ -230,6 +250,7 @@
 				AA400017 /* Components */,
 				AA400018 /* Game */,
 				B51208EDDA6B09BF55F44B88 /* Tabs */,
+				DBGGRP001 /* Debug */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -265,6 +286,7 @@
 				05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */,
 				MBRDFILE01 /* MotherboardTypes.swift */,
 				642FC35778370BD58869415C /* MegaBoardTypes.swift */,
+				FRMCTX001 /* FrameContext.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -284,6 +306,8 @@
 			children = (
 				AA100006 /* MathUtils.swift */,
 				AA100007 /* RandomUtils.swift */,
+				OBJPOOL01 /* ObjectPool.swift */,
+				SPTGRID01 /* SpatialGrid.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -302,7 +326,6 @@
 				AA100027 /* LevelingSystem.swift */,
 				AA100028 /* XPSystem.swift */,
 				AA100029 /* SynergySystem.swift */,
-				AA100037 /* DungeonSystem.swift */,
 				AA100038 /* ArenaSystem.swift */,
 				652706E4D090EB81125BDB8E /* TowerSystem.swift */,
 				260E703394574A0E21D9E82C /* WaveSystem.swift */,
@@ -311,6 +334,7 @@
 				FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */,
 				81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */,
 				CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */,
+				SURVARENA /* SurvivalArenaSystem.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -357,6 +381,14 @@
 				A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */,
 			);
 			path = Tabs;
+			sourceTree = "<group>";
+		};
+		DBGGRP001 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				TOWERGAL1 /* TowerGalleryView.swift */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 		B8763795AB941FBACFABA17D /* Systems */ = {
@@ -468,7 +500,6 @@
 				AA000029 /* UpgradeModalView.swift in Sources */,
 				AA000030 /* AppState.swift in Sources */,
 				AA000031 /* StorageService.swift in Sources */,
-				AA000036 /* DungeonSystem.swift in Sources */,
 				AA000037 /* ArenaSystem.swift in Sources */,
 				AA000038 /* CyberbossAI.swift in Sources */,
 				AA000039 /* VoidHarbingerAI.swift in Sources */,
@@ -497,6 +528,15 @@
 				D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */,
 				7584C9579299C011354D004E /* MegaBoardRenderer.swift in Sources */,
 				44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */,
+				FRMCTXBLD /* FrameContext.swift in Sources */,
+				OBJPOLBLD /* ObjectPool.swift in Sources */,
+				SPTGRDBLD /* SpatialGrid.swift in Sources */,
+				SURVARBLD /* SurvivalArenaSystem.swift in Sources */,
+				NODEPLBLD /* NodePool.swift in Sources */,
+				SCRLCTBLD /* ScrollingCombatText.swift in Sources */,
+				TWRANMBLD /* TowerAnimations.swift in Sources */,
+				TWRVFABLD /* TowerVisualFactory.swift in Sources */,
+				TWRGALBLD /* TowerGalleryView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

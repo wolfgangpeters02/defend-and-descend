@@ -257,11 +257,6 @@ class UpgradeSystem {
             return expectedLevel > state.upgradeLevel && !state.pendingUpgrade
         }
 
-        // Dungeon mode: after room clear
-        if state.gameMode == .dungeon {
-            return state.roomCleared == true && !state.pendingUpgrade
-        }
-
         // TD mode: no mid-game upgrades (towers are pre-placed)
         return false
     }

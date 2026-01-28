@@ -159,10 +159,10 @@ class EntityRenderer {
         let container = SKNode()
 
         switch pickup.type {
-        case .coin:
-            // Blue data triangle (◈ shape) - Dark Terminal aesthetic
-            let dataColor = SKColor(red: 0, green: 0.831, blue: 1, alpha: 1) // #00d4ff cyan
-            let dataColorLight = SKColor(red: 0.4, green: 0.9, blue: 1, alpha: 1) // lighter cyan for stroke
+        case .data:
+            // Green Data triangle (◈ shape) - System currency
+            let dataColor = SKColor(red: 0.133, green: 0.773, blue: 0.369, alpha: 1) // #22c55e green
+            let dataColorLight = SKColor(red: 0.3, green: 0.9, blue: 0.5, alpha: 1) // lighter green for stroke
 
             // Create diamond/rhombus shape (◈)
             let size: CGFloat = 8

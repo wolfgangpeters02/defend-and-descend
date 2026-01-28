@@ -43,8 +43,8 @@ struct GameState {
     var currentPowerUpType: String
     var activeSynergy: Synergy?
 
-    // Resources
-    var coins: Int = 0
+    // Resources (Data collected during this session, added to stats.dataEarned)
+    var sessionData: Int = 0
 
     // Potions
     var potions: PotionCharges = PotionCharges()
@@ -176,14 +176,14 @@ struct SurvivalEventData: Codable {
 
 struct SessionStats {
     var enemiesKilled: Int = 0
-    var coinsCollected: Int = 0
+    var dataCollected: Int = 0           // Data pickups collected during gameplay
     var damageDealt: CGFloat = 0
     var damageTaken: CGFloat = 0
     var upgradesChosen: Int = 0
     var maxCombo: Int = 0
 
-    // Economy - Data (◈) earned this session
-    var dataEarned: Int = 0              // Running total of Data collected
+    // Economy - Data (◈) earned this session (includes time bonus + pickups)
+    var dataEarned: Int = 0              // Running total of Data earned
     var extractionAvailable: Bool = false // True after 3 minutes survival
     var extracted: Bool = false           // True if player chose to extract
 

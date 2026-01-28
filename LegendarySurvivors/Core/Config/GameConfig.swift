@@ -4,7 +4,7 @@ import CoreGraphics
 // MARK: - Game Config (Codable)
 
 struct GameConfigData: Codable {
-    var weapons: [String: WeaponConfig]
+    var weapons: [String: WeaponConfig]?  // Optional - weapons now defined via Protocols
     var powerups: [String: PowerUpConfig]
     var arenas: [String: ArenaConfig]
     var enemies: [String: EnemyConfig]
@@ -207,7 +207,7 @@ class GameConfigLoader {
     // MARK: - Convenience Methods
 
     func getWeapon(_ id: String) -> WeaponConfig? {
-        return config?.weapons[id]
+        return config?.weapons?[id]
     }
 
     func getPowerUp(_ id: String) -> PowerUpConfig? {

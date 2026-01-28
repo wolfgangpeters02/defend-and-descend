@@ -190,12 +190,12 @@ struct GameContainerView: View {
                                 }
                             } else {
                                 HStack(spacing: 4) {
-                                    Image(systemName: "dollarsign.circle.fill")
+                                    Image(systemName: "memorychip")
                                         .font(DesignTypography.headline(18))
-                                        .foregroundColor(.yellow)
-                                    Text("\(state.coins)")
+                                        .foregroundColor(DesignColors.success)
+                                    Text("\(state.sessionData)")
                                         .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.yellow)
+                                        .foregroundColor(DesignColors.success)
                                 }
                             }
 
@@ -244,7 +244,7 @@ struct GameContainerView: View {
                                 appState.recordSurvivorRun(
                                     time: state.timeElapsed,
                                     kills: state.stats.enemiesKilled,
-                                    coins: state.coins,
+                                    sessionData: state.sessionData,
                                     gameMode: gameMode,
                                     victory: false,
                                     dataEarned: state.stats.dataEarned,
@@ -272,7 +272,7 @@ struct GameContainerView: View {
                                 appState.recordSurvivorRun(
                                     time: state.timeElapsed,
                                     kills: state.stats.enemiesKilled,
-                                    coins: state.coins,
+                                    sessionData: state.sessionData,
                                     gameMode: gameMode,
                                     victory: true,
                                     dataEarned: state.stats.dataEarned,
@@ -343,19 +343,24 @@ struct GameContainerView: View {
         // Create and configure scene with screen size for full-screen arena
         let scene = GameScene()
         scene.configure(gameState: state, screenSize: screenSize)
+
+        // Initialize boss for boss mode
+        if gameMode == .boss || gameMode == .dungeon, let bossId = state.activeBossId {
+            scene.initializeBoss(bossId: bossId)
+        }
+
         scene.onGameOver = { finalState in
             gameState = finalState
             if finalState.victory {
                 // Handle boss rewards before showing victory
-                if gameMode == .boss || gameMode == .dungeon {
-                    if let bossId = finalState.activeBossId ?? mapArenaToBoss(appState.selectedArena) {
-                        awardedBlueprint = appState.recordBossDefeat(
-                            bossId: bossId,
-                            difficulty: finalState.bossDifficulty ?? .normal,
-                            time: finalState.timeElapsed,
-                            kills: finalState.stats.enemiesKilled
-                        )
-                    }
+                if gameMode == .boss {
+                    let bossId = finalState.activeBossId ?? mapArenaToBoss(appState.selectedArena)
+                    awardedBlueprint = appState.recordBossDefeat(
+                        bossId: bossId,
+                        difficulty: finalState.bossDifficulty ?? .normal,
+                        time: finalState.timeElapsed,
+                        kills: finalState.stats.enemiesKilled
+                    )
                 }
                 showVictory = true
             } else {

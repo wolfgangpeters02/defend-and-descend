@@ -192,7 +192,7 @@ class ArenaRenderer {
 
     /// Create effect zone node
     static func createEffectZoneNode(zone: ArenaEffectZone) -> SKNode {
-        let (color, alpha) = getEffectZoneColor(for: zone.type)
+        let (color, alpha) = getEffectZoneColor(for: zone.type.rawValue)
 
         let node = SKShapeNode(rectOf: CGSize(width: zone.width, height: zone.height))
         node.fillColor = color.withAlphaComponent(alpha)

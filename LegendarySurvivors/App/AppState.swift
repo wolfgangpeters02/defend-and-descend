@@ -104,7 +104,7 @@ class AppState: ObservableObject {
 
     /// Compiled (unlocked) Protocol IDs available for use as weapons/towers
     var compiledProtocolIds: [String] {
-        currentPlayer.compiledProtocols.map { $0.id }
+        currentPlayer.compiledProtocols
     }
 
     /// Legacy support - maps to compiled protocols
@@ -142,9 +142,9 @@ class AppState: ObservableObject {
         }
     }
 
-    func recordRun(kills: Int, time: TimeInterval, coins: Int) {
+    func recordRun(kills: Int, time: TimeInterval, sessionData: Int) {
         // Use the full survivor run recording with Data rewards
-        recordSurvivorRun(time: time, kills: kills, coins: coins, gameMode: .arena, victory: false)
+        recordSurvivorRun(time: time, kills: kills, sessionData: sessionData, gameMode: .arena, victory: false)
     }
 
     func unlockItem(category: String, id: String, rarity: Rarity) {
@@ -282,7 +282,7 @@ class AppState: ObservableObject {
     func recordSurvivorRun(
         time: TimeInterval,
         kills: Int,
-        coins: Int,
+        sessionData: Int,
         gameMode: GameMode,
         victory: Bool,
         dataEarned: Int = 0,

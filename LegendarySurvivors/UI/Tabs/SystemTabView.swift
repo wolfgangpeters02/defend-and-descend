@@ -1,6 +1,51 @@
 import SwiftUI
 import SpriteKit
 
+// MARK: - Currency Info Types
+
+enum CurrencyInfoType: String, Identifiable {
+    case hash
+    case data
+    case power
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .hash: return "HASH (Ħ)"
+        case .data: return "DATA (◈)"
+        case .power: return "POWER (⚡)"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .hash:
+            return "Hash is your primary currency earned passively on the Board. Use it to place Firewalls (towers) and unlock new sectors.\n\nEarn Rate: Based on your Hash/sec upgrade\nSpend: Tower placement, sector unlocks"
+        case .data:
+            return "Data is earned by playing Debug Sessions and defeating enemies. Use it in the Arsenal to upgrade your Protocols.\n\nEarn: Kill enemies in Debugger/Boss modes\nSpend: Protocol upgrades"
+        case .power:
+            return "Power (Watts) is your tower capacity. Each Firewall consumes power when placed. Upgrade your PSU to increase capacity.\n\nCapacity: Determined by PSU upgrade\nUsage: Each tower uses power while placed"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .hash: return "number.circle.fill"
+        case .data: return "memorychip"
+        case .power: return "bolt.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .hash: return .cyan
+        case .data: return DesignColors.success
+        case .power: return .yellow
+        }
+    }
+}
+
 // MARK: - System Tab View
 // Main hub with 4 modes: DEBUGGER (Survival), BOSS, MOTHERBOARD (TD), ARSENAL
 
@@ -55,8 +100,10 @@ struct SystemTabView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top navigation bar with exit button
-                topNavigationBar
+                // Top navigation bar only shown if there's an exit button
+                if onExit != nil {
+                    topNavigationBar
+                }
 
                 // Content area
                 contentView
@@ -206,6 +253,7 @@ struct MotherboardView: View {
     @ObservedObject var appState = AppState.shared
     @StateObject private var embeddedGameController = EmbeddedTDGameController()
     @State private var showManualOverride = false
+    @State private var showCurrencyInfo: CurrencyInfoType? = nil
 
     var body: some View {
         GeometryReader { geometry in
@@ -289,7 +337,7 @@ struct MotherboardView: View {
 
     private var motherboardHUD: some View {
         HStack {
-            // Power (⚡) - PSU usage
+            // Power (⚡) - PSU usage - tappable for info
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
                     .foregroundColor(powerColor)
@@ -297,10 +345,11 @@ struct MotherboardView: View {
                     .font(DesignTypography.caption(12))
                     .foregroundColor(powerColor)
             }
+            .onTapGesture { showCurrencyInfo = .power }
 
             Spacer()
 
-            // Hash (Ħ) - Currency
+            // Hash (Ħ) - Currency - tappable for info
             HStack(spacing: 4) {
                 Image(systemName: "number.circle.fill")
                     .foregroundColor(.cyan)
@@ -311,6 +360,7 @@ struct MotherboardView: View {
                     .font(DesignTypography.caption(10))
                     .foregroundColor(DesignColors.muted)
             }
+            .onTapGesture { showCurrencyInfo = .hash }
 
             Spacer()
 
@@ -336,6 +386,9 @@ struct MotherboardView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(DesignColors.surface.opacity(0.85))
+        .sheet(item: $showCurrencyInfo) { info in
+            CurrencyInfoSheet(info: info)
+        }
     }
 
     private var efficiencyColor: Color {
@@ -1211,6 +1264,7 @@ struct GridPatternView: View {
 struct ArsenalView: View {
     @ObservedObject var appState = AppState.shared
     @State private var selectedProtocol: Protocol?
+    @State private var showCurrencyInfo: CurrencyInfoType? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1222,7 +1276,7 @@ struct ArsenalView: View {
 
                 Spacer()
 
-                // Data balance
+                // Data balance - tappable for info
                 HStack(spacing: 6) {
                     Image(systemName: "memorychip")
                         .foregroundColor(DesignColors.success)
@@ -1230,8 +1284,12 @@ struct ArsenalView: View {
                         .font(DesignTypography.headline(18))
                         .foregroundColor(DesignColors.success)
                 }
+                .onTapGesture { showCurrencyInfo = .data }
             }
             .padding()
+            .sheet(item: $showCurrencyInfo) { info in
+                CurrencyInfoSheet(info: info)
+            }
 
             // Equipped protocol
             equippedSection
@@ -1800,202 +1858,153 @@ struct BossEncounter: Identifiable {
 
 struct DebuggerModeView: View {
     @ObservedObject var appState = AppState.shared
+    @State private var showCurrencyInfo: CurrencyInfoType? = nil
     let onLaunch: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header - compact
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("DEBUGGER_MODE")
-                        .font(DesignTypography.display(28))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DEBUGGER")
+                        .font(DesignTypography.display(24))
                         .foregroundColor(.white)
                     Text("Memory Core Survival")
-                        .font(DesignTypography.caption(12))
+                        .font(DesignTypography.caption(11))
                         .foregroundColor(DesignColors.muted)
                 }
 
                 Spacer()
 
                 // Data balance
-                HStack(spacing: 6) {
-                    Text("◈")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(DesignColors.primary)
-                    Text("\(appState.currentPlayer.data)")
-                        .font(DesignTypography.headline(18))
-                        .foregroundColor(DesignColors.primary)
-                }
+                currencyDisplay
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Loadout preview
-                    loadoutSection
+            // Content - no scroll needed
+            VStack(spacing: 16) {
+                // Loadout preview
+                loadoutSection
 
-                    // Arena preview
-                    arenaPreview
+                // Stats row - inline
+                statsRow
 
-                    // Stats
-                    statsSection
+                Spacer()
 
-                    // Launch button
-                    launchButton
-                }
-                .padding()
+                // Launch button - always at bottom
+                launchButton
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private var currencyDisplay: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "memorychip")
+                .font(.system(size: 14))
+            Text("\(appState.currentPlayer.data)")
+                .font(DesignTypography.headline(16))
+        }
+        .foregroundColor(DesignColors.success)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(DesignColors.success.opacity(0.15))
+        .cornerRadius(8)
+        .onTapGesture { showCurrencyInfo = .data }
+        .sheet(item: $showCurrencyInfo) { info in
+            CurrencyInfoSheet(info: info)
         }
     }
 
     private var loadoutSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text("LOADOUT")
-                .font(DesignTypography.caption(12))
+                .font(DesignTypography.caption(10))
                 .foregroundColor(DesignColors.muted)
 
             if let equipped = appState.currentPlayer.equippedProtocol() {
-                HStack {
+                HStack(spacing: 12) {
                     Image(systemName: equipped.iconName)
-                        .font(.system(size: 32))
+                        .font(.system(size: 28))
                         .foregroundColor(Color(hex: equipped.color) ?? .cyan)
-                        .frame(width: 50, height: 50)
+                        .frame(width: 44, height: 44)
                         .background(DesignColors.surface)
                         .cornerRadius(10)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(equipped.name)
-                            .font(DesignTypography.headline(16))
+                            .font(DesignTypography.headline(15))
                             .foregroundColor(.white)
 
-                        Text("DMG: \(Int(equipped.weaponStats.damage)) | RATE: \(String(format: "%.1f", equipped.weaponStats.fireRate))/s")
-                            .font(DesignTypography.caption(11))
+                        Text("DMG \(Int(equipped.weaponStats.damage)) • \(String(format: "%.1f", equipped.weaponStats.fireRate))/s")
+                            .font(DesignTypography.caption(10))
                             .foregroundColor(DesignColors.muted)
                     }
 
                     Spacer()
 
-                    Text("LV \(equipped.level)")
-                        .font(DesignTypography.headline(16))
+                    Text("LV\(equipped.level)")
+                        .font(DesignTypography.headline(14))
                         .foregroundColor(DesignColors.primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
                         .background(DesignColors.primary.opacity(0.2))
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                 }
-                .padding()
+                .padding(12)
                 .background(DesignColors.surface)
-                .cornerRadius(12)
+                .cornerRadius(10)
             }
         }
     }
 
-    private var arenaPreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("ARENA")
-                .font(DesignTypography.caption(12))
-                .foregroundColor(DesignColors.muted)
+    private var statsRow: some View {
+        HStack(spacing: 12) {
+            statPill(
+                label: "BEST",
+                value: formatTime(appState.currentPlayer.survivorStats.longestSurvival),
+                icon: "clock.fill",
+                color: DesignColors.primary
+            )
 
-            VStack(spacing: 12) {
-                // Arena visual preview
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(hex: "#0a0a0f") ?? .black)
-                        .frame(height: 120)
+            statPill(
+                label: "KILLS",
+                value: "\(appState.currentPlayer.survivorStats.totalSurvivorKills)",
+                icon: "flame.fill",
+                color: DesignColors.warning
+            )
 
-                    // Grid pattern
-                    Image(systemName: "square.grid.3x3")
-                        .font(.system(size: 60))
-                        .foregroundColor(DesignColors.primary.opacity(0.1))
-
-                    // RAM module icons
-                    HStack(spacing: 30) {
-                        ForEach(0..<3, id: \.self) { _ in
-                            Image(systemName: "memorychip")
-                                .font(.system(size: 20))
-                                .foregroundColor(DesignColors.primary.opacity(0.3))
-                        }
-                    }
-                }
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("MEMORY CORE")
-                            .font(DesignTypography.headline(16))
-                            .foregroundColor(.white)
-                        Text("Endless survival with dynamic events")
-                            .font(DesignTypography.caption(11))
-                            .foregroundColor(DesignColors.muted)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("1000 × 800")
-                            .font(DesignTypography.caption(10))
-                            .foregroundColor(DesignColors.muted)
-                        Text("6 RAM MODULES")
-                            .font(DesignTypography.caption(10))
-                            .foregroundColor(DesignColors.muted)
-                    }
-                }
-            }
-            .padding()
-            .background(DesignColors.surface)
-            .cornerRadius(12)
+            statPill(
+                label: "RUNS",
+                value: "\(appState.currentPlayer.survivorStats.arenaRuns)",
+                icon: "play.fill",
+                color: DesignColors.success
+            )
         }
     }
 
-    private var statsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("PERSONAL BEST")
-                .font(DesignTypography.caption(12))
-                .foregroundColor(DesignColors.muted)
-
-            HStack(spacing: 16) {
-                statBox(
-                    label: "LONGEST UPTIME",
-                    value: formatTime(appState.currentPlayer.survivorStats.longestSurvival),
-                    icon: "clock.fill",
-                    color: DesignColors.primary
-                )
-
-                statBox(
-                    label: "TOTAL KILLS",
-                    value: "\(appState.currentPlayer.survivorStats.totalSurvivorKills)",
-                    icon: "flame.fill",
-                    color: DesignColors.warning
-                )
-
-                statBox(
-                    label: "RUNS",
-                    value: "\(appState.currentPlayer.survivorStats.arenaRuns)",
-                    icon: "play.circle.fill",
-                    color: DesignColors.success
-                )
-            }
-        }
-    }
-
-    private func statBox(label: String, value: String, icon: String, color: Color) -> some View {
-        VStack(spacing: 6) {
+    private func statPill(label: String, value: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 18))
+                .font(.system(size: 12))
                 .foregroundColor(color)
 
-            Text(value)
-                .font(DesignTypography.headline(16))
-                .foregroundColor(.white)
-
-            Text(label)
-                .font(DesignTypography.caption(8))
-                .foregroundColor(DesignColors.muted)
-                .multilineTextAlignment(.center)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(value)
+                    .font(DesignTypography.headline(13))
+                    .foregroundColor(.white)
+                Text(label)
+                    .font(DesignTypography.caption(8))
+                    .foregroundColor(DesignColors.muted)
+            }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 8)
         .background(DesignColors.surface)
-        .cornerRadius(10)
+        .cornerRadius(8)
     }
 
     private var launchButton: some View {
@@ -2003,15 +2012,15 @@ struct DebuggerModeView: View {
             HapticsService.shared.play(.medium)
             onLaunch()
         } label: {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: "play.fill")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
                 Text("START DEBUG SESSION")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
             }
             .foregroundColor(.black)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
+            .padding(.vertical, 16)
             .background(
                 LinearGradient(
                     colors: [DesignColors.primary, DesignColors.primary.opacity(0.8)],
@@ -2116,7 +2125,7 @@ struct BossEncountersView: View {
         switch difficulty {
         case .normal: return DesignColors.success
         case .hard: return DesignColors.warning
-        case .nightmare: return DesignColors.error
+        case .nightmare: return DesignColors.danger
         }
     }
 
@@ -2848,6 +2857,54 @@ struct DebugGameView: View {
         let minutes = Int(seconds) / 60
         let secs = Int(seconds) % 60
         return String(format: "%d:%02d", minutes, secs)
+    }
+}
+
+// MARK: - Currency Info Sheet
+
+struct CurrencyInfoSheet: View {
+    let info: CurrencyInfoType
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header
+            HStack {
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(DesignColors.muted)
+                }
+            }
+            .padding(.horizontal)
+
+            // Icon and title
+            VStack(spacing: 12) {
+                Image(systemName: info.icon)
+                    .font(.system(size: 48))
+                    .foregroundColor(info.color)
+
+                Text(info.title)
+                    .font(DesignTypography.display(24))
+                    .foregroundColor(.white)
+            }
+
+            // Description
+            Text(info.description)
+                .font(DesignTypography.body(14))
+                .foregroundColor(DesignColors.textSecondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
+            Spacer()
+        }
+        .padding(.top, 20)
+        .background(DesignColors.background)
+        .presentationDetents([.height(320)])
+        .presentationDragIndicator(.visible)
     }
 }
 

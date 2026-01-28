@@ -216,9 +216,9 @@ class TDGameScene: SKScene {
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
         guard let cameraNode = cameraNode, let view = gesture.view else { return }
 
-        // CRITICAL: Suppress camera panning when in tower placement mode
-        // This prevents the "wishy-washy" UX where map moves while placing towers
-        if isInPlacementMode {
+        // CRITICAL: Suppress camera panning when in tower placement mode OR dragging tower
+        // This prevents the "wishy-washy" UX where map moves while placing/moving towers
+        if isInPlacementMode || isDragging {
             gesture.setTranslation(.zero, in: view)
             return
         }
@@ -2810,8 +2810,17 @@ class TDGameScene: SKScene {
         cancelLongPress()
 
         if isDragging, let draggedId = draggedTowerId {
-            // Check for merge drop first (higher priority)
-            if let targetId = findMergeTargetAtLocation(location), targetId != draggedId {
+            // Check if dropped in removal zone (bottom of visible screen = deck area)
+            let touchInView = touch.location(in: self.view)
+            let viewHeight = self.view?.bounds.height ?? 800
+            let removalZoneThreshold = viewHeight * 0.85  // Bottom 15% of screen
+
+            if touchInView.y > removalZoneThreshold {
+                // Tower dropped in removal zone - remove it
+                performTowerRemoval(towerId: draggedId)
+            }
+            // Check for merge drop (higher priority)
+            else if let targetId = findMergeTargetAtLocation(location), targetId != draggedId {
                 performMerge(sourceTowerId: draggedId, targetTowerId: targetId)
             }
             // Check for move to empty slot
@@ -3061,6 +3070,45 @@ class TDGameScene: SKScene {
             // Merge failed - play error feedback
             HapticsService.shared.play(.error)
         }
+    }
+
+    private func performTowerRemoval(towerId: String) {
+        guard var state = state,
+              let towerIndex = state.towers.firstIndex(where: { $0.id == towerId })
+        else { return }
+
+        let tower = state.towers[towerIndex]
+
+        // Free the slot
+        if let slotIndex = state.towerSlots.firstIndex(where: { $0.id == tower.slotId }) {
+            state.towerSlots[slotIndex].occupied = false
+            state.towerSlots[slotIndex].towerId = nil
+        }
+
+        // Remove tower from state
+        state.towers.remove(at: towerIndex)
+
+        // Animate removal
+        if let towerNode = towerNodes[towerId] {
+            let fadeOut = SKAction.fadeOut(withDuration: 0.2)
+            let scaleDown = SKAction.scale(to: 0.5, duration: 0.2)
+            let group = SKAction.group([fadeOut, scaleDown])
+            let remove = SKAction.removeFromParent()
+            towerNode.run(SKAction.sequence([group, remove]))
+        }
+
+        // Remove from tracking
+        towerNodes.removeValue(forKey: towerId)
+
+        // Update state
+        self.state = state
+        gameStateDelegate?.gameStateUpdated(state)
+
+        // Persist
+        StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
+
+        // Feedback
+        HapticsService.shared.play(.light)
     }
 
     private func endDrag() {
@@ -3553,11 +3601,6 @@ class TDGameScene: SKScene {
     /// Get current camera position in game coordinates
     var cameraPosition: CGPoint {
         cameraNode?.position ?? CGPoint(x: size.width / 2, y: size.height / 2)
-    }
-
-    /// Get current camera scale (zoom level)
-    var cameraScale: CGFloat {
-        currentScale
     }
 
     /// Convert screen touch position to game coordinates, accounting for camera

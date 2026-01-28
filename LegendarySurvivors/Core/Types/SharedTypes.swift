@@ -288,7 +288,7 @@ struct GuardianStats: Codable {
     var speed: CGFloat = 200         // Movement speed (Survivor only)
     var armor: CGFloat = 0           // Damage reduction (Survivor only)
     var regen: CGFloat = 1.5         // HP regen per second (Survivor only)
-    var pickupRange: CGFloat = 50    // Coin/XP pickup range (Survivor only)
+    var pickupRange: CGFloat = 50    // Data/XP pickup range (Survivor only)
 
     // TD-only stats
     var maxTowers: Int = 5           // Max towers placeable (TD only)

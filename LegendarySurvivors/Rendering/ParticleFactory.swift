@@ -72,8 +72,8 @@ class ParticleFactory {
         }
     }
 
-    /// Create coin sparkle effect
-    static func createCoinSparkle(
+    /// Create Data sparkle effect (green)
+    static func createDataSparkle(
         state: inout GameState,
         x: CGFloat,
         y: CGFloat
@@ -86,12 +86,12 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-sparkle-\(i)",
-                type: .coin,
+                type: .data,
                 x: x,
                 y: y,
                 lifetime: 0.4,
                 createdAt: now,
-                color: "#ffcc00",
+                color: "#22c55e",
                 size: CGFloat.random(in: 2...4),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
                 shape: .star

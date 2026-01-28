@@ -6,8 +6,9 @@ import CoreGraphics
 class PlayerSystem {
     /// Update player based on input
     static func update(state: inout GameState, input: InputState, context: FrameContext) {
-        // Check invulnerability
-        if state.player.invulnerable && context.timestamp > state.player.invulnerableUntil {
+        // Check invulnerability (use game time, not context.timestamp which is SpriteKit time)
+        let currentTime = state.startTime + state.timeElapsed
+        if state.player.invulnerable && currentTime > state.player.invulnerableUntil {
             state.player.invulnerable = false
         }
 
