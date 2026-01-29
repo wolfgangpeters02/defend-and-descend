@@ -5,7 +5,6 @@ import SpriteKit
 
 enum CurrencyInfoType: String, Identifiable {
     case hash
-    case data
     case power
 
     var id: String { rawValue }
@@ -13,7 +12,6 @@ enum CurrencyInfoType: String, Identifiable {
     var title: String {
         switch self {
         case .hash: return "HASH (Ħ)"
-        case .data: return "DATA (◈)"
         case .power: return "POWER (⚡)"
         }
     }
@@ -21,9 +19,7 @@ enum CurrencyInfoType: String, Identifiable {
     var description: String {
         switch self {
         case .hash:
-            return "Hash is your primary currency earned passively on the Board. Use it to place Firewalls (towers) and unlock new sectors.\n\nEarn Rate: Based on your Hash/sec upgrade\nSpend: Tower placement, sector unlocks"
-        case .data:
-            return "Data is earned by playing Debug Sessions and defeating enemies. Use it in the Arsenal to upgrade your Protocols.\n\nEarn: Kill enemies in Debugger/Boss modes\nSpend: Protocol upgrades"
+            return "Hash is your universal currency earned passively on the Board and from Boss fights. Use it to place Firewalls (towers), unlock Protocols, and upgrade your Arsenal.\n\nEarn: Passive income + Boss rewards\nSpend: Tower placement, Protocol upgrades"
         case .power:
             return "Power (Watts) is your tower capacity. Each Firewall consumes power when placed. Upgrade your PSU to increase capacity.\n\nCapacity: Determined by PSU upgrade\nUsage: Each tower uses power while placed"
         }
@@ -32,7 +28,6 @@ enum CurrencyInfoType: String, Identifiable {
     var icon: String {
         switch self {
         case .hash: return "number.circle.fill"
-        case .data: return "memorychip"
         case .power: return "bolt.fill"
         }
     }
@@ -40,44 +35,39 @@ enum CurrencyInfoType: String, Identifiable {
     var color: Color {
         switch self {
         case .hash: return .cyan
-        case .data: return DesignColors.success
         case .power: return .yellow
         }
     }
 }
 
 // MARK: - System Tab View
-// Main hub with 4 modes: DEBUGGER (Survival), BOSS, MOTHERBOARD (TD), ARSENAL
+// Main hub with 3 tabs: BOARD (TD idle), BOSS (encounters), ARSENAL (protocols)
 
 enum SystemTab: String, CaseIterable {
-    case debugger = "DEBUGGER"
-    case boss = "BOSS"
     case motherboard = "BOARD"
+    case boss = "BOSS"
     case arsenal = "ARSENAL"
 
     var icon: String {
         switch self {
-        case .debugger: return "play.circle.fill"
-        case .boss: return "flame.fill"
         case .motherboard: return "cpu"
+        case .boss: return "flame.fill"
         case .arsenal: return "shield.lefthalf.filled"
         }
     }
 
     var color: Color {
         switch self {
-        case .debugger: return DesignColors.primary
-        case .boss: return DesignColors.warning
         case .motherboard: return DesignColors.success
+        case .boss: return DesignColors.warning
         case .arsenal: return DesignColors.secondary
         }
     }
 
     var subtitle: String {
         switch self {
-        case .debugger: return "SURVIVAL"
-        case .boss: return "ENCOUNTERS"
         case .motherboard: return "TD MODE"
+        case .boss: return "ENCOUNTERS"
         case .arsenal: return "PROTOCOLS"
         }
     }
@@ -85,8 +75,7 @@ enum SystemTab: String, CaseIterable {
 
 struct SystemTabView: View {
     @ObservedObject var appState = AppState.shared
-    @State private var selectedTab: SystemTab = .debugger
-    @State private var showSurvivalGame = false
+    @State private var selectedTab: SystemTab = .motherboard
     @State private var showBossGame = false
     @State private var selectedBoss: BossEncounter?
     @State private var selectedDifficulty: BossDifficulty = .normal
@@ -112,15 +101,6 @@ struct SystemTabView: View {
                 customTabBar
             }
         }
-        .fullScreenCover(isPresented: $showSurvivalGame) {
-            DebugGameView(
-                sector: SectorLibrary.theRam,  // Memory Core arena
-                protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
-                onExit: {
-                    showSurvivalGame = false
-                }
-            )
-        }
         .fullScreenCover(item: $selectedBoss) { boss in
             BossGameView(
                 boss: boss,
@@ -138,10 +118,8 @@ struct SystemTabView: View {
     @ViewBuilder
     private var contentView: some View {
         switch selectedTab {
-        case .debugger:
-            DebuggerModeView(onLaunch: {
-                showSurvivalGame = true
-            })
+        case .motherboard:
+            MotherboardView()
         case .boss:
             BossEncountersView(
                 selectedDifficulty: $selectedDifficulty,
@@ -149,8 +127,6 @@ struct SystemTabView: View {
                     selectedBoss = boss
                 }
             )
-        case .motherboard:
-            MotherboardView()
         case .arsenal:
             ArsenalView()
         }
@@ -465,7 +441,7 @@ struct MotherboardView: View {
                         .font(DesignTypography.headline(18))
                         .foregroundColor(.white)
 
-                    Text("\(TowerSystem.towerPlacementCost(rarity: proto.rarity))W")
+                    Text("Ħ\(TowerSystem.towerPlacementCost(rarity: proto.rarity))")
                         .font(DesignTypography.caption(11))
                         .fontWeight(.bold)
                         .foregroundColor(embeddedGameController.canAffordDraggedTower ? DesignColors.primary : DesignColors.danger)
@@ -536,6 +512,13 @@ class EmbeddedTDGameController: ObservableObject {
                 self?.selectedSectorForUnlock = sectorId
                 self?.showSectorUnlockPanel = true
             }
+        }
+        handler.onGetUnlockedSectorIds = {
+            // Get unlocked sectors from AppState (which holds current player)
+            // PSU is always included as the starter sector
+            var sectors = AppState.shared.currentPlayer.unlockedSectorIds
+            sectors.insert(SectorID.power.rawValue)  // Ensure PSU is always unlocked
+            return sectors
         }
 
         // Scene size based on map dimensions
@@ -743,6 +726,7 @@ private class EmbeddedTDDelegateHandler: TDGameSceneDelegate {
     var onGameStateUpdated: ((TDGameState) -> Void)?
     var onSystemFrozen: (() -> Void)?
     var onGateSelected: ((String) -> Void)?
+    var onGetUnlockedSectorIds: (() -> Set<String>)?
 
     func gameStateUpdated(_ state: TDGameState) {
         onGameStateUpdated?(state)
@@ -762,6 +746,16 @@ private class EmbeddedTDDelegateHandler: TDGameSceneDelegate {
 
     func systemFrozen() {
         onSystemFrozen?()
+    }
+
+    func getUnlockedSectorIds() -> Set<String> {
+        // Get unlocked sectors from player profile via callback
+        // PSU (power) is always unlocked as the starter sector
+        return onGetUnlockedSectorIds?() ?? Set([SectorID.power.rawValue])
+    }
+
+    func spawnPointTapped(_ lane: SectorLane) {
+        // Not used in embedded view - spawn points managed by main game flow
     }
 }
 
@@ -1007,6 +1001,27 @@ struct EmbeddedProtocolDeckCard: View {
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
             }
             .foregroundColor(canAfford ? DesignColors.primary : .red.opacity(0.7))
+
+            // Stats row - power and damage
+            HStack(spacing: 6) {
+                // Power consumption
+                HStack(spacing: 1) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 8))
+                    Text("\(`protocol`.firewallStats.powerDraw)")
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                }
+                .foregroundColor(.yellow.opacity(0.8))
+
+                // Damage
+                HStack(spacing: 1) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 8))
+                    Text("\(Int(`protocol`.firewallStats.damage))")
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                }
+                .foregroundColor(.orange.opacity(0.8))
+            }
         }
         .opacity(canAfford ? 1.0 : 0.5)
         .animation(.easeOut(duration: 0.15), value: isDragging)
@@ -1217,7 +1232,7 @@ struct ProtocolBuildCard: View {
                 .font(.system(size: 24))
                 .foregroundColor(Color(hex: `protocol`.color) ?? .cyan)
 
-            Text("\(Int(`protocol`.firewallStats.damage))W")
+            Text("\(Int(`protocol`.firewallStats.damage))")
                 .font(DesignTypography.caption(10))
                 .foregroundColor(DesignColors.muted)
         }
@@ -1276,15 +1291,16 @@ struct ArsenalView: View {
 
                 Spacer()
 
-                // Data balance - tappable for info
+                // Hash balance - tappable for info
                 HStack(spacing: 6) {
-                    Image(systemName: "memorychip")
-                        .foregroundColor(DesignColors.success)
-                    Text("\(appState.currentPlayer.data)")
+                    Text("Ħ")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(DesignColors.primary)
+                    Text("\(appState.currentPlayer.hash)")
                         .font(DesignTypography.headline(18))
-                        .foregroundColor(DesignColors.success)
+                        .foregroundColor(DesignColors.primary)
                 }
-                .onTapGesture { showCurrencyInfo = .data }
+                .onTapGesture { showCurrencyInfo = .hash }
             }
             .padding()
             .sheet(item: $showCurrencyInfo) { info in
@@ -1417,7 +1433,7 @@ struct ProtocolCard: View {
                     .lineLimit(1)
 
                 if isLocked {
-                    Text("\(`protocol`.compileCost)◈")
+                    Text("Ħ\(`protocol`.compileCost)")
                         .font(DesignTypography.caption(10))
                         .foregroundColor(DesignColors.muted)
                 } else {
@@ -1458,6 +1474,13 @@ struct ProtocolDetailSheet: View {
         appState.currentPlayer.isProtocolCompiled(`protocol`.id)
     }
 
+    /// Protocol with player's level applied for accurate stat display
+    var leveledProtocol: Protocol {
+        var proto = `protocol`
+        proto.level = currentLevel
+        return proto
+    }
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -1496,9 +1519,9 @@ struct ProtocolDetailSheet: View {
                                     .font(DesignTypography.caption(11))
                                     .foregroundColor(DesignColors.muted)
 
-                                ProtocolStatRow(label: "Damage", value: "\(Int(`protocol`.firewallStats.damage))")
-                                ProtocolStatRow(label: "Range", value: "\(Int(`protocol`.firewallStats.range))")
-                                ProtocolStatRow(label: "Fire Rate", value: String(format: "%.1f/s", `protocol`.firewallStats.fireRate))
+                                ProtocolStatRow(label: "Damage", value: "\(Int(leveledProtocol.firewallStats.damage))")
+                                ProtocolStatRow(label: "Range", value: "\(Int(leveledProtocol.firewallStats.range))")
+                                ProtocolStatRow(label: "Fire Rate", value: String(format: "%.1f/s", leveledProtocol.firewallStats.fireRate))
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -1511,9 +1534,9 @@ struct ProtocolDetailSheet: View {
                                     .font(DesignTypography.caption(11))
                                     .foregroundColor(DesignColors.muted)
 
-                                ProtocolStatRow(label: "Damage", value: "\(Int(`protocol`.weaponStats.damage))")
-                                ProtocolStatRow(label: "Fire Rate", value: String(format: "%.1f/s", `protocol`.weaponStats.fireRate))
-                                ProtocolStatRow(label: "Projectiles", value: "\(`protocol`.weaponStats.projectileCount)")
+                                ProtocolStatRow(label: "Damage", value: "\(Int(leveledProtocol.weaponStats.damage))")
+                                ProtocolStatRow(label: "Fire Rate", value: String(format: "%.1f/s", leveledProtocol.weaponStats.fireRate))
+                                ProtocolStatRow(label: "Projectiles", value: "\(leveledProtocol.weaponStats.projectileCount)")
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -1532,9 +1555,9 @@ struct ProtocolDetailSheet: View {
                                     HStack {
                                         Image(systemName: "hammer.fill")
                                         Text("COMPILE")
-                                        Text("\(`protocol`.compileCost)◈")
+                                        Text("Ħ\(`protocol`.compileCost)")
                                             .foregroundColor(
-                                                appState.currentPlayer.data >= `protocol`.compileCost ?
+                                                appState.currentPlayer.hash >= `protocol`.compileCost ?
                                                     DesignColors.success : DesignColors.danger
                                             )
                                     }
@@ -1545,7 +1568,7 @@ struct ProtocolDetailSheet: View {
                                     .background(DesignColors.primary)
                                     .cornerRadius(12)
                                 }
-                                .disabled(appState.currentPlayer.data < `protocol`.compileCost)
+                                .disabled(appState.currentPlayer.hash < `protocol`.compileCost)
                             } else {
                                 // Equip button
                                 if appState.currentPlayer.equippedProtocolId != `protocol`.id {
@@ -1574,9 +1597,9 @@ struct ProtocolDetailSheet: View {
                                         HStack {
                                             Image(systemName: "arrow.up.circle.fill")
                                             Text("UPGRADE TO LV \(currentLevel + 1)")
-                                            Text("\(cost)◈")
+                                            Text("Ħ\(cost)")
                                                 .foregroundColor(
-                                                    appState.currentPlayer.data >= cost ?
+                                                    appState.currentPlayer.hash >= cost ?
                                                         DesignColors.success : DesignColors.danger
                                                 )
                                         }
@@ -1591,7 +1614,7 @@ struct ProtocolDetailSheet: View {
                                                 .stroke(DesignColors.primary, lineWidth: 1)
                                         )
                                     }
-                                    .disabled(appState.currentPlayer.data < cost)
+                                    .disabled(appState.currentPlayer.hash < cost)
                                 }
                             }
                         }
@@ -1613,10 +1636,10 @@ struct ProtocolDetailSheet: View {
     }
 
     private func compileProtocol() {
-        guard appState.currentPlayer.data >= `protocol`.compileCost else { return }
+        guard appState.currentPlayer.hash >= `protocol`.compileCost else { return }
         HapticsService.shared.play(.medium)
         appState.updatePlayer { profile in
-            profile.data -= `protocol`.compileCost
+            profile.hash -= `protocol`.compileCost
             profile.compiledProtocols.append(`protocol`.id)
             profile.protocolLevels[`protocol`.id] = 1
         }
@@ -1631,10 +1654,10 @@ struct ProtocolDetailSheet: View {
 
     private func upgradeProtocol() {
         let cost = `protocol`.baseUpgradeCost * currentLevel
-        guard appState.currentPlayer.data >= cost else { return }
+        guard appState.currentPlayer.hash >= cost else { return }
         HapticsService.shared.play(.medium)
         appState.updatePlayer { profile in
-            profile.data -= cost
+            profile.hash -= cost
             profile.protocolLevels[`protocol`.id] = currentLevel + 1
         }
     }
@@ -1854,191 +1877,6 @@ struct BossEncounter: Identifiable {
     ]
 }
 
-// MARK: - Debugger Mode View (Survival)
-
-struct DebuggerModeView: View {
-    @ObservedObject var appState = AppState.shared
-    @State private var showCurrencyInfo: CurrencyInfoType? = nil
-    let onLaunch: () -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header - compact
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("DEBUGGER")
-                        .font(DesignTypography.display(24))
-                        .foregroundColor(.white)
-                    Text("Memory Core Survival")
-                        .font(DesignTypography.caption(11))
-                        .foregroundColor(DesignColors.muted)
-                }
-
-                Spacer()
-
-                // Data balance
-                currencyDisplay
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-
-            // Content - no scroll needed
-            VStack(spacing: 16) {
-                // Loadout preview
-                loadoutSection
-
-                // Stats row - inline
-                statsRow
-
-                Spacer()
-
-                // Launch button - always at bottom
-                launchButton
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
-        }
-    }
-
-    private var currencyDisplay: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "memorychip")
-                .font(.system(size: 14))
-            Text("\(appState.currentPlayer.data)")
-                .font(DesignTypography.headline(16))
-        }
-        .foregroundColor(DesignColors.success)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(DesignColors.success.opacity(0.15))
-        .cornerRadius(8)
-        .onTapGesture { showCurrencyInfo = .data }
-        .sheet(item: $showCurrencyInfo) { info in
-            CurrencyInfoSheet(info: info)
-        }
-    }
-
-    private var loadoutSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("LOADOUT")
-                .font(DesignTypography.caption(10))
-                .foregroundColor(DesignColors.muted)
-
-            if let equipped = appState.currentPlayer.equippedProtocol() {
-                HStack(spacing: 12) {
-                    Image(systemName: equipped.iconName)
-                        .font(.system(size: 28))
-                        .foregroundColor(Color(hex: equipped.color) ?? .cyan)
-                        .frame(width: 44, height: 44)
-                        .background(DesignColors.surface)
-                        .cornerRadius(10)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(equipped.name)
-                            .font(DesignTypography.headline(15))
-                            .foregroundColor(.white)
-
-                        Text("DMG \(Int(equipped.weaponStats.damage)) • \(String(format: "%.1f", equipped.weaponStats.fireRate))/s")
-                            .font(DesignTypography.caption(10))
-                            .foregroundColor(DesignColors.muted)
-                    }
-
-                    Spacer()
-
-                    Text("LV\(equipped.level)")
-                        .font(DesignTypography.headline(14))
-                        .foregroundColor(DesignColors.primary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(DesignColors.primary.opacity(0.2))
-                        .cornerRadius(6)
-                }
-                .padding(12)
-                .background(DesignColors.surface)
-                .cornerRadius(10)
-            }
-        }
-    }
-
-    private var statsRow: some View {
-        HStack(spacing: 12) {
-            statPill(
-                label: "BEST",
-                value: formatTime(appState.currentPlayer.survivorStats.longestSurvival),
-                icon: "clock.fill",
-                color: DesignColors.primary
-            )
-
-            statPill(
-                label: "KILLS",
-                value: "\(appState.currentPlayer.survivorStats.totalSurvivorKills)",
-                icon: "flame.fill",
-                color: DesignColors.warning
-            )
-
-            statPill(
-                label: "RUNS",
-                value: "\(appState.currentPlayer.survivorStats.arenaRuns)",
-                icon: "play.fill",
-                color: DesignColors.success
-            )
-        }
-    }
-
-    private func statPill(label: String, value: String, icon: String, color: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 12))
-                .foregroundColor(color)
-
-            VStack(alignment: .leading, spacing: 0) {
-                Text(value)
-                    .font(DesignTypography.headline(13))
-                    .foregroundColor(.white)
-                Text(label)
-                    .font(DesignTypography.caption(8))
-                    .foregroundColor(DesignColors.muted)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .padding(.horizontal, 8)
-        .background(DesignColors.surface)
-        .cornerRadius(8)
-    }
-
-    private var launchButton: some View {
-        Button {
-            HapticsService.shared.play(.medium)
-            onLaunch()
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: "play.fill")
-                    .font(.system(size: 18, weight: .bold))
-                Text("START DEBUG SESSION")
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-            }
-            .foregroundColor(.black)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(
-                LinearGradient(
-                    colors: [DesignColors.primary, DesignColors.primary.opacity(0.8)],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(12)
-        }
-    }
-
-    private func formatTime(_ seconds: TimeInterval) -> String {
-        let mins = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return String(format: "%d:%02d", mins, secs)
-    }
-}
-
 // MARK: - Boss Encounters View
 
 struct BossEncountersView: View {
@@ -2061,12 +1899,12 @@ struct BossEncountersView: View {
 
                 Spacer()
 
-                // Data balance
+                // Hash balance
                 HStack(spacing: 6) {
-                    Text("◈")
+                    Text("Ħ")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(DesignColors.primary)
-                    Text("\(appState.currentPlayer.data)")
+                    Text("\(appState.currentPlayer.hash)")
                         .font(DesignTypography.headline(18))
                         .foregroundColor(DesignColors.primary)
                 }
@@ -2131,19 +1969,19 @@ struct BossEncountersView: View {
 
     private func difficultyReward(_ difficulty: BossDifficulty) -> String {
         switch difficulty {
-        case .normal: return "+50◈"
-        case .hard: return "+150◈"
-        case .nightmare: return "+300◈"
+        case .normal: return "+Ħ500"
+        case .hard: return "+Ħ1500"
+        case .nightmare: return "+Ħ3000"
         }
     }
 
     private func isBossUnlocked(_ boss: BossEncounter) -> Bool {
-        boss.unlockCost == 0 || appState.currentPlayer.data >= boss.unlockCost ||
+        boss.unlockCost == 0 || appState.currentPlayer.hash >= boss.unlockCost ||
             appState.currentPlayer.survivorStats.bossesDefeated > 0
     }
 
     private func unlockBoss(_ boss: BossEncounter) {
-        guard appState.currentPlayer.data >= boss.unlockCost else { return }
+        guard appState.currentPlayer.hash >= boss.unlockCost else { return }
         HapticsService.shared.play(.medium)
         // For now, bosses unlock by defeating the first one
     }
@@ -2219,7 +2057,7 @@ struct BossCard: View {
                             .font(.system(size: 20))
                             .foregroundColor(DesignColors.muted)
 
-                        Text("\(boss.unlockCost)◈")
+                        Text("Ħ\(boss.unlockCost)")
                             .font(DesignTypography.caption(10))
                             .foregroundColor(DesignColors.muted)
                     }
@@ -2282,13 +2120,14 @@ struct DebugView: View {
 
                 Spacer()
 
-                // Data balance
+                // Hash balance
                 HStack(spacing: 6) {
-                    Image(systemName: "memorychip")
-                        .foregroundColor(DesignColors.success)
-                    Text("\(appState.currentPlayer.data)")
+                    Text("Ħ")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(DesignColors.primary)
+                    Text("\(appState.currentPlayer.hash)")
                         .font(DesignTypography.headline(18))
-                        .foregroundColor(DesignColors.success)
+                        .foregroundColor(DesignColors.primary)
                 }
             }
             .padding()
@@ -2366,10 +2205,10 @@ struct DebugView: View {
     }
 
     private func unlockSector(_ sector: Sector) {
-        guard appState.currentPlayer.data >= sector.unlockCost else { return }
+        guard appState.currentPlayer.hash >= sector.unlockCost else { return }
         HapticsService.shared.play(.medium)
         appState.updatePlayer { profile in
-            profile.data -= sector.unlockCost
+            profile.hash -= sector.unlockCost
             profile.unlockedSectors.append(sector.id)
         }
     }
@@ -2425,8 +2264,8 @@ struct SectorCard: View {
                 .background(Color(hex: sector.difficulty.color)?.opacity(0.2) ?? .green.opacity(0.2))
                 .cornerRadius(4)
 
-            // Data multiplier
-            Text("◈ x\(String(format: "%.1f", sector.dataMultiplier))")
+            // Hash multiplier
+            Text("Ħ x\(String(format: "%.1f", sector.hashMultiplier))")
                 .font(DesignTypography.caption(11))
                 .foregroundColor(DesignColors.success)
 
@@ -2448,11 +2287,11 @@ struct SectorCard: View {
                         .cornerRadius(8)
                 }
             } else {
-                let canAfford = appState.currentPlayer.data >= sector.unlockCost
+                let canAfford = appState.currentPlayer.hash >= sector.unlockCost
                 Button(action: onUnlock) {
                     HStack {
                         Image(systemName: "lock.fill")
-                        Text("\(sector.unlockCost)◈")
+                        Text("Ħ\(sector.unlockCost)")
                     }
                     .font(DesignTypography.headline(14))
                     .foregroundColor(canAfford ? .white : DesignColors.muted)
@@ -2497,6 +2336,7 @@ struct DebugGameView: View {
     @State private var extractionTimer: Timer?
     @State private var hasExtracted = false
     @State private var inputState = InputState()  // For joystick control
+    @State private var currentScreenSize: CGSize = .zero
 
     // Extraction becomes available after this many seconds
     private let extractionTimeThreshold: TimeInterval = 180  // 3 minutes
@@ -2566,6 +2406,7 @@ struct DebugGameView: View {
             }
             .onChange(of: geometry.size) { newSize in
                 if gameScene == nil && newSize.width > 0 && newSize.height > 0 {
+                    currentScreenSize = newSize
                     setupDebugGame(screenSize: newSize)
                 }
             }
@@ -2573,6 +2414,7 @@ struct DebugGameView: View {
                 print("[DebugGameView] onAppear - geometry: \(geometry.size), gameScene: \(gameScene == nil ? "nil" : "exists")")
                 // Also try on appear in case geometry is already valid
                 if gameScene == nil && geometry.size.width > 0 && geometry.size.height > 0 {
+                    currentScreenSize = geometry.size
                     setupDebugGame(screenSize: geometry.size)
                 }
             }
@@ -2601,14 +2443,16 @@ struct DebugGameView: View {
 
             Spacer()
 
-            // Data collected
+            // Hash collected
             if let state = gameState {
+                let hashAmount = Int(CGFloat(state.stats.enemiesKilled) * sector.hashMultiplier)
                 HStack(spacing: 4) {
-                    Image(systemName: "memorychip")
-                        .foregroundColor(DesignColors.success)
-                    Text("\(Int(CGFloat(state.stats.enemiesKilled) * sector.dataMultiplier))")
+                    Text("Ħ")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(DesignColors.primary)
+                    Text("\(hashAmount)")
                         .font(DesignTypography.headline(14))
-                        .foregroundColor(DesignColors.success)
+                        .foregroundColor(DesignColors.primary)
                 }
             }
 
@@ -2642,15 +2486,16 @@ struct DebugGameView: View {
                         .foregroundColor(DesignColors.success)
                 }
 
-                // Current data
+                // Current hash
                 if let state = gameState {
-                    let baseData = state.stats.enemiesKilled
-                    let multipliedData = Int(CGFloat(baseData) * sector.dataMultiplier)
+                    let baseHash = state.stats.enemiesKilled
+                    let multipliedHash = Int(CGFloat(baseHash) * sector.hashMultiplier)
 
                     HStack(spacing: 4) {
-                        Image(systemName: "memorychip")
-                            .foregroundColor(DesignColors.success)
-                        Text("\(multipliedData) DATA SECURED")
+                        Text("Ħ")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(DesignColors.primary)
+                        Text("\(multipliedHash) HASH SECURED")
                             .font(DesignTypography.body(14))
                             .foregroundColor(.white)
                     }
@@ -2668,7 +2513,7 @@ struct DebugGameView: View {
                         VStack(spacing: 4) {
                             Text("EXTRACT")
                                 .font(DesignTypography.headline(16))
-                            Text("Keep 100% Data")
+                            Text("Keep 100% Hash")
                                 .font(DesignTypography.caption(10))
                                 .opacity(0.7)
                         }
@@ -2730,9 +2575,9 @@ struct DebugGameView: View {
                 // Stats
                 if let state = gameState {
                     VStack(spacing: 12) {
-                        let baseData = state.stats.enemiesKilled
-                        let multipliedData = Int(CGFloat(baseData) * sector.dataMultiplier)
-                        let finalData = showVictory ? multipliedData : multipliedData / 2
+                        let baseHash = state.stats.enemiesKilled
+                        let multipliedHash = Int(CGFloat(baseHash) * sector.hashMultiplier)
+                        let finalHash = showVictory ? multipliedHash : multipliedHash / 2
 
                         HStack {
                             Text("Viruses Eliminated")
@@ -2743,14 +2588,15 @@ struct DebugGameView: View {
                         }
 
                         HStack {
-                            Text("Data Collected")
+                            Text("Hash Earned")
                                 .foregroundColor(DesignColors.muted)
                             Spacer()
                             HStack(spacing: 4) {
-                                Image(systemName: "memorychip")
-                                    .foregroundColor(DesignColors.success)
-                                Text("+\(finalData)")
-                                    .foregroundColor(DesignColors.success)
+                                Text("Ħ")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(DesignColors.primary)
+                                Text("+\(finalHash)")
+                                    .foregroundColor(DesignColors.primary)
                             }
                         }
 
@@ -2769,26 +2615,54 @@ struct DebugGameView: View {
                     .frame(maxWidth: 300)
                 }
 
-                // Exit button
-                Button {
-                    // Award Data before exiting
-                    if let state = gameState {
-                        let baseData = state.stats.enemiesKilled
-                        let multipliedData = Int(CGFloat(baseData) * sector.dataMultiplier)
-                        let finalData = showVictory ? multipliedData : multipliedData / 2
-                        appState.updatePlayer { profile in
-                            profile.data += max(1, finalData)
+                // Buttons
+                HStack(spacing: 16) {
+                    // Retry button
+                    Button {
+                        showGameOver = false
+                        showVictory = false
+                        setupDebugGame(screenSize: currentScreenSize)
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.counterclockwise")
+                            Text("RETRY")
                         }
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
+                        .background(DesignColors.surface)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(DesignColors.primary.opacity(0.5), lineWidth: 1)
+                        )
                     }
-                    onExit()
-                } label: {
-                    Text("COLLECT & EXIT")
-                        .font(DesignTypography.headline(18))
+
+                    // Exit button
+                    Button {
+                        // Award Hash before exiting
+                        if let state = gameState {
+                            let baseHash = state.stats.enemiesKilled
+                            let multipliedHash = Int(CGFloat(baseHash) * sector.hashMultiplier)
+                            let finalHash = showVictory ? multipliedHash : multipliedHash / 2
+                            appState.updatePlayer { profile in
+                                profile.addHash(max(1, finalHash))
+                            }
+                        }
+                        onExit()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.circle")
+                            Text("COLLECT & EXIT")
+                        }
+                        .font(DesignTypography.headline(16))
                         .foregroundColor(.black)
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 16)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
                         .background(DesignColors.primary)
-                        .cornerRadius(12)
+                        .cornerRadius(10)
+                    }
                 }
             }
             .padding()

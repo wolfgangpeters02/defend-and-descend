@@ -25,8 +25,14 @@ class GameStateFactory {
         // Create arena data
         let arena = config.createArenaData(from: arenaConfig)
 
-        // Create weapon from Protocol (unified weapon system)
-        let weapon = gameProtocol.toWeapon()
+        // Apply player's protocol level before converting to weapon
+        var leveledProtocol = gameProtocol
+        if let profile = playerProfile {
+            leveledProtocol.level = profile.protocolLevel(gameProtocol.id)
+        }
+
+        // Create weapon from Protocol (now with correct level for damage scaling)
+        let weapon = leveledProtocol.toWeapon()
 
         // Create player at arena center
         var player = createPlayer(
@@ -116,8 +122,12 @@ class GameStateFactory {
         var arena = config.createArenaData(from: arenaConfig)
         arena.name = sector.name
 
-        // Create weapon from Protocol
-        let weapon = gameProtocol.toWeapon()
+        // Apply player's protocol level before converting to weapon
+        var leveledProtocol = gameProtocol
+        leveledProtocol.level = playerProfile.protocolLevel(gameProtocol.id)
+
+        // Create weapon from Protocol (now with correct level for damage scaling)
+        let weapon = leveledProtocol.toWeapon()
 
         // Create player at arena center
         var player = createPlayer(
@@ -148,7 +158,7 @@ class GameStateFactory {
             currentPowerUpType: "none",
             activeSynergy: nil,
             runStartTime: now,
-            dataMultiplier: sector.dataMultiplier  // Apply sector's data multiplier
+            hashMultiplier: sector.hashMultiplier  // Apply sector's hash multiplier
         )
     }
 
@@ -268,18 +278,24 @@ class GameStateFactory {
         let arenaConfig = config.getArena("memory_core") ?? config.getArena("grasslands")!
         var arena = config.createArenaData(from: arenaConfig)
 
-        // Boss arena is smaller and more intense
-        arena.width = 600
-        arena.height = 600
-        arena.obstacles = []  // No obstacles in boss fights - mechanics ARE the challenge
+        // Boss arena is larger for strategic movement
+        arena.width = 1200
+        arena.height = 900
+        arena.obstacles = createBossPillars()  // Add destructible cover pillars
 
-        // Create weapon from Protocol
-        let weapon = gameProtocol.toWeapon()
+        // Apply player's protocol level before converting to weapon
+        var leveledProtocol = gameProtocol
+        if let profile = playerProfile {
+            leveledProtocol.level = profile.protocolLevel(gameProtocol.id)
+        }
 
-        // Create player at arena center
+        // Create weapon from Protocol (now with correct level for damage scaling)
+        let weapon = leveledProtocol.toWeapon()
+
+        // Create player at center of arena
         var player = createPlayer(
             x: arena.width / 2,
-            y: arena.height * 0.75,  // Player starts in bottom half
+            y: arena.height / 2,  // Player starts in center
             weapon: weapon
         )
 
@@ -323,6 +339,66 @@ class GameStateFactory {
         state.bossDifficulty = difficulty
 
         return state
+    }
+
+    /// Create destructible pillars for boss arena (1200x900)
+    /// Layout: 4 inner ring + 4 outer ring = 8 total
+    private func createBossPillars() -> [Obstacle] {
+        let pillarSize: CGFloat = 80
+        let pillarHealth: CGFloat = 300
+
+        // Pillar positions for 1200x900 arena
+        // Inner ring (quadrant positions)
+        let innerPositions: [(CGFloat, CGFloat)] = [
+            (300, 300),   // Top-left quadrant
+            (900, 300),   // Top-right quadrant
+            (300, 600),   // Bottom-left quadrant
+            (900, 600)    // Bottom-right quadrant
+        ]
+
+        // Outer ring (edge centers)
+        let outerPositions: [(CGFloat, CGFloat)] = [
+            (600, 150),   // Top center
+            (150, 450),   // Left center
+            (1050, 450),  // Right center
+            (600, 750)    // Bottom center
+        ]
+
+        var pillars: [Obstacle] = []
+
+        // Create inner pillars
+        for (index, pos) in innerPositions.enumerated() {
+            pillars.append(Obstacle(
+                id: "pillar_inner_\(index)",
+                x: pos.0 - pillarSize / 2,
+                y: pos.1 - pillarSize / 2,
+                width: pillarSize,
+                height: pillarSize,
+                color: "#4a5568",  // Gray color
+                type: "pillar",
+                isCorrupted: false,
+                health: pillarHealth,
+                maxHealth: pillarHealth
+            ))
+        }
+
+        // Create outer pillars
+        for (index, pos) in outerPositions.enumerated() {
+            pillars.append(Obstacle(
+                id: "pillar_outer_\(index)",
+                x: pos.0 - pillarSize / 2,
+                y: pos.1 - pillarSize / 2,
+                width: pillarSize,
+                height: pillarSize,
+                color: "#4a5568",  // Gray color
+                type: "pillar",
+                isCorrupted: false,
+                health: pillarHealth,
+                maxHealth: pillarHealth
+            ))
+        }
+
+        return pillars
     }
 }
 

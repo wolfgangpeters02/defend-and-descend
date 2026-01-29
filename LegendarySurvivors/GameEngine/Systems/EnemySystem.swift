@@ -169,6 +169,11 @@ class EnemySystem {
         for i in 0..<state.enemies.count {
             if state.enemies[i].isDead { continue }
 
+            // Skip bosses with custom AI - they handle their own movement
+            if state.enemies[i].isBoss && state.activeBossType != nil {
+                continue
+            }
+
             // Proximity activation
             if state.enemies[i].inactive == true {
                 let dx = player.x - state.enemies[i].x
@@ -337,10 +342,10 @@ class EnemySystem {
         state.enemies[enemyIndex].isDead = true
         state.stats.enemiesKilled += 1
 
-        // Survival mode: Earn Data for kills
+        // Survival mode: Earn Hash for kills
         if state.gameMode == .survival || state.gameMode == .arena {
-            let dataValue = enemy.isBoss ? 50 : (enemy.coinValue ?? 1)
-            state.stats.dataEarned += dataValue
+            let hashValue = enemy.isBoss ? 50 : (enemy.coinValue ?? 1)
+            state.stats.hashEarned += hashValue
         }
 
         // Death explosion
@@ -361,8 +366,8 @@ class EnemySystem {
             count: enemy.isBoss ? 20 : 10
         )
 
-        // Drop Data pickup
-        PickupSystem.dropData(state: &state, x: enemy.x, y: enemy.y, value: enemy.coinValue ?? 1)
+        // Drop Hash pickup
+        PickupSystem.dropHash(state: &state, x: enemy.x, y: enemy.y, value: enemy.coinValue ?? 1)
 
         // Explosion on kill ability
         if let explosionRadius = state.player.abilities?.explosionOnKill {

@@ -84,6 +84,11 @@ class ProjectileSystem {
                 candidates = state.enemies
             }
 
+            // Skip enemy collision check for enemy projectiles (they only hit the player)
+            if state.projectiles[i].isEnemyProjectile {
+                continue
+            }
+
             for enemy in candidates {
                 if enemy.isDead { continue }
 
@@ -116,6 +121,49 @@ class ProjectileSystem {
 
             if hit {
                 indicesToRemove.append(i)
+                continue
+            }
+
+            // Check collision with VoidHarbinger pylons (Phase 2 mechanic)
+            if var bossState = state.voidHarbingerState, bossState.phase == 2 {
+                var hitPylon = false
+                for pylon in bossState.pylons where !pylon.isDestroyed {
+                    let dx = pylon.x - state.projectiles[i].x
+                    let dy = pylon.y - state.projectiles[i].y
+                    let dist = sqrt(dx * dx + dy * dy)
+                    let pylonRadius: CGFloat = 30 // Pylon collision radius
+
+                    if dist < pylonRadius + projectileSize {
+                        // Don't damage pylons with enemy projectiles
+                        guard !state.projectiles[i].isEnemyProjectile else { continue }
+
+                        // Deal damage to pylon
+                        VoidHarbingerAI.damagePylon(
+                            pylonId: pylon.id,
+                            damage: state.projectiles[i].damage,
+                            bossState: &bossState
+                        )
+
+                        // Impact effect
+                        ParticleFactory.createImpactEffect(
+                            state: &state,
+                            x: state.projectiles[i].x,
+                            y: state.projectiles[i].y,
+                            weaponType: state.projectiles[i].sourceType ?? "default"
+                        )
+
+                        hitPylon = true
+                        break
+                    }
+                }
+
+                // Save updated boss state
+                state.voidHarbingerState = bossState
+
+                if hitPylon {
+                    indicesToRemove.append(i)
+                    continue
+                }
             }
         }
 

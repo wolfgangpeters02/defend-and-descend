@@ -185,11 +185,12 @@ class VoidHarbingerAI {
         let center = CGPoint(x: arenaWidth / 2, y: arenaHeight / 2)
 
         bossState.pylons = []
+        // Spread pylons wider for 1200x900 arena
         let pylonPositions: [(CGFloat, CGFloat)] = [
-            (center.x - 400, center.y - 400),
-            (center.x + 400, center.y - 400),
-            (center.x - 400, center.y + 400),
-            (center.x + 400, center.y + 400)
+            (center.x - 500, center.y - 350),
+            (center.x + 500, center.y - 350),
+            (center.x - 500, center.y + 350),
+            (center.x + 500, center.y + 350)
         ]
 
         for pos in pylonPositions {
@@ -497,6 +498,13 @@ class VoidHarbingerAI {
                 if distance < mutableZone.radius &&
                    gameState.player.invulnerableUntil < gameState.gameTime {
                     gameState.player.health -= mutableZone.damage * CGFloat(deltaTime)
+
+                    // Check for death
+                    if gameState.player.health <= 0 {
+                        gameState.player.health = 0
+                        gameState.isGameOver = true
+                        gameState.victory = false
+                    }
                 }
             }
 
@@ -592,11 +600,11 @@ class VoidHarbingerAI {
             let rift = bossState.voidRifts[i]
             let angleRad = rift.angle * .pi / 180
 
-            // Rift extends from center
+            // Rift extends from center (increased length for larger arena)
             let riftStartX = center.x
             let riftStartY = center.y
-            let riftEndX = center.x + cos(angleRad) * 500
-            let riftEndY = center.y + sin(angleRad) * 500
+            let riftEndX = center.x + cos(angleRad) * 700  // Increased from 500
+            let riftEndY = center.y + sin(angleRad) * 700
 
             let distance = pointToLineDistance(
                 px: gameState.player.x, py: gameState.player.y,
@@ -607,6 +615,13 @@ class VoidHarbingerAI {
             if distance < rift.width / 2 + 15 && // 15 = player radius
                gameState.player.invulnerableUntil < gameState.gameTime {
                 gameState.player.health -= rift.damage * CGFloat(deltaTime)
+
+                // Check for death
+                if gameState.player.health <= 0 {
+                    gameState.player.health = 0
+                    gameState.isGameOver = true
+                    gameState.victory = false
+                }
             }
         }
     }
@@ -677,6 +692,13 @@ class VoidHarbingerAI {
         if distanceFromCenter > bossState.arenaRadius {
             // 40 damage per second outside
             gameState.player.health -= 40 * CGFloat(deltaTime)
+
+            // Check for death
+            if gameState.player.health <= 0 {
+                gameState.player.health = 0
+                gameState.isGameOver = true
+                gameState.victory = false
+            }
 
             // Push player back towards center
             if distanceFromCenter > 0 {

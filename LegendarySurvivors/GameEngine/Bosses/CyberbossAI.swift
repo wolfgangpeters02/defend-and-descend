@@ -21,7 +21,7 @@ class CyberbossAI {
         var puddleSpawnInterval: Double = 2.0
 
         var laserBeams: [LaserBeam] = []
-        var laserRotationSpeed: CGFloat = 45.0 // degrees per second
+        var laserRotationSpeed: CGFloat = 25.0 // degrees per second (slowed for playability)
 
         var damagePuddles: [DamagePuddle] = []
 
@@ -45,12 +45,14 @@ class CyberbossAI {
         var x: CGFloat
         var y: CGFloat
         let radius: CGFloat
-        let damage: CGFloat
+        let damage: CGFloat         // DPS while active
+        let popDamage: CGFloat      // Burst damage when puddle pops
         let damageInterval: Double
         var lastDamageTime: Double
         var lifetime: Double
-        let maxLifetime: Double
-        let fadeStartTime: Double
+        let maxLifetime: Double     // Total duration (4 seconds)
+        let warningDuration: Double // Warning phase (1 second, no damage)
+        var hasPopped: Bool = false // Track if pop damage was already dealt
     }
 
     // MARK: - Initialization
@@ -101,11 +103,61 @@ class CyberbossAI {
             break
         }
 
+        // Apply movement with collision checking
+        applyMovement(boss: &boss, gameState: gameState, deltaTime: deltaTime)
+
         // Update damage puddles
         updateDamagePuddles(bossState: &bossState, gameState: &gameState, deltaTime: deltaTime)
 
         // Update laser beams
         updateLaserBeams(bossState: &bossState, boss: boss, gameState: &gameState, deltaTime: deltaTime)
+    }
+
+    // MARK: - Movement Application
+
+    private static func applyMovement(
+        boss: inout Enemy,
+        gameState: GameState,
+        deltaTime: TimeInterval
+    ) {
+        // Calculate new position from velocity
+        let moveX = boss.velocityX * CGFloat(deltaTime)
+        let moveY = boss.velocityY * CGFloat(deltaTime)
+
+        var newX = boss.x + moveX
+        var newY = boss.y + moveY
+
+        let bossSize = boss.size ?? 60
+
+        // Resolve obstacle collisions
+        for obstacle in gameState.arena.obstacles {
+            // Check X movement
+            if MathUtils.circleRectOverlap(
+                circleX: newX, circleY: boss.y, radius: bossSize,
+                rectX: obstacle.x, rectY: obstacle.y,
+                rectWidth: obstacle.width, rectHeight: obstacle.height
+            ) {
+                newX = boss.x // Revert X
+            }
+
+            // Check Y movement
+            if MathUtils.circleRectOverlap(
+                circleX: newX, circleY: newY, radius: bossSize,
+                rectX: obstacle.x, rectY: obstacle.y,
+                rectWidth: obstacle.width, rectHeight: obstacle.height
+            ) {
+                newY = boss.y // Revert Y
+            }
+        }
+
+        // Keep boss within arena bounds (with padding)
+        let padding: CGFloat = bossSize + 20
+        newX = max(padding, min(gameState.arena.width - padding, newX))
+        newY = max(padding, min(gameState.arena.height - padding, newY))
+
+        // Apply final position
+        boss.x = newX
+        boss.y = newY
     }
 
     // MARK: - Phase Transitions
@@ -127,8 +179,8 @@ class CyberbossAI {
             bossState.laserBeams.append(LaserBeam(
                 id: RandomUtils.generateId(),
                 angle: CGFloat(i) * 72.0, // Evenly spaced
-                length: 500,
-                damage: 999 // Instant kill
+                length: 800,  // Increased for larger arena (was 500)
+                damage: 50    // Survivable damage - player can take 1-2 hits
             ))
         }
     }
@@ -189,6 +241,12 @@ class CyberbossAI {
         boss.velocityX = 0
         boss.velocityY = 0
 
+        // Continue spawning minions to keep player moving
+        if gameState.gameTime - bossState.lastMinionSpawnTime >= bossState.minionSpawnInterval {
+            bossState.lastMinionSpawnTime = gameState.gameTime
+            spawnMinions(boss: boss, gameState: &gameState)
+        }
+
         // Spawn damage puddles
         if gameState.gameTime - bossState.lastPuddleSpawnTime >= bossState.puddleSpawnInterval {
             bossState.lastPuddleSpawnTime = gameState.gameTime
@@ -234,7 +292,7 @@ class CyberbossAI {
     private static func moveAwayFromPlayer(
         boss: inout Enemy,
         gameState: GameState,
-        preferredDistance: CGFloat
+        preferredDistance: CGFloat = 450  // Increased for larger arena (was 300)
     ) {
         let dx = boss.x - gameState.player.x
         let dy = boss.y - gameState.player.y
@@ -244,8 +302,8 @@ class CyberbossAI {
             // Move away
             boss.velocityX = (dx / distance) * boss.speed * 0.5
             boss.velocityY = (dy / distance) * boss.speed * 0.5
-        } else if distance > preferredDistance + 100 {
-            // Move closer
+        } else if distance > preferredDistance + 150 {
+            // Move closer (increased threshold for larger arena)
             boss.velocityX = -(dx / distance) * boss.speed * 0.3
             boss.velocityY = -(dy / distance) * boss.speed * 0.3
         } else {
@@ -263,22 +321,31 @@ class CyberbossAI {
         let distance = sqrt(dx * dx + dy * dy)
 
         if distance > 0 {
+            let bossSize = boss.size ?? 60
+            let projectileSize = bossSize * 0.4 // 40% of boss size - visible but not huge
+
+            // Spawn projectile outside boss hitbox
+            let spawnOffset = bossSize + projectileSize + 5
+            let spawnX = boss.x + (dx / distance) * spawnOffset
+            let spawnY = boss.y + (dy / distance) * spawnOffset
+
             let projectile = Projectile(
                 id: RandomUtils.generateId(),
-                weaponId: "boss_attack",
-                x: boss.x,
-                y: boss.y,
-                velocityX: (dx / distance) * 300,
-                velocityY: (dy / distance) * 300,
-                damage: 25,
-                radius: 12,
-                color: "#ff00ff",
-                lifetime: 5.0,
+                weaponId: "cyberboss_blast",
+                x: spawnX,
+                y: spawnY,
+                velocityX: (dx / distance) * 200, // Slower for dramatic effect
+                velocityY: (dy / distance) * 200,
+                damage: 35, // Higher damage for slower projectile
+                radius: projectileSize,
+                color: "#00ffff", // Cyan energy blast
+                lifetime: 6.0,
                 piercing: 0,
                 hitEnemies: [],
                 isHoming: false,
                 homingStrength: 0,
-                isEnemyProjectile: true
+                isEnemyProjectile: true,
+                trail: true // Enable trail for visual effect
             )
             gameState.projectiles.append(projectile)
         }
@@ -341,12 +408,14 @@ class CyberbossAI {
                 x: CGFloat.random(in: 100...(arenaWidth - 100)),
                 y: CGFloat.random(in: 100...(arenaHeight - 100)),
                 radius: 60,
-                damage: 30,
-                damageInterval: 1.0,
+                damage: 10,             // 10 DPS while active (reduced from 30)
+                popDamage: 30,          // 30 burst damage when puddle pops
+                damageInterval: 0.5,    // Tick every 0.5 seconds (so 2 ticks per second = 10 DPS)
                 lastDamageTime: 0,
                 lifetime: 0,
-                maxLifetime: 8.0,
-                fadeStartTime: 6.0
+                maxLifetime: 4.0,       // Total 4 second duration (reduced from 8)
+                warningDuration: 1.0,   // 1 second warning phase (no damage)
+                hasPopped: false
             )
             bossState.damagePuddles.append(puddle)
         }
@@ -364,11 +433,51 @@ class CyberbossAI {
             var mutablePuddle = puddle
             mutablePuddle.lifetime += deltaTime
 
-            if mutablePuddle.lifetime >= mutablePuddle.maxLifetime {
+            // Check if puddle should pop (at end of lifetime)
+            let aboutToPop = mutablePuddle.lifetime >= mutablePuddle.maxLifetime - 0.1
+            let isExpired = mutablePuddle.lifetime >= mutablePuddle.maxLifetime
+
+            // Deal pop damage right before removal
+            if aboutToPop && !mutablePuddle.hasPopped {
+                mutablePuddle.hasPopped = true
+
+                // Check if player is in puddle for pop damage
+                let dx = gameState.player.x - mutablePuddle.x
+                let dy = gameState.player.y - mutablePuddle.y
+                let distance = sqrt(dx * dx + dy * dy)
+
+                if distance < mutablePuddle.radius {
+                    gameState.player.health -= mutablePuddle.popDamage
+
+                    // Check for death
+                    if gameState.player.health <= 0 {
+                        gameState.player.health = 0
+                        gameState.isGameOver = true
+                        gameState.victory = false
+                    }
+
+                    // Visual feedback - pop damage
+                    let damageEvent = DamageEvent(
+                        type: .playerDamage,
+                        amount: Int(mutablePuddle.popDamage),
+                        position: CGPoint(x: gameState.player.x, y: gameState.player.y),
+                        timestamp: gameState.startTime + gameState.timeElapsed
+                    )
+                    gameState.damageEvents.append(damageEvent)
+                }
+            }
+
+            if isExpired {
                 return nil // Remove expired puddle
             }
 
-            // Check player collision
+            // Skip damage during warning phase (first 1 second)
+            let isWarningPhase = mutablePuddle.lifetime < mutablePuddle.warningDuration
+            if isWarningPhase {
+                return mutablePuddle // No damage during warning
+            }
+
+            // Active phase - deal DPS damage
             let dx = gameState.player.x - mutablePuddle.x
             let dy = gameState.player.y - mutablePuddle.y
             let distance = sqrt(dx * dx + dy * dy)
@@ -376,7 +485,24 @@ class CyberbossAI {
             if distance < mutablePuddle.radius &&
                gameState.gameTime - mutablePuddle.lastDamageTime >= mutablePuddle.damageInterval {
                 mutablePuddle.lastDamageTime = gameState.gameTime
-                gameState.player.health -= mutablePuddle.damage
+                let tickDamage = mutablePuddle.damage * CGFloat(mutablePuddle.damageInterval) // 10 DPS * 0.5s = 5 damage per tick
+                gameState.player.health -= tickDamage
+
+                // Check for death
+                if gameState.player.health <= 0 {
+                    gameState.player.health = 0
+                    gameState.isGameOver = true
+                    gameState.victory = false
+                }
+
+                // Visual feedback - damage event for scrolling combat text
+                let damageEvent = DamageEvent(
+                    type: .playerDamage,
+                    amount: Int(tickDamage),
+                    position: CGPoint(x: gameState.player.x, y: gameState.player.y),
+                    timestamp: gameState.startTime + gameState.timeElapsed
+                )
+                gameState.damageEvents.append(damageEvent)
             }
 
             return mutablePuddle
@@ -412,6 +538,22 @@ class CyberbossAI {
                     // Instant kill damage
                     gameState.player.health -= beam.damage
                     gameState.player.invulnerableUntil = gameState.gameTime + 0.5
+
+                    // Check for death
+                    if gameState.player.health <= 0 {
+                        gameState.player.health = 0
+                        gameState.isGameOver = true
+                        gameState.victory = false
+                    }
+
+                    // Visual feedback
+                    let damageEvent = DamageEvent(
+                        type: .playerDamage,
+                        amount: Int(beam.damage),
+                        position: CGPoint(x: gameState.player.x, y: gameState.player.y),
+                        timestamp: gameState.startTime + gameState.timeElapsed
+                    )
+                    gameState.damageEvents.append(damageEvent)
                     break
                 }
             }

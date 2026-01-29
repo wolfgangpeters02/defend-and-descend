@@ -137,6 +137,30 @@ struct EnemyConfig: Codable {
     var color: String
     var shape: String
     var isBoss: Bool?
+
+    init(
+        id: String,
+        name: String,
+        health: Double,
+        speed: Double,
+        damage: Double,
+        coinValue: Int,
+        size: Double,
+        color: String,
+        shape: String,
+        isBoss: Bool? = nil
+    ) {
+        self.id = id
+        self.name = name
+        self.health = health
+        self.speed = speed
+        self.damage = damage
+        self.coinValue = coinValue
+        self.size = size
+        self.color = color
+        self.shape = shape
+        self.isBoss = isBoss
+    }
 }
 
 // MARK: - Spawn Config
