@@ -11,17 +11,17 @@ enum CurrencyInfoType: String, Identifiable {
 
     var title: String {
         switch self {
-        case .hash: return "HASH (Ħ)"
-        case .power: return "POWER (⚡)"
+        case .hash: return L10n.Currency.hashTitle
+        case .power: return L10n.Currency.powerTitle
         }
     }
 
     var description: String {
         switch self {
         case .hash:
-            return "Hash is your universal currency earned passively on the Board and from Boss fights. Use it to place Firewalls (towers), unlock Protocols, and upgrade your Arsenal.\n\nEarn: Passive income + Boss rewards\nSpend: Tower placement, Protocol upgrades"
+            return L10n.Currency.hashDescription
         case .power:
-            return "Power (Watts) is your tower capacity. Each Firewall consumes power when placed. Upgrade your PSU to increase capacity.\n\nCapacity: Determined by PSU upgrade\nUsage: Each tower uses power while placed"
+            return L10n.Currency.powerDescription
         }
     }
 
@@ -41,42 +41,12 @@ enum CurrencyInfoType: String, Identifiable {
 }
 
 // MARK: - System Tab View
-// Main hub with 3 tabs: BOARD (TD idle), BOSS (encounters), ARSENAL (protocols)
-
-enum SystemTab: String, CaseIterable {
-    case motherboard = "BOARD"
-    case boss = "BOSS"
-    case arsenal = "ARSENAL"
-
-    var icon: String {
-        switch self {
-        case .motherboard: return "cpu"
-        case .boss: return "flame.fill"
-        case .arsenal: return "shield.lefthalf.filled"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .motherboard: return DesignColors.success
-        case .boss: return DesignColors.warning
-        case .arsenal: return DesignColors.secondary
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .motherboard: return "TD MODE"
-        case .boss: return "ENCOUNTERS"
-        case .arsenal: return "PROTOCOLS"
-        }
-    }
-}
+// Main game hub - motherboard game with HUD, Arsenal accessible via SYS button
 
 struct SystemTabView: View {
     @ObservedObject var appState = AppState.shared
-    @State private var selectedTab: SystemTab = .motherboard
-    @State private var showBossGame = false
+    @StateObject private var embeddedGameController = EmbeddedTDGameController()  // Persists across view lifecycle
+    @State private var showSystemMenu = false  // Arsenal/Settings sheet
     @State private var selectedBoss: BossEncounter?
     @State private var selectedDifficulty: BossDifficulty = .normal
 
@@ -94,11 +64,11 @@ struct SystemTabView: View {
                     topNavigationBar
                 }
 
-                // Content area
-                contentView
-
-                // Custom tab bar
-                customTabBar
+                // Main game board (no tab bar - system menu accessed via HUD)
+                MotherboardView(
+                    embeddedGameController: embeddedGameController,
+                    showSystemMenu: $showSystemMenu
+                )
             }
         }
         .fullScreenCover(item: $selectedBoss) { boss in
@@ -111,24 +81,8 @@ struct SystemTabView: View {
                 }
             )
         }
-    }
-
-    // MARK: - Content View
-
-    @ViewBuilder
-    private var contentView: some View {
-        switch selectedTab {
-        case .motherboard:
-            MotherboardView()
-        case .boss:
-            BossEncountersView(
-                selectedDifficulty: $selectedDifficulty,
-                onLaunch: { boss in
-                    selectedBoss = boss
-                }
-            )
-        case .arsenal:
-            ArsenalView()
+        .sheet(isPresented: $showSystemMenu) {
+            SystemMenuSheet()
         }
     }
 
@@ -145,7 +99,7 @@ struct SystemTabView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("MENU")
+                        Text(L10n.Common.menu)
                             .font(.system(size: 12, weight: .bold, design: .monospaced))
                     }
                     .foregroundColor(DesignColors.muted)
@@ -159,7 +113,7 @@ struct SystemTabView: View {
             Spacer()
 
             // Title
-            Text("SYSTEM: REBOOT")
+            Text(L10n.System.title)
                 .font(.system(size: 14, weight: .black, design: .monospaced))
                 .foregroundColor(DesignColors.primary)
 
@@ -176,60 +130,21 @@ struct SystemTabView: View {
         .background(DesignColors.surface.opacity(0.5))
     }
 
-    // MARK: - Custom Tab Bar
-
-    private var customTabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(SystemTab.allCases, id: \.self) { tab in
-                tabButton(for: tab)
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .background(
-            DesignColors.surface
-                .shadow(color: .black.opacity(0.5), radius: 10, y: -5)
-        )
-    }
-
-    private func tabButton(for tab: SystemTab) -> some View {
-        Button {
-            HapticsService.shared.play(.selection)
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                selectedTab = tab
-            }
-        } label: {
-            VStack(spacing: 2) {
-                Image(systemName: tab.icon)
-                    .font(.system(size: 20, weight: selectedTab == tab ? .bold : .regular))
-                    .foregroundColor(selectedTab == tab ? tab.color : DesignColors.muted)
-
-                Text(tab.rawValue)
-                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundColor(selectedTab == tab ? tab.color : DesignColors.muted)
-
-                Text(tab.subtitle)
-                    .font(.system(size: 7, weight: .medium, design: .monospaced))
-                    .foregroundColor(selectedTab == tab ? tab.color.opacity(0.7) : DesignColors.muted.opacity(0.5))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(
-                selectedTab == tab ?
-                    tab.color.opacity(0.15) : Color.clear
-            )
-            .cornerRadius(8)
-        }
-    }
 }
 
-// MARK: - Motherboard View (BOARD Tab) - Embedded TD Game
+// MARK: - Motherboard View - Embedded TD Game with HUD
 
 struct MotherboardView: View {
     @ObservedObject var appState = AppState.shared
-    @StateObject private var embeddedGameController = EmbeddedTDGameController()
+    @ObservedObject var embeddedGameController: EmbeddedTDGameController  // Passed from parent to persist across lifecycle
+    @Binding var showSystemMenu: Bool  // Controls Arsenal/Settings sheet
     @State private var showManualOverride = false
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
+
+    // Boss Loot Modal state
+    @State private var showBossLootModal = false
+    @State private var pendingBossLootReward: BossLootReward?
+    @State private var bossFightNotificationObserver: NSObjectProtocol?
 
     var body: some View {
         GeometryReader { geometry in
@@ -304,11 +219,197 @@ struct MotherboardView: View {
                     )
                     .transition(.opacity)
                 }
+
+                // Tower upgrade panel (when tower is selected)
+                if let towerId = embeddedGameController.selectedTowerId,
+                   let tower = embeddedGameController.gameState?.towers.first(where: { $0.id == towerId }) {
+                    towerUpgradePanel(tower: tower)
+                }
+
+                // Boss alert overlay (when boss spawns and not yet engaged)
+                // Hide during transitions: boss fight active/starting, or loot modal showing
+                if embeddedGameController.isBossActive &&
+                   !embeddedGameController.showBossDifficultySelector &&
+                   !embeddedGameController.bossAlertDismissed &&
+                   !embeddedGameController.showBossFight &&
+                   !showBossLootModal {
+                    bossAlertOverlay
+                }
+
+                // Boss difficulty selector modal
+                if embeddedGameController.showBossDifficultySelector {
+                    bossDifficultySelector
+                }
+
+                // Overclock button (bottom right, above build deck)
+                if !embeddedGameController.overclockActive && !embeddedGameController.isBossActive {
+                    overclockButton
+                }
+
+                // Overclock active indicator
+                if embeddedGameController.overclockActive {
+                    overclockActiveIndicator
+                }
             }
             .coordinateSpace(name: "motherboardGameArea")
             .animation(.easeInOut(duration: 0.3), value: embeddedGameController.isSystemFrozen)
             .animation(.easeInOut(duration: 0.3), value: showManualOverride)
+            .animation(.easeInOut(duration: 0.3), value: embeddedGameController.isBossActive)
         }
+        .fullScreenCover(isPresented: $embeddedGameController.showBossFight) {
+            if let bossType = embeddedGameController.activeBossType,
+               let boss = BossEncounter.all.first(where: { $0.bossId == bossType }) {
+                BossGameView(
+                    boss: boss,
+                    difficulty: embeddedGameController.selectedBossDifficulty,
+                    protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
+                    onExit: { [weak embeddedGameController] in
+                        // Only dismiss the fullScreenCover here
+                        // State cleanup happens in notification handler (handleBossFightCompletion)
+                        embeddedGameController?.showBossFight = false
+                    }
+                )
+            }
+        }
+        .fullScreenCover(isPresented: $showBossLootModal) {
+            BossLootModalWrapper(
+                reward: pendingBossLootReward,
+                onCollect: {
+                    handleBossLootCollected()
+                }
+            )
+        }
+        .onAppear {
+            // Register for boss fight completion notifications
+            bossFightNotificationObserver = NotificationCenter.default.addObserver(
+                forName: .bossFightCompleted,
+                object: nil,
+                queue: .main
+            ) { notification in
+                print("[MotherboardView] Received bossFightCompleted notification")
+                guard let userInfo = notification.userInfo,
+                      let victory = userInfo["victory"] as? Bool else {
+                    print("[MotherboardView] Invalid notification userInfo")
+                    return
+                }
+                print("[MotherboardView] Boss fight complete: victory=\(victory)")
+                // Small delay to let fullScreenCover dismiss animation complete
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.handleBossFightCompletion(victory: victory)
+                }
+            }
+        }
+        .onDisappear {
+            // Remove notification observer
+            if let observer = bossFightNotificationObserver {
+                NotificationCenter.default.removeObserver(observer)
+                bossFightNotificationObserver = nil
+            }
+        }
+    }
+
+    // MARK: - Boss Fight Completion Handler
+
+    private func handleBossFightCompletion(victory: Bool) {
+        print("[MotherboardView] handleBossFightCompletion called, victory=\(victory)")
+
+        let difficulty = embeddedGameController.selectedBossDifficulty
+        let bossId = embeddedGameController.activeBossType ?? "cyberboss"
+
+        // Unpause the scene
+        embeddedGameController.scene?.isPaused = false
+
+        if victory {
+            // Get the district ID from the game state (where the boss actually spawned from)
+            let districtId = embeddedGameController.gameState?.activeBossDistrictId ?? SectorID.power.rawValue
+
+            // Reset boss state on VICTORY only
+            embeddedGameController.isBossActive = false
+            embeddedGameController.activeBossType = nil
+
+            // Notify the TD scene that boss was defeated
+            embeddedGameController.scene?.onBossFightWon(districtId: districtId)
+
+            // Calculate hash reward based on difficulty
+            let hashReward = difficulty.hashReward
+
+            // Calculate protocol drop using BlueprintDropSystem
+            let dropResult = BlueprintDropSystem.shared.calculateDrop(
+                bossId: bossId,
+                difficulty: difficulty,
+                profile: appState.currentPlayer
+            )
+
+            print("[MotherboardView] Protocol drop: \(dropResult.protocolId ?? "none")")
+
+            // Get protocol rarity if dropped
+            var protocolRarity: Rarity?
+            if let protocolId = dropResult.protocolId,
+               let proto = ProtocolLibrary.get(protocolId) {
+                protocolRarity = proto.rarity
+            }
+
+            // Build the loot reward for display
+            pendingBossLootReward = BossLootReward.create(
+                difficulty: difficulty,
+                hashReward: hashReward,
+                protocolId: dropResult.protocolId,
+                protocolRarity: protocolRarity,
+                unlockedSector: nil,
+                isFirstKill: false
+            )
+
+            print("[MotherboardView] Created reward with \(pendingBossLootReward?.items.count ?? 0) items, showing modal...")
+
+            // Show loot modal
+            showBossLootModal = true
+
+            HapticsService.shared.play(.success)
+        } else {
+            // Boss fight lost/retreated - boss stays on board for retry
+            // Reset bossEngaged so player can tap to fight again
+            if var state = embeddedGameController.gameState {
+                state.bossEngaged = false
+                state.bossSelectedDifficulty = nil
+                embeddedGameController.gameState = state
+                embeddedGameController.scene?.state = state
+            }
+            // Don't reset isBossActive or activeBossType - boss is still there!
+            HapticsService.shared.play(.defeat)
+        }
+    }
+
+    /// Apply rewards and dismiss the loot modal
+    private func handleBossLootCollected() {
+        guard let reward = pendingBossLootReward else {
+            showBossLootModal = false
+            return
+        }
+
+        // Apply hash reward (uses convenience property)
+        let hashAmount = reward.totalHashReward
+        if hashAmount > 0 {
+            appState.updatePlayer { profile in
+                profile.hash += hashAmount
+            }
+            // Also update the game state hash
+            embeddedGameController.gameState?.hash += hashAmount
+        }
+
+        // Apply protocol unlock (uses convenience property)
+        if let protocolId = reward.droppedProtocolId {
+            appState.updatePlayer { profile in
+                if !profile.compiledProtocols.contains(protocolId) {
+                    profile.compiledProtocols.append(protocolId)
+                }
+            }
+        }
+
+        print("[MotherboardView] Loot collected! Hash: \(hashAmount)")
+
+        // Dismiss modal
+        pendingBossLootReward = nil
+        showBossLootModal = false
     }
 
     private var motherboardHUD: some View {
@@ -316,11 +417,15 @@ struct MotherboardView: View {
             // Power (⚡) - PSU usage - tappable for info
             HStack(spacing: 4) {
                 Image(systemName: "bolt.fill")
-                    .foregroundColor(powerColor)
+                    .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
                 Text("\(embeddedGameController.gameState?.powerUsed ?? 0)/\(embeddedGameController.gameState?.powerCapacity ?? 450)W")
                     .font(DesignTypography.caption(12))
-                    .foregroundColor(powerColor)
+                    .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
             }
+            .offset(x: embeddedGameController.powerShakeTriggered ? -3 : 0)
+            .animation(embeddedGameController.powerShakeTriggered ?
+                Animation.easeInOut(duration: 0.05).repeatCount(6, autoreverses: true) :
+                .default, value: embeddedGameController.powerShakeTriggered)
             .onTapGesture { showCurrencyInfo = .power }
 
             Spacer()
@@ -332,7 +437,7 @@ struct MotherboardView: View {
                 Text("\(embeddedGameController.gameState?.hash ?? appState.currentPlayer.hash)")
                     .font(DesignTypography.headline(16))
                     .foregroundColor(.cyan)
-                Text("(+\(Int(appState.currentPlayer.globalUpgrades.hashPerSecond))/s)")
+                Text(L10n.Stats.perSecond(Int(appState.currentPlayer.globalUpgrades.hashPerSecond)))
                     .font(DesignTypography.caption(10))
                     .foregroundColor(DesignColors.muted)
             }
@@ -357,6 +462,32 @@ struct MotherboardView: View {
                 Text("\(Int((embeddedGameController.gameState?.efficiency ?? 100)))%")
                     .font(DesignTypography.caption(12))
                     .foregroundColor(efficiencyColor)
+                    .fixedSize()
+            }
+            .fixedSize()
+
+            Spacer()
+                .frame(width: 12)
+
+            // SYS button - opens Arsenal/Settings menu
+            Button {
+                HapticsService.shared.play(.selection)
+                showSystemMenu = true
+            } label: {
+                Text("SYS")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .foregroundColor(DesignColors.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(DesignColors.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(DesignColors.secondary.opacity(0.5), lineWidth: 1)
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                    )
             }
         }
         .padding(.horizontal, 16)
@@ -383,9 +514,128 @@ struct MotherboardView: View {
         return DesignColors.success                         // Plenty available
     }
 
+    @ViewBuilder
+    private func towerUpgradePanel(tower: Tower) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            VStack(spacing: 12) {
+                // Header with tower name and close button
+                HStack {
+                    Text(tower.towerName)
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(Color(hex: tower.color) ?? .white)
+
+                    Text(L10n.Common.lv(tower.level))
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(DesignColors.muted)
+
+                    Spacer()
+
+                    Button {
+                        embeddedGameController.selectedTowerId = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(DesignColors.muted)
+                    }
+                }
+
+                // Tower stats
+                HStack(spacing: 16) {
+                    VStack(spacing: 2) {
+                        Text(L10n.Stats.dmg)
+                            .font(DesignTypography.caption(9))
+                            .foregroundColor(DesignColors.muted)
+                        Text("\(Int(tower.damage))")
+                            .font(DesignTypography.headline(14))
+                            .foregroundColor(DesignColors.danger)
+                    }
+                    VStack(spacing: 2) {
+                        Text(L10n.Stats.rng)
+                            .font(DesignTypography.caption(9))
+                            .foregroundColor(DesignColors.muted)
+                        Text("\(Int(tower.range))")
+                            .font(DesignTypography.headline(14))
+                            .foregroundColor(DesignColors.success)
+                    }
+                    VStack(spacing: 2) {
+                        Text(L10n.Stats.spd)
+                            .font(DesignTypography.caption(9))
+                            .foregroundColor(DesignColors.muted)
+                        Text(String(format: "%.1f", tower.attackSpeed))
+                            .font(DesignTypography.headline(14))
+                            .foregroundColor(DesignColors.primary)
+                    }
+                }
+
+                // Upgrade/Sell buttons
+                HStack(spacing: 12) {
+                    if tower.canUpgrade {
+                        let canAfford = (embeddedGameController.gameState?.hash ?? 0) >= tower.upgradeCost
+                        Button {
+                            embeddedGameController.scene?.upgradeTower(tower.id)
+                            HapticsService.shared.play(.success)
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up.circle.fill")
+                                Text(L10n.Upgrade.upgrade)
+                                Spacer()
+                                Text("Ħ\(tower.upgradeCost)")
+                                    .fontWeight(.bold)
+                            }
+                            .font(DesignTypography.headline(14))
+                            .foregroundColor(canAfford ? .black : DesignColors.muted)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(canAfford ? DesignColors.primary : DesignColors.surface)
+                            .cornerRadius(8)
+                        }
+                        .disabled(!canAfford)
+                    } else {
+                        Text(L10n.Common.maxLevel)
+                            .font(DesignTypography.headline(14))
+                            .foregroundColor(.green)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(DesignColors.surface)
+                            .cornerRadius(8)
+                    }
+
+                    Button {
+                        embeddedGameController.scene?.sellTower(tower.id)
+                        embeddedGameController.selectedTowerId = nil
+                        HapticsService.shared.play(.light)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "trash.fill")
+                            Text(L10n.Common.recycle)
+                        }
+                        .font(DesignTypography.headline(14))
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(DesignColors.surface)
+                        .cornerRadius(8)
+                    }
+                }
+
+                // Hint text
+                Text(L10n.Motherboard.tapToUpgrade)
+                    .font(DesignTypography.caption(10))
+                    .foregroundColor(DesignColors.muted)
+            }
+            .padding()
+            .background(DesignColors.surface.opacity(0.95))
+            .cornerRadius(16)
+            .padding(.horizontal)
+            .padding(.bottom, 120)  // Above the deck
+        }
+    }
+
     private func buildDeck(geometry: GeometryProxy) -> some View {
         VStack(spacing: 8) {
-            Text("DRAG FIREWALL TO DEPLOY")
+            Text(L10n.Motherboard.dragToDeploy)
                 .font(DesignTypography.caption(11))
                 .foregroundColor(DesignColors.muted)
 
@@ -457,6 +707,257 @@ struct MotherboardView: View {
         }
         .allowsHitTesting(false)
     }
+
+    // MARK: - Boss UI Components
+
+    /// Alert overlay when boss spawns
+    private var bossAlertOverlay: some View {
+        VStack {
+            Spacer()
+
+            VStack(spacing: 16) {
+                // Warning icon with pulsing animation
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.red)
+
+                Text(L10n.Boss.superVirusDetected)
+                    .font(DesignTypography.headline(20))
+                    .foregroundColor(.white)
+
+                if let bossType = embeddedGameController.activeBossType {
+                    Text(bossType == "cyberboss" ? L10n.Boss.cyberboss : L10n.Boss.voidHarbinger)
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(bossType == "cyberboss" ? .red : .purple)
+                }
+
+                Text(L10n.Boss.immuneToFirewalls)
+                    .font(DesignTypography.caption(12))
+                    .foregroundColor(DesignColors.muted)
+                    .multilineTextAlignment(.center)
+
+                // Engage button
+                Button {
+                    HapticsService.shared.play(.selection)
+                    withAnimation {
+                        embeddedGameController.showBossDifficultySelector = true
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "target")
+                        Text(L10n.Boss.engageTarget)
+                    }
+                    .font(DesignTypography.headline(16))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 14)
+                    .background(DesignColors.danger)
+                    .cornerRadius(12)
+                }
+
+                // Ignore button - let boss pass
+                Button {
+                    HapticsService.shared.play(.light)
+                    withAnimation {
+                        // Dismiss the alert - boss keeps walking toward CPU
+                        embeddedGameController.bossAlertDismissed = true
+                    }
+                } label: {
+                    Text(L10n.Boss.ignoreHint)
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(DesignColors.muted)
+                        .padding(.vertical, 8)
+                }
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(DesignColors.surface.opacity(0.95))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.red.opacity(0.5), lineWidth: 2)
+                    )
+            )
+            .padding(.horizontal, 32)
+
+            Spacer()
+        }
+        .background(Color.black.opacity(0.4))
+    }
+
+    /// Difficulty selector modal
+    private var bossDifficultySelector: some View {
+        VStack {
+            Spacer()
+
+            VStack(spacing: 20) {
+                Text(L10n.Boss.selectDifficulty)
+                    .font(DesignTypography.headline(18))
+                    .foregroundColor(.white)
+
+                ForEach(BossDifficulty.allCases, id: \.self) { difficulty in
+                    difficultyButton(difficulty)
+                }
+
+                // Cancel button
+                Button {
+                    HapticsService.shared.play(.light)
+                    withAnimation {
+                        embeddedGameController.showBossDifficultySelector = false
+                    }
+                } label: {
+                    Text(L10n.Common.cancel)
+                        .font(DesignTypography.headline(14))
+                        .foregroundColor(DesignColors.muted)
+                        .padding(.vertical, 12)
+                }
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(DesignColors.surface.opacity(0.95))
+            )
+            .padding(.horizontal, 32)
+
+            Spacer()
+        }
+        .background(Color.black.opacity(0.6))
+    }
+
+    /// Individual difficulty option button
+    private func difficultyButton(_ difficulty: BossDifficulty) -> some View {
+        Button {
+            HapticsService.shared.play(.medium)
+            embeddedGameController.selectedBossDifficulty = difficulty
+            embeddedGameController.showBossDifficultySelector = false
+
+            // Engage boss through the system (sets bossEngaged and bossSelectedDifficulty in state)
+            if var state = embeddedGameController.gameState {
+                _ = TDBossSystem.engageBoss(state: &state, difficulty: difficulty)
+                embeddedGameController.gameState = state
+                embeddedGameController.scene?.state = state
+            }
+
+            // Pause TD scene before starting boss fight
+            embeddedGameController.scene?.isPaused = true
+            // Small delay before showing boss fight to let animation complete
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                embeddedGameController.showBossFight = true
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(difficulty.displayName)
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(difficultyColor(difficulty))
+
+                    Text("Ħ\(difficulty.hashReward)")
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(.cyan)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(Int(difficulty.blueprintChance * 100))%")
+                        .font(DesignTypography.headline(14))
+                        .foregroundColor(DesignColors.warning)
+
+                    Text(L10n.Boss.blueprintDrop)
+                        .font(DesignTypography.caption(10))
+                        .foregroundColor(DesignColors.muted)
+                }
+            }
+            .padding()
+            .background(DesignColors.surface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(difficultyColor(difficulty).opacity(0.5), lineWidth: 1)
+            )
+        }
+    }
+
+    /// Color for each difficulty
+    private func difficultyColor(_ difficulty: BossDifficulty) -> Color {
+        switch difficulty {
+        case .easy: return .green
+        case .normal: return .blue
+        case .hard: return .orange
+        case .nightmare: return .red
+        }
+    }
+
+    /// Overclock button (visible when not overclocking)
+    private var overclockButton: some View {
+        VStack {
+            Spacer()
+
+            HStack {
+                Spacer()
+
+                Button {
+                    HapticsService.shared.play(.heavy)
+                    embeddedGameController.scene?.activateOverclock()
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: "bolt.circle.fill")
+                            .font(.system(size: 32))
+                        Text(L10n.TD.overclock)
+                            .font(DesignTypography.caption(10))
+                    }
+                    .foregroundColor(.orange)
+                    .padding(12)
+                    .background(
+                        Circle()
+                            .fill(DesignColors.surface.opacity(0.9))
+                    )
+                    .overlay(
+                        Circle()
+                            .stroke(Color.orange.opacity(0.5), lineWidth: 2)
+                    )
+                }
+            }
+            .padding(.trailing, 16)
+            .padding(.bottom, 130)  // Above the build deck
+        }
+    }
+
+    /// Overclock active indicator
+    private var overclockActiveIndicator: some View {
+        VStack {
+            Spacer()
+
+            HStack {
+                Spacer()
+
+                VStack(spacing: 4) {
+                    Image(systemName: "bolt.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(.orange)
+
+                    Text(L10n.TD.overclocking)
+                        .font(DesignTypography.caption(9))
+                        .foregroundColor(.orange)
+
+                    Text(String(format: "%.0fs", embeddedGameController.overclockTimeRemaining))
+                        .font(DesignTypography.headline(14))
+                        .foregroundColor(.white)
+                }
+                .padding(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.orange.opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.orange, lineWidth: 2)
+                        )
+                )
+            }
+            .padding(.trailing, 16)
+            .padding(.bottom, 130)
+        }
+    }
 }
 
 // MARK: - Embedded TD Game Controller (Observable State)
@@ -472,6 +973,20 @@ class EmbeddedTDGameController: ObservableObject {
     @Published var isSystemFrozen = false  // True when efficiency hits 0%
     @Published var showSectorUnlockPanel = false
     @Published var selectedSectorForUnlock: String?
+    @Published var powerShakeTriggered = false  // Triggers shake animation on power indicator
+    @Published var selectedTowerId: String?  // Selected tower for upgrade panel
+
+    // Boss system state
+    @Published var isBossActive = false
+    @Published var activeBossType: String?
+    @Published var showBossDifficultySelector = false
+    @Published var bossAlertDismissed = false  // User dismissed alert to let boss pass
+    @Published var overclockActive = false
+    @Published var overclockTimeRemaining: TimeInterval = 0
+
+    // Boss fight state (for launching boss fight fullscreen)
+    @Published var showBossFight = false
+    @Published var selectedBossDifficulty: BossDifficulty = .normal
 
     private var delegateHandler: EmbeddedTDDelegateHandler?
 
@@ -500,6 +1015,26 @@ class EmbeddedTDGameController: ObservableObject {
                 if newState.isSystemFrozen && !(self?.isSystemFrozen ?? false) {
                     self?.isSystemFrozen = true
                 }
+                // Track boss state
+                if newState.bossActive && !newState.bossEngaged {
+                    if !(self?.isBossActive ?? false) {
+                        self?.isBossActive = true
+                        self?.activeBossType = newState.activeBossType
+                    }
+                } else if !newState.bossActive {
+                    self?.isBossActive = false
+                    self?.activeBossType = nil
+                    self?.bossAlertDismissed = false  // Reset for next boss
+                }
+                // Track overclock state
+                self?.overclockActive = newState.overclockActive
+                self?.overclockTimeRemaining = newState.overclockTimeRemaining
+                // Sync hash to player profile so other tabs see updated balance
+                if newState.hash != AppState.shared.currentPlayer.hash {
+                    AppState.shared.updatePlayer { profile in
+                        profile.hash = newState.hash
+                    }
+                }
             }
         }
         handler.onSystemFrozen = { [weak self] in
@@ -520,11 +1055,52 @@ class EmbeddedTDGameController: ObservableObject {
             sectors.insert(SectorID.power.rawValue)  // Ensure PSU is always unlocked
             return sectors
         }
+        handler.onPlacementFailed = { [weak self] reason in
+            DispatchQueue.main.async {
+                // Trigger power shake for insufficient power
+                if case .insufficientPower = reason {
+                    self?.powerShakeTriggered = true
+                    // Reset after animation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        self?.powerShakeTriggered = false
+                    }
+                }
+            }
+        }
+        handler.onTowerSelected = { [weak self] towerId in
+            DispatchQueue.main.async {
+                self?.selectedTowerId = towerId
+            }
+        }
+        handler.onBossSpawned = { [weak self] bossType in
+            DispatchQueue.main.async {
+                self?.isBossActive = true
+                self?.activeBossType = bossType
+                self?.bossAlertDismissed = false  // Reset so alert shows for new boss
+                HapticsService.shared.play(.warning)
+            }
+        }
+        handler.onBossReachedCPU = { [weak self] in
+            DispatchQueue.main.async {
+                self?.isBossActive = false
+                self?.activeBossType = nil
+                self?.bossAlertDismissed = false  // Reset for next boss
+                HapticsService.shared.play(.defeat)
+            }
+        }
+        handler.onBossTapped = { [weak self] in
+            DispatchQueue.main.async {
+                // Show difficulty selector when boss is tapped
+                self?.bossAlertDismissed = false  // Reset in case alert was dismissed
+                self?.showBossDifficultySelector = true
+            }
+        }
 
         // Scene size based on map dimensions
         let sceneSize = CGSize(width: state.map.width, height: state.map.height)
 
         let newScene = TDGameScene(size: sceneSize)
+        newScene.backgroundColor = .black  // Set immediately to avoid grey flash
         newScene.scaleMode = .aspectFill
         newScene.gameStateDelegate = handler
         newScene.loadState(state, waves: waves)
@@ -727,6 +1303,11 @@ private class EmbeddedTDDelegateHandler: TDGameSceneDelegate {
     var onSystemFrozen: (() -> Void)?
     var onGateSelected: ((String) -> Void)?
     var onGetUnlockedSectorIds: (() -> Set<String>)?
+    var onPlacementFailed: ((TowerPlacementResult) -> Void)?
+    var onTowerSelected: ((String?) -> Void)?
+    var onBossSpawned: ((String) -> Void)?
+    var onBossReachedCPU: (() -> Void)?
+    var onBossTapped: (() -> Void)?
 
     func gameStateUpdated(_ state: TDGameState) {
         onGameStateUpdated?(state)
@@ -737,7 +1318,7 @@ private class EmbeddedTDDelegateHandler: TDGameSceneDelegate {
     }
 
     func towerSelected(_ towerId: String?) {
-        // Not used in embedded view
+        onTowerSelected?(towerId)
     }
 
     func gateSelected(_ sectorId: String) {
@@ -755,7 +1336,30 @@ private class EmbeddedTDDelegateHandler: TDGameSceneDelegate {
     }
 
     func spawnPointTapped(_ lane: SectorLane) {
-        // Not used in embedded view - spawn points managed by main game flow
+        // Trigger sector unlock panel for the lane's sector
+        onGateSelected?(lane.sectorId)
+    }
+
+    func placementFailed(_ reason: TowerPlacementResult) {
+        onPlacementFailed?(reason)
+    }
+
+    func bossSpawned(type: String) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onBossSpawned?(type)
+        }
+    }
+
+    func bossReachedCPU() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onBossReachedCPU?()
+        }
+    }
+
+    func bossTapped() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onBossTapped?()
+        }
     }
 }
 
@@ -781,7 +1385,7 @@ struct EmbeddedTDGameView: View {
                     VStack {
                         ProgressView()
                             .tint(DesignColors.primary)
-                        Text("INITIALIZING_SYSTEM...")
+                        Text(L10n.Motherboard.initializing)
                             .font(DesignTypography.caption(12))
                             .foregroundColor(DesignColors.muted)
                             .padding(.top, 8)
@@ -828,11 +1432,11 @@ struct EmbeddedTDGameView: View {
                         .font(.system(size: 40))
                         .foregroundColor(.red)
 
-                    Text("ENCRYPTED_SECTOR")
+                    Text(L10n.Sector.encrypted)
                         .font(.system(size: 24, weight: .bold, design: .monospaced))
                         .foregroundColor(.cyan)
 
-                    Text(status?.displayName ?? "Unknown")
+                    Text(status?.displayName ?? L10n.Common.unknown)
                         .font(.system(size: 18, weight: .semibold, design: .monospaced))
                         .foregroundColor(.white)
                 }
@@ -851,7 +1455,7 @@ struct EmbeddedTDGameView: View {
                     VStack(spacing: 12) {
                         // Cost
                         HStack(spacing: 8) {
-                            Text("DECRYPT_COST:")
+                            Text(L10n.Sector.decryptCost)
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray)
 
@@ -862,7 +1466,7 @@ struct EmbeddedTDGameView: View {
 
                         // Current balance
                         HStack(spacing: 8) {
-                            Text("YOUR_BALANCE:")
+                            Text(L10n.Sector.yourBalance)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray)
 
@@ -895,7 +1499,7 @@ struct EmbeddedTDGameView: View {
                         HapticsService.shared.play(.light)
                         controller.dismissSectorUnlockPanel()
                     }) {
-                        Text("CANCEL")
+                        Text(L10n.Common.cancel)
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 120, height: 50)
@@ -909,7 +1513,7 @@ struct EmbeddedTDGameView: View {
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: "key.fill")
-                            Text("DECRYPT")
+                            Text(L10n.Sector.decrypt)
                         }
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(status?.canUnlock == true ? .black : .gray)
@@ -944,6 +1548,7 @@ struct EmbeddedProtocolDeckCard: View {
     let onDragEnded: () -> Void
 
     @State private var isDragging = false
+    @State private var legendaryPulse = false
 
     private var cost: Int {
         TowerSystem.towerPlacementCost(rarity: `protocol`.rarity)
@@ -957,37 +1562,70 @@ struct EmbeddedProtocolDeckCard: View {
         RarityColors.color(for: `protocol`.rarity)
     }
 
+    // Glow intensity scales with rarity
+    private var glowRadius: CGFloat {
+        switch `protocol`.rarity {
+        case .common: return 4
+        case .rare: return 8
+        case .epic: return 12
+        case .legendary: return 16
+        }
+    }
+
+    private var glowOpacity: Double {
+        switch `protocol`.rarity {
+        case .common: return 0.3
+        case .rare: return 0.5
+        case .epic: return 0.6
+        case .legendary: return 0.7
+        }
+    }
+
+    private var isHighRarity: Bool {
+        `protocol`.rarity == .epic || `protocol`.rarity == .legendary
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             // Tower icon container - circuit board aesthetic
             ZStack {
+                // Outer glow for epic/legendary
+                if isHighRarity && canAfford {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(rarityColor.opacity(0.15))
+                        .frame(width: 64, height: 64)
+                        .blur(radius: 8)
+                        .scaleEffect(legendaryPulse ? 1.15 : 1.0)
+                }
+
                 // Background circuit pattern
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "0a0a12") ?? .black)
                     .frame(width: 56, height: 56)
 
-                // Border with glow effect
+                // Border with rarity-scaled glow effect
                 RoundedRectangle(cornerRadius: 8)
-                    .stroke(rarityColor.opacity(canAfford ? 0.8 : 0.3), lineWidth: 2)
+                    .stroke(rarityColor.opacity(canAfford ? 0.9 : 0.3), lineWidth: isHighRarity ? 2.5 : 2)
                     .frame(width: 56, height: 56)
-                    .shadow(color: canAfford ? rarityColor.opacity(0.5) : .clear, radius: 8)
+                    .shadow(color: canAfford ? rarityColor.opacity(glowOpacity) : .clear, radius: glowRadius)
 
                 // Protocol icon - simplified, geometric
                 Image(systemName: `protocol`.iconName)
                     .font(.system(size: 24, weight: .medium))
                     .foregroundColor(canAfford ? .white : .gray)
+                    .shadow(color: canAfford && isHighRarity ? rarityColor.opacity(0.5) : .clear, radius: 4)
 
-                // Corner accent (circuit node)
+                // Corner accent (circuit node) - larger for higher rarity
                 Circle()
                     .fill(rarityColor)
-                    .frame(width: 8, height: 8)
+                    .frame(width: isHighRarity ? 10 : 8, height: isHighRarity ? 10 : 8)
                     .offset(x: 22, y: -22)
                     .opacity(canAfford ? 1 : 0.3)
 
                 // Opposite corner node for balance
                 Circle()
                     .fill(rarityColor.opacity(0.5))
-                    .frame(width: 6, height: 6)
+                    .frame(width: isHighRarity ? 8 : 6, height: isHighRarity ? 8 : 6)
                     .offset(x: -22, y: 22)
                     .opacity(canAfford ? 0.8 : 0.2)
             }
@@ -1000,7 +1638,7 @@ struct EmbeddedProtocolDeckCard: View {
                 Text("\(cost)")
                     .font(.system(size: 12, weight: .bold, design: .monospaced))
             }
-            .foregroundColor(canAfford ? DesignColors.primary : .red.opacity(0.7))
+            .foregroundColor(canAfford ? rarityColor : .red.opacity(0.7))
 
             // Stats row - power and damage
             HStack(spacing: 6) {
@@ -1025,6 +1663,14 @@ struct EmbeddedProtocolDeckCard: View {
         }
         .opacity(canAfford ? 1.0 : 0.5)
         .animation(.easeOut(duration: 0.15), value: isDragging)
+        .onAppear {
+            // Subtle pulse for legendary cards
+            if `protocol`.rarity == .legendary {
+                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                    legendaryPulse = true
+                }
+            }
+        }
         .gesture(
             DragGesture(minimumDistance: 5, coordinateSpace: .named("motherboardGameArea"))
                 .onChanged { value in
@@ -1092,17 +1738,17 @@ struct SystemFreezeOverlay: View {
             VStack(spacing: 24) {
                 // Glitchy title
                 ZStack {
-                    Text("SYSTEM FREEZE")
+                    Text(L10n.Freeze.header)
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.red.opacity(0.5))
                         .offset(x: glitchOffset, y: -glitchOffset)
 
-                    Text("SYSTEM FREEZE")
+                    Text(L10n.Freeze.header)
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.cyan.opacity(0.5))
                         .offset(x: -glitchOffset, y: glitchOffset)
 
-                    Text("SYSTEM FREEZE")
+                    Text(L10n.Freeze.header)
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.white)
                 }
@@ -1114,15 +1760,15 @@ struct SystemFreezeOverlay: View {
 
                 // Error message
                 VStack(spacing: 8) {
-                    Text("CRITICAL ERROR: EFFICIENCY 0%")
+                    Text(L10n.Freeze.criticalError)
                         .font(DesignTypography.headline(16))
                         .foregroundColor(.red)
 
-                    Text("All systems halted. Memory corrupted.")
+                    Text(L10n.Freeze.allSystemsHalted)
                         .font(DesignTypography.body(14))
                         .foregroundColor(DesignColors.muted)
 
-                    Text("Choose recovery method:")
+                    Text(L10n.Freeze.chooseRecoveryMethod)
                         .font(DesignTypography.body(14))
                         .foregroundColor(.white)
                         .padding(.top, 8)
@@ -1139,24 +1785,24 @@ struct SystemFreezeOverlay: View {
                             HStack {
                                 Image(systemName: "arrow.clockwise.circle.fill")
                                     .font(.system(size: 24))
-                                Text("FLUSH MEMORY")
+                                Text(L10n.Freeze.flushMemory)
                                     .font(DesignTypography.headline(18))
                             }
 
                             HStack(spacing: 4) {
-                                Text("Cost:")
+                                Text(L10n.Common.cost)
                                     .foregroundColor(DesignColors.muted)
                                 Image(systemName: "number.circle.fill")
                                     .foregroundColor(canAffordFlush ? DesignColors.primary : .red)
                                 Text("\(flushCost)")
                                     .foregroundColor(canAffordFlush ? DesignColors.primary : .red)
-                                Text("(10% of Hash)")
+                                Text(L10n.Freeze.hashPercent)
                                     .font(DesignTypography.caption(11))
                                     .foregroundColor(DesignColors.muted)
                             }
                             .font(DesignTypography.body(14))
 
-                            Text("Restores 50% efficiency instantly")
+                            Text(L10n.Freeze.restoresEfficiency)
                                 .font(DesignTypography.caption(11))
                                 .foregroundColor(DesignColors.muted)
                         }
@@ -1183,15 +1829,15 @@ struct SystemFreezeOverlay: View {
                             HStack {
                                 Image(systemName: "gamecontroller.fill")
                                     .font(.system(size: 24))
-                                Text("MANUAL OVERRIDE")
+                                Text(L10n.Freeze.manualOverride)
                                     .font(DesignTypography.headline(18))
                             }
 
-                            Text("FREE - Survive 30 seconds")
+                            Text(L10n.Freeze.freeSurvive)
                                 .font(DesignTypography.body(14))
                                 .foregroundColor(DesignColors.success)
 
-                            Text("Complete challenge to restore system")
+                            Text(L10n.Freeze.completeChallenge)
                                 .font(DesignTypography.caption(11))
                                 .foregroundColor(DesignColors.muted)
                         }
@@ -1211,7 +1857,7 @@ struct SystemFreezeOverlay: View {
                 .padding(.horizontal, 24)
 
                 // Freeze count indicator
-                Text("System has frozen \(1) time(s) this session")
+                Text(L10n.Freeze.frozenTimesSession(1))
                     .font(DesignTypography.caption(11))
                     .foregroundColor(DesignColors.muted)
                     .padding(.top, 8)
@@ -1274,22 +1920,56 @@ struct GridPatternView: View {
     }
 }
 
-// MARK: - Arsenal View (ARSENAL Tab)
+// MARK: - System Menu Sheet (Arsenal + Settings)
+
+struct SystemMenuSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationView {
+            ArsenalView()
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(DesignColors.muted)
+                        }
+                    }
+                }
+        }
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+// MARK: - Arsenal View
 
 struct ArsenalView: View {
     @ObservedObject var appState = AppState.shared
     @State private var selectedProtocol: Protocol?
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("ARSENAL")
+                Text(L10n.Tabs.arsenal)
                     .font(DesignTypography.display(28))
                     .foregroundColor(.white)
 
                 Spacer()
+
+                // Settings gear icon
+                Button(action: { showSettings = true }) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(DesignColors.muted)
+                }
+                .padding(.trailing, 12)
 
                 // Hash balance - tappable for info
                 HStack(spacing: 6) {
@@ -1306,6 +1986,9 @@ struct ArsenalView: View {
             .sheet(item: $showCurrencyInfo) { info in
                 CurrencyInfoSheet(info: info)
             }
+            .sheet(isPresented: $showSettings) {
+                NotificationSettingsSheet()
+            }
 
             // Equipped protocol
             equippedSection
@@ -1318,7 +2001,7 @@ struct ArsenalView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     // Compiled protocols
-                    Text("COMPILED_PROTOCOLS")
+                    Text(L10n.Arsenal.compiled)
                         .font(DesignTypography.caption(12))
                         .foregroundColor(DesignColors.muted)
                         .padding(.horizontal)
@@ -1340,29 +2023,73 @@ struct ArsenalView: View {
                     }
                     .padding(.horizontal)
 
-                    // Blueprints
-                    Text("BLUEPRINTS")
-                        .font(DesignTypography.caption(12))
-                        .foregroundColor(DesignColors.muted)
+                    // Blueprints (owned but not compiled)
+                    let ownedBlueprints = ProtocolLibrary.all.filter {
+                        appState.currentPlayer.hasBlueprint($0.id) && !appState.currentPlayer.isProtocolCompiled($0.id)
+                    }
+
+                    if !ownedBlueprints.isEmpty {
+                        Text(L10n.Arsenal.blueprints)
+                            .font(DesignTypography.caption(12))
+                            .foregroundColor(DesignColors.primary)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach(ownedBlueprints) { proto in
+                                ProtocolCard(
+                                    protocol: proto,
+                                    level: 1,
+                                    isBlueprint: true,
+                                    onTap: { selectedProtocol = proto }
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+
+                    // Undiscovered (no blueprint, not compiled, not starter)
+                    let undiscoveredProtocols = ProtocolLibrary.all.filter {
+                        !appState.currentPlayer.isProtocolCompiled($0.id) &&
+                        !appState.currentPlayer.hasBlueprint($0.id) &&
+                        $0.id != ProtocolLibrary.starterProtocolId
+                    }
+
+                    if !undiscoveredProtocols.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(L10n.Arsenal.undiscovered)
+                                .font(DesignTypography.caption(12))
+                                .foregroundColor(DesignColors.muted)
+
+                            Text(L10n.Arsenal.defeatBossesHint)
+                                .font(DesignTypography.caption(10))
+                                .foregroundColor(DesignColors.muted.opacity(0.7))
+                        }
                         .padding(.horizontal)
                         .padding(.top, 8)
 
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 12) {
-                        ForEach(ProtocolLibrary.all.filter { !appState.currentPlayer.isProtocolCompiled($0.id) }) { proto in
-                            ProtocolCard(
-                                protocol: proto,
-                                level: 1,
-                                isLocked: true,
-                                onTap: { selectedProtocol = proto }
-                            )
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach(undiscoveredProtocols) { proto in
+                                ProtocolCard(
+                                    protocol: proto,
+                                    level: 1,
+                                    isLocked: true,
+                                    onTap: { selectedProtocol = proto }
+                                )
+                            }
                         }
+                        .padding(.horizontal)
                     }
-                    .padding(.horizontal)
                 }
                 .padding(.vertical)
             }
@@ -1374,7 +2101,7 @@ struct ArsenalView: View {
 
     private var equippedSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("EQUIPPED_FOR_DEBUG")
+            Text(L10n.Arsenal.equippedForDebug)
                 .font(DesignTypography.caption(12))
                 .foregroundColor(DesignColors.muted)
 
@@ -1389,7 +2116,7 @@ struct ArsenalView: View {
                             .font(DesignTypography.headline(18))
                             .foregroundColor(.white)
 
-                        Text("LV \(equipped.level)")
+                        Text(L10n.Common.lv(equipped.level))
                             .font(DesignTypography.caption(12))
                             .foregroundColor(DesignColors.muted)
                     }
@@ -1412,18 +2139,72 @@ struct ProtocolCard: View {
     var level: Int = 1
     var isEquipped: Bool = false
     var isLocked: Bool = false
+    var isBlueprint: Bool = false  // Owned blueprint, not yet compiled
     var onTap: () -> Void = {}
+
+    // Rarity-based color for borders and effects
+    private var rarityColor: Color {
+        RarityColors.color(for: `protocol`.rarity)
+    }
+
+    private var iconColor: Color {
+        if isLocked {
+            return DesignColors.muted
+        } else if isBlueprint {
+            return (Color(hex: `protocol`.color) ?? .cyan).opacity(0.7)
+        } else {
+            return Color(hex: `protocol`.color) ?? .cyan
+        }
+    }
+
+    // Border color based on state and rarity
+    private var borderColor: Color {
+        if isLocked {
+            return DesignColors.muted.opacity(0.3)
+        } else if isEquipped {
+            return rarityColor
+        } else if isBlueprint {
+            return rarityColor.opacity(0.6)
+        } else {
+            // Compiled - show rarity outline
+            return rarityColor.opacity(0.5)
+        }
+    }
+
+    private var borderWidth: CGFloat {
+        isEquipped ? 2.5 : 1.5
+    }
 
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 6) {
                 ZStack {
+                    // Rarity glow effect for non-locked cards
+                    if !isLocked {
+                        Circle()
+                            .fill(rarityColor.opacity(isEquipped ? 0.25 : 0.1))
+                            .frame(width: 50, height: 50)
+                    }
+
                     Image(systemName: isLocked ? "lock.fill" : `protocol`.iconName)
                         .font(.system(size: 28))
-                        .foregroundColor(
-                            isLocked ? DesignColors.muted :
-                                (Color(hex: `protocol`.color) ?? .cyan)
-                        )
+                        .foregroundColor(iconColor)
+
+                    // Blueprint badge
+                    if isBlueprint {
+                        Image(systemName: "doc.badge.gearshape.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(rarityColor)
+                            .offset(x: 18, y: -18)
+                    }
+
+                    // Rarity dot indicator (top-left corner)
+                    if !isLocked {
+                        Circle()
+                            .fill(rarityColor)
+                            .frame(width: 6, height: 6)
+                            .offset(x: -20, y: -20)
+                    }
                 }
                 .frame(width: 50, height: 50)
 
@@ -1433,11 +2214,22 @@ struct ProtocolCard: View {
                     .lineLimit(1)
 
                 if isLocked {
+                    // Show which boss drops this
+                    if let boss = LootTableLibrary.bossesDropping(`protocol`.id).first {
+                        Text(LootTableLibrary.bossDisplayName(boss))
+                            .font(DesignTypography.caption(8))
+                            .foregroundColor(DesignColors.danger.opacity(0.7))
+                    } else {
+                        Text("Ħ\(`protocol`.compileCost)")
+                            .font(DesignTypography.caption(10))
+                            .foregroundColor(DesignColors.muted)
+                    }
+                } else if isBlueprint {
                     Text("Ħ\(`protocol`.compileCost)")
                         .font(DesignTypography.caption(10))
-                        .foregroundColor(DesignColors.muted)
+                        .foregroundColor(rarityColor)
                 } else {
-                    Text("LV \(level)")
+                    Text(L10n.Common.lv(level))
                         .font(DesignTypography.caption(10))
                         .foregroundColor(DesignColors.muted)
                 }
@@ -1445,15 +2237,18 @@ struct ProtocolCard: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(
-                isEquipped ? DesignColors.primary.opacity(0.2) : DesignColors.surface
+                isEquipped ? rarityColor.opacity(0.15) :
+                    isBlueprint ? rarityColor.opacity(0.08) :
+                    DesignColors.surface
             )
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isEquipped ? DesignColors.primary : Color.clear,
-                        lineWidth: 2
-                    )
+                    .stroke(borderColor, lineWidth: borderWidth)
+            )
+            .shadow(
+                color: isEquipped ? rarityColor.opacity(0.4) : .clear,
+                radius: 8
             )
         }
     }
@@ -1472,6 +2267,11 @@ struct ProtocolDetailSheet: View {
 
     var isCompiled: Bool {
         appState.currentPlayer.isProtocolCompiled(`protocol`.id)
+    }
+
+    var hasBlueprint: Bool {
+        let isStarter = `protocol`.id == ProtocolLibrary.starterProtocolId
+        return isStarter || appState.currentPlayer.hasBlueprint(`protocol`.id)
     }
 
     /// Protocol with player's level applied for accurate stat display
@@ -1504,7 +2304,7 @@ struct ProtocolDetailSheet: View {
                                 .multilineTextAlignment(.center)
 
                             if isCompiled {
-                                Text("LV \(currentLevel)")
+                                Text(L10n.Common.lv(currentLevel))
                                     .font(DesignTypography.headline(18))
                                     .foregroundColor(DesignColors.primary)
                             }
@@ -1515,13 +2315,13 @@ struct ProtocolDetailSheet: View {
                         HStack(spacing: 20) {
                             // Firewall stats
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("FIREWALL_MODE")
+                                Text(L10n.Mode.firewall)
                                     .font(DesignTypography.caption(11))
                                     .foregroundColor(DesignColors.muted)
 
-                                ProtocolStatRow(label: "Damage", value: "\(Int(leveledProtocol.firewallStats.damage))")
-                                ProtocolStatRow(label: "Range", value: "\(Int(leveledProtocol.firewallStats.range))")
-                                ProtocolStatRow(label: "Fire Rate", value: String(format: "%.1f/s", leveledProtocol.firewallStats.fireRate))
+                                ProtocolStatRow(label: L10n.Stats.damage, value: "\(Int(leveledProtocol.firewallStats.damage))")
+                                ProtocolStatRow(label: L10n.Stats.range, value: "\(Int(leveledProtocol.firewallStats.range))")
+                                ProtocolStatRow(label: L10n.Stats.fireRate, value: String(format: "%.1f/s", leveledProtocol.firewallStats.fireRate))
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -1530,13 +2330,13 @@ struct ProtocolDetailSheet: View {
 
                             // Weapon stats
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("WEAPON_MODE")
+                                Text(L10n.Mode.weapon)
                                     .font(DesignTypography.caption(11))
                                     .foregroundColor(DesignColors.muted)
 
-                                ProtocolStatRow(label: "Damage", value: "\(Int(leveledProtocol.weaponStats.damage))")
-                                ProtocolStatRow(label: "Fire Rate", value: String(format: "%.1f/s", leveledProtocol.weaponStats.fireRate))
-                                ProtocolStatRow(label: "Projectiles", value: "\(leveledProtocol.weaponStats.projectileCount)")
+                                ProtocolStatRow(label: L10n.Stats.damage, value: "\(Int(leveledProtocol.weaponStats.damage))")
+                                ProtocolStatRow(label: L10n.Stats.fireRate, value: String(format: "%.1f/s", leveledProtocol.weaponStats.fireRate))
+                                ProtocolStatRow(label: L10n.Stats.projectiles, value: "\(leveledProtocol.weaponStats.projectileCount)")
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -1548,27 +2348,51 @@ struct ProtocolDetailSheet: View {
                         // Actions
                         VStack(spacing: 12) {
                             if !isCompiled {
-                                // Compile button
-                                Button {
-                                    compileProtocol()
-                                } label: {
-                                    HStack {
-                                        Image(systemName: "hammer.fill")
-                                        Text("COMPILE")
-                                        Text("Ħ\(`protocol`.compileCost)")
-                                            .foregroundColor(
-                                                appState.currentPlayer.hash >= `protocol`.compileCost ?
-                                                    DesignColors.success : DesignColors.danger
-                                            )
+                                if hasBlueprint {
+                                    // Has blueprint - show compile button
+                                    Button {
+                                        compileProtocol()
+                                    } label: {
+                                        HStack {
+                                            Image(systemName: "hammer.fill")
+                                            Text(L10n.Arsenal.compile)
+                                            Text("Ħ\(`protocol`.compileCost)")
+                                                .foregroundColor(
+                                                    appState.currentPlayer.hash >= `protocol`.compileCost ?
+                                                        DesignColors.success : DesignColors.danger
+                                                )
+                                        }
+                                        .font(DesignTypography.headline(16))
+                                        .foregroundColor(.black)
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(DesignColors.primary)
+                                        .cornerRadius(12)
                                     }
-                                    .font(DesignTypography.headline(16))
-                                    .foregroundColor(.black)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(DesignColors.primary)
-                                    .cornerRadius(12)
+                                    .disabled(appState.currentPlayer.hash < `protocol`.compileCost)
+                                } else {
+                                    // No blueprint - show "Blueprint Required" message
+                                    VStack(spacing: 8) {
+                                        HStack {
+                                            Image(systemName: "lock.fill")
+                                            Text(L10n.Arsenal.blueprintRequired)
+                                        }
+                                        .font(DesignTypography.headline(16))
+                                        .foregroundColor(DesignColors.muted)
+                                        .frame(maxWidth: .infinity)
+                                        .padding()
+                                        .background(DesignColors.surface)
+                                        .cornerRadius(12)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(DesignColors.muted.opacity(0.3), lineWidth: 1)
+                                        )
+
+                                        Text(L10n.Arsenal.defeatBossesHint)
+                                            .font(DesignTypography.caption(12))
+                                            .foregroundColor(DesignColors.muted.opacity(0.7))
+                                    }
                                 }
-                                .disabled(appState.currentPlayer.hash < `protocol`.compileCost)
                             } else {
                                 // Equip button
                                 if appState.currentPlayer.equippedProtocolId != `protocol`.id {
@@ -1577,7 +2401,7 @@ struct ProtocolDetailSheet: View {
                                     } label: {
                                         HStack {
                                             Image(systemName: "checkmark.circle.fill")
-                                            Text("EQUIP FOR DEBUG")
+                                            Text(L10n.Arsenal.equipForDebug)
                                         }
                                         .font(DesignTypography.headline(16))
                                         .foregroundColor(.black)
@@ -1596,7 +2420,7 @@ struct ProtocolDetailSheet: View {
                                     } label: {
                                         HStack {
                                             Image(systemName: "arrow.up.circle.fill")
-                                            Text("UPGRADE TO LV \(currentLevel + 1)")
+                                            Text(L10n.Arsenal.upgradeTo(currentLevel + 1))
                                             Text("Ħ\(cost)")
                                                 .foregroundColor(
                                                     appState.currentPlayer.hash >= cost ?
@@ -1626,7 +2450,7 @@ struct ProtocolDetailSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(L10n.Common.done) {
                         dismiss()
                     }
                     .foregroundColor(DesignColors.primary)
@@ -1636,12 +2460,21 @@ struct ProtocolDetailSheet: View {
     }
 
     private func compileProtocol() {
+        // Check blueprint ownership (starter protocol is always available)
+        let isStarter = `protocol`.id == ProtocolLibrary.starterProtocolId
+        guard isStarter || appState.currentPlayer.hasBlueprint(`protocol`.id) else {
+            print("[Arsenal] Cannot compile - no blueprint for \(`protocol`.id)")
+            return
+        }
+
         guard appState.currentPlayer.hash >= `protocol`.compileCost else { return }
         HapticsService.shared.play(.medium)
         appState.updatePlayer { profile in
             profile.hash -= `protocol`.compileCost
             profile.compiledProtocols.append(`protocol`.id)
             profile.protocolLevels[`protocol`.id] = 1
+            // Remove from blueprints (now compiled)
+            profile.protocolBlueprints.removeAll { $0 == `protocol`.id }
         }
     }
 
@@ -1691,7 +2524,7 @@ struct UpgradesView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("SYSTEM_UPGRADES")
+                Text(L10n.SystemUpgrades.title)
                     .font(DesignTypography.display(28))
                     .foregroundColor(.white)
 
@@ -1767,7 +2600,7 @@ struct UpgradeCard: View {
 
                 Spacer()
 
-                Text("LV \(level)")
+                Text(L10n.Common.lv(level))
                     .font(DesignTypography.headline(20))
                     .foregroundColor(Color(hex: upgradeType.color) ?? .cyan)
             }
@@ -1791,7 +2624,7 @@ struct UpgradeCard: View {
 
             // Upgrade button
             if isMaxed {
-                Text("MAX_LEVEL")
+                Text(L10n.Common.maxLevel)
                     .font(DesignTypography.headline(16))
                     .foregroundColor(DesignColors.muted)
                     .frame(maxWidth: .infinity)
@@ -1804,7 +2637,7 @@ struct UpgradeCard: View {
                 } label: {
                     HStack {
                         if let nextValue = upgradeType.nextValueDescription(at: level) {
-                            Text("Next: \(nextValue)")
+                            Text(L10n.Common.next(nextValue))
                                 .foregroundColor(.white)
                         }
                         Spacer()
@@ -1889,10 +2722,10 @@ struct BossEncountersView: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("BOSS_ENCOUNTERS")
+                    Text(L10n.Boss.encounters)
                         .font(DesignTypography.display(28))
                         .foregroundColor(.white)
-                    Text("Direct boss fights for blueprints")
+                    Text(L10n.Boss.encountersDesc)
                         .font(DesignTypography.caption(12))
                         .foregroundColor(DesignColors.muted)
                 }
@@ -1961,6 +2794,7 @@ struct BossEncountersView: View {
 
     private func difficultyColor(_ difficulty: BossDifficulty) -> Color {
         switch difficulty {
+        case .easy: return DesignColors.secondary
         case .normal: return DesignColors.success
         case .hard: return DesignColors.warning
         case .nightmare: return DesignColors.danger
@@ -1969,6 +2803,7 @@ struct BossEncountersView: View {
 
     private func difficultyReward(_ difficulty: BossDifficulty) -> String {
         switch difficulty {
+        case .easy: return "+Ħ250"
         case .normal: return "+Ħ500"
         case .hard: return "+Ħ1500"
         case .nightmare: return "+Ħ3000"
@@ -2033,7 +2868,7 @@ struct BossCard: View {
                 // Right side: Rewards or lock
                 if isUnlocked {
                     VStack(alignment: .trailing, spacing: 4) {
-                        Text("REWARDS")
+                        Text(L10n.Common.rewards)
                             .font(DesignTypography.caption(8))
                             .foregroundColor(DesignColors.muted)
 
@@ -2095,7 +2930,8 @@ struct BossGameView: View {
         GameContainerView(
             gameMode: .boss,
             bossDifficulty: difficulty,
-            onExit: onExit
+            onExit: onExit,
+            onBossFightComplete: { _ in onExit() }  // Just exit when fight ends
         )
         .onAppear {
             // Set the boss type in AppState for GameContainerView to use
@@ -2114,7 +2950,7 @@ struct DebugView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("DEBUG_MODE")
+                Text(L10n.Debug.mode)
                     .font(DesignTypography.display(28))
                     .foregroundColor(.white)
 
@@ -2142,7 +2978,7 @@ struct DebugView: View {
             // Sector selection
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("SELECT_SECTOR")
+                    Text(L10n.Sector.select)
                         .font(DesignTypography.caption(12))
                         .foregroundColor(DesignColors.muted)
                         .padding(.horizontal)
@@ -2170,7 +3006,7 @@ struct DebugView: View {
 
     private var loadoutPreview: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("LOADOUT")
+            Text(L10n.Common.loadout)
                 .font(DesignTypography.caption(12))
                 .foregroundColor(DesignColors.muted)
 
@@ -2185,14 +3021,14 @@ struct DebugView: View {
                             .font(DesignTypography.headline(16))
                             .foregroundColor(.white)
 
-                        Text("DMG: \(Int(equipped.weaponStats.damage)) | RATE: \(String(format: "%.1f", equipped.weaponStats.fireRate))/s")
+                        Text(L10n.Stats.dmgRate(Int(equipped.weaponStats.damage), rate: String(format: "%.1f", equipped.weaponStats.fireRate)))
                             .font(DesignTypography.caption(11))
                             .foregroundColor(DesignColors.muted)
                     }
 
                     Spacer()
 
-                    Text("LV \(equipped.level)")
+                    Text(L10n.Common.lv(equipped.level))
                         .font(DesignTypography.headline(16))
                         .foregroundColor(DesignColors.primary)
                 }
@@ -2246,7 +3082,7 @@ struct SectorCard: View {
             HStack(spacing: 6) {
                 Image(systemName: isDungeon ? "door.left.hand.open" : "sparkles")
                     .font(.system(size: 10))
-                Text(isDungeon ? "DUNGEON" : "ARENA")
+                Text(isDungeon ? L10n.Mode.dungeon : L10n.Mode.arena)
                     .font(DesignTypography.caption(9))
             }
             .foregroundColor(isDungeon ? DesignColors.secondary : DesignColors.primary)
@@ -2272,13 +3108,13 @@ struct SectorCard: View {
             // Best time or lock status
             if isUnlocked {
                 if let time = bestTime {
-                    Text("Best: \(formatTime(time))")
+                    Text(L10n.Stats.best(formatTime(time)))
                         .font(DesignTypography.caption(10))
                         .foregroundColor(DesignColors.muted)
                 }
 
                 Button(action: onSelect) {
-                    Text("LAUNCH")
+                    Text(L10n.Common.launch)
                         .font(DesignTypography.headline(14))
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
@@ -2355,7 +3191,7 @@ struct DebugGameView: View {
                     VStack {
                         ProgressView()
                             .tint(DesignColors.primary)
-                        Text("INITIALIZING...")
+                        Text(L10n.Motherboard.initializing)
                             .font(DesignTypography.caption(12))
                             .foregroundColor(DesignColors.muted)
                             .padding(.top, 8)
@@ -2481,7 +3317,7 @@ struct DebugGameView: View {
                         .font(.system(size: 24))
                         .foregroundColor(DesignColors.success)
 
-                    Text("EXTRACTION AVAILABLE")
+                    Text(L10n.Extraction.available)
                         .font(DesignTypography.headline(18))
                         .foregroundColor(DesignColors.success)
                 }
@@ -2495,7 +3331,7 @@ struct DebugGameView: View {
                         Text("Ħ")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(DesignColors.primary)
-                        Text("\(multipliedHash) HASH SECURED")
+                        Text(L10n.Extraction.hashSecured(multipliedHash))
                             .font(DesignTypography.body(14))
                             .foregroundColor(.white)
                     }
@@ -2511,9 +3347,9 @@ struct DebugGameView: View {
                         showVictory = true
                     } label: {
                         VStack(spacing: 4) {
-                            Text("EXTRACT")
+                            Text(L10n.Extraction.extract)
                                 .font(DesignTypography.headline(16))
-                            Text("Keep 100% Hash")
+                            Text(L10n.Extraction.keepHash)
                                 .font(DesignTypography.caption(10))
                                 .opacity(0.7)
                         }
@@ -2533,9 +3369,9 @@ struct DebugGameView: View {
                         }
                     } label: {
                         VStack(spacing: 4) {
-                            Text("CONTINUE")
+                            Text(L10n.Common.continueAction)
                                 .font(DesignTypography.headline(16))
-                            Text("Risk for more")
+                            Text(L10n.Extraction.riskForMore)
                                 .font(DesignTypography.caption(10))
                                 .opacity(0.7)
                         }
@@ -2568,7 +3404,7 @@ struct DebugGameView: View {
 
             VStack(spacing: 24) {
                 // Title
-                Text(showVictory ? "SECTOR_CLEANSED" : "DEBUG_FAILED")
+                Text(showVictory ? L10n.Extraction.sectorCleansed : L10n.Debug.failed)
                     .font(DesignTypography.display(32))
                     .foregroundColor(showVictory ? DesignColors.success : DesignColors.danger)
 
@@ -2580,7 +3416,7 @@ struct DebugGameView: View {
                         let finalHash = showVictory ? multipliedHash : multipliedHash / 2
 
                         HStack {
-                            Text("Viruses Eliminated")
+                            Text(L10n.Extraction.virusesEliminated)
                                 .foregroundColor(DesignColors.muted)
                             Spacer()
                             Text("\(state.stats.enemiesKilled)")
@@ -2588,7 +3424,7 @@ struct DebugGameView: View {
                         }
 
                         HStack {
-                            Text("Hash Earned")
+                            Text(L10n.Extraction.hashEarned)
                                 .foregroundColor(DesignColors.muted)
                             Spacer()
                             HStack(spacing: 4) {
@@ -2601,7 +3437,7 @@ struct DebugGameView: View {
                         }
 
                         HStack {
-                            Text("Time Survived")
+                            Text(L10n.GameOver.timeSurvived)
                                 .foregroundColor(DesignColors.muted)
                             Spacer()
                             Text(formatTime(state.timeElapsed))
@@ -2625,7 +3461,7 @@ struct DebugGameView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "arrow.counterclockwise")
-                            Text("RETRY")
+                            Text(L10n.Common.retry)
                         }
                         .font(DesignTypography.headline(16))
                         .foregroundColor(.white)
@@ -2654,7 +3490,7 @@ struct DebugGameView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle")
-                            Text("COLLECT & EXIT")
+                            Text(L10n.Common.collectAndExit)
                         }
                         .font(DesignTypography.headline(16))
                         .foregroundColor(.black)
@@ -2738,6 +3574,7 @@ struct DebugGameView: View {
 
 struct CurrencyInfoSheet: View {
     let info: CurrencyInfoType
+    @ObservedObject var appState = AppState.shared
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -2773,12 +3610,98 @@ struct CurrencyInfoSheet: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
 
+            // PSU Upgrade section (only for power info)
+            if info == .power {
+                psuUpgradeSection
+            }
+
             Spacer()
         }
         .padding(.top, 20)
         .background(DesignColors.background)
-        .presentationDetents([.height(320)])
+        .presentationDetents([.height(info == .power ? 480 : 320)])
         .presentationDragIndicator(.visible)
+    }
+
+    @ViewBuilder
+    private var psuUpgradeSection: some View {
+        let currentLevel = appState.currentPlayer.globalUpgrades.psuLevel
+        let tierName = GlobalUpgrades.psuTierName(at: currentLevel)
+        let currentCapacity = GlobalUpgrades.powerCapacity(at: currentLevel)
+        let nextCapacity = currentLevel < GlobalUpgrades.maxLevel ? GlobalUpgrades.powerCapacity(at: currentLevel + 1) : nil
+        let upgradeCost = appState.currentPlayer.globalUpgrades.psuUpgradeCost
+        let canAfford = upgradeCost != nil && appState.currentPlayer.hash >= upgradeCost!
+
+        VStack(spacing: 16) {
+            Divider()
+                .background(DesignColors.muted.opacity(0.3))
+                .padding(.horizontal)
+
+            // Current PSU info
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.Currency.psuLevel)
+                        .font(DesignTypography.caption(11))
+                        .foregroundColor(DesignColors.muted)
+                    Text("\(tierName) (\(currentCapacity)W)")
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(.yellow)
+                }
+
+                Spacer()
+
+                if let nextCap = nextCapacity {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text(L10n.Currency.nextLevel)
+                            .font(DesignTypography.caption(11))
+                            .foregroundColor(DesignColors.muted)
+                        Text("\(nextCap)W")
+                            .font(DesignTypography.headline(16))
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+
+            // Upgrade button
+            if let cost = upgradeCost {
+                Button {
+                    upgradePSU()
+                } label: {
+                    HStack {
+                        Image(systemName: "bolt.badge.plus.fill")
+                        Text(L10n.Currency.upgradePSU)
+                        Spacer()
+                        Text("Ħ \(cost)")
+                            .font(DesignTypography.headline(14))
+                    }
+                    .font(DesignTypography.headline(14))
+                    .foregroundColor(canAfford ? .black : DesignColors.muted)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(canAfford ? Color.yellow : DesignColors.surface)
+                    .cornerRadius(12)
+                }
+                .disabled(!canAfford)
+                .padding(.horizontal, 24)
+            } else {
+                Text(L10n.Currency.psuMaxed)
+                    .font(DesignTypography.headline(14))
+                    .foregroundColor(.green)
+                    .padding(.horizontal, 24)
+            }
+        }
+    }
+
+    private func upgradePSU() {
+        guard let cost = appState.currentPlayer.globalUpgrades.psuUpgradeCost,
+              appState.currentPlayer.hash >= cost else { return }
+
+        HapticsService.shared.play(.success)
+        appState.updatePlayer { profile in
+            profile.hash -= cost
+            profile.globalUpgrades.psuLevel += 1
+        }
     }
 }
 

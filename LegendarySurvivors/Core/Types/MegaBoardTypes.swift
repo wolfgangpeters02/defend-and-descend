@@ -229,9 +229,11 @@ extension MegaBoardConfig {
     /// Create the default 3x3 mega-board configuration
     static func createDefault() -> MegaBoardConfig {
         // Grid layout (0,0 is bottom-left):
+        // CPU in CENTER, PSU (mid-right) is STARTER
+        //
         //   [io]      [cache]   [network]     (row 2 - top)
-        //   [gpu]     [ram]     [storage]     (row 1 - middle)
-        //   [power]   [cpu]     [expansion]   (row 0 - bottom)
+        //   [gpu]     [cpu]     [psu]         (row 1 - middle) <- PSU is STARTER
+        //   [storage] [ram]     [expansion]   (row 0 - bottom)
 
         let sectorWidth: CGFloat = 1400
         let sectorHeight: CGFloat = 1400
@@ -239,28 +241,28 @@ extension MegaBoardConfig {
         let sectors = [
             // Row 0 (bottom)
             MegaBoardSector(
-                id: SectorID.power.rawValue,
-                displayName: "Power Grid",
-                description: "PSU sector - controls power distribution to all components",
+                id: SectorID.storage.rawValue,
+                displayName: "Storage Array",
+                description: "SSD/HDD sector - persistent data storage",
                 gridX: 0, gridY: 0,
                 width: sectorWidth, height: sectorHeight,
-                theme: .power,
-                unlockCost: 25000,
+                theme: .storage,
+                unlockCost: 12000,
                 prerequisiteSectorIds: [SectorID.gpu.rawValue],
                 isStarterSector: false,
                 hasCore: false
             ),
             MegaBoardSector(
-                id: SectorID.cpu.rawValue,
-                displayName: "CPU Core",
-                description: "Central Processing Unit - the heart of the system",
+                id: SectorID.ram.rawValue,
+                displayName: "Memory Banks",
+                description: "RAM sector - fast memory access",
                 gridX: 1, gridY: 0,
                 width: sectorWidth, height: sectorHeight,
-                theme: .processing,
-                unlockCost: 5000,
-                prerequisiteSectorIds: [SectorID.ram.rawValue],
+                theme: .memory,
+                unlockCost: 3000,
+                prerequisiteSectorIds: [SectorID.power.rawValue],
                 isStarterSector: false,
-                hasCore: true
+                hasCore: false
             ),
             MegaBoardSector(
                 id: SectorID.expansion.rawValue,
@@ -269,8 +271,8 @@ extension MegaBoardConfig {
                 gridX: 2, gridY: 0,
                 width: sectorWidth, height: sectorHeight,
                 theme: .io,
-                unlockCost: 30000,
-                prerequisiteSectorIds: [SectorID.storage.rawValue],
+                unlockCost: 10000,
+                prerequisiteSectorIds: [SectorID.power.rawValue],
                 isStarterSector: false,
                 hasCore: false
             ),
@@ -283,33 +285,33 @@ extension MegaBoardConfig {
                 gridX: 0, gridY: 1,
                 width: sectorWidth, height: sectorHeight,
                 theme: .graphics,
-                unlockCost: 15000,
-                prerequisiteSectorIds: [SectorID.ram.rawValue],
+                unlockCost: 5000,
+                prerequisiteSectorIds: [SectorID.power.rawValue],
                 isStarterSector: false,
                 hasCore: false
             ),
             MegaBoardSector(
-                id: SectorID.ram.rawValue,
-                displayName: "Memory Banks",
-                description: "RAM sector - starter zone with fast memory access",
+                id: SectorID.cpu.rawValue,
+                displayName: "CPU Core",
+                description: "Central Processing Unit - the heart of the system to defend",
                 gridX: 1, gridY: 1,
                 width: sectorWidth, height: sectorHeight,
-                theme: .memory,
+                theme: .processing,
+                unlockCost: 0,
+                prerequisiteSectorIds: [],
+                isStarterSector: false,
+                hasCore: true
+            ),
+            MegaBoardSector(
+                id: SectorID.power.rawValue,
+                displayName: "Power Supply",
+                description: "PSU sector - starter zone, powers all components",
+                gridX: 2, gridY: 1,
+                width: sectorWidth, height: sectorHeight,
+                theme: .power,
                 unlockCost: 0,
                 prerequisiteSectorIds: [],
                 isStarterSector: true,
-                hasCore: false
-            ),
-            MegaBoardSector(
-                id: SectorID.storage.rawValue,
-                displayName: "Storage Array",
-                description: "SSD/HDD sector - persistent data storage",
-                gridX: 2, gridY: 1,
-                width: sectorWidth, height: sectorHeight,
-                theme: .storage,
-                unlockCost: 10000,
-                prerequisiteSectorIds: [SectorID.ram.rawValue],
-                isStarterSector: false,
                 hasCore: false
             ),
 
@@ -317,12 +319,12 @@ extension MegaBoardConfig {
             MegaBoardSector(
                 id: SectorID.io.rawValue,
                 displayName: "I/O Controller",
-                description: "Input/Output hub - virus spawn points",
+                description: "Input/Output hub - external connections",
                 gridX: 0, gridY: 2,
                 width: sectorWidth, height: sectorHeight,
                 theme: .io,
-                unlockCost: 20000,
-                prerequisiteSectorIds: [SectorID.gpu.rawValue],
+                unlockCost: 25000,
+                prerequisiteSectorIds: [SectorID.gpu.rawValue, SectorID.storage.rawValue],
                 isStarterSector: false,
                 hasCore: false
             ),
@@ -341,160 +343,23 @@ extension MegaBoardConfig {
             MegaBoardSector(
                 id: SectorID.network.rawValue,
                 displayName: "Network Interface",
-                description: "NIC sector - external connections and threats",
+                description: "NIC sector - external network connections",
                 gridX: 2, gridY: 2,
                 width: sectorWidth, height: sectorHeight,
                 theme: .network,
-                unlockCost: 25000,
-                prerequisiteSectorIds: [SectorID.storage.rawValue, SectorID.cache.rawValue],
+                unlockCost: 18000,
+                prerequisiteSectorIds: [SectorID.cache.rawValue, SectorID.expansion.rawValue],
                 isStarterSector: false,
                 hasCore: false
             )
         ]
 
-        // Data bus connections between sectors
-        let connections = [
-            // RAM to adjacent sectors
-            DataBusConnection(
-                id: "ram_to_cpu",
-                fromSectorId: SectorID.ram.rawValue,
-                toSectorId: SectorID.cpu.rawValue,
-                direction: .south,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 1.5, y: sectorHeight * 1),
-                    CGPoint(x: sectorWidth * 1.5, y: sectorHeight * 0.5)
-                ]
-            ),
-            DataBusConnection(
-                id: "ram_to_gpu",
-                fromSectorId: SectorID.ram.rawValue,
-                toSectorId: SectorID.gpu.rawValue,
-                direction: .west,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 1, y: sectorHeight * 1.5),
-                    CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 1.5)
-                ]
-            ),
-            DataBusConnection(
-                id: "ram_to_storage",
-                fromSectorId: SectorID.ram.rawValue,
-                toSectorId: SectorID.storage.rawValue,
-                direction: .east,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 2, y: sectorHeight * 1.5),
-                    CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 1.5)
-                ]
-            ),
-            DataBusConnection(
-                id: "ram_to_cache",
-                fromSectorId: SectorID.ram.rawValue,
-                toSectorId: SectorID.cache.rawValue,
-                direction: .north,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 1.5, y: sectorHeight * 2),
-                    CGPoint(x: sectorWidth * 1.5, y: sectorHeight * 2.5)
-                ]
-            ),
-            // GPU to adjacent sectors
-            DataBusConnection(
-                id: "gpu_to_power",
-                fromSectorId: SectorID.gpu.rawValue,
-                toSectorId: SectorID.power.rawValue,
-                direction: .south,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 1),
-                    CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 0.5)
-                ]
-            ),
-            DataBusConnection(
-                id: "gpu_to_io",
-                fromSectorId: SectorID.gpu.rawValue,
-                toSectorId: SectorID.io.rawValue,
-                direction: .north,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 2),
-                    CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 2.5)
-                ]
-            ),
-            // Storage to adjacent sectors
-            DataBusConnection(
-                id: "storage_to_network",
-                fromSectorId: SectorID.storage.rawValue,
-                toSectorId: SectorID.network.rawValue,
-                direction: .north,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 2),
-                    CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 2.5)
-                ]
-            ),
-            DataBusConnection(
-                id: "storage_to_expansion",
-                fromSectorId: SectorID.storage.rawValue,
-                toSectorId: SectorID.expansion.rawValue,
-                direction: .south,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 1),
-                    CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 0.5)
-                ]
-            ),
-            // Cache to network
-            DataBusConnection(
-                id: "cache_to_network",
-                fromSectorId: SectorID.cache.rawValue,
-                toSectorId: SectorID.network.rawValue,
-                direction: .east,
-                waypoints: [
-                    CGPoint(x: sectorWidth * 2, y: sectorHeight * 2.5),
-                    CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 2.5)
-                ]
-            )
-        ]
+        // Data bus connections - simplified for new 8-lane system
+        // Each non-CPU sector has a lane to the CPU, connections are visual only
+        let connections: [DataBusConnection] = []
 
-        // Encryption gates at sector boundaries
-        let gates = [
-            // Gates for sectors adjacent to RAM
-            EncryptionGate(
-                id: "gate_cpu",
-                sectorId: SectorID.cpu.rawValue,
-                position: CGPoint(x: sectorWidth * 1.5, y: sectorHeight * 1)
-            ),
-            EncryptionGate(
-                id: "gate_gpu",
-                sectorId: SectorID.gpu.rawValue,
-                position: CGPoint(x: sectorWidth * 1, y: sectorHeight * 1.5)
-            ),
-            EncryptionGate(
-                id: "gate_storage",
-                sectorId: SectorID.storage.rawValue,
-                position: CGPoint(x: sectorWidth * 2, y: sectorHeight * 1.5)
-            ),
-            EncryptionGate(
-                id: "gate_cache",
-                sectorId: SectorID.cache.rawValue,
-                position: CGPoint(x: sectorWidth * 1.5, y: sectorHeight * 2)
-            ),
-            // Outer gates
-            EncryptionGate(
-                id: "gate_power",
-                sectorId: SectorID.power.rawValue,
-                position: CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 1)
-            ),
-            EncryptionGate(
-                id: "gate_io",
-                sectorId: SectorID.io.rawValue,
-                position: CGPoint(x: sectorWidth * 0.5, y: sectorHeight * 2)
-            ),
-            EncryptionGate(
-                id: "gate_network",
-                sectorId: SectorID.network.rawValue,
-                position: CGPoint(x: sectorWidth * 2, y: sectorHeight * 2.5)
-            ),
-            EncryptionGate(
-                id: "gate_expansion",
-                sectorId: SectorID.expansion.rawValue,
-                position: CGPoint(x: sectorWidth * 2.5, y: sectorHeight * 1)
-            )
-        ]
+        // Gates are replaced by lock icons at spawn points in the new lane system
+        let gates: [EncryptionGate] = []
 
         return MegaBoardConfig(
             gridColumns: 3,

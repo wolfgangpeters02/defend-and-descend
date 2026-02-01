@@ -204,8 +204,8 @@ struct MotherboardDistrict: Identifiable, Codable {
 // MARK: - Motherboard Configuration
 
 struct MotherboardConfig: Codable {
-    var canvasWidth: CGFloat = 4000
-    var canvasHeight: CGFloat = 4000
+    var canvasWidth: CGFloat = 4200  // 3 sectors × 1400
+    var canvasHeight: CGFloat = 4200
 
     var districts: [MotherboardDistrict]
     var components: [MotherboardComponent]
@@ -507,8 +507,8 @@ extension MotherboardConfig {
         ]
 
         return MotherboardConfig(
-            canvasWidth: 4000,
-            canvasHeight: 4000,
+            canvasWidth: 4200,  // 3 sectors × 1400
+            canvasHeight: 4200,
             districts: districts,
             components: components,
             buses: buses,

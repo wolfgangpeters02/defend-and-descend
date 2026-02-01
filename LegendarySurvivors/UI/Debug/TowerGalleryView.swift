@@ -47,15 +47,15 @@ struct TowerGalleryView: View {
 
     private var headerView: some View {
         VStack(spacing: 8) {
-            Text("TOWER VISUAL GALLERY")
+            Text(L10n.Debug.gallery)
                 .font(.system(size: 24, weight: .bold, design: .monospaced))
                 .foregroundColor(.white)
 
-            Text("AAA Code-Only Tower Designs")
+            Text(L10n.Debug.gallerySubtitle)
                 .font(.system(size: 14, design: .monospaced))
                 .foregroundColor(.gray)
 
-            Toggle("Animations", isOn: $showAnimations)
+            Toggle(L10n.Debug.animations, isOn: $showAnimations)
                 .toggleStyle(SwitchToggleStyle(tint: Color(hex: "00d4ff") ?? .cyan))
                 .frame(width: 150)
                 .padding(.top, 8)
@@ -91,7 +91,7 @@ struct TowerGalleryView: View {
 
     private var deckCardPreview: some View {
         VStack(spacing: 8) {
-            Text("DECK CARD PREVIEW")
+            Text(L10n.Debug.deckCardPreview)
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(.gray)
 
@@ -240,7 +240,6 @@ class TowerPreviewScene: SKScene {
             weaponType: weaponType,
             color: towerColor,
             range: 80,
-            mergeLevel: 1,
             level: 1,
             damage: 10,
             attackSpeed: 1.0,

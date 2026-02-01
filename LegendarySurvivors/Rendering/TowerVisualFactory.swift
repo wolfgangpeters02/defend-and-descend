@@ -55,7 +55,6 @@ final class TowerVisualFactory {
         weaponType: String,
         color: UIColor,
         range: CGFloat,
-        mergeLevel: Int,
         level: Int,
         damage: CGFloat,
         attackSpeed: CGFloat,
@@ -83,6 +82,12 @@ final class TowerVisualFactory {
         coreGlow.name = "glow"
         coreGlow.zPosition = -1
         container.addChild(coreGlow)
+
+        // Layer 3.5: Rarity ring (colored outline around base)
+        let rarityRing = createRarityRing(rarity: rarityTier)
+        rarityRing.name = "rarityRing"
+        rarityRing.zPosition = -0.5
+        container.addChild(rarityRing)
 
         // Layer 4: Base platform with circuit patterns
         let basePlatform = createBasePlatform(archetype: archetype, color: color, rarity: rarityTier)
@@ -117,12 +122,12 @@ final class TowerVisualFactory {
         detailElements.zPosition = 3
         container.addChild(detailElements)
 
-        // Merge level indicators
-        let mergeIndicator = createMergeIndicator(count: mergeLevel, archetype: archetype, color: color)
-        mergeIndicator.name = "stars"
-        mergeIndicator.position = CGPoint(x: 0, y: -24)
-        mergeIndicator.zPosition = 4
-        container.addChild(mergeIndicator)
+        // Level indicators (show tower level 1-10)
+        let levelIndicator = createLevelIndicator(level: level, archetype: archetype, color: color)
+        levelIndicator.name = "levelIndicator"
+        levelIndicator.position = CGPoint(x: 0, y: -24)
+        levelIndicator.zPosition = 4
+        container.addChild(levelIndicator)
 
         // Range indicator (hidden by default)
         let rangeIndicator = createRangeIndicator(range: range, color: color)
@@ -137,13 +142,6 @@ final class TowerVisualFactory {
         cooldownArc.isHidden = true
         cooldownArc.zPosition = 5
         container.addChild(cooldownArc)
-
-        // Merge highlight
-        let mergeHighlight = createMergeHighlight()
-        mergeHighlight.name = "mergeHighlight"
-        mergeHighlight.isHidden = true
-        mergeHighlight.zPosition = 6
-        container.addChild(mergeHighlight)
 
         // LOD detail container
         let lodDetail = createLODDetail(
@@ -175,7 +173,7 @@ final class TowerVisualFactory {
         let glow = SKShapeNode(circleOfRadius: baseRadius)
         glow.fillColor = color.withAlphaComponent(glowOpacity)
         glow.strokeColor = .clear
-        glow.glowWidth = 15
+        glow.glowWidth = 8  // Reduced from 15 for performance
         glow.blendMode = .add
         container.addChild(glow)
 
@@ -1429,42 +1427,28 @@ final class TowerVisualFactory {
         return path.cgPath
     }
 
-    // MARK: - Merge Indicator
+    // MARK: - Level Indicator
 
-    static func createMergeIndicator(count: Int, archetype: TowerArchetype, color: UIColor) -> SKNode {
+    /// Create a level indicator showing tower level (1-10) as small pips
+    static func createLevelIndicator(level: Int, archetype: TowerArchetype, color: UIColor) -> SKNode {
         let container = SKNode()
-        let spacing: CGFloat = 10
 
-        for i in 0..<count {
-            let xOffset = CGFloat(i) - CGFloat(count - 1) / 2
+        // Show level as a compact badge
+        let bgNode = SKShapeNode(rectOf: CGSize(width: 20, height: 12), cornerRadius: 3)
+        bgNode.fillColor = UIColor.black.withAlphaComponent(0.8)
+        bgNode.strokeColor = color.withAlphaComponent(0.6)
+        bgNode.lineWidth = 1
+        container.addChild(bgNode)
 
-            // Create rune-style merge indicator instead of stars
-            let indicator: SKShapeNode
-
-            switch archetype {
-            case .legendary:
-                // Golden diamonds for legendary
-                indicator = SKShapeNode(path: createDiamondPath(size: 8))
-                indicator.fillColor = UIColor(hex: "fbbf24") ?? .yellow
-                indicator.strokeColor = .white
-            case .frost:
-                // Ice crystals
-                indicator = SKShapeNode(path: createDiamondPath(size: 8))
-                indicator.fillColor = .cyan
-                indicator.strokeColor = .white
-            default:
-                // Circuit nodes
-                indicator = SKShapeNode(circleOfRadius: 4)
-                indicator.fillColor = color
-                indicator.strokeColor = .white
-            }
-
-            indicator.lineWidth = 1
-            indicator.glowWidth = 3
-            indicator.position = CGPoint(x: xOffset * spacing, y: 0)
-            indicator.name = "mergeIndicator_\(i)"
-            container.addChild(indicator)
-        }
+        // Level text
+        let levelLabel = SKLabelNode(text: "\(level)")
+        levelLabel.fontSize = 9
+        levelLabel.fontName = "Menlo-Bold"
+        levelLabel.fontColor = .white
+        levelLabel.verticalAlignmentMode = .center
+        levelLabel.horizontalAlignmentMode = .center
+        levelLabel.name = "levelLabel"
+        container.addChild(levelLabel)
 
         return container
     }
@@ -1493,19 +1477,6 @@ final class TowerVisualFactory {
         arc.lineWidth = 3
         arc.lineCap = .round
         return arc
-    }
-
-    // MARK: - Merge Highlight
-
-    private static func createMergeHighlight() -> SKShapeNode {
-        let highlight = SKShapeNode(circleOfRadius: 28)
-        highlight.fillColor = .clear
-        highlight.strokeColor = .green
-        highlight.lineWidth = 3
-        highlight.glowWidth = 8
-
-        // Animated dashes
-        return highlight
     }
 
     // MARK: - LOD Detail
@@ -1554,6 +1525,101 @@ final class TowerVisualFactory {
         container.addChild(levelLabel)
 
         return container
+    }
+
+    // MARK: - Rarity Ring
+
+    /// Creates a colored ring around the tower base indicating rarity
+    private static func createRarityRing(rarity: RarityTier) -> SKNode {
+        let container = SKNode()
+
+        // Get rarity color
+        let rarityColor = RarityColors.uiColor(for: rarityColorString(rarity))
+
+        // Ring radius and width based on rarity
+        let radius: CGFloat
+        let lineWidth: CGFloat
+        let glowWidth: CGFloat
+
+        switch rarity {
+        case .common:
+            radius = 22
+            lineWidth = 1.5
+            glowWidth = 2
+        case .rare:
+            radius = 23
+            lineWidth = 2.0
+            glowWidth = 4
+        case .epic:
+            radius = 24
+            lineWidth = 2.5
+            glowWidth = 6
+        case .legendary:
+            radius = 25
+            lineWidth = 3.0
+            glowWidth = 10
+        }
+
+        // Outer glow ring
+        let glowRing = SKShapeNode(circleOfRadius: radius)
+        glowRing.strokeColor = rarityColor.withAlphaComponent(0.3)
+        glowRing.lineWidth = lineWidth + 4
+        glowRing.fillColor = .clear
+        glowRing.glowWidth = glowWidth
+        container.addChild(glowRing)
+
+        // Main rarity ring
+        let ring = SKShapeNode(circleOfRadius: radius)
+        ring.strokeColor = rarityColor.withAlphaComponent(rarity == .common ? 0.4 : 0.7)
+        ring.lineWidth = lineWidth
+        ring.fillColor = .clear
+        container.addChild(ring)
+
+        // Add corner accent nodes for epic/legendary
+        if rarity == .epic || rarity == .legendary {
+            let nodeCount = rarity == .legendary ? 8 : 4
+            let nodeRadius: CGFloat = rarity == .legendary ? 3 : 2.5
+
+            for i in 0..<nodeCount {
+                let angle = CGFloat(i) * (2 * .pi / CGFloat(nodeCount)) - .pi / 2
+                let x = cos(angle) * radius
+                let y = sin(angle) * radius
+
+                let node = SKShapeNode(circleOfRadius: nodeRadius)
+                node.fillColor = rarityColor
+                node.strokeColor = rarityColor.withAlphaComponent(0.5)
+                node.lineWidth = 1
+                node.glowWidth = rarity == .legendary ? 4 : 2
+                node.position = CGPoint(x: x, y: y)
+                container.addChild(node)
+            }
+        }
+
+        // Legendary gets rotating inner ring
+        if rarity == .legendary {
+            let innerRing = SKShapeNode(circleOfRadius: radius - 4)
+            innerRing.strokeColor = rarityColor.withAlphaComponent(0.3)
+            innerRing.lineWidth = 1
+            innerRing.fillColor = .clear
+            innerRing.name = "legendaryInnerRing"
+
+            // Rotating animation
+            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 8.0)
+            innerRing.run(SKAction.repeatForever(rotate))
+            container.addChild(innerRing)
+        }
+
+        return container
+    }
+
+    /// Convert RarityTier to string for RarityColors lookup
+    private static func rarityColorString(_ rarity: RarityTier) -> String {
+        switch rarity {
+        case .common: return "common"
+        case .rare: return "rare"
+        case .epic: return "epic"
+        case .legendary: return "legendary"
+        }
     }
 }
 

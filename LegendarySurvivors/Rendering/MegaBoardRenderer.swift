@@ -17,6 +17,11 @@ final class MegaBoardRenderer {
     private var noisePhase: CGFloat = 0
     private var pulsePhase: CGFloat = 0
 
+    // Pre-generated binary strings to avoid per-frame allocation
+    private let preGeneratedBinaryStrings: [String] = (0..<8).map { _ in
+        (0..<8).map { _ in Bool.random() ? "1" : "0" }.joined(separator: "\n")
+    }
+
     // MARK: - Initialization
 
     init(scene: SKScene) {
@@ -196,7 +201,7 @@ final class MegaBoardRenderer {
         gateNode.addChild(frame)
 
         // "ENCRYPTED" label
-        let encryptedLabel = SKLabelNode(text: "ENCRYPTED")
+        let encryptedLabel = SKLabelNode(text: L10n.Sector.encrypted)
         encryptedLabel.fontName = "Menlo-Bold"
         encryptedLabel.fontSize = 12
         encryptedLabel.fontColor = .red
@@ -208,7 +213,7 @@ final class MegaBoardRenderer {
         binaryContainer.name = "binaryEffect"
         for col in 0..<4 {
             let x = CGFloat(col - 2) * 18 + 9
-            let binaryLabel = SKLabelNode(text: randomBinaryString(length: 8))
+            let binaryLabel = SKLabelNode(text: preGeneratedBinaryStrings[col])
             binaryLabel.fontName = "Menlo"
             binaryLabel.fontSize = 10
             binaryLabel.fontColor = .green.withAlphaComponent(0.6)
@@ -217,11 +222,14 @@ final class MegaBoardRenderer {
             binaryLabel.numberOfLines = 8
             binaryContainer.addChild(binaryLabel)
 
-            // Animate binary scroll
-            let updateBinary = SKAction.run {
-                binaryLabel.text = self.randomBinaryString(length: 8)
+            // Animate binary scroll - cycle through pre-generated strings (no allocation)
+            var stringIndex = col
+            let updateBinary = SKAction.run { [weak self] in
+                guard let self = self else { return }
+                stringIndex = (stringIndex + 1) % self.preGeneratedBinaryStrings.count
+                binaryLabel.text = self.preGeneratedBinaryStrings[stringIndex]
             }
-            let wait = SKAction.wait(forDuration: 0.1)
+            let wait = SKAction.wait(forDuration: 0.15)  // Slightly slower for visual appeal
             binaryLabel.run(SKAction.repeatForever(SKAction.sequence([updateBinary, wait])))
         }
         gateNode.addChild(binaryContainer)
@@ -302,17 +310,15 @@ final class MegaBoardRenderer {
         if isActive {
             busNode.glowWidth = 4
 
-            // Data flow animation
+            // Data flow animation - use opacity pulse instead of per-frame CGPath rebuild
             let dashPattern: [CGFloat] = [10, 10]
             busNode.path = path.cgPath.copy(dashingWithPhase: 0, lengths: dashPattern)
 
-            // Animate dash phase
-            let animateDash = SKAction.customAction(withDuration: 1.0) { node, elapsed in
-                guard let shapeNode = node as? SKShapeNode else { return }
-                let phase = CGFloat(elapsed) * 20
-                shapeNode.path = path.cgPath.copy(dashingWithPhase: phase, lengths: dashPattern)
-            }
-            busNode.run(SKAction.repeatForever(animateDash))
+            // Simple pulse animation (much cheaper than rebuilding CGPath every frame)
+            let pulseUp = SKAction.fadeAlpha(to: 1.0, duration: 0.5)
+            let pulseDown = SKAction.fadeAlpha(to: 0.6, duration: 0.5)
+            let pulse = SKAction.sequence([pulseUp, pulseDown])
+            busNode.run(SKAction.repeatForever(pulse))
         }
 
         parentNode.addChild(busNode)

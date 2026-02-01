@@ -38,21 +38,6 @@ enum ProtocolID: String, CaseIterable, Codable {
     static let starter: ProtocolID = .kernelPulse
 }
 
-// MARK: - Powerup IDs
-
-/// Powerup/class types from GameConfig.json
-enum PowerupID: String, CaseIterable, Codable {
-    case tank
-    case berserker
-    case sniper
-    case gunslinger
-    case giant
-    case assassin
-    case warrior
-    case mage
-    case godmode
-}
-
 // MARK: - Arena IDs
 
 /// Arena/map types for survivor mode from GameConfig.json
@@ -76,6 +61,7 @@ enum EnemyID: String, CaseIterable, Codable {
     case basic
     case fast
     case tank
+    case elite
     case boss
     case cyberboss
     case voidharbinger
@@ -130,8 +116,8 @@ enum SectorID: String, CaseIterable, Codable {
     case cache
     case expansion     // PCIe expansion bay
 
-    /// The starting sector (always unlocked)
-    static let starter: SectorID = .ram
+    /// The starting sector (always unlocked) - PSU powers everything
+    static let starter: SectorID = .power
 
     /// Display name for UI
     var displayName: String {
@@ -187,27 +173,23 @@ enum CoreUpgradeID: String, CaseIterable, Codable {
 /// Currency types in the game (System: Reboot)
 /// Note: Power (⚡) is NOT a currency - it's a capacity/ceiling managed by PSU level
 enum CurrencyID: String, CaseIterable, Codable {
-    case hash     // Hash (Ħ) - Primary soft currency, earned passively in Motherboard mode
-    case data     // Data (◈) - Research currency, earned in Debug/Active mode
+    case hash     // Hash (Ħ) - Universal currency, earned passively in Motherboard and from Boss fights
 
     var displayName: String {
         switch self {
         case .hash: return "Hash"
-        case .data: return "Data"
         }
     }
 
     var symbol: String {
         switch self {
         case .hash: return "Ħ"
-        case .data: return "◈"
         }
     }
 
     var icon: String {
         switch self {
         case .hash: return "number.circle.fill"
-        case .data: return "memorychip"
         }
     }
 }
@@ -287,7 +269,7 @@ enum EffectZoneType: String, Codable, CaseIterable {
 enum ParticleType: String, Codable, CaseIterable {
     case explosion
     case hit
-    case data  // Changed from coin - Data pickups
+    case hash  // Hash currency pickups
     case blood
     case muzzle
     case impact
@@ -304,14 +286,13 @@ enum ParticleType: String, Codable, CaseIterable {
 
 /// Types of collectible pickups
 enum PickupType: String, Codable, CaseIterable {
-    case data  // Changed from coin - Data currency pickups
+    case hash  // Hash currency pickups
     case health
     case xp
-    case powerup
 
     /// Alternative initializer for backwards compatibility
     init(from string: String) {
-        self = PickupType(rawValue: string) ?? .data
+        self = PickupType(rawValue: string) ?? .hash
     }
 }
 

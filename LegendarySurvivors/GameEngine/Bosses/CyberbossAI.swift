@@ -12,16 +12,19 @@ class CyberbossAI {
         var phase: Int = 1
         var mode: CyberbossMode = .melee
         var modeTimer: Double = 0
-        var modeSwitchInterval: Double = 5.0
+        var modeSwitchInterval: Double = BalanceConfig.Cyberboss.modeSwitchInterval
 
         var lastMinionSpawnTime: Double = 0
-        var minionSpawnInterval: Double = 10.0
+        var minionSpawnInterval: Double = BalanceConfig.Cyberboss.minionSpawnIntervalPhase1
 
         var lastPuddleSpawnTime: Double = 0
-        var puddleSpawnInterval: Double = 2.0
+        var puddleSpawnInterval: Double = BalanceConfig.Cyberboss.puddleSpawnIntervalPhase3
+
+        var lastRangedAttackTime: Double = 0
+        var rangedAttackCooldown: Double = BalanceConfig.Cyberboss.rangedAttackCooldown
 
         var laserBeams: [LaserBeam] = []
-        var laserRotationSpeed: CGFloat = 25.0 // degrees per second (slowed for playability)
+        var laserRotationSpeed: CGFloat = BalanceConfig.Cyberboss.laserRotationSpeed
 
         var damagePuddles: [DamagePuddle] = []
 
@@ -38,6 +41,9 @@ class CyberbossAI {
         var angle: CGFloat
         let length: CGFloat
         let damage: CGFloat
+        var lifetime: Double = 0           // How long this beam has existed
+        let warningDuration: Double = 1.0  // 1 second warning before active
+        var isActive: Bool { lifetime >= warningDuration }
     }
 
     struct DamagePuddle {
@@ -72,17 +78,17 @@ class CyberbossAI {
         // Determine phase based on health
         let healthPercent = boss.health / boss.maxHealth
 
-        if healthPercent <= 0.25 {
+        if healthPercent <= BalanceConfig.Cyberboss.phase4Threshold {
             if bossState.phase != 4 {
                 enterPhase4(bossState: &bossState, boss: boss)
             }
             bossState.phase = 4
-        } else if healthPercent <= 0.5 {
+        } else if healthPercent <= BalanceConfig.Cyberboss.phase3Threshold {
             if bossState.phase != 3 {
                 enterPhase3(bossState: &bossState, boss: boss)
             }
             bossState.phase = 3
-        } else if healthPercent <= 0.75 {
+        } else if healthPercent <= BalanceConfig.Cyberboss.phase2Threshold {
             if bossState.phase != 2 {
                 enterPhase2(bossState: &bossState)
             }
@@ -103,8 +109,8 @@ class CyberbossAI {
             break
         }
 
-        // Apply movement with collision checking
-        applyMovement(boss: &boss, gameState: gameState, deltaTime: deltaTime)
+        // Apply movement with collision checking and obstacle destruction
+        applyMovement(boss: &boss, bossState: bossState, gameState: &gameState, deltaTime: deltaTime)
 
         // Update damage puddles
         updateDamagePuddles(bossState: &bossState, gameState: &gameState, deltaTime: deltaTime)
@@ -115,9 +121,13 @@ class CyberbossAI {
 
     // MARK: - Movement Application
 
+    /// Melee damage per second dealt to obstacles and player when boss is in melee mode
+    private static var meleeDPS: CGFloat { BalanceConfig.Cyberboss.meleeDPS }
+
     private static func applyMovement(
         boss: inout Enemy,
-        gameState: GameState,
+        bossState: CyberbossState,
+        gameState: inout GameState,
         deltaTime: TimeInterval
     ) {
         // Calculate new position from velocity
@@ -128,9 +138,60 @@ class CyberbossAI {
         var newY = boss.y + moveY
 
         let bossSize = boss.size ?? 60
+        let meleeRange = bossSize + 30 // AoE melee range around boss
+        let isMeleeMode = bossState.mode == .melee && bossState.phase <= 2
 
-        // Resolve obstacle collisions
+        // In melee mode, deal AoE damage to obstacles and push through them
+        if isMeleeMode {
+            let meleeDamage = meleeDPS * CGFloat(deltaTime)
+
+            for i in 0..<gameState.arena.obstacles.count {
+                let obstacle = gameState.arena.obstacles[i]
+
+                // Check if obstacle is in melee range
+                let obstacleCenterX = obstacle.x + obstacle.width / 2
+                let obstacleCenterY = obstacle.y + obstacle.height / 2
+                let dx = obstacleCenterX - boss.x
+                let dy = obstacleCenterY - boss.y
+                let distToObstacle = sqrt(dx * dx + dy * dy)
+
+                if distToObstacle < meleeRange + max(obstacle.width, obstacle.height) / 2 {
+                    // Damage destructible obstacles
+                    if gameState.arena.obstacles[i].isDestructible,
+                       var health = gameState.arena.obstacles[i].health {
+                        health -= meleeDamage
+                        gameState.arena.obstacles[i].health = max(0, health)
+
+                        // Destroy if health depleted
+                        if health <= 0 {
+                            // Destruction particles
+                            ParticleFactory.createExplosion(
+                                state: &gameState,
+                                x: obstacleCenterX,
+                                y: obstacleCenterY,
+                                color: "#6b7280",
+                                count: 15,
+                                size: 12
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Remove destroyed obstacles
+            gameState.arena.obstacles.removeAll { obstacle in
+                guard obstacle.isDestructible, let health = obstacle.health else { return false }
+                return health <= 0
+            }
+        }
+
+        // Resolve obstacle collisions (only for obstacles that still exist)
         for obstacle in gameState.arena.obstacles {
+            // Skip destroyed obstacles
+            if obstacle.isDestructible, let health = obstacle.health, health <= 0 {
+                continue
+            }
+
             // Check X movement
             if MathUtils.circleRectOverlap(
                 circleX: newX, circleY: boss.y, radius: bossSize,
@@ -164,25 +225,29 @@ class CyberbossAI {
 
     private static func enterPhase2(bossState: inout CyberbossState) {
         // Continue mode switching, add minion spawns
-        bossState.minionSpawnInterval = 8.0
+        bossState.minionSpawnInterval = BalanceConfig.Cyberboss.minionSpawnIntervalPhase2
     }
 
     private static func enterPhase3(bossState: inout CyberbossState, boss: Enemy) {
         // Stop moving, start spawning damage puddles
-        bossState.puddleSpawnInterval = 2.0
+        bossState.puddleSpawnInterval = BalanceConfig.Cyberboss.puddleSpawnIntervalPhase3
     }
 
     private static func enterPhase4(bossState: inout CyberbossState, boss: Enemy) {
-        // Create 5 rotating laser beams
+        print("[Cyberboss] ENTERING PHASE 4! Boss HP: \(boss.health)/\(boss.maxHealth)")
+        // Create rotating laser beams
+        let beamCount = BalanceConfig.Cyberboss.laserBeamCount
+        let angleStep = 360.0 / CGFloat(beamCount)
         bossState.laserBeams = []
-        for i in 0..<5 {
+        for i in 0..<beamCount {
             bossState.laserBeams.append(LaserBeam(
                 id: RandomUtils.generateId(),
-                angle: CGFloat(i) * 72.0, // Evenly spaced
-                length: 800,  // Increased for larger arena (was 500)
-                damage: 50    // Survivable damage - player can take 1-2 hits
+                angle: CGFloat(i) * angleStep,
+                length: BalanceConfig.Cyberboss.laserBeamLength,
+                damage: BalanceConfig.Cyberboss.laserBeamDamage
             ))
         }
+        print("[Cyberboss] Created \(bossState.laserBeams.count) laser beams with damage: \(BalanceConfig.Cyberboss.laserBeamDamage)")
     }
 
     // MARK: - Phase Updates
@@ -207,11 +272,11 @@ class CyberbossAI {
         // Movement behavior based on mode
         if bossState.mode == .melee {
             // Chase player aggressively
-            moveTowardsPlayer(boss: &boss, gameState: gameState, speedMultiplier: 1.2)
+            moveTowardsPlayer(boss: &boss, gameState: gameState, speedMultiplier: BalanceConfig.Cyberboss.meleeChaseSpeedMultiplier)
         } else {
             // Keep distance and shoot
-            moveAwayFromPlayer(boss: &boss, gameState: gameState, preferredDistance: 300)
-            fireRangedAttack(boss: boss, gameState: &gameState)
+            moveAwayFromPlayer(boss: &boss, gameState: gameState, preferredDistance: BalanceConfig.Cyberboss.rangedPreferredDistance)
+            fireRangedAttack(boss: boss, bossState: &bossState, gameState: &gameState)
         }
     }
 
@@ -227,7 +292,7 @@ class CyberbossAI {
         // Spawn minions periodically
         if gameState.gameTime - bossState.lastMinionSpawnTime >= bossState.minionSpawnInterval {
             bossState.lastMinionSpawnTime = gameState.gameTime
-            spawnMinions(boss: boss, gameState: &gameState)
+            spawnMinions(boss: boss, gameState: &gameState, phase: 2)
         }
     }
 
@@ -241,10 +306,10 @@ class CyberbossAI {
         boss.velocityX = 0
         boss.velocityY = 0
 
-        // Continue spawning minions to keep player moving
+        // Continue spawning minions to keep player moving (reduced cap for performance)
         if gameState.gameTime - bossState.lastMinionSpawnTime >= bossState.minionSpawnInterval {
             bossState.lastMinionSpawnTime = gameState.gameTime
-            spawnMinions(boss: boss, gameState: &gameState)
+            spawnMinions(boss: boss, gameState: &gameState, phase: 3)
         }
 
         // Spawn damage puddles
@@ -265,7 +330,7 @@ class CyberbossAI {
         boss.velocityY = 0
 
         // Continue spawning puddles at faster rate
-        bossState.puddleSpawnInterval = 1.5
+        bossState.puddleSpawnInterval = BalanceConfig.Cyberboss.puddleSpawnIntervalPhase4
         if gameState.gameTime - bossState.lastPuddleSpawnTime >= bossState.puddleSpawnInterval {
             bossState.lastPuddleSpawnTime = gameState.gameTime
             spawnDamagePuddles(boss: boss, bossState: &bossState, gameState: gameState)
@@ -315,46 +380,84 @@ class CyberbossAI {
 
     // MARK: - Attacks
 
-    private static func fireRangedAttack(boss: Enemy, gameState: inout GameState) {
+    private static func fireRangedAttack(boss: Enemy, bossState: inout CyberbossState, gameState: inout GameState) {
+        // Check cooldown - fire spread volley periodically
+        guard gameState.gameTime - bossState.lastRangedAttackTime >= bossState.rangedAttackCooldown else {
+            return
+        }
+        bossState.lastRangedAttackTime = gameState.gameTime
+
         let dx = gameState.player.x - boss.x
         let dy = gameState.player.y - boss.y
         let distance = sqrt(dx * dx + dy * dy)
 
         if distance > 0 {
             let bossSize = boss.size ?? 60
-            let projectileSize = bossSize * 0.4 // 40% of boss size - visible but not huge
+            let projectileSize = bossSize * 0.35 // Slightly smaller for spread pattern
+            let baseAngle = atan2(dy, dx)
 
-            // Spawn projectile outside boss hitbox
+            // Fire projectiles in a fan spread
+            let projectileCount = BalanceConfig.Cyberboss.rangedProjectileCount
+            let spreadAngle = BalanceConfig.Cyberboss.rangedSpreadAngle
+            let angleStep = spreadAngle / CGFloat(projectileCount - 1)
+            let startAngle = baseAngle - spreadAngle / 2
+
+            let projectileSpeed = BalanceConfig.Cyberboss.rangedProjectileSpeed
             let spawnOffset = bossSize + projectileSize + 5
-            let spawnX = boss.x + (dx / distance) * spawnOffset
-            let spawnY = boss.y + (dy / distance) * spawnOffset
 
-            let projectile = Projectile(
-                id: RandomUtils.generateId(),
-                weaponId: "cyberboss_blast",
-                x: spawnX,
-                y: spawnY,
-                velocityX: (dx / distance) * 200, // Slower for dramatic effect
-                velocityY: (dy / distance) * 200,
-                damage: 35, // Higher damage for slower projectile
-                radius: projectileSize,
-                color: "#00ffff", // Cyan energy blast
-                lifetime: 6.0,
-                piercing: 0,
-                hitEnemies: [],
-                isHoming: false,
-                homingStrength: 0,
-                isEnemyProjectile: true,
-                trail: true // Enable trail for visual effect
-            )
-            gameState.projectiles.append(projectile)
+            for i in 0..<projectileCount {
+                let angle = startAngle + CGFloat(i) * angleStep
+                let dirX = cos(angle)
+                let dirY = sin(angle)
+
+                let spawnX = boss.x + dirX * spawnOffset
+                let spawnY = boss.y + dirY * spawnOffset
+
+                let projectile = Projectile(
+                    id: RandomUtils.generateId(),
+                    weaponId: "cyberboss_blast",
+                    x: spawnX,
+                    y: spawnY,
+                    velocityX: dirX * projectileSpeed,
+                    velocityY: dirY * projectileSpeed,
+                    damage: BalanceConfig.Cyberboss.rangedProjectileDamage,
+                    radius: projectileSize,
+                    color: "#00ffff", // Cyan energy blast
+                    lifetime: 5.0,
+                    piercing: 0,
+                    hitEnemies: [],
+                    isHoming: false,
+                    homingStrength: 0,
+                    isEnemyProjectile: true,
+                    trail: true // Enable trail for visual effect
+                )
+                gameState.projectiles.append(projectile)
+            }
         }
     }
 
-    private static func spawnMinions(boss: Enemy, gameState: inout GameState) {
-        // Spawn 5-6 fast enemies and 4-5 tank enemies
-        let fastCount = Int.random(in: 5...6)
-        let tankCount = Int.random(in: 4...5)
+    /// Maximum minions allowed on screen during boss fight (prevents lag from enemy accumulation)
+    private static var maxMinionsOnScreen: Int { BalanceConfig.Cyberboss.maxMinionsOnScreen }
+    /// Reduced cap for Phase 3 (puddles + minions = performance concern)
+    private static var maxMinionsPhase3: Int { BalanceConfig.Cyberboss.maxMinionsOnScreen / 2 }  // 12 instead of 25
+
+    private static func spawnMinions(boss: Enemy, gameState: inout GameState, phase: Int = 2) {
+        // Count current minions (non-boss enemies that are alive)
+        let currentMinions = gameState.enemies.filter { !$0.isBoss && !$0.isDead }.count
+
+        // Use lower cap in Phase 3 (puddles already add visual complexity)
+        let effectiveCap = phase >= 3 ? maxMinionsPhase3 : maxMinionsOnScreen
+
+        // Don't spawn if we're at or above the cap
+        guard currentMinions < effectiveCap else { return }
+
+        // Calculate how many we can spawn without exceeding cap
+        let availableSlots = effectiveCap - currentMinions
+
+        // Spawn fast enemies and tank enemies (capped)
+        let fastCount = min(Int.random(in: BalanceConfig.Cyberboss.fastMinionCountMin...BalanceConfig.Cyberboss.fastMinionCountMax), availableSlots)
+        let remainingSlots = availableSlots - fastCount
+        let tankCount = min(Int.random(in: BalanceConfig.Cyberboss.tankMinionCountMin...BalanceConfig.Cyberboss.tankMinionCountMax), remainingSlots)
 
         for _ in 0..<fastCount {
             spawnMinion(type: "fast", near: boss, gameState: &gameState)
@@ -366,29 +469,72 @@ class CyberbossAI {
     }
 
     private static func spawnMinion(type: String, near boss: Enemy, gameState: inout GameState) {
-        let angle = CGFloat.random(in: 0...(2 * .pi))
-        let distance: CGFloat = CGFloat.random(in: 80...150)
+        guard let config = GameConfigLoader.shared.getEnemy(type) else { return }
 
-        let x = boss.x + cos(angle) * distance
-        let y = boss.y + sin(angle) * distance
+        let enemySize = CGFloat(config.size)
 
-        if let config = GameConfigLoader.shared.getEnemy(type) {
-            let enemy = Enemy(
-                id: RandomUtils.generateId(),
-                type: type,
-                x: x,
-                y: y,
-                health: config.health,
-                maxHealth: config.health,
-                damage: config.damage,
-                speed: config.speed,
-                xpValue: config.coinValue, // XP derived from coin value
-                color: config.color,
-                velocityX: 0,
-                velocityY: 0
-            )
-            gameState.enemies.append(enemy)
+        // Try multiple spawn positions to avoid obstacles
+        for _ in 0..<10 {
+            let angle = CGFloat.random(in: 0...(2 * .pi))
+            let distance: CGFloat = CGFloat.random(in: 80...150)
+
+            let x = boss.x + cos(angle) * distance
+            let y = boss.y + sin(angle) * distance
+
+            // Check if position is inside any obstacle
+            var collidesWithObstacle = false
+            for obstacle in gameState.arena.obstacles {
+                if MathUtils.circleRectOverlap(
+                    circleX: x, circleY: y, radius: enemySize,
+                    rectX: obstacle.x, rectY: obstacle.y,
+                    rectWidth: obstacle.width, rectHeight: obstacle.height
+                ) {
+                    collidesWithObstacle = true
+                    break
+                }
+            }
+
+            // Also check arena bounds
+            let padding: CGFloat = enemySize + 10
+            let inBounds = x >= padding && x <= gameState.arena.width - padding &&
+                          y >= padding && y <= gameState.arena.height - padding
+
+            if !collidesWithObstacle && inBounds {
+                let enemy = Enemy(
+                    id: RandomUtils.generateId(),
+                    type: type,
+                    x: x,
+                    y: y,
+                    health: config.health,
+                    maxHealth: config.health,
+                    damage: config.damage,
+                    speed: config.speed,
+                    xpValue: config.coinValue,
+                    color: config.color,
+                    velocityX: 0,
+                    velocityY: 0
+                )
+                gameState.enemies.append(enemy)
+                return
+            }
         }
+
+        // Fallback: spawn at boss position (will walk out)
+        let enemy = Enemy(
+            id: RandomUtils.generateId(),
+            type: type,
+            x: boss.x,
+            y: boss.y,
+            health: config.health,
+            maxHealth: config.health,
+            damage: config.damage,
+            speed: config.speed,
+            xpValue: config.coinValue,
+            color: config.color,
+            velocityX: 0,
+            velocityY: 0
+        )
+        gameState.enemies.append(enemy)
     }
 
     private static func spawnDamagePuddles(
@@ -396,8 +542,8 @@ class CyberbossAI {
         bossState: inout CyberbossState,
         gameState: GameState
     ) {
-        // Spawn 3-5 puddles around the arena
-        let count = Int.random(in: 3...5)
+        // Spawn puddles around the arena
+        let count = Int.random(in: BalanceConfig.Cyberboss.puddleCountMin...BalanceConfig.Cyberboss.puddleCountMax)
 
         for _ in 0..<count {
             let arenaWidth = gameState.arena.width
@@ -407,14 +553,14 @@ class CyberbossAI {
                 id: RandomUtils.generateId(),
                 x: CGFloat.random(in: 100...(arenaWidth - 100)),
                 y: CGFloat.random(in: 100...(arenaHeight - 100)),
-                radius: 60,
-                damage: 10,             // 10 DPS while active (reduced from 30)
-                popDamage: 30,          // 30 burst damage when puddle pops
-                damageInterval: 0.5,    // Tick every 0.5 seconds (so 2 ticks per second = 10 DPS)
+                radius: BalanceConfig.Cyberboss.puddleRadius,
+                damage: BalanceConfig.Cyberboss.puddleDPS,
+                popDamage: BalanceConfig.Cyberboss.puddlePopDamage,
+                damageInterval: BalanceConfig.Cyberboss.puddleDamageInterval,
                 lastDamageTime: 0,
                 lifetime: 0,
-                maxLifetime: 4.0,       // Total 4 second duration (reduced from 8)
-                warningDuration: 1.0,   // 1 second warning phase (no damage)
+                maxLifetime: BalanceConfig.Cyberboss.puddleMaxLifetime,
+                warningDuration: BalanceConfig.Cyberboss.puddleWarningDuration,
                 hasPopped: false
             )
             bossState.damagePuddles.append(puddle)
@@ -441,12 +587,13 @@ class CyberbossAI {
             if aboutToPop && !mutablePuddle.hasPopped {
                 mutablePuddle.hasPopped = true
 
-                // Check if player is in puddle for pop damage
+                // Check if player is in puddle for pop damage (include player radius for accurate collision)
                 let dx = gameState.player.x - mutablePuddle.x
                 let dy = gameState.player.y - mutablePuddle.y
                 let distance = sqrt(dx * dx + dy * dy)
+                let playerRadius = BalanceConfig.Player.size
 
-                if distance < mutablePuddle.radius {
+                if distance < mutablePuddle.radius + playerRadius {
                     gameState.player.health -= mutablePuddle.popDamage
 
                     // Check for death
@@ -477,12 +624,13 @@ class CyberbossAI {
                 return mutablePuddle // No damage during warning
             }
 
-            // Active phase - deal DPS damage
+            // Active phase - deal DPS damage (include player radius for accurate collision)
             let dx = gameState.player.x - mutablePuddle.x
             let dy = gameState.player.y - mutablePuddle.y
             let distance = sqrt(dx * dx + dy * dy)
+            let playerRadius = BalanceConfig.Player.size
 
-            if distance < mutablePuddle.radius &&
+            if distance < mutablePuddle.radius + playerRadius &&
                gameState.gameTime - mutablePuddle.lastDamageTime >= mutablePuddle.damageInterval {
                 mutablePuddle.lastDamageTime = gameState.gameTime
                 let tickDamage = mutablePuddle.damage * CGFloat(mutablePuddle.damageInterval) // 10 DPS * 0.5s = 5 damage per tick
@@ -519,25 +667,30 @@ class CyberbossAI {
     ) {
         guard !bossState.laserBeams.isEmpty else { return }
 
-        // Rotate all beams
+        // Update lifetime and rotate all beams
         for i in 0..<bossState.laserBeams.count {
+            bossState.laserBeams[i].lifetime += deltaTime
             bossState.laserBeams[i].angle += bossState.laserRotationSpeed * CGFloat(deltaTime)
             if bossState.laserBeams[i].angle >= 360 {
                 bossState.laserBeams[i].angle -= 360
             }
         }
 
-        // Check player collision with any beam
-        if gameState.player.invulnerableUntil < gameState.gameTime {
+        // Check player collision with ACTIVE beams only (use currentFrameTime for consistent time base)
+        if gameState.player.invulnerableUntil < gameState.currentFrameTime {
             for beam in bossState.laserBeams {
-                if isPlayerHitByLaser(
+                // Skip beams still in warning phase
+                guard beam.isActive else { continue }
+
+                let hit = isPlayerHitByLaser(
                     beam: beam,
                     bossX: boss.x, bossY: boss.y,
                     playerX: gameState.player.x, playerY: gameState.player.y
-                ) {
-                    // Instant kill damage
+                )
+                if hit {
+                    print("[Laser] HIT! Damage: \(beam.damage), HP: \(gameState.player.health) -> \(gameState.player.health - beam.damage)")
                     gameState.player.health -= beam.damage
-                    gameState.player.invulnerableUntil = gameState.gameTime + 0.5
+                    gameState.player.invulnerableUntil = gameState.currentFrameTime + 0.5
 
                     // Check for death
                     if gameState.player.health <= 0 {
@@ -565,13 +718,13 @@ class CyberbossAI {
         bossX: CGFloat, bossY: CGFloat,
         playerX: CGFloat, playerY: CGFloat
     ) -> Bool {
-        let playerRadius: CGFloat = 15
-        let beamWidth: CGFloat = 10
+        let playerRadius = BalanceConfig.Player.size
+        let beamWidth = BalanceConfig.Cyberboss.laserBeamWidth
 
-        // Calculate beam endpoint
+        // Calculate beam endpoint (negate sin for Y-down coordinate system to match SpriteKit rendering)
         let angleRad = beam.angle * .pi / 180
         let endX = bossX + cos(angleRad) * beam.length
-        let endY = bossY + sin(angleRad) * beam.length
+        let endY = bossY - sin(angleRad) * beam.length
 
         // Point-to-line distance
         let distance = pointToLineDistance(

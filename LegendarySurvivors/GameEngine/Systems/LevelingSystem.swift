@@ -13,18 +13,11 @@ class LevelingSystem {
         return profile.weaponLevels[weaponId] ?? 1
     }
 
-    /// Get powerup level from player profile
-    static func getPowerupLevel(profile: PlayerProfile, powerupId: String) -> Int {
-        return profile.powerupLevels[powerupId] ?? 1
-    }
-
     /// Check if item is unlocked
     static func isItemUnlocked(profile: PlayerProfile, category: String, id: String) -> Bool {
         switch category {
         case "weapon":
             return profile.unlocks.weapons.contains(id)
-        case "powerup":
-            return profile.unlocks.powerups.contains(id)
         case "arena":
             return profile.unlocks.arenas.contains(id)
         default:
@@ -62,12 +55,6 @@ class LevelingSystem {
                 profile.weaponLevels[id] = 1
                 return true
             }
-        case "powerup":
-            if !profile.unlocks.powerups.contains(id) {
-                profile.unlocks.powerups.append(id)
-                profile.powerupLevels[id] = 1
-                return true
-            }
         case "arena":
             if !profile.unlocks.arenas.contains(id) {
                 profile.unlocks.arenas.append(id)
@@ -86,12 +73,6 @@ class LevelingSystem {
             let currentLevel = profile.weaponLevels[id] ?? 1
             if currentLevel < maxLevel {
                 profile.weaponLevels[id] = currentLevel + 1
-                return true
-            }
-        case "powerup":
-            let currentLevel = profile.powerupLevels[id] ?? 1
-            if currentLevel < maxLevel {
-                profile.powerupLevels[id] = currentLevel + 1
                 return true
             }
         default:

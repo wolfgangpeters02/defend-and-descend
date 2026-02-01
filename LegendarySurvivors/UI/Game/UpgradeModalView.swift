@@ -14,11 +14,11 @@ struct UpgradeModalView: View {
 
             VStack(spacing: 20) {
                 // Title
-                Text("CHOOSE UPGRADE")
+                Text(L10n.Upgrade.chooseUpgrade)
                     .font(.system(size: 28, weight: .black))
                     .foregroundColor(.cyan)
 
-                Text("Level \(choices.isEmpty ? 1 : 1)")
+                Text(L10n.Upgrade.level(1))
                     .font(.caption)
                     .foregroundColor(.gray)
 
@@ -134,7 +134,7 @@ struct UpgradeCardView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "star.fill")
                         .foregroundColor(.purple)
-                    Text("Special")
+                    Text(L10n.Common.special)
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.purple)
                 }

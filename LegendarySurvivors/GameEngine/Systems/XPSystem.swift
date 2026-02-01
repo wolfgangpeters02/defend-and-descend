@@ -20,17 +20,16 @@ class XPSystem {
     static let tier2Threshold: CGFloat = 0.66
     static let tier3Threshold: CGFloat = 1.0
 
-    /// Get XP multiplier based on item levels (higher levels = less XP)
-    static func getXPMultiplier(weaponLevel: Int, powerupLevel: Int) -> CGFloat {
-        let avgLevel = (weaponLevel + powerupLevel) / 2
-        let reduction = CGFloat(avgLevel - 1) * 0.10 // 10% reduction per level
+    /// Get XP multiplier based on weapon level (higher levels = less XP)
+    static func getXPMultiplier(weaponLevel: Int) -> CGFloat {
+        let reduction = CGFloat(weaponLevel - 1) * 0.10 // 10% reduction per level
         return max(0.2, 1.0 - reduction) // Minimum 20%
     }
 
     /// Award XP for killing an enemy
-    static func awardXP(state: inout GameState, enemyType: String, weaponLevel: Int, powerupLevel: Int) {
+    static func awardXP(state: inout GameState, enemyType: String, weaponLevel: Int) {
         let baseXP = enemyXPValues[enemyType] ?? 1
-        let multiplier = getXPMultiplier(weaponLevel: weaponLevel, powerupLevel: powerupLevel)
+        let multiplier = getXPMultiplier(weaponLevel: weaponLevel)
         let xpGained = Int(CGFloat(baseXP) * multiplier)
 
         state.xp += xpGained
@@ -39,7 +38,7 @@ class XPSystem {
 
     /// Update XP bar progress
     static func updateXPBarProgress(state: inout GameState) {
-        let xpRequired = 100 + (state.upgradeLevel) * 45
+        let xpRequired = BalanceConfig.xpRequired(level: state.upgradeLevel + 1)
         state.xpBarProgress = min(1.0, CGFloat(state.xp) / CGFloat(xpRequired))
     }
 

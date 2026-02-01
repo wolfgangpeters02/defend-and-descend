@@ -187,4 +187,37 @@ extension NodePool {
         existing[id] = node
         return node
     }
+
+    // MARK: - Boss Mechanic Node Pooling
+
+    /// Acquire or reuse a boss mechanic node (puddles, lasers, zones, etc.)
+    func acquireBossMechanicNode(
+        id: String,
+        type: String,
+        existing: inout [String: SKNode],
+        creator: () -> SKNode
+    ) -> SKNode {
+        if let node = existing[id] {
+            return node
+        }
+
+        let node = acquire(type: "boss_\(type)", creator: creator)
+        existing[id] = node
+        return node
+    }
+
+    /// Release boss mechanic nodes that are no longer active.
+    func releaseBossMechanicNodes(
+        type: String,
+        nodes: inout [String: SKNode],
+        activeIds: Set<String>
+    ) {
+        let keysToRemove = nodes.keys.filter { !activeIds.contains($0) }
+        for key in keysToRemove {
+            if let node = nodes[key] {
+                release(node, type: "boss_\(type)")
+                nodes.removeValue(forKey: key)
+            }
+        }
+    }
 }

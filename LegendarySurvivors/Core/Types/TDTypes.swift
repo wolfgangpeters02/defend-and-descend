@@ -34,17 +34,49 @@ struct TDGameState {
     var projectiles: [Projectile]
     var particles: [Particle]
 
-    // Wave system
+    // Stats tracking (used for UI and rewards even in idle mode)
     var currentWave: Int = 0
+    var wavesCompleted: Int = 0
+
+    // Wave progress tracking (for wave-based TD mode)
     var waveInProgress: Bool = false
     var waveEnemiesRemaining: Int = 0
     var waveEnemiesSpawned: Int = 0
     var nextWaveCountdown: TimeInterval = 0
-    var wavesCompleted: Int = 0
+
+    // MARK: - Idle TD Continuous Spawning
+    // Enemies spawn continuously at a rate that scales with threat level
+    // No waves, no game over - just efficiency management
+
+    var idleSpawnEnabled: Bool = true              // Enable continuous spawning
+    var idleSpawnTimer: TimeInterval = 0           // Timer for next spawn
+    var idleSpawnRate: TimeInterval = 2.0          // Base seconds between spawns
+    var idleThreatLevel: CGFloat = 1.0             // Scales enemy stats (increases over time)
+    var idleThreatGrowthRate: CGFloat = 0.01       // Threat increases by 1% per second
+    var idleEnemiesSpawned: Int = 0                // Total enemies spawned this session
+    var idleMaxEnemiesOnScreen: Int = 50           // Cap to prevent performance issues
+
+    // MARK: - Sector Pause System
+    // Paused sectors don't spawn enemies, allowing tower redeployment
+    var pausedSectorIds: Set<String> = []          // IDs of sectors currently paused
+
+    /// Current spawn interval (decreases as threat increases, with floor)
+    var idleCurrentSpawnInterval: TimeInterval {
+        // Spawn faster as threat increases, minimum 0.3 seconds
+        return max(0.3, idleSpawnRate / Double(1 + idleThreatLevel * 0.1))
+    }
+
+    /// Enemy types available at current threat level
+    var idleAvailableEnemyTypes: [String] {
+        var types = ["basic"]
+        if idleThreatLevel >= 2.0 { types.append("fast") }
+        if idleThreatLevel >= 5.0 { types.append("tank") }
+        if idleThreatLevel >= 10.0 { types.append("boss") }
+        return types
+    }
 
     // Resources (System: Reboot currencies)
     var hash: Int = 100  // Hash (Ħ) - soft currency for purchases
-    var lives: Int = 20  // Legacy - kept for compatibility, represents max efficiency baseline
 
     // Power System (System: Reboot - PSU Capacity)
     // Power is a CEILING, not consumed. Towers allocate power while placed.
@@ -71,7 +103,7 @@ struct TDGameState {
     }
 
     // Efficiency System (System: Reboot core mechanic)
-    // Efficiency determines Watts income rate - no death, just reduced income
+    // Efficiency determines Hash income rate - no death, just reduced income
     var leakCounter: Int = 0           // Increments when virus reaches CPU
     var leakDecayTimer: TimeInterval = 0  // Timer for leak counter decay
     var efficiency: CGFloat {
@@ -84,7 +116,8 @@ struct TDGameState {
     var cpuTier: Int = 1                  // Current CPU tier for display
     var efficiencyRegenMultiplier: CGFloat = 1.0  // RAM upgrade bonus to efficiency recovery
     var hashPerSecond: CGFloat {
-        return baseHashPerSecond * cpuMultiplier * (efficiency / 100)
+        let baseRate = baseHashPerSecond * cpuMultiplier * (efficiency / 100)
+        return overclockActive ? baseRate * overclockHashMultiplier : baseRate
     }
     var hashAccumulator: CGFloat = 0  // Accumulates fractional hash
 
@@ -153,6 +186,71 @@ struct TDGameState {
         guard let bossId = zeroDayBossId else { return false }
         return enemies.contains { $0.id == bossId && !$0.isDead && !$0.reachedCore }
     }
+
+    // MARK: - Integrated Boss System (Super Viruses)
+    // Bosses spawn at threat milestones, immune to towers
+    // Player must manually engage or let them pass (efficiency loss)
+
+    var bossActive: Bool = false              // Is a boss currently on the board
+    var activeBossId: String?                 // ID of the active boss enemy
+    var activeBossType: String?               // "cyberboss" or "void_harbinger"
+    var activeBossDistrictId: String?         // Which sector/district the boss spawned from
+    var lastBossThreatMilestone: Int = 0      // Last threat milestone that triggered a boss
+    var bossEngaged: Bool = false             // Player has tapped to engage this boss
+    var bossSelectedDifficulty: BossDifficulty? // Selected difficulty for current boss
+
+    /// Threat milestone for next boss spawn (6, 12, 18...)
+    var nextBossThreatMilestone: Int {
+        return lastBossThreatMilestone == 0 ? 6 : lastBossThreatMilestone + 6
+    }
+
+    /// Check if threat has reached next boss milestone
+    var shouldSpawnBoss: Bool {
+        return !bossActive && Int(idleThreatLevel) >= nextBossThreatMilestone
+    }
+
+    /// Check if the active boss is still alive
+    var isBossAlive: Bool {
+        guard let bossId = activeBossId else { return false }
+        return enemies.contains { $0.id == bossId && !$0.isDead && !$0.reachedCore }
+    }
+
+    // MARK: - Overclock System
+    // Player can overclock CPU for double hash + 10x threat growth
+    // Attracts bosses quickly, may disable towers if insufficient power
+
+    var overclockActive: Bool = false         // Is overclock currently active
+    var overclockTimeRemaining: TimeInterval = 0  // Seconds left in overclock
+    var overclockDuration: TimeInterval = 60  // Total overclock duration
+    var overclockThreatMultiplier: CGFloat = 10.0  // Threat growth multiplier during overclock
+    var overclockHashMultiplier: CGFloat = 2.0     // Hash generation multiplier
+    var overclockPowerDemandMultiplier: CGFloat = 2.0  // Power demand increase
+    var disabledTowerIds: Set<String> = []    // Towers disabled due to power shortage
+
+    /// Power required during overclock
+    var overclockPowerRequired: Int {
+        return overclockActive ? Int(CGFloat(powerUsed) * overclockPowerDemandMultiplier) : powerUsed
+    }
+
+    /// Power deficit during overclock (negative = shortage)
+    var powerDeficit: Int {
+        return powerCapacity - overclockPowerRequired
+    }
+
+    /// Can activate overclock (not already active)
+    var canOverclock: Bool {
+        return !overclockActive && !bossActive
+    }
+
+    // MARK: - District Boss Tracking
+    // Track first defeat per district for progression unlocks
+
+    var defeatedDistrictBosses: Set<String> = []  // District IDs where boss was defeated
+
+    /// Check if a district boss has been defeated for the first time
+    func hasDefeatedDistrictBoss(_ districtId: String) -> Bool {
+        return defeatedDistrictBosses.contains(districtId)
+    }
 }
 
 // MARK: - TD Session State (Lightweight Persistence)
@@ -167,6 +265,17 @@ struct TDSessionState: Codable {
     var leakCounter: Int
     var lastSaveTime: TimeInterval
 
+    // Idle TD state
+    var idleThreatLevel: CGFloat?        // Current threat level (enemy scaling)
+    var idleEnemiesSpawned: Int?         // Total enemies spawned
+
+    // Sector pause state
+    var pausedSectorIds: Set<String>?    // IDs of sectors currently paused
+
+    // Boss progression state
+    var lastBossThreatMilestone: Int?    // Last threat milestone that triggered a boss
+    var defeatedDistrictBosses: Set<String>?  // Districts where boss was defeated
+
     /// Create session state from current game state
     static func from(gameState: TDGameState) -> TDSessionState {
         return TDSessionState(
@@ -176,17 +285,97 @@ struct TDSessionState: Codable {
             wavesCompleted: gameState.wavesCompleted,
             efficiency: gameState.efficiency,
             leakCounter: gameState.leakCounter,
-            lastSaveTime: Date().timeIntervalSince1970
+            lastSaveTime: Date().timeIntervalSince1970,
+            idleThreatLevel: gameState.idleThreatLevel,
+            idleEnemiesSpawned: gameState.idleEnemiesSpawned,
+            pausedSectorIds: gameState.pausedSectorIds.isEmpty ? nil : gameState.pausedSectorIds,
+            lastBossThreatMilestone: gameState.lastBossThreatMilestone > 0 ? gameState.lastBossThreatMilestone : nil,
+            defeatedDistrictBosses: gameState.defeatedDistrictBosses.isEmpty ? nil : gameState.defeatedDistrictBosses
         )
     }
 
     /// Apply session state to game state
+    /// Note: Does NOT overwrite towerSlots - those are generated fresh from lane config.
+    /// Instead, we restore tower placements and mark slots as occupied.
     func apply(to state: inout TDGameState) {
+        // Restore towers
         state.towers = towers
-        state.towerSlots = towerSlots
+
+        // Instead of overwriting slots, mark existing slots as occupied based on restored towers
+        // This ensures fresh slot generation is preserved while tower placements are restored
+        for i in 0..<state.towerSlots.count {
+            let slot = state.towerSlots[i]
+            // Check if any restored tower is at this slot
+            if let tower = towers.first(where: { $0.slotId == slot.id }) {
+                state.towerSlots[i].occupied = true
+                state.towerSlots[i].towerId = tower.id
+            } else {
+                state.towerSlots[i].occupied = false
+                state.towerSlots[i].towerId = nil
+            }
+        }
+
+        // Handle towers that reference slots that no longer exist (slot IDs changed)
+        // Re-assign them to the nearest available slot
+        for tower in towers {
+            let slotExists = state.towerSlots.contains { $0.id == tower.slotId }
+            if !slotExists {
+                // Find nearest unoccupied slot to this tower's position
+                var nearestSlot: TowerSlot?
+                var nearestDistance: CGFloat = .infinity
+
+                for slot in state.towerSlots where !slot.occupied {
+                    let dx = slot.x - tower.x
+                    let dy = slot.y - tower.y
+                    let dist = sqrt(dx*dx + dy*dy)
+                    if dist < nearestDistance {
+                        nearestDistance = dist
+                        nearestSlot = slot
+                    }
+                }
+
+                // If we found a nearby slot, update the tower and slot
+                if let slot = nearestSlot, nearestDistance < 200 {
+                    if let towerIndex = state.towers.firstIndex(where: { $0.id == tower.id }),
+                       let slotIndex = state.towerSlots.firstIndex(where: { $0.id == slot.id }) {
+                        state.towers[towerIndex].slotId = slot.id
+                        state.towers[towerIndex].x = slot.x
+                        state.towers[towerIndex].y = slot.y
+                        state.towerSlots[slotIndex].occupied = true
+                        state.towerSlots[slotIndex].towerId = tower.id
+                    }
+                } else {
+                    // No valid slot found - remove this orphaned tower
+                    state.towers.removeAll { $0.id == tower.id }
+                    print("[TDSessionState] Removed orphaned tower \(tower.id) - no valid slot found")
+                }
+            }
+        }
+
         state.hash = hash
         state.wavesCompleted = wavesCompleted
         state.leakCounter = leakCounter
+
+        // Restore idle spawn state if present
+        if let threatLevel = idleThreatLevel {
+            state.idleThreatLevel = threatLevel
+        }
+        if let enemiesSpawned = idleEnemiesSpawned {
+            state.idleEnemiesSpawned = enemiesSpawned
+        }
+
+        // Restore paused sectors if present
+        if let paused = pausedSectorIds {
+            state.pausedSectorIds = paused
+        }
+
+        // Restore boss progression state
+        if let milestone = lastBossThreatMilestone {
+            state.lastBossThreatMilestone = milestone
+        }
+        if let defeated = defeatedDistrictBosses {
+            state.defeatedDistrictBosses = defeated
+        }
     }
 }
 
@@ -200,9 +389,7 @@ struct TowerDragState {
 
     var source: DragSource
     var currentPosition: CGPoint
-    var validMergeTargetId: String?      // Tower ID that can be merged with
     var validPlacementSlotId: String?    // Slot ID for valid placement
-    var isValidDrop: Bool = false
 }
 
 // MARK: - Blocker Node (System: Reboot - Path Control)
@@ -255,6 +442,230 @@ struct TDSessionStats {
     var goldSpent: Int = 0
     var damageDealt: CGFloat = 0
     var wavesCompleted: Int = 0
+}
+
+// MARK: - Sector Lane System (8-Lane Motherboard Map)
+// Each peripheral sector has a lane that leads to the CPU in the center
+// PSU sector starts unlocked, others unlock progressively
+
+struct SectorLane: Identifiable, Codable {
+    var id: String                      // Matches sector ID (e.g., "psu", "gpu")
+    var sectorId: String                // The sector this lane originates from
+    var displayName: String             // e.g., "PSU Power Bus"
+    var path: EnemyPath                 // Waypoints from spawn to CPU
+    var spawnPoint: CGPoint             // Where enemies spawn (map edge)
+    var themeColorHex: String           // Visual theme color
+    var unlockCost: Int                 // Hash cost to unlock
+    var unlockOrder: Int                // 0 = starter, 1-7 = unlock order
+    var prerequisites: [String]         // Sector IDs that must be unlocked first
+
+    var isStarterLane: Bool { unlockOrder == 0 }
+}
+
+/// Configuration for the 8-lane motherboard map
+struct MotherboardLaneConfig {
+    static let canvasSize: CGFloat = 4200       // 3 sectors × 1400
+    static let sectorSize: CGFloat = 1400
+    static let cpuCenter = CGPoint(x: 2100, y: 2100)  // Center of center sector (1,1)
+    static let cpuSize: CGFloat = 300
+
+    /// All 8 lanes (one per non-CPU sector)
+    static func createAllLanes() -> [SectorLane] {
+        return [
+            // PSU Lane (Starter) - East, mid-right
+            SectorLane(
+                id: "lane_psu",
+                sectorId: SectorID.power.rawValue,
+                displayName: "PSU Power Bus",
+                path: EnemyPath(id: "path_psu", waypoints: [
+                    CGPoint(x: 4200, y: 2100),    // Spawn at right edge
+                    CGPoint(x: 3700, y: 2100),    // West along bus
+                    CGPoint(x: 3700, y: 2400),    // Turn north
+                    CGPoint(x: 3200, y: 2400),    // Turn west
+                    CGPoint(x: 3200, y: 2100),    // Turn south to CPU level
+                    CGPoint(x: 2250, y: 2100),    // Approach CPU from east
+                    CGPoint(x: 2150, y: 2100)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 4200, y: 2100),
+                themeColorHex: "#ffdd00",  // Yellow (power)
+                unlockCost: 0,
+                unlockOrder: 0,
+                prerequisites: []
+            ),
+
+            // GPU Lane - West, mid-left
+            SectorLane(
+                id: "lane_gpu",
+                sectorId: SectorID.gpu.rawValue,
+                displayName: "GPU Graphics Bus",
+                path: EnemyPath(id: "path_gpu", waypoints: [
+                    CGPoint(x: 0, y: 2100),       // Spawn at left edge
+                    CGPoint(x: 500, y: 2100),     // East along bus
+                    CGPoint(x: 500, y: 1800),     // Turn south
+                    CGPoint(x: 1000, y: 1800),    // Turn east
+                    CGPoint(x: 1000, y: 2100),    // Turn north to CPU level
+                    CGPoint(x: 1950, y: 2100),    // Approach CPU from west
+                    CGPoint(x: 2050, y: 2100)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 0, y: 2100),
+                themeColorHex: "#ff4444",  // Red (graphics)
+                unlockCost: 5000,
+                unlockOrder: 2,
+                prerequisites: [SectorID.power.rawValue]
+            ),
+
+            // RAM Lane - South, bottom-center
+            SectorLane(
+                id: "lane_ram",
+                sectorId: SectorID.ram.rawValue,
+                displayName: "RAM Memory Bus",
+                path: EnemyPath(id: "path_ram", waypoints: [
+                    CGPoint(x: 2100, y: 0),       // Spawn at bottom edge
+                    CGPoint(x: 2100, y: 500),     // North along bus
+                    CGPoint(x: 1800, y: 500),     // Turn west
+                    CGPoint(x: 1800, y: 1000),    // Turn north
+                    CGPoint(x: 2100, y: 1000),    // Turn east to CPU column
+                    CGPoint(x: 2100, y: 1950),    // Approach CPU from south
+                    CGPoint(x: 2100, y: 2050)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 2100, y: 0),
+                themeColorHex: "#4488ff",  // Blue (memory)
+                unlockCost: 3000,
+                unlockOrder: 1,
+                prerequisites: [SectorID.power.rawValue]
+            ),
+
+            // Cache Lane - North, top-center
+            SectorLane(
+                id: "lane_cache",
+                sectorId: SectorID.cache.rawValue,
+                displayName: "Cache Fast Bus",
+                path: EnemyPath(id: "path_cache", waypoints: [
+                    CGPoint(x: 2100, y: 4200),    // Spawn at top edge
+                    CGPoint(x: 2100, y: 3700),    // South along bus
+                    CGPoint(x: 2400, y: 3700),    // Turn east
+                    CGPoint(x: 2400, y: 3200),    // Turn south
+                    CGPoint(x: 2100, y: 3200),    // Turn west to CPU column
+                    CGPoint(x: 2100, y: 2250),    // Approach CPU from north
+                    CGPoint(x: 2100, y: 2150)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 2100, y: 4200),
+                themeColorHex: "#44ff88",  // Green (cache/memory)
+                unlockCost: 8000,
+                unlockOrder: 3,
+                prerequisites: [SectorID.ram.rawValue]
+            ),
+
+            // I/O Lane - Top-Left Corner (diagonal L-shape)
+            SectorLane(
+                id: "lane_io",
+                sectorId: SectorID.io.rawValue,
+                displayName: "I/O Controller Bus",
+                path: EnemyPath(id: "path_io", waypoints: [
+                    CGPoint(x: 0, y: 4200),       // Spawn at top-left corner
+                    CGPoint(x: 0, y: 3500),       // Down along left edge
+                    CGPoint(x: 500, y: 3500),     // Turn east
+                    CGPoint(x: 500, y: 2800),     // Turn south
+                    CGPoint(x: 1400, y: 2800),    // Turn east
+                    CGPoint(x: 1400, y: 2100),    // Turn south to CPU level
+                    CGPoint(x: 1950, y: 2100),    // Approach CPU from west
+                    CGPoint(x: 2050, y: 2100)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 0, y: 4200),
+                themeColorHex: "#ffaa00",  // Orange (I/O)
+                unlockCost: 25000,
+                unlockOrder: 7,
+                prerequisites: [SectorID.gpu.rawValue, SectorID.storage.rawValue]
+            ),
+
+            // Network Lane - Top-Right Corner (diagonal L-shape)
+            SectorLane(
+                id: "lane_network",
+                sectorId: SectorID.network.rawValue,
+                displayName: "Network Data Bus",
+                path: EnemyPath(id: "path_network", waypoints: [
+                    CGPoint(x: 4200, y: 4200),    // Spawn at top-right corner
+                    CGPoint(x: 4200, y: 3500),    // Down along right edge
+                    CGPoint(x: 3700, y: 3500),    // Turn west
+                    CGPoint(x: 3700, y: 2800),    // Turn south
+                    CGPoint(x: 2800, y: 2800),    // Turn west
+                    CGPoint(x: 2800, y: 2100),    // Turn south to CPU level
+                    CGPoint(x: 2250, y: 2100),    // Approach CPU from east
+                    CGPoint(x: 2150, y: 2100)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 4200, y: 4200),
+                themeColorHex: "#00ffff",  // Cyan (network)
+                unlockCost: 18000,
+                unlockOrder: 6,
+                prerequisites: [SectorID.cache.rawValue, SectorID.expansion.rawValue]
+            ),
+
+            // Storage Lane - Bottom-Left Corner (diagonal L-shape)
+            SectorLane(
+                id: "lane_storage",
+                sectorId: SectorID.storage.rawValue,
+                displayName: "Storage Data Bus",
+                path: EnemyPath(id: "path_storage", waypoints: [
+                    CGPoint(x: 0, y: 0),          // Spawn at bottom-left corner
+                    CGPoint(x: 0, y: 700),        // Up along left edge
+                    CGPoint(x: 500, y: 700),      // Turn east
+                    CGPoint(x: 500, y: 1400),     // Turn north
+                    CGPoint(x: 1400, y: 1400),    // Turn east
+                    CGPoint(x: 1400, y: 2100),    // Turn north to CPU level
+                    CGPoint(x: 1950, y: 2100),    // Approach CPU from west
+                    CGPoint(x: 2050, y: 2100)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 0, y: 0),
+                themeColorHex: "#8844ff",  // Purple (storage)
+                unlockCost: 12000,
+                unlockOrder: 5,
+                prerequisites: [SectorID.gpu.rawValue]
+            ),
+
+            // Expansion Lane - Bottom-Right Corner (diagonal L-shape)
+            SectorLane(
+                id: "lane_expansion",
+                sectorId: SectorID.expansion.rawValue,
+                displayName: "Expansion PCIe Bus",
+                path: EnemyPath(id: "path_expansion", waypoints: [
+                    CGPoint(x: 4200, y: 0),       // Spawn at bottom-right corner
+                    CGPoint(x: 4200, y: 700),     // Up along right edge
+                    CGPoint(x: 3700, y: 700),     // Turn west
+                    CGPoint(x: 3700, y: 1400),    // Turn north
+                    CGPoint(x: 2800, y: 1400),    // Turn west
+                    CGPoint(x: 2800, y: 2100),    // Turn north to CPU level
+                    CGPoint(x: 2250, y: 2100),    // Approach CPU from east
+                    CGPoint(x: 2150, y: 2100)     // End at CPU edge
+                ]),
+                spawnPoint: CGPoint(x: 4200, y: 0),
+                themeColorHex: "#ff44ff",  // Magenta (expansion)
+                unlockCost: 10000,
+                unlockOrder: 4,
+                prerequisites: [SectorID.power.rawValue]
+            )
+        ]
+    }
+
+    /// Get lanes that are unlocked based on player's unlocked sectors
+    static func getUnlockedLanes(unlockedSectorIds: Set<String>) -> [SectorLane] {
+        let allLanes = createAllLanes()
+        return allLanes.filter { lane in
+            lane.isStarterLane || unlockedSectorIds.contains(lane.sectorId)
+        }
+    }
+
+    /// Get lanes that are locked but visible (all non-starter, non-unlocked lanes)
+    static func getLockedLanes(unlockedSectorIds: Set<String>) -> [SectorLane] {
+        let allLanes = createAllLanes()
+        return allLanes.filter { lane in
+            !lane.isStarterLane && !unlockedSectorIds.contains(lane.sectorId)
+        }
+    }
+
+    /// Get a specific lane by sector ID
+    static func getLane(forSectorId sectorId: String) -> SectorLane? {
+        return createAllLanes().first { $0.sectorId == sectorId }
+    }
 }
 
 // MARK: - TD Map
@@ -317,9 +728,6 @@ struct Tower: Identifiable, Codable {
     // Power consumption (System: Reboot)
     var powerDraw: Int = 20  // Watts consumed while this tower is placed
 
-    // Merge system (1-3 stars)
-    var mergeLevel: Int = 1
-
     var position: CGPoint {
         CGPoint(x: x, y: y)
     }
@@ -335,21 +743,8 @@ struct Tower: Identifiable, Codable {
         return level < 10
     }
 
-    /// Check if tower can be merged (not max stars)
-    var canMerge: Bool {
-        return mergeLevel < 3
-    }
-
-    /// Check if this tower can merge with another
-    func canMergeWith(_ other: Tower) -> Bool {
-        return weaponType == other.weaponType &&
-               mergeLevel == other.mergeLevel &&
-               canMerge &&
-               id != other.id
-    }
-
     /// Create tower from WeaponTower
-    static func from(weapon: WeaponTower, at slot: TowerSlot, mergeLevel: Int = 1) -> Tower {
+    static func from(weapon: WeaponTower, at slot: TowerSlot) -> Tower {
         return Tower(
             id: RandomUtils.generateId(),
             weaponType: weapon.id,
@@ -369,13 +764,12 @@ struct Tower: Identifiable, Codable {
             slowDuration: weapon.slowDuration,
             chain: weapon.chain,
             color: weapon.color,
-            towerName: weapon.towerName,
-            mergeLevel: mergeLevel
+            towerName: weapon.towerName
         )
     }
 
     /// Create tower from Protocol (System: Reboot - Firewall mode)
-    static func from(protocol proto: Protocol, at slot: TowerSlot, mergeLevel: Int = 1) -> Tower {
+    static func from(protocol proto: Protocol, at slot: TowerSlot) -> Tower {
         let stats = proto.firewallStats
         return Tower(
             id: RandomUtils.generateId(),
@@ -397,8 +791,7 @@ struct Tower: Identifiable, Codable {
             chain: stats.special == .chain ? 3 : nil,  // Chain hits 3 enemies
             color: proto.color,
             towerName: proto.name,
-            powerDraw: stats.powerDraw,  // Power consumption from Protocol
-            mergeLevel: mergeLevel
+            powerDraw: stats.powerDraw  // Power consumption from Protocol
         )
     }
 
@@ -411,26 +804,6 @@ struct Tower: Identifiable, Codable {
         range *= 1.05  // +5% range
         attackSpeed *= 1.03  // +3% speed
     }
-
-    /// Apply merge upgrade (when another tower merges into this one)
-    mutating func applyMerge() {
-        guard canMerge else { return }
-        mergeLevel += 1
-        damage *= 1.5       // +50% damage
-        range *= 1.1        // +10% range
-        attackSpeed *= 1.1  // +10% attack speed
-    }
-}
-
-// MARK: - Merge Result
-
-enum TowerMergeResult {
-    case success(mergedTower: Tower, freedSlotId: String)
-    case cannotMerge
-    case sameTower
-    case differentTypes
-    case differentMergeLevels
-    case maxMergeLevel
 }
 
 // MARK: - TD Core (The Guardian)
@@ -499,6 +872,9 @@ struct TDEnemy: Identifiable {
     var isDead: Bool = false
     var reachedCore: Bool = false
     var isBoss: Bool = false
+
+    // Lane-based spawning (8-lane motherboard system)
+    var laneId: String?  // Which lane this enemy spawned from (e.g., "power", "gpu")
 
     // Zero-Day (System Breach) properties
     var isZeroDay: Bool = false        // Is this a Zero-Day boss
@@ -640,6 +1016,11 @@ class TDGameStateFactory {
         mapId: String,
         playerProfile: PlayerProfile
     ) -> TDGameState? {
+        // Use the 8-lane motherboard system for motherboard map
+        if mapId == "motherboard" {
+            return createMotherboardGameState(playerProfile: playerProfile)
+        }
+
         let config = GameConfigLoader.shared
 
         // Get arena config (arenas = TD maps)
@@ -875,55 +1256,72 @@ class TDGameStateFactory {
         return slots
     }
 
-    // MARK: - Motherboard City Map
+    // MARK: - Motherboard City Map (8-Lane System)
 
-    /// Create game state for the Motherboard City map (4000x4000 PCB canvas)
+    /// Create game state for the Motherboard City map (4200x4200 PCB canvas)
+    /// Uses the 8-lane sector system with PSU as starter
     static func createMotherboardGameState(
         playerProfile: PlayerProfile
     ) -> TDGameState? {
-        // Create the motherboard configuration
-        let mbConfig = MotherboardConfig.createDefault()
+        // Get unlocked sectors from player profile
+        let unlockedSectorIds = playerProfile.unlockedSectorIds
+
+        // Get all lanes for rendering (all 8 lanes visible)
+        let allLanes = MotherboardLaneConfig.createAllLanes()
+
+        // Get only unlocked lanes for active enemy paths
+        let activeLanes = MotherboardLaneConfig.getUnlockedLanes(unlockedSectorIds: unlockedSectorIds)
+        let activePaths = activeLanes.map { lane -> EnemyPath in
+            var path = lane.path
+            path.sectorId = lane.sectorId
+            return path
+        }
+
+        // Collect spawn points from active lanes only
+        let activeSpawnPoints = activeLanes.map { $0.spawnPoint }
 
         // Create the map
         let map = TDMap(
             id: "motherboard",
             name: "Motherboard City",
-            width: mbConfig.canvasWidth,
-            height: mbConfig.canvasHeight,
+            width: MotherboardLaneConfig.canvasSize,
+            height: MotherboardLaneConfig.canvasSize,
             backgroundColor: MotherboardColors.substrate,
             theme: "motherboard",
             particleEffect: nil,
             obstacles: [],
             hazards: [],
             effectZones: [],
-            spawnPoints: [CGPoint(x: 400, y: 2000), CGPoint(x: 2000, y: 3600)],
-            corePosition: CGPoint(x: 2000, y: 2000),
+            spawnPoints: activeSpawnPoints,
+            corePosition: MotherboardLaneConfig.cpuCenter,
             globalModifier: nil
         )
 
-        // Create Manhattan-style paths (90-degree turns only)
-        let paths = createMotherboardPaths()
-
-        // Create core at CPU position (center of the board)
+        // Create core at CPU center (center of the 3x3 grid)
         let core = TDCore(
-            x: 2000,
-            y: 2000,
+            x: MotherboardLaneConfig.cpuCenter.x,
+            y: MotherboardLaneConfig.cpuCenter.y,
             health: 100,
             maxHealth: 100
         )
 
-        // Create tower slots around the CPU district
-        let slots = createMotherboardTowerSlots(avoiding: paths)
+        // Create tower slots along ALL paths (so slots exist when lanes unlock)
+        let allPaths = allLanes.map { lane -> EnemyPath in
+            var path = lane.path
+            path.sectorId = lane.sectorId
+            return path
+        }
+        let slots = createMotherboardTowerSlots(avoiding: allPaths)
 
         // Create blocker slots at path turns
-        let blockerSlots = createBlockerSlots(for: paths)
+        let blockerSlots = createBlockerSlots(for: activePaths)
 
         var state = TDGameState(
             sessionId: RandomUtils.generateId(),
             playerId: playerProfile.id,
             startTime: Date().timeIntervalSince1970,
             map: map,
-            paths: paths,
+            paths: activePaths,
             core: core,
             towers: [],
             towerSlots: slots,
@@ -931,7 +1329,7 @@ class TDGameStateFactory {
             projectiles: [],
             particles: [],
             blockerSlots: blockerSlots,
-            basePaths: paths
+            basePaths: activePaths
         )
 
         // Apply Global Upgrades
@@ -939,34 +1337,22 @@ class TDGameStateFactory {
         state.cpuMultiplier = 1.0
         state.cpuTier = playerProfile.globalUpgrades.cpuLevel
         state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
+        state.hashStorageCapacity = playerProfile.globalUpgrades.hashStorageCapacity
+        // Initialize hash from player profile (allows spending earned hash on towers)
+        state.hash = min(playerProfile.hash, playerProfile.globalUpgrades.hashStorageCapacity)
 
         return state
     }
 
-    /// Create Manhattan-style paths for the motherboard (90-degree turns only)
-    /// Initially only ONE path is active - more paths unlock with sectors
-    private static func createMotherboardPaths() -> [EnemyPath] {
-        // Main path: From left edge (I/O area) to CPU District
-        // CPU is centered at (2000, 2000) with size 300x300 (bounds: 1850-2150, 1850-2150)
-        // Path enters from the left side of the CPU, stopping just inside the boundary
-        let mainPath = EnemyPath(
-            id: "main_bus",
-            waypoints: [
-                CGPoint(x: 100, y: 2100),     // Start at left edge (spawn point)
-                CGPoint(x: 700, y: 2100),     // East along path
-                CGPoint(x: 700, y: 1700),     // Turn south
-                CGPoint(x: 1100, y: 1700),    // Turn east
-                CGPoint(x: 1100, y: 2000),    // Turn north toward CPU level
-                CGPoint(x: 1850, y: 2000),    // Continue east to CPU left edge
-                CGPoint(x: 1900, y: 2000)     // End just inside CPU (not at center)
-            ]
-        )
-
-        // Note: Additional paths will be added when sectors are unlocked:
-        // - north_bus: From Cache sector (when Cache is unlocked)
-        // - south_bus: From GPU sector (when GPU is unlocked)
-
-        return [mainPath]
+    /// Create paths for motherboard using the new lane system
+    /// Returns only unlocked lane paths for active enemy spawning
+    private static func createMotherboardPaths(unlockedSectorIds: Set<String> = [SectorID.power.rawValue]) -> [EnemyPath] {
+        let activeLanes = MotherboardLaneConfig.getUnlockedLanes(unlockedSectorIds: unlockedSectorIds)
+        return activeLanes.map { lane -> EnemyPath in
+            var path = lane.path
+            path.sectorId = lane.sectorId
+            return path
+        }
     }
 
     /// Create tower slots for the motherboard map dynamically along paths
@@ -980,7 +1366,8 @@ class TDGameStateFactory {
         let minSlotDistance: CGFloat = 70 // Minimum distance between slots
 
         // CPU exclusion zone (don't place slots on the CPU)
-        let cpuCenter = CGPoint(x: 2000, y: 2000)
+        // CPU is at center of 3x3 grid: (1.5 * 1400, 1.5 * 1400) = (2100, 2100)
+        let cpuCenter = MotherboardLaneConfig.cpuCenter
         let cpuRadius: CGFloat = 200
 
         for path in paths {
@@ -1060,14 +1447,18 @@ class TDGameStateFactory {
             }
         }
 
-        // Add CPU defense area slots (around CPU perimeter)
+        // Add CPU defense area slots (around CPU perimeter in all 8 directions)
         let cpuDefenseSlots: [(CGFloat, CGFloat)] = [
-            (cpuCenter.x - 180, cpuCenter.y - 150),  // Left of CPU, lower
-            (cpuCenter.x - 180, cpuCenter.y + 100),  // Left of CPU, upper
-            (cpuCenter.x + 180, cpuCenter.y - 150),  // Right of CPU, lower
-            (cpuCenter.x + 180, cpuCenter.y + 100),  // Right of CPU, upper
-            (cpuCenter.x - 80, cpuCenter.y + 180),   // Above CPU (left)
-            (cpuCenter.x + 80, cpuCenter.y + 180),   // Above CPU (right)
+            // Cardinals
+            (cpuCenter.x - 220, cpuCenter.y),        // West of CPU
+            (cpuCenter.x + 220, cpuCenter.y),        // East of CPU
+            (cpuCenter.x, cpuCenter.y - 220),        // South of CPU
+            (cpuCenter.x, cpuCenter.y + 220),        // North of CPU
+            // Diagonals
+            (cpuCenter.x - 180, cpuCenter.y - 180),  // Southwest
+            (cpuCenter.x + 180, cpuCenter.y - 180),  // Southeast
+            (cpuCenter.x - 180, cpuCenter.y + 180),  // Northwest
+            (cpuCenter.x + 180, cpuCenter.y + 180),  // Northeast
         ]
 
         for (x, y) in cpuDefenseSlots {
@@ -1118,5 +1509,153 @@ class TDGameStateFactory {
         let px = point.x - projX
         let py = point.y - projY
         return sqrt(px * px + py * py)
+    }
+}
+
+// MARK: - Boss Loot Reward System
+// Displayed after boss fights in the loot modal
+
+struct BossLootReward {
+    /// Individual reward item in the loot screen
+    struct RewardItem: Identifiable {
+        let id = UUID()
+
+        enum ItemType {
+            case hash(amount: Int)
+            case protocolBlueprint(protocolId: String, rarity: Rarity)
+            case sectorAccess(sectorId: String, displayName: String, themeColor: String)
+        }
+
+        let type: ItemType
+
+        // MARK: - Display Helpers
+
+        var iconName: String {
+            switch type {
+            case .hash:
+                return "number.circle.fill"
+            case .protocolBlueprint(let protocolId, _):
+                return ProtocolLibrary.get(protocolId)?.iconName ?? "cpu"
+            case .sectorAccess:
+                return "lock.open.fill"
+            }
+        }
+
+        var displayColor: String {
+            switch type {
+            case .hash:
+                return "#00d4ff"  // Cyan
+            case .protocolBlueprint(let protocolId, let rarity):
+                // Use protocol color if available, fallback to rarity color
+                if let proto = ProtocolLibrary.get(protocolId) {
+                    return proto.color
+                }
+                // Fallback to rarity hex color
+                switch rarity {
+                case .common: return "#9ca3af"
+                case .rare: return "#3b82f6"
+                case .epic: return "#a855f7"
+                case .legendary: return "#f59e0b"
+                }
+            case .sectorAccess(_, _, let themeColor):
+                return themeColor
+            }
+        }
+
+        var encryptedTitle: String {
+            return "▓▓▓▓▓▓▓▓"
+        }
+
+        var decryptedTitle: String {
+            switch type {
+            case .hash(let amount):
+                return "+\(amount) Ħ"
+            case .protocolBlueprint(let protocolId, _):
+                return ProtocolLibrary.get(protocolId)?.name ?? "UNKNOWN"
+            case .sectorAccess(_, let displayName, _):
+                return displayName
+            }
+        }
+
+        var decryptedSubtitle: String {
+            switch type {
+            case .hash:
+                return L10n.BossLoot.hashReward
+            case .protocolBlueprint(_, let rarity):
+                return L10n.BossLoot.protocolAcquired + " • " + rarity.rawValue.uppercased()
+            case .sectorAccess:
+                return L10n.BossLoot.sectorAccessGranted
+            }
+        }
+    }
+
+    let difficulty: BossDifficulty
+    let items: [RewardItem]
+    let isFirstKill: Bool
+
+    // MARK: - Computed Properties
+
+    var totalHashReward: Int {
+        for item in items {
+            if case .hash(let amount) = item.type {
+                return amount
+            }
+        }
+        return 0
+    }
+
+    var droppedProtocolId: String? {
+        for item in items {
+            if case .protocolBlueprint(let protocolId, _) = item.type {
+                return protocolId
+            }
+        }
+        return nil
+    }
+
+    var unlockedSectorId: String? {
+        for item in items {
+            if case .sectorAccess(let sectorId, _, _) = item.type {
+                return sectorId
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Factory
+
+    /// Create a BossLootReward from fight results
+    static func create(
+        difficulty: BossDifficulty,
+        hashReward: Int,
+        protocolId: String?,
+        protocolRarity: Rarity?,
+        unlockedSector: (id: String, name: String, themeColor: String)?,
+        isFirstKill: Bool
+    ) -> BossLootReward {
+        var items: [RewardItem] = []
+
+        // Hash is always first and guaranteed
+        items.append(RewardItem(type: .hash(amount: hashReward)))
+
+        // Protocol blueprint (if dropped)
+        if let protocolId = protocolId, let rarity = protocolRarity {
+            items.append(RewardItem(type: .protocolBlueprint(protocolId: protocolId, rarity: rarity)))
+        }
+
+        // Sector access (first kill only)
+        if let sector = unlockedSector {
+            items.append(RewardItem(type: .sectorAccess(
+                sectorId: sector.id,
+                displayName: sector.name,
+                themeColor: sector.themeColor
+            )))
+        }
+
+        return BossLootReward(
+            difficulty: difficulty,
+            items: items,
+            isFirstKill: isFirstKill
+        )
     }
 }

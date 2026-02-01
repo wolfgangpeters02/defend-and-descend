@@ -31,6 +31,7 @@ struct GameState {
     var startTime: TimeInterval
     var gameMode: GameMode
     var gameTime: Double = 0
+    var currentFrameTime: TimeInterval = 0  // Set from context.timestamp each frame for consistent time checks
 
     // Arena
     var arena: ArenaData
@@ -40,11 +41,9 @@ struct GameState {
 
     // Run setup
     var currentWeaponType: String
-    var currentPowerUpType: String
-    var activeSynergy: Synergy?
 
-    // Resources (Data collected during this session, added to stats.dataEarned)
-    var sessionData: Int = 0
+    // Resources (Hash collected during this session)
+    var sessionHash: Int = 0
 
     // Potions
     var potions: PotionCharges = PotionCharges()
@@ -57,8 +56,8 @@ struct GameState {
     var xpBarProgress: CGFloat = 0
     var lastBossSpawnTime: TimeInterval = 0
 
-    // System: Reboot - Data multiplier for Debug mode sectors
-    var dataMultiplier: CGFloat = 1.0
+    // System: Reboot - Hash multiplier for boss fights
+    var hashMultiplier: CGFloat = 1.0
 
     // Game objects
     var enemies: [Enemy] = []
@@ -132,24 +131,74 @@ enum BossType: String {
 // MARK: - Boss Difficulty
 
 enum BossDifficulty: String, Codable, CaseIterable {
+    case easy = "Easy"
     case normal = "Normal"
     case hard = "Hard"
     case nightmare = "Nightmare"
 
+    /// Boss health multiplier
     var healthMultiplier: CGFloat {
         switch self {
+        case .easy: return 1.0       // Same boss health
         case .normal: return 1.0
         case .hard: return 1.5
         case .nightmare: return 2.5
         }
     }
 
+    /// Boss damage multiplier
     var damageMultiplier: CGFloat {
         switch self {
+        case .easy: return 0.5       // Boss deals 50% damage
         case .normal: return 1.0
         case .hard: return 1.3
         case .nightmare: return 1.8
         }
+    }
+
+    /// Player health multiplier
+    var playerHealthMultiplier: CGFloat {
+        switch self {
+        case .easy: return 2.0       // Player has 2x health
+        case .normal: return 1.0
+        case .hard: return 1.0
+        case .nightmare: return 1.0
+        }
+    }
+
+    /// Player damage multiplier
+    var playerDamageMultiplier: CGFloat {
+        switch self {
+        case .easy: return 2.0       // Player deals 2x damage
+        case .normal: return 1.0
+        case .hard: return 1.0
+        case .nightmare: return 1.0
+        }
+    }
+
+    /// Hash reward for defeating boss at this difficulty (TD integration)
+    var hashReward: Int {
+        switch self {
+        case .easy: return 500
+        case .normal: return 2000
+        case .hard: return 5000
+        case .nightmare: return 12000
+        }
+    }
+
+    /// Blueprint drop chance at this difficulty (TD integration)
+    var blueprintChance: CGFloat {
+        switch self {
+        case .easy: return 0.05
+        case .normal: return 0.15
+        case .hard: return 0.30
+        case .nightmare: return 0.50
+        }
+    }
+
+    /// Display name for UI
+    var displayName: String {
+        return self.rawValue
     }
 }
 
@@ -176,23 +225,23 @@ struct SurvivalEventData: Codable {
 
 struct SessionStats {
     var enemiesKilled: Int = 0
-    var dataCollected: Int = 0           // Data pickups collected during gameplay
+    var hashCollected: Int = 0           // Hash pickups collected during gameplay
     var damageDealt: CGFloat = 0
     var damageTaken: CGFloat = 0
     var upgradesChosen: Int = 0
     var maxCombo: Int = 0
 
-    // Economy - Data (◈) earned this session (includes time bonus + pickups)
-    var dataEarned: Int = 0              // Running total of Data earned
+    // Economy - Hash (Ħ) earned this session (includes time bonus + pickups)
+    var hashEarned: Int = 0              // Running total of Hash earned
     var extractionAvailable: Bool = false // True after 3 minutes survival
     var extracted: Bool = false           // True if player chose to extract
 
-    /// Calculate final Data reward based on exit type
-    func finalDataReward() -> Int {
+    /// Calculate final Hash reward based on exit type
+    func finalHashReward() -> Int {
         if extracted {
-            return dataEarned  // 100% on extraction
+            return hashEarned  // 100% on extraction
         } else {
-            return dataEarned / 2  // 50% on death
+            return hashEarned / 2  // 50% on death
         }
     }
 }
@@ -337,6 +386,11 @@ struct Obstacle: Identifiable {
     var color: String
     var type: String
     var isCorrupted: Bool = false  // For survival event: data corruption
+
+    // Destructible pillar support (boss fights)
+    var health: CGFloat?       // nil = indestructible
+    var maxHealth: CGFloat?
+    var isDestructible: Bool { health != nil }
 }
 
 struct Hazard: Identifiable {
@@ -488,6 +542,9 @@ struct Enemy: Identifiable {
     var voidLastMeteorTime: TimeInterval?
     var voidLastTeleportTime: TimeInterval?
     var voidInvulnerable: Bool?
+
+    // Pylon linkage (for void_pylon enemy type)
+    var pylonId: String?
 
     // Milestones
     var milestones: BossMilestones?
@@ -669,14 +726,6 @@ enum UpgradeEffectType: String, Codable {
     case ability
 }
 
-// MARK: - Synergy
-
-struct Synergy {
-    var name: String
-    var description: String
-    var effects: [String: CGFloat]
-}
-
 // MARK: - Camera
 
 struct Camera {
@@ -686,41 +735,7 @@ struct Camera {
     var viewportHeight: CGFloat
 }
 
-// MARK: - Advanced Dungeon Features
-
-struct MovingHazard {
-    var id: String
-    var x: CGFloat
-    var y: CGFloat
-    var width: CGFloat
-    var height: CGFloat
-    var damage: CGFloat
-    var type: String
-
-    var startX: CGFloat
-    var endX: CGFloat
-    var startY: CGFloat
-    var endY: CGFloat
-    var speed: CGFloat
-    var direction: Int // 1 or -1
-}
-
-struct SecurityCamera: Identifiable {
-    var id: String
-    var x: CGFloat
-    var y: CGFloat
-    var detectionRadius: CGFloat
-    var detectionAngle: CGFloat
-    var rotation: CGFloat
-    var rotationSpeed: CGFloat
-    var isTriggered: Bool
-    var cooldown: Double
-    var lastTriggerTime: Double = 0
-
-    var facing: CGFloat?
-    var triggered: Bool?
-    var triggeredAt: TimeInterval?
-}
+// MARK: - Boss Mechanics
 
 struct DamagePuddle {
     var id: String
@@ -848,6 +863,7 @@ enum DamageEventType: String, Codable {
     case currency         // Currency/hash gained
     case miss             // Missed/dodged
     case playerDamage     // Damage taken by player
+    case immune           // Target is immune to damage
 }
 
 struct DamageEvent: Identifiable {
@@ -882,6 +898,17 @@ struct JoystickInput {
     var distance: CGFloat
 }
 
+// MARK: - Blueprint System
+
+/// Boss kill tracking for drop rate calculations
+struct BossKillRecord: Codable {
+    var bossId: String
+    var totalKills: Int = 0
+    var killsByDifficulty: [String: Int] = [:]  // "normal": 5, "hard": 3
+    var blueprintsEarnedFromBoss: [String] = []
+    var lastKillDate: Date?
+}
+
 // MARK: - Player Profile (Unified Progression)
 
 struct PlayerProfile: Codable {
@@ -893,21 +920,40 @@ struct PlayerProfile: Codable {
     var level: Int = 1
     var xp: Int = 0
 
-    // System: Reboot - Dual Currency
-    var hash: Int = 0       // Hash (Ħ) - earned passively in Motherboard, spent on building/upgrades
-    var data: Int = 0       // Data (◈) - earned in Debug/Active mode, spent on Protocol unlocks
+    // System: Reboot - Single Currency (Hash is universal)
+    var hash: Int = 0       // Hash (Ħ) - universal currency for all purchases
+
+    // MARK: - FTUE (First Time User Experience)
+
+    /// Whether the intro sequence has been completed
+    var hasCompletedIntro: Bool = false
+
+    /// Whether the player has placed their first tower
+    var firstTowerPlaced: Bool = false
+
+    /// IDs of tutorial hints that have been seen/dismissed
+    var tutorialHintsSeen: [String] = []
+
+    // MARK: - Notification Settings
+
+    /// Whether efficiency alert notifications are enabled
+    var notificationsEnabled: Bool = false
 
     // MARK: - CodingKeys (exclude computed properties)
 
     enum CodingKeys: String, CodingKey {
-        case id, displayName, createdAt, level, xp, hash, data
+        case id, displayName, createdAt, level, xp, hash
+        case hasCompletedIntro, firstTowerPlaced, tutorialHintsSeen  // FTUE
+        case notificationsEnabled  // Settings
         case compiledProtocols, protocolLevels, equippedProtocolId, protocolBlueprints
         case globalUpgrades, unlockedExpansions, motherboardEfficiency
         case unlockedSectors, sectorBestTimes, tdSectorUnlockProgress, unlockedTDSectors
+        case defeatedDistrictBosses
         case lastActiveTimestamp, offlineEfficiencySnapshot
-        case unlocks, weaponLevels, powerupLevels
+        case unlocks, weaponLevels
         case survivorStats, tdStats
         case totalRuns, bestTime, totalKills, legendariesUnlocked
+        case bossKillRecords  // Blueprint system
     }
 
     // MARK: - Protocol System (New)
@@ -923,6 +969,9 @@ struct PlayerProfile: Codable {
 
     /// IDs of found but not compiled protocol blueprints
     var protocolBlueprints: [String] = []
+
+    /// Boss kill tracking for blueprint drop calculations
+    var bossKillRecords: [String: BossKillRecord] = [:]
 
     // MARK: - Global Upgrades (New)
 
@@ -951,6 +1000,10 @@ struct PlayerProfile: Codable {
     /// IDs of unlocked TD Mega-Board sectors (default: starter sector)
     var unlockedTDSectors: [String] = [SectorID.starter.rawValue]
 
+    /// IDs of districts where boss has been defeated for first time
+    /// Defeating a district boss unlocks visibility of the next district
+    var defeatedDistrictBosses: [String] = []
+
     // MARK: - Offline State (New)
 
     /// Last time the app was active (for offline calculation)
@@ -964,7 +1017,6 @@ struct PlayerProfile: Codable {
     // Collection unlocks (shared between modes) - LEGACY
     var unlocks: PlayerUnlocks
     var weaponLevels: [String: Int]  // weapon_id -> level (1-10)
-    var powerupLevels: [String: Int]
 
     // Stats by mode
     var survivorStats: SurvivorModeStats
@@ -998,6 +1050,36 @@ struct PlayerProfile: Codable {
         return protocolBlueprints.contains(protocolId)
     }
 
+    // MARK: - Boss Kill Tracking (Blueprint System)
+
+    /// Get kill count for a specific boss
+    func bossKillCount(_ bossId: String) -> Int {
+        return bossKillRecords[bossId]?.totalKills ?? 0
+    }
+
+    /// Track a boss kill
+    mutating func recordBossKill(_ bossId: String, difficulty: BossDifficulty) {
+        var record = bossKillRecords[bossId] ?? BossKillRecord(bossId: bossId)
+        record.totalKills += 1
+        record.killsByDifficulty[difficulty.rawValue, default: 0] += 1
+        record.lastKillDate = Date()
+        bossKillRecords[bossId] = record
+    }
+
+    /// Track a blueprint drop from a boss
+    mutating func recordBlueprintDrop(_ bossId: String, protocolId: String) {
+        if var record = bossKillRecords[bossId] {
+            record.blueprintsEarnedFromBoss.append(protocolId)
+            bossKillRecords[bossId] = record
+        }
+    }
+
+    /// Get kills since last blueprint drop from a boss
+    func killsSinceLastDrop(_ bossId: String) -> Int {
+        guard let record = bossKillRecords[bossId] else { return 0 }
+        return record.totalKills - record.blueprintsEarnedFromBoss.count
+    }
+
     /// Get the currently equipped protocol
     func equippedProtocol() -> Protocol? {
         guard var proto = ProtocolLibrary.get(equippedProtocolId) else { return nil }
@@ -1006,7 +1088,7 @@ struct PlayerProfile: Codable {
         return proto
     }
 
-    // MARK: - Sector Helpers
+    // MARK: - Sector Helpers (Active Mode)
 
     /// Check if a sector is unlocked
     func isSectorUnlocked(_ sectorId: String) -> Bool {
@@ -1017,6 +1099,15 @@ struct PlayerProfile: Codable {
     func sectorBestTime(_ sectorId: String) -> TimeInterval? {
         return sectorBestTimes[sectorId]
     }
+
+    // MARK: - TD Sector Helpers (Motherboard Map)
+
+    /// Set of unlocked TD sector IDs (for efficient lookup)
+    var unlockedSectorIds: Set<String> {
+        return Set(unlockedTDSectors)
+    }
+
+    // Note: isTDSectorUnlocked and unlockTDSector are in MegaBoardSystem.swift extension
 
     // MARK: - Currency Helpers (System: Reboot)
 
@@ -1051,7 +1142,6 @@ struct PlayerProfile: Codable {
 struct PlayerUnlocks: Codable {
     var arenas: [String]   // Also unlocks TD maps
     var weapons: [String]  // Also unlocks towers
-    var powerups: [String]
 }
 
 struct SurvivorModeStats: Codable {
@@ -1073,20 +1163,19 @@ struct TDModeStats: Codable {
 
     // System: Reboot - Offline/Idle Earnings
     var lastActiveTimestamp: TimeInterval = 0  // Last time player was active
-    var totalVirusKills: Int = 0               // Total viruses killed (for passive Data)
-    var totalData: Int = 0                     // Data currency (from Debugger/active mode)
     var baseHashPerSecond: CGFloat = 10        // Base Hash income rate
     var averageEfficiency: CGFloat = 100       // Rolling average efficiency for offline calc
+
+    // Offline Simulation State
+    var lastThreatLevel: CGFloat = 1.0         // Threat level when player left
+    var lastLeakCounter: Int = 0               // Leak counter when player left
+    var towerDefenseStrength: CGFloat = 0      // Sum of tower DPS for offline calc
+    var activeLaneCount: Int = 1               // Number of active (non-paused) lanes
 
     // CPU Tier Upgrades (global income multiplier)
     var cpuTier: Int = 1                       // Current CPU tier (1-5)
 
-    /// Calculate passive Data earned from virus kills
-    var passiveDataEarned: Int {
-        return totalVirusKills / 1000  // 1 Data per 1000 kills
-    }
-
-    /// CPU tier multiplier for Watts income
+    /// CPU tier multiplier for Hash income
     var cpuMultiplier: CGFloat {
         switch cpuTier {
         case 1: return 1.0
@@ -1098,7 +1187,7 @@ struct TDModeStats: Codable {
         }
     }
 
-    /// Cost in Watts to upgrade to next CPU tier
+    /// Cost in Hash to upgrade to next CPU tier
     var nextCpuUpgradeCost: Int? {
         switch cpuTier {
         case 1: return 1000   // 1.0 -> 2.0
@@ -1140,12 +1229,15 @@ extension PlayerProfile {
             createdAt: ISO8601DateFormatter().string(from: Date()),
             level: 1,
             xp: 0,
-            hash: 500,                        // Starting Hash (Ħ)
-            data: 0,                          // Starting Data (◈)
+            hash: 500,                        // Starting Hash (Ħ) - universal currency
+            hasCompletedIntro: false,         // FTUE: New player hasn't seen intro
+            firstTowerPlaced: false,          // FTUE: New player hasn't placed a tower
+            tutorialHintsSeen: [],            // FTUE: No hints dismissed yet
             compiledProtocols: [defaultProtocolId],  // Start with Kernel Pulse
             protocolLevels: [defaultProtocolId: 1],
             equippedProtocolId: defaultProtocolId,
             protocolBlueprints: [],
+            bossKillRecords: [:],  // Blueprint system tracking
             globalUpgrades: GlobalUpgrades(),
             unlockedExpansions: [],
             motherboardEfficiency: 1.0,
@@ -1155,11 +1247,9 @@ extension PlayerProfile {
             offlineEfficiencySnapshot: 1.0,
             unlocks: PlayerUnlocks(
                 arenas: ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"],  // All arenas unlocked for testing
-                weapons: ["kernel_pulse"],  // Default Protocol (unified weapon system)
-                powerups: ["tank"]
+                weapons: ["kernel_pulse"]  // Default Protocol (unified weapon system)
             ),
             weaponLevels: ["kernel_pulse": 1],  // Default Protocol level
-            powerupLevels: ["tank": 1],
             survivorStats: SurvivorModeStats(),
             tdStats: TDModeStats(),
             totalRuns: 0,
@@ -1201,6 +1291,10 @@ extension PlayerProfile {
 
         // Migrate legacy gold to hash if needed
         // This happens automatically via StorageService migration
+
+        // Blueprint system: ensure bossKillRecords is initialized
+        // (New field added for tracking boss kills and drop rates)
+        // Note: This is a no-op if already initialized via Codable
 
         return profile
     }

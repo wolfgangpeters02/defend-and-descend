@@ -43,6 +43,24 @@ struct TDGameContainerView: View {
     @State private var showSectorUnlockPanel = false
     @State private var selectedSectorForUnlock: String?
 
+    // Sector management (pause/unpause) panel state
+    @State private var showSectorManagementPanel = false
+
+    // TD Boss Integration state
+    @State private var showBossAlert = false           // Boss spawned, show alert
+    @State private var showBossDifficultySelector = false  // Difficulty picker modal
+    @State private var selectedBossDifficulty: BossDifficulty?
+    @State private var showBossFight = false           // Transition to boss fight
+    @State private var currentBossDistrictId: String?  // District the boss is from
+
+    // Boss Loot Modal state
+    @State private var showBossLootModal = false
+    @State private var pendingBossLootReward: BossLootReward?
+    @State private var bossFightNotificationObserver: NSObjectProtocol?
+
+    // Overclock state
+    @State private var overclockTimeRemaining: TimeInterval = 0
+
     let mapId: String
 
     var body: some View {
@@ -83,6 +101,26 @@ struct TDGameContainerView: View {
                     zeroDayAlertOverlay
                 }
 
+                // TD Boss Alert overlay (threat milestone boss)
+                if let state = gameState, state.bossActive, !state.bossEngaged, !showSystemFreeze {
+                    bossAlertOverlay
+                }
+
+                // Boss Difficulty Selector modal
+                if showBossDifficultySelector {
+                    bossDifficultySelectorOverlay
+                }
+
+                // Overclock button (always visible when not overclocking)
+                if let state = gameState, !state.overclockActive {
+                    overclockButton
+                }
+
+                // Overclock active indicator
+                if let state = gameState, state.overclockActive {
+                    overclockActiveIndicator
+                }
+
                 // System Freeze overlay (0% efficiency)
                 if showSystemFreeze {
                     systemFreezeOverlay
@@ -102,11 +140,50 @@ struct TDGameContainerView: View {
                 if showSectorUnlockPanel, let sectorId = selectedSectorForUnlock {
                     sectorUnlockPanel(sectorId: sectorId)
                 }
+
+                // Sector management (pause/unpause) panel
+                if showSectorManagementPanel {
+                    sectorManagementPanel
+                }
             }
             .coordinateSpace(name: "gameArea")
         }
         .onAppear {
             setupGame()
+            print("[TDContainer] View appeared - gameState=\(gameState != nil)")
+
+            // Register for boss fight completion notifications (traditional observer is more reliable)
+            bossFightNotificationObserver = NotificationCenter.default.addObserver(
+                forName: .bossFightCompleted,
+                object: nil,
+                queue: .main
+            ) { notification in
+                print("[TDContainer] Received bossFightCompleted notification via addObserver")
+                guard let userInfo = notification.userInfo,
+                      let victory = userInfo["victory"] as? Bool else {
+                    print("[TDContainer] Invalid notification userInfo")
+                    return
+                }
+                print("[TDContainer] Boss fight complete: victory=\(victory)")
+                showBossFight = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    handleBossFightCompletion(victory: victory)
+                }
+            }
+        }
+        .onDisappear {
+            saveOfflineSimulationState()
+            // Remove notification observer
+            if let observer = bossFightNotificationObserver {
+                NotificationCenter.default.removeObserver(observer)
+                bossFightNotificationObserver = nil
+            }
+        }
+        .onChange(of: gameState?.bossActive) { newValue in
+            print("[TDContainer] onChange bossActive -> \(newValue ?? false)")
+        }
+        .onChange(of: gameState?.overclockActive) { newValue in
+            print("[TDContainer] onChange overclockActive -> \(newValue ?? false)")
         }
         .navigationBarHidden(true)
         .fullScreenCover(isPresented: $showZeroDayBossFight) {
@@ -118,6 +195,141 @@ struct TDGameContainerView: View {
                 }
             )
         }
+        .fullScreenCover(isPresented: $showBossFight) {
+            // Use GameContainerView for boss fight
+            if let difficulty = selectedBossDifficulty {
+                GameContainerView(
+                    gameMode: .boss,
+                    bossDifficulty: difficulty,
+                    onExit: {
+                        // Called if player manually exits/retreats
+                        showBossFight = false
+                    }
+                )
+                .environmentObject(appState)
+            }
+        }
+        .fullScreenCover(isPresented: $showBossLootModal) {
+            // Boss loot reward modal - shows after successful boss fight
+            BossLootModalWrapper(
+                reward: pendingBossLootReward,
+                onCollect: {
+                    handleBossLootCollected()
+                }
+            )
+        }
+    }
+
+    // MARK: - Boss Fight Result Handler
+
+    private func handleBossFightCompletion(victory: Bool) {
+        print("[BossLoot] handleBossFightCompletion called, victory=\(victory)")
+
+        guard var state = gameState else {
+            print("[BossLoot] No gameState, returning")
+            isPaused = false
+            return
+        }
+
+        // Check if the boss fight was won
+        if victory {
+            // Boss defeated - calculate rewards but don't apply yet
+            let districtId = currentBossDistrictId ?? SectorID.power.rawValue
+            let difficulty = selectedBossDifficulty ?? .normal
+            let baseReward = TDBossSystem.onBossFightWon(state: &state, districtId: districtId)
+
+            print("[BossLoot] Boss defeated! hashReward=\(baseReward.hashReward), nextDistrict=\(baseReward.nextDistrictUnlocked ?? "none")")
+
+            gameState = state
+
+            // Calculate protocol drop using BlueprintDropSystem
+            let dropResult = BlueprintDropSystem.shared.calculateDrop(
+                bossId: state.activeBossType ?? "cyberboss",
+                difficulty: difficulty,
+                profile: appState.currentPlayer
+            )
+
+            print("[BossLoot] Protocol drop: \(dropResult.protocolId ?? "none")")
+
+            // Get sector info if first kill unlocked a new sector
+            var sectorInfo: (id: String, name: String, themeColor: String)?
+            if let nextSectorId = baseReward.nextDistrictUnlocked,
+               let lane = MotherboardLaneConfig.getLane(forSectorId: nextSectorId) {
+                sectorInfo = (nextSectorId, lane.displayName, lane.themeColorHex)
+            }
+
+            // Get protocol rarity if dropped
+            var protocolRarity: Rarity?
+            if let protocolId = dropResult.protocolId,
+               let proto = ProtocolLibrary.get(protocolId) {
+                protocolRarity = proto.rarity
+            }
+
+            // Build the loot reward for display
+            pendingBossLootReward = BossLootReward.create(
+                difficulty: difficulty,
+                hashReward: baseReward.hashReward,
+                protocolId: dropResult.protocolId,
+                protocolRarity: protocolRarity,
+                unlockedSector: sectorInfo,
+                isFirstKill: baseReward.nextDistrictUnlocked != nil
+            )
+
+            print("[BossLoot] Created reward with \(pendingBossLootReward?.items.count ?? 0) items, showing modal...")
+
+            // Show loot modal (rewards applied when collected)
+            showBossLootModal = true
+
+            HapticsService.shared.play(.success)
+        } else {
+            // Boss fight lost or exited - player chose to let pass
+            TDBossSystem.onBossFightLostLetPass(state: &state)
+            gameState = state
+            isPaused = false
+            currentBossDistrictId = nil
+
+            HapticsService.shared.play(.defeat)
+        }
+    }
+
+    /// Apply rewards and dismiss the loot modal
+    private func handleBossLootCollected() {
+        guard let reward = pendingBossLootReward else {
+            showBossLootModal = false
+            isPaused = false
+            currentBossDistrictId = nil
+            return
+        }
+
+        let districtId = currentBossDistrictId ?? SectorID.power.rawValue
+
+        // Apply all rewards to player profile
+        appState.updatePlayer { profile in
+            // Add hash reward
+            profile.addHash(reward.totalHashReward)
+
+            // Record boss defeat for progression (first-time only)
+            if reward.unlockedSectorId != nil {
+                _ = SectorUnlockSystem.shared.recordBossDefeat(districtId, profile: &profile)
+            }
+
+            // Add protocol blueprint if dropped
+            if let protocolId = reward.droppedProtocolId,
+               !profile.protocolBlueprints.contains(protocolId) {
+                profile.protocolBlueprints.append(protocolId)
+            }
+        }
+
+        // Refresh mega-board visuals if sector was unlocked
+        if reward.unlockedSectorId != nil {
+            scene?.refreshMegaBoardVisuals()
+        }
+
+        // Clean up
+        pendingBossLootReward = nil
+        showBossLootModal = false
+        isPaused = false
+        currentBossDistrictId = nil
     }
 
     // MARK: - Zero-Day Alert Overlay (System Breach)
@@ -134,7 +346,7 @@ struct TDGameContainerView: View {
                         .font(DesignTypography.headline(22))
                         .foregroundColor(.red)
 
-                    Text("SYSTEM_BREACH_DETECTED")
+                    Text(L10n.ZeroDay.breachDetected)
                         .font(.system(size: 18, weight: .black, design: .monospaced))
                         .foregroundColor(.red)
 
@@ -143,11 +355,11 @@ struct TDGameContainerView: View {
                         .foregroundColor(.red)
                 }
 
-                Text("Zero-Day virus detected! Firewalls ineffective.")
+                Text(L10n.ZeroDay.virusDetected)
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(.gray)
 
-                Text("Efficiency draining: -2%/sec")
+                Text(L10n.ZeroDay.efficiencyDraining)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.orange)
 
@@ -158,7 +370,7 @@ struct TDGameContainerView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "person.fill.viewfinder")
                             .font(DesignTypography.headline(18))
-                        Text("MANUAL_OVERRIDE")
+                        Text(L10n.ZeroDay.manualOverride)
                             .font(.system(size: 16, weight: .black, design: .monospaced))
                     }
                     .foregroundColor(.black)
@@ -202,7 +414,7 @@ struct TDGameContainerView: View {
         isPaused = false
 
         switch result {
-        case .victory(let dataBonus, let wattsBonus):
+        case .victory(let hashBonus):
             // Apply rewards and remove Zero-Day
             if var state = gameState {
                 _ = ZeroDaySystem.onZeroDayDefeated(state: &state)
@@ -211,8 +423,7 @@ struct TDGameContainerView: View {
             }
 
             appState.updatePlayer { profile in
-                profile.data += dataBonus
-                profile.addHash(wattsBonus)
+                profile.addHash(hashBonus)
             }
 
             HapticsService.shared.play(.success)
@@ -228,6 +439,301 @@ struct TDGameContainerView: View {
         case .fled:
             // Zero-Day remains active, no penalty
             HapticsService.shared.play(.light)
+        }
+    }
+
+    // MARK: - TD Boss Alert Overlay
+
+    private var bossAlertOverlay: some View {
+        VStack {
+            Spacer()
+
+            // Alert banner at bottom of screen (above tower deck)
+            VStack(spacing: 12) {
+                // Warning header
+                HStack(spacing: 8) {
+                    Image(systemName: "bolt.shield.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.orange)
+
+                    Text("SUPER VIRUS DETECTED")
+                        .font(.system(size: 18, weight: .black, design: .monospaced))
+                        .foregroundColor(.orange)
+
+                    Image(systemName: "bolt.shield.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.orange)
+                }
+
+                if let bossType = gameState?.activeBossType {
+                    Text(bossType == "cyberboss" ? "CYBERBOSS" : "VOID HARBINGER")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                }
+
+                Text("Immune to Firewalls - Manual engagement required")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.gray)
+
+                Text("Will reach CPU and drain 20% efficiency if ignored")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.red.opacity(0.8))
+
+                // ENGAGE button
+                Button(action: {
+                    showBossDifficultySelector = true
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "person.fill.viewfinder")
+                            .font(.system(size: 18, weight: .bold))
+                        Text("ENGAGE")
+                            .font(.system(size: 16, weight: .black, design: .monospaced))
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.orange)
+                    )
+                    .shadow(color: .orange.opacity(0.6), radius: 10)
+                }
+                .padding(.top, 4)
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.95))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.orange.opacity(0.8), lineWidth: 2)
+                    )
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 130) // Above tower deck
+        }
+        .onAppear {
+            print("[BossAlert] Overlay appeared - bossActive=\(gameState?.bossActive ?? false)")
+        }
+    }
+
+    // MARK: - Boss Difficulty Selector
+
+    private var bossDifficultySelectorOverlay: some View {
+        ZStack {
+            // Dim background
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showBossDifficultySelector = false
+                }
+
+            // Modal
+            VStack(spacing: 16) {
+                Text("SELECT DIFFICULTY")
+                    .font(.system(size: 20, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+
+                if let bossType = gameState?.activeBossType {
+                    Text(bossType == "cyberboss" ? "CYBERBOSS" : "VOID HARBINGER")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(.orange)
+                }
+
+                // Difficulty buttons
+                ForEach(BossDifficulty.allCases, id: \.self) { difficulty in
+                    difficultyButton(difficulty: difficulty)
+                }
+
+                // Cancel button
+                Button(action: {
+                    showBossDifficultySelector = false
+                }) {
+                    Text("CANCEL")
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .foregroundColor(.gray)
+                        .padding(.vertical, 8)
+                }
+                .padding(.top, 8)
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.95))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.orange.opacity(0.5), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 40)
+        }
+    }
+
+    private func difficultyButton(difficulty: BossDifficulty) -> some View {
+        Button(action: {
+            selectedBossDifficulty = difficulty
+            showBossDifficultySelector = false
+            startBossFight(difficulty: difficulty)
+        }) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(difficulty.displayName)
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(difficultyColor(difficulty))
+
+                    Text("\(difficulty.hashReward) Ħ  •  \(Int(difficulty.blueprintChance * 100))% Blueprint")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.gray)
+                }
+
+                Spacer()
+
+                Text("\(String(format: "%.1f", difficulty.healthMultiplier))x HP")
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(difficultyColor(difficulty).opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(difficultyColor(difficulty).opacity(0.5), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    private func difficultyColor(_ difficulty: BossDifficulty) -> Color {
+        switch difficulty {
+        case .easy: return .green
+        case .normal: return .blue
+        case .hard: return .orange
+        case .nightmare: return .red
+        }
+    }
+
+    private func startBossFight(difficulty: BossDifficulty) {
+        guard var state = gameState else { return }
+
+        // Engage the boss
+        guard let engagement = TDBossSystem.engageBoss(state: &state, difficulty: difficulty) else {
+            return
+        }
+
+        gameState = state
+        currentBossDistrictId = engagement.districtId
+
+        // Pause TD and transition to boss fight
+        isPaused = true
+        showBossFight = true
+
+        HapticsService.shared.play(.warning)
+    }
+
+    // MARK: - Overclock Button
+
+    private var overclockButton: some View {
+        let canOverclock = gameState?.canOverclock ?? false
+        let buttonColor: Color = canOverclock ? .orange : .gray
+
+        return VStack {
+            Spacer()
+
+            HStack {
+                Spacer()
+
+                Button(action: {
+                    if canOverclock {
+                        activateOverclock()
+                    }
+                }) {
+                    VStack(spacing: 4) {
+                        Image(systemName: "bolt.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(buttonColor)
+
+                        Text("OVERCLOCK")
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .foregroundColor(buttonColor)
+
+                        if !canOverclock, gameState?.bossActive == true {
+                            Text("(BOSS)")
+                                .font(.system(size: 8, design: .monospaced))
+                                .foregroundColor(.red.opacity(0.7))
+                        }
+                    }
+                    .padding(12)
+                    .background(
+                        Circle()
+                            .fill(Color.black.opacity(0.8))
+                            .overlay(
+                                Circle()
+                                    .stroke(buttonColor.opacity(0.5), lineWidth: 2)
+                            )
+                    )
+                }
+                .padding(.trailing, 20)
+            }
+            .padding(.bottom, 180) // Above tower deck
+        }
+        .onAppear {
+            print("[OverclockButton] Appeared - canOverclock=\(canOverclock), bossActive=\(gameState?.bossActive ?? false)")
+        }
+    }
+
+    private var overclockActiveIndicator: some View {
+        VStack {
+            HStack {
+                Spacer()
+
+                VStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(.orange)
+
+                    Text("OVERCLOCKED")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(.orange)
+
+                    if let state = gameState {
+                        Text("\(Int(state.overclockTimeRemaining))s")
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white)
+                    }
+
+                    Text("2x HASH")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(.green)
+
+                    Text("10x THREAT")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundColor(.red)
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.black.opacity(0.9))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.orange, lineWidth: 2)
+                        )
+                )
+                .padding(.trailing, 20)
+            }
+
+            Spacer()
+        }
+        .padding(.top, 100)
+    }
+
+    private func activateOverclock() {
+        guard var state = gameState else { return }
+
+        if OverclockSystem.activateOverclock(state: &state) {
+            gameState = state
+            HapticsService.shared.play(.heavy)
         }
     }
 
@@ -256,27 +762,27 @@ struct TDGameContainerView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.red)
 
-                    Text("SYSTEM_FREEZE")
+                    Text(L10n.Freeze.header)
                         .font(.system(size: 32, weight: .black, design: .monospaced))
                         .foregroundColor(.red)
 
-                    Text("CRITICAL ERROR: EFFICIENCY 0%")
+                    Text(L10n.Freeze.criticalError)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
 
-                    Text("Watts generation halted")
+                    Text(L10n.Freeze.hashHalted)
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundColor(.orange)
                 }
 
                 // Reboot options
                 VStack(spacing: 16) {
-                    Text("SELECT_REBOOT_PROTOCOL")
+                    Text(L10n.Freeze.selectReboot)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.gray)
 
-                    // Option 1: Flush Memory (Pay Watts)
-                    let flushCost = max(100, appState.currentPlayer.hash / 10)  // 10% of banked Watts
+                    // Option 1: Flush Memory (Pay Hash)
+                    let flushCost = max(100, appState.currentPlayer.hash / 10)  // 10% of banked Hash
                     let canAffordFlush = appState.currentPlayer.hash >= flushCost
 
                     Button(action: {
@@ -286,11 +792,11 @@ struct TDGameContainerView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "arrow.counterclockwise")
                                     .font(.system(size: 18, weight: .bold))
-                                Text("FLUSH MEMORY")
+                                Text(L10n.Freeze.flushMemory)
                                     .font(.system(size: 16, weight: .black, design: .monospaced))
                             }
 
-                            Text("Cost: \(flushCost)⚡ → Restore to 50%")
+                            Text(L10n.Freeze.flushCost(flushCost))
                                 .font(.system(size: 11, design: .monospaced))
                                 .opacity(0.8)
                         }
@@ -312,11 +818,11 @@ struct TDGameContainerView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "person.fill.viewfinder")
                                     .font(.system(size: 18, weight: .bold))
-                                Text("MANUAL_OVERRIDE")
+                                Text(L10n.ZeroDay.manualOverride)
                                     .font(.system(size: 16, weight: .black, design: .monospaced))
                             }
 
-                            Text("Survive 30 seconds → Restore to 100%")
+                            Text(L10n.Freeze.overrideSurvive)
                                 .font(.system(size: 11, design: .monospaced))
                                 .opacity(0.8)
                         }
@@ -388,7 +894,7 @@ struct TDGameContainerView: View {
                         .cornerRadius(8)
                 }
 
-                Text("WAVE \(gameState?.currentWave ?? 0)")
+                Text(L10n.Game.HUD.wave(gameState?.currentWave ?? 0))
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
             }
@@ -456,7 +962,7 @@ struct TDGameContainerView: View {
     private func towerDeck(geometry: GeometryProxy) -> some View {
         VStack(spacing: 0) {
             // Hint text
-            Text("DRAG FIREWALL TO DEPLOY")
+            Text(L10n.Motherboard.dragToDeploy)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundColor(.gray)
                 .padding(.top, 6)
@@ -467,13 +973,20 @@ struct TDGameContainerView: View {
                     // Use Protocol-based deck if player has compiled protocols
                     let protocols = getCompiledProtocols()
                     if !protocols.isEmpty {
-                        ForEach(protocols) { proto in
+                        ForEach(Array(protocols.enumerated()), id: \.element.id) { index, proto in
                             ProtocolDeckCard(
                                 protocol: proto,
                                 hash: gameState?.hash ?? 0,
                                 onDragStart: { startDragFromDeck(weaponType: proto.id) },
                                 onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
                                 onDragEnded: { endDragFromDeck() }
+                            )
+                            // FTUE: Glow on first card for new players
+                            .tutorialGlow(
+                                color: DesignColors.primary,
+                                isActive: index == 0 &&
+                                    !appState.currentPlayer.firstTowerPlaced &&
+                                    TutorialHintManager.shared.shouldShowHint(.deckCard, profile: appState.currentPlayer)
                             )
                         }
                     } else {
@@ -556,8 +1069,8 @@ struct TDGameContainerView: View {
                         .font(DesignTypography.headline(18))
                         .foregroundColor(.white)
 
-                    // Cost indicator (Watts)
-                    Text("\(TowerSystem.towerPlacementCost(rarity: proto.rarity))W")
+                    // Cost indicator (Hash)
+                    Text("Ħ\(TowerSystem.towerPlacementCost(rarity: proto.rarity))")
                         .font(DesignTypography.caption(11))
                         .fontWeight(.bold)
                         .foregroundColor(canAffordDraggedTower ? DesignColors.primary : DesignColors.danger)
@@ -611,8 +1124,8 @@ struct TDGameContainerView: View {
                         .font(DesignTypography.headline(18))
                         .foregroundColor(.white)
 
-                    // Cost indicator (Watts)
-                    Text("\(TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common))W")
+                    // Cost indicator (Hash)
+                    Text("Ħ\(TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common))")
                         .font(DesignTypography.caption(11))
                         .fontWeight(.bold)
                         .foregroundColor(canAffordDraggedTower ? DesignColors.primary : DesignColors.danger)
@@ -730,6 +1243,11 @@ struct TDGameContainerView: View {
            canAffordDraggedTower {
             scene?.placeTower(weaponType: weaponType, slotId: slot.id, profile: appState.currentPlayer)
             HapticsService.shared.play(.towerPlace)
+
+            // FTUE: Track first tower placement
+            if !appState.currentPlayer.firstTowerPlaced {
+                appState.recordFirstTowerPlacement()
+            }
         }
     }
 
@@ -795,7 +1313,7 @@ struct TDGameContainerView: View {
 
     private func towerSelectionMenu(slotId: String) -> some View {
         VStack(spacing: 12) {
-            Text("DEPLOY_FIREWALL")
+            Text(L10n.TD.deployFirewall)
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundColor(.cyan)
 
@@ -810,14 +1328,14 @@ struct TDGameContainerView: View {
                         VStack(alignment: .leading) {
                             Text(weapon.towerName ?? weapon.name)
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            Text("DMG: \(Int(weapon.damage)) | RNG: \(Int(weapon.range))")
+                            Text(L10n.Stats.dmgRng(Int(weapon.damage), rng: Int(weapon.range)))
                                 .font(.system(size: 11, design: .monospaced))
                                 .foregroundColor(.gray)
                         }
 
                         Spacer()
 
-                        Text("\(cost)W")
+                        Text("Ħ\(cost)")
                             .foregroundColor(canAfford ? .cyan : .red)
                             .fontWeight(.bold)
                             .font(.system(size: 14, design: .monospaced))
@@ -830,7 +1348,7 @@ struct TDGameContainerView: View {
                 .opacity(canAfford ? 1 : 0.5)
             }
 
-            Button("CANCEL") {
+            Button(L10n.Common.cancel) {
                 showTowerMenu = false
                 selectedSlotId = nil
             }
@@ -862,23 +1380,9 @@ struct TDGameContainerView: View {
                     .foregroundColor(.white)
 
                 Spacer()
-
-                // Merge stars
-                HStack(spacing: 2) {
-                    ForEach(0..<tower.mergeLevel, id: \.self) { _ in
-                        Image(systemName: "star.fill")
-                            .font(DesignTypography.caption(12))
-                            .foregroundColor(.yellow)
-                    }
-                    ForEach(0..<(3 - tower.mergeLevel), id: \.self) { _ in
-                        Image(systemName: "star")
-                            .font(DesignTypography.caption(12))
-                            .foregroundColor(.gray)
-                    }
-                }
             }
 
-            Text("Level: \(tower.level)/10")
+            Text(L10n.TD.levelMax(tower.level, max: 10))
                 .font(DesignTypography.caption(12))
                 .foregroundColor(.gray)
 
@@ -907,9 +1411,10 @@ struct TDGameContainerView: View {
                     Button(action: { upgradeTower(tower.id) }) {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.up.circle.fill")
-                            Text("\(tower.upgradeCost)W")
+                            Text("Ħ\(tower.upgradeCost)")
                         }
                         .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(.black)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
                         .background((gameState?.hash ?? 0) >= tower.upgradeCost ? Color.cyan : Color.gray)
@@ -921,7 +1426,7 @@ struct TDGameContainerView: View {
                 Button(action: { sellTower(tower.id) }) {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.uturn.backward.circle.fill")
-                        Text("Recycle")
+                        Text(L10n.Common.recycle)
                     }
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .padding(.horizontal, 10)
@@ -967,10 +1472,10 @@ struct TDGameContainerView: View {
 
             VStack(spacing: 32) {
                 VStack(spacing: 8) {
-                    Text("SYSTEM_PAUSED")
+                    Text(L10n.TD.systemPaused)
                         .font(.system(size: 32, weight: .bold, design: .monospaced))
                         .foregroundColor(.cyan)
-                    Text("Defense protocols suspended")
+                    Text(L10n.TD.protocolsSuspended)
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(.gray)
                 }
@@ -983,7 +1488,7 @@ struct TDGameContainerView: View {
                         isPaused = false
                         HapticsService.shared.play(.light)
                     }) {
-                        Text("RESUME")
+                        Text(L10n.Common.resume)
                             .font(.system(size: 18, weight: .bold, design: .monospaced))
                             .foregroundColor(.black)
                             .frame(width: 220, height: 56)
@@ -991,11 +1496,31 @@ struct TDGameContainerView: View {
                             .cornerRadius(12)
                     }
 
+                    // Sector Management button
+                    Button(action: {
+                        HapticsService.shared.play(.light)
+                        showSectorManagementPanel = true
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "square.grid.2x2")
+                            Text(L10n.Sector.manageSectors)
+                        }
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(.cyan)
+                        .frame(width: 220, height: 48)
+                        .background(Color.black.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.cyan.opacity(0.5), lineWidth: 1)
+                        )
+                        .cornerRadius(10)
+                    }
+
                     Button(action: {
                         HapticsService.shared.play(.light)
                         dismiss()
                     }) {
-                        Text("ABORT")
+                        Text(L10n.Common.abort)
                             .font(.system(size: 18, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 220, height: 56)
@@ -1017,7 +1542,7 @@ struct TDGameContainerView: View {
             // Current CPU info
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("CPU_TIER")
+                    Text(L10n.CPU.tier)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
                     HStack(spacing: 4) {
@@ -1030,7 +1555,7 @@ struct TDGameContainerView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("MULTIPLIER")
+                    Text(L10n.CPU.multiplier)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
                     Text("\(String(format: "%.0f", cpuInfo.multiplier))x")
@@ -1041,7 +1566,7 @@ struct TDGameContainerView: View {
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("WATTS")
+                    Text(L10n.CPU.watts)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
                     HStack(spacing: 4) {
@@ -1063,9 +1588,9 @@ struct TDGameContainerView: View {
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.up.circle.fill")
-                        Text("UPGRADE TO CPU \(cpuInfo.tier + 1).0")
+                        Text(L10n.CPU.upgradeTo(cpuInfo.tier + 1))
                         Spacer()
-                        Text("\(upgradeCost)W")
+                        Text("Ħ\(upgradeCost)")
                             .fontWeight(.bold)
                     }
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
@@ -1076,7 +1601,7 @@ struct TDGameContainerView: View {
                 }
                 .disabled(!canUpgrade)
             } else {
-                Text("MAX CPU_TIER")
+                Text(L10n.CPU.maxTier)
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(.yellow)
                     .padding()
@@ -1125,11 +1650,11 @@ struct TDGameContainerView: View {
             VStack(spacing: 32) {
                 // Victory/Defeat title - System: Reboot themed
                 VStack(spacing: 8) {
-                    Text(gameState?.victory == true ? "SYSTEM_SECURE" : "SYSTEM_BREACH")
+                    Text(gameState?.victory == true ? L10n.TD.systemSecure : L10n.TD.systemBreach)
                         .font(.system(size: 36, weight: .bold, design: .monospaced))
                         .foregroundColor(gameState?.victory == true ? .green : .red)
 
-                    Text(gameState?.victory == true ? "All threats neutralized" : "CPU integrity compromised")
+                    Text(gameState?.victory == true ? L10n.TD.threatsNeutralized : L10n.TD.cpuCompromised)
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(.gray)
                 }
@@ -1137,9 +1662,9 @@ struct TDGameContainerView: View {
                 // Stats card
                 if let state = gameState {
                     VStack(spacing: 16) {
-                        GameEndStatRow(label: "Waves", value: "\(state.wavesCompleted)/20", icon: "waveform.path", color: .purple)
-                        GameEndStatRow(label: "Viruses", value: "\(state.stats.enemiesKilled)", icon: "ladybug.fill", color: .red)
-                        GameEndStatRow(label: "Watts", value: "\(state.stats.goldEarned)", icon: "bolt.fill", color: .cyan)
+                        GameEndStatRow(label: L10n.TD.waves, value: "\(state.wavesCompleted)/20", icon: "waveform.path", color: .purple)
+                        GameEndStatRow(label: L10n.TD.viruses, value: "\(state.stats.enemiesKilled)", icon: "ladybug.fill", color: .red)
+                        GameEndStatRow(label: L10n.Common.hash, value: "Ħ\(state.stats.goldEarned)", icon: "number.circle.fill", color: .cyan)
                     }
                     .padding(24)
                     .background(Color.white.opacity(0.05))
@@ -1154,7 +1679,7 @@ struct TDGameContainerView: View {
                     HapticsService.shared.play(.light)
                     dismiss()
                 }) {
-                    Text("EXIT")
+                    Text(L10n.Common.exit)
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
                         .frame(width: 220, height: 56)
@@ -1187,11 +1712,11 @@ struct TDGameContainerView: View {
                         .font(.system(size: 40))
                         .foregroundColor(.red)
 
-                    Text("ENCRYPTED_SECTOR")
+                    Text(L10n.Sector.encrypted)
                         .font(.system(size: 24, weight: .bold, design: .monospaced))
                         .foregroundColor(.cyan)
 
-                    Text(status?.displayName ?? "Unknown")
+                    Text(status?.displayName ?? L10n.Common.unknown)
                         .font(.system(size: 18, weight: .semibold, design: .monospaced))
                         .foregroundColor(.white)
                 }
@@ -1210,7 +1735,7 @@ struct TDGameContainerView: View {
                     VStack(spacing: 12) {
                         // Cost
                         HStack(spacing: 8) {
-                            Text("DECRYPT_COST:")
+                            Text(L10n.Sector.decryptCost)
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray)
 
@@ -1221,7 +1746,7 @@ struct TDGameContainerView: View {
 
                         // Current balance
                         HStack(spacing: 8) {
-                            Text("YOUR_BALANCE:")
+                            Text(L10n.Sector.yourBalance)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(.gray)
 
@@ -1255,7 +1780,7 @@ struct TDGameContainerView: View {
                         showSectorUnlockPanel = false
                         selectedSectorForUnlock = nil
                     }) {
-                        Text("CANCEL")
+                        Text(L10n.Common.cancel)
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 120, height: 50)
@@ -1269,7 +1794,7 @@ struct TDGameContainerView: View {
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: "lock.open.fill")
-                            Text("DECRYPT")
+                            Text(L10n.Sector.decrypt)
                         }
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(status?.canUnlock == true ? .black : .gray)
@@ -1293,16 +1818,210 @@ struct TDGameContainerView: View {
         }
     }
 
+    // MARK: - Sector Management Panel (Pause/Unpause)
+
+    private var sectorManagementPanel: some View {
+        let unlockedSectorIds = appState.currentPlayer.unlockedSectorIds
+
+        return ZStack {
+            // Dimmed background
+            Color.black.opacity(0.9)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    showSectorManagementPanel = false
+                }
+
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 8) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 36))
+                        .foregroundColor(.cyan)
+
+                    Text(L10n.Sector.management)
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(.cyan)
+
+                    Text(L10n.Sector.pauseDescription)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundColor(.gray)
+                }
+
+                // Sector list
+                ScrollView {
+                    VStack(spacing: 12) {
+                        ForEach(MotherboardLaneConfig.createAllLanes(), id: \.id) { lane in
+                            let isUnlocked = lane.isStarterLane || unlockedSectorIds.contains(lane.sectorId)
+
+                            if isUnlocked {
+                                sectorRow(lane: lane)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .frame(maxHeight: 300)
+
+                // Warning message
+                if let state = gameState, !state.pausedSectorIds.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text(L10n.Sector.pausedWarning)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundColor(.orange)
+                    }
+                    .padding(12)
+                    .background(Color.orange.opacity(0.1))
+                    .cornerRadius(8)
+                }
+
+                // Close button
+                Button(action: {
+                    HapticsService.shared.play(.light)
+                    showSectorManagementPanel = false
+                }) {
+                    Text(L10n.Common.done)
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundColor(.black)
+                        .frame(width: 200, height: 50)
+                        .background(Color.cyan)
+                        .cornerRadius(10)
+                }
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(white: 0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.cyan.opacity(0.3), lineWidth: 2)
+                    )
+            )
+            .padding(20)
+        }
+    }
+
+    private func sectorRow(lane: SectorLane) -> some View {
+        let isPaused = gameState?.pausedSectorIds.contains(lane.sectorId) ?? false
+        let themeColor = Color(hex: lane.themeColorHex) ?? .cyan
+
+        return HStack(spacing: 16) {
+            // Sector color indicator
+            Circle()
+                .fill(isPaused ? Color.gray : themeColor)
+                .frame(width: 12, height: 12)
+
+            // Sector name
+            VStack(alignment: .leading, spacing: 2) {
+                Text(lane.displayName)
+                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .foregroundColor(isPaused ? .gray : .white)
+
+                Text(isPaused ? L10n.Common.paused : L10n.Common.active)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundColor(isPaused ? .orange : .green)
+            }
+
+            Spacer()
+
+            // Toggle button
+            Button(action: {
+                toggleSectorPause(sectorId: lane.sectorId)
+            }) {
+                Text(isPaused ? L10n.Common.resume : L10n.Common.pause)
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(isPaused ? .green : .orange)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(isPaused ? Color.green.opacity(0.2) : Color.orange.opacity(0.2))
+                    )
+            }
+            // Don't allow pausing the starter lane (PSU)
+            .disabled(lane.isStarterLane)
+            .opacity(lane.isStarterLane ? 0.5 : 1.0)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(isPaused ? Color.orange.opacity(0.3) : themeColor.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+
+    private func toggleSectorPause(sectorId: String) {
+        guard var state = gameState else { return }
+
+        if state.pausedSectorIds.contains(sectorId) {
+            state.pausedSectorIds.remove(sectorId)
+            HapticsService.shared.play(.light)
+        } else {
+            state.pausedSectorIds.insert(sectorId)
+            HapticsService.shared.play(.warning)
+        }
+
+        // Update state - scene will pick up changes on next update cycle
+        gameState = state
+    }
+
+    // MARK: - Offline Simulation
+
+    /// Save state needed for offline simulation when player leaves
+    private func saveOfflineSimulationState() {
+        guard let state = gameState else { return }
+
+        // Calculate tower defense strength (sum of tower DPS)
+        let towerDefenseStrength = state.towers.reduce(0.0) { total, tower in
+            total + (tower.damage * tower.attackSpeed)
+        }
+
+        // Count active (non-paused) lanes
+        let unlockedSectorIds = appState.currentPlayer.unlockedSectorIds
+        let allLanes = MotherboardLaneConfig.createAllLanes()
+        let activeLaneCount = allLanes.filter { lane in
+            let isUnlocked = lane.isStarterLane || unlockedSectorIds.contains(lane.sectorId)
+            let isNotPaused = !state.pausedSectorIds.contains(lane.sectorId)
+            return isUnlocked && isNotPaused
+        }.count
+
+        // Save offline simulation state
+        StorageService.shared.saveOfflineSimulationState(
+            threatLevel: state.idleThreatLevel,
+            leakCounter: state.leakCounter,
+            towerDefenseStrength: towerDefenseStrength,
+            activeLaneCount: activeLaneCount,
+            efficiency: state.efficiency
+        )
+
+        // Also save the session state
+        StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
+    }
+
     // MARK: - Game Setup
 
     private func setupGame() {
-        guard let state = TDGameStateFactory.createTDGameState(mapId: mapId, playerProfile: appState.currentPlayer) else {
+        guard var state = TDGameStateFactory.createTDGameState(mapId: mapId, playerProfile: appState.currentPlayer) else {
             return
         }
+
+        // FTUE: Grace period for new players who haven't placed a tower yet
+        if !appState.currentPlayer.firstTowerPlaced {
+            // Set spawn timer to -8 seconds, giving ~10 seconds before first enemy
+            state.idleSpawnTimer = -8.0
+        }
+
+        // Sync persisted boss defeats to game state
+        state.defeatedDistrictBosses = Set(appState.currentPlayer.defeatedDistrictBosses)
 
         let waves = WaveSystem.generateWaves(totalWaves: 20)
 
         let handler = TDGameSceneDelegateHandler()
+        handler.appState = appState
         handler.onGameStateUpdated = { newState in
             self.updateGameState(newState)
         }
@@ -1314,6 +2033,22 @@ struct TDGameContainerView: View {
         }
         handler.onGateSelected = { sectorId in
             self.handleGateSelected(sectorId)
+        }
+        handler.onSystemFrozen = {
+            withAnimation {
+                self.showSystemFreeze = true
+            }
+        }
+        handler.onBossSpawned = { bossType in
+            // Boss spawned - show alert (state already has boss info)
+            withAnimation {
+                self.showBossAlert = true
+            }
+            HapticsService.shared.play(.warning)
+        }
+        handler.onBossReachedCPU = {
+            // Boss reached CPU without engagement - efficiency loss already applied
+            HapticsService.shared.play(.defeat)
         }
 
         // Scene size based on map dimensions
@@ -1329,7 +2064,7 @@ struct TDGameContainerView: View {
         self.scene = newScene
     }
 
-    // MARK: - Actions
+    /// MARK: - Actions
 
     private func startWave() {
         scene?.startWave()
@@ -1439,7 +2174,13 @@ struct TDGameContainerView: View {
 
     fileprivate func updateGameState(_ state: TDGameState) {
         let previousEfficiency = self.gameState?.efficiency ?? 100
+        let previousBossActive = self.gameState?.bossActive ?? false
         self.gameState = state
+
+        // Debug: Log boss state changes
+        if state.bossActive != previousBossActive {
+            print("[TDContainer] Boss state changed: bossActive=\(state.bossActive), bossEngaged=\(state.bossEngaged), type=\(state.activeBossType ?? "nil")")
+        }
 
         // Check for System Freeze (efficiency hit 0%)
         if state.efficiency <= 0 && previousEfficiency > 0 && !showSystemFreeze {
@@ -1506,12 +2247,12 @@ struct TDGameContainerView: View {
         profile.tdStats.totalTowersPlaced += state.stats.towersPlaced
         profile.tdStats.totalTDKills += state.stats.enemiesKilled
 
-        // Award Data and Watts (System: Reboot currencies)
-        let dataReward = state.wavesCompleted * 10 + state.stats.enemiesKilled + (state.victory ? 50 : 0)
-        let wattsReward = state.stats.goldEarned / 10 + (state.victory ? state.wavesCompleted * 5 : 0)
+        // Award XP and Hash (System: Reboot)
+        let xpReward = state.wavesCompleted * 10 + state.stats.enemiesKilled + (state.victory ? 50 : 0)
+        let hashReward = state.stats.goldEarned / 10 + (state.victory ? state.wavesCompleted * 5 : 0)
 
-        profile.xp += dataReward      // Data is stored as XP for now
-        profile.addHash(wattsReward)   // Hash (subject to HDD storage cap)
+        profile.xp += xpReward         // XP for leveling
+        profile.addHash(hashReward)    // Hash currency
 
         // Check level up
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -1526,11 +2267,15 @@ struct TDGameContainerView: View {
 // MARK: - Scene Delegate Handler
 
 private class TDGameSceneDelegateHandler: TDGameSceneDelegate {
+    weak var appState: AppState?
+
     var onGameStateUpdated: ((TDGameState) -> Void)?
     var onSlotSelected: ((String) -> Void)?
     var onTowerSelected: ((String?) -> Void)?
     var onGateSelected: ((String) -> Void)?
     var onSystemFrozen: (() -> Void)?
+    var onBossSpawned: ((String) -> Void)?
+    var onBossReachedCPU: (() -> Void)?
 
     func gameStateUpdated(_ state: TDGameState) {
         DispatchQueue.main.async { [weak self] in
@@ -1560,6 +2305,39 @@ private class TDGameSceneDelegateHandler: TDGameSceneDelegate {
         DispatchQueue.main.async { [weak self] in
             self?.onSystemFrozen?()
         }
+    }
+
+    func getUnlockedSectorIds() -> Set<String> {
+        // Return unlocked TD sectors from player profile
+        return appState?.currentPlayer.unlockedSectorIds ?? Set([SectorID.power.rawValue])
+    }
+
+    func spawnPointTapped(_ lane: SectorLane) {
+        // Forward to the gate selected handler (reuse existing unlock UI)
+        DispatchQueue.main.async { [weak self] in
+            self?.onGateSelected?(lane.sectorId)
+        }
+    }
+
+    func placementFailed(_ reason: TowerPlacementResult) {
+        // TDGameContainerView uses scene-level haptic feedback
+        // Additional UI feedback could be added here if needed
+    }
+
+    func bossSpawned(type: String) {
+        DispatchQueue.main.async { [weak self] in
+            self?.onBossSpawned?(type)
+        }
+    }
+
+    func bossReachedCPU() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onBossReachedCPU?()
+        }
+    }
+
+    func bossTapped() {
+        // Not used in TDGameContainerView - boss UI handled via overlays
     }
 }
 
@@ -2018,10 +2796,10 @@ struct ProtocolDeckCard: View {
             .scaleEffect(isDragging ? 0.85 : 1.0)
             .shadow(color: canAfford ? archetypeColor.opacity(0.4) : .clear, radius: 6)
 
-            // Cost label (Hash/Watts)
+            // Cost label (Hash)
             HStack(spacing: 3) {
-                Image(systemName: "number.circle.fill")
-                    .font(.system(size: 11))
+                Text("Ħ")
+                    .font(.system(size: 11, weight: .bold))
                 Text("\(cost)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
             }
@@ -2188,7 +2966,7 @@ struct CountdownBar: View {
             }
             .frame(height: 4)
 
-            Text("Next: \(Int(seconds))s")
+            Text(L10n.Stats.nextSeconds(Int(seconds)))
                 .font(DesignTypography.caption(10))
                 .foregroundColor(.yellow)
         }
@@ -2220,10 +2998,31 @@ private struct GameEndStatRow: View {
     }
 }
 
+// MARK: - Boss Loot Modal Wrapper
+// Wrapper to handle optional reward gracefully in fullScreenCover
+
+struct BossLootModalWrapper: View {
+    let reward: BossLootReward?
+    let onCollect: () -> Void
+
+    var body: some View {
+        if let reward = reward {
+            BossLootModal(reward: reward, onCollect: onCollect)
+        } else {
+            // Fallback - should never happen but prevents empty content issues
+            Color.black.ignoresSafeArea()
+                .onAppear {
+                    print("[BossLoot] ERROR: BossLootModalWrapper shown with nil reward!")
+                    onCollect()  // Dismiss immediately
+                }
+        }
+    }
+}
+
 // MARK: - Zero-Day Boss Fight
 
 enum ZeroDayBossFightResult {
-    case victory(dataBonus: Int, wattsBonus: Int)
+    case victory(hashBonus: Int)
     case defeat
     case fled
 }
@@ -2265,7 +3064,7 @@ struct ZeroDayBossFightView: View {
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "xmark")
-                                Text("FLEE")
+                                Text(L10n.Common.flee)
                             }
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
                             .foregroundColor(.red)
@@ -2278,7 +3077,7 @@ struct ZeroDayBossFightView: View {
                         Spacer()
 
                         // Title
-                        Text("ZERO-DAY_OVERRIDE")
+                        Text(L10n.ZeroDay.overrideTitle)
                             .font(.system(size: 16, weight: .black, design: .monospaced))
                             .foregroundColor(.red)
 
@@ -2353,7 +3152,7 @@ struct ZeroDayBossFightView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.green)
 
-                    Text("ZERO-DAY_NEUTRALIZED")
+                    Text(L10n.ZeroDay.neutralized)
                         .font(.system(size: 28, weight: .black, design: .monospaced))
                         .foregroundColor(.green)
 
@@ -2361,13 +3160,13 @@ struct ZeroDayBossFightView: View {
                         HStack {
                             Image(systemName: "memorychip")
                                 .foregroundColor(.green)
-                            Text("+50 DATA")
+                            Text(L10n.ZeroDay.dataReward)
                                 .foregroundColor(.green)
                         }
                         HStack {
                             Image(systemName: "bolt.fill")
                                 .foregroundColor(.cyan)
-                            Text("+500 WATTS")
+                            Text(L10n.ZeroDay.wattsReward)
                                 .foregroundColor(.cyan)
                         }
                     }
@@ -2377,23 +3176,23 @@ struct ZeroDayBossFightView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.red)
 
-                    Text("OVERRIDE FAILED")
+                    Text(L10n.ZeroDay.overrideFailed)
                         .font(.system(size: 28, weight: .black, design: .monospaced))
                         .foregroundColor(.red)
 
-                    Text("-25% Efficiency")
+                    Text(L10n.ZeroDay.efficiencyPenalty)
                         .font(.system(size: 16, design: .monospaced))
                         .foregroundColor(.orange)
                 }
 
                 Button {
                     if didWin {
-                        onComplete(.victory(dataBonus: 50, wattsBonus: 500))
+                        onComplete(.victory(hashBonus: 550))
                     } else {
                         onComplete(.defeat)
                     }
                 } label: {
-                    Text("CONTINUE")
+                    Text(L10n.Common.continueAction)
                         .font(.system(size: 18, weight: .black, design: .monospaced))
                         .foregroundColor(.black)
                         .padding(.horizontal, 40)
@@ -2406,13 +3205,13 @@ struct ZeroDayBossFightView: View {
     }
 
     private func setupBossFight(screenSize: CGSize) {
-        // Create a simple arena state for the boss fight using Protocol
+        // Create a boss game state for the mini-game using Protocol
         let protocolId = appState.currentPlayer.equippedProtocolId ?? "kernel_pulse"
         let gameProtocol = ProtocolLibrary.all.first { $0.id == protocolId } ?? ProtocolLibrary.kernelPulse
-        let state = GameStateFactory.shared.createArenaGameState(
+        let state = GameStateFactory.shared.createBossGameState(
             gameProtocol: gameProtocol,
-            powerUpType: "tank",
-            arenaType: "grasslands",
+            bossType: "cyberboss",
+            difficulty: .easy,
             playerProfile: appState.currentPlayer
         )
         gameState = state

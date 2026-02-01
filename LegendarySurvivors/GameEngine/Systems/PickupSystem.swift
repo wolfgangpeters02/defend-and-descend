@@ -27,7 +27,7 @@ class PickupSystem {
             if dist <= player.pickupRange {
                 // Magnetize toward player
                 state.pickups[i].magnetized = true
-                let speed: CGFloat = GameConstants.coinMagnetSpeed
+                let speed: CGFloat = BalanceConfig.Player.coinMagnetSpeed
                 state.pickups[i].x += (dx / dist) * speed * CGFloat(context.deltaTime)
                 state.pickups[i].y += (dy / dist) * speed * CGFloat(context.deltaTime)
 
@@ -47,24 +47,24 @@ class PickupSystem {
         }
     }
 
-    /// Drop a Data pickup (◈)
-    static func dropData(state: inout GameState, x: CGFloat, y: CGFloat, value: Int) {
+    /// Drop a Hash pickup (Ħ)
+    static func dropHash(state: inout GameState, x: CGFloat, y: CGFloat, value: Int) {
         // Use state time instead of Date()
         let currentTime = state.startTime + state.timeElapsed
 
         state.pickups.append(Pickup(
             id: RandomUtils.generateId(),
-            type: .data,
+            type: .hash,
             x: x,
             y: y,
             value: value,
-            lifetime: GameConstants.pickupLifetime,
+            lifetime: BalanceConfig.Pickups.lifetime,
             createdAt: currentTime,
             magnetized: false
         ))
 
-        // Data sparkle effect (green)
-        ParticleFactory.createDataSparkle(state: &state, x: x, y: y)
+        // Hash sparkle effect (cyan)
+        ParticleFactory.createHashSparkle(state: &state, x: x, y: y)
     }
 
     /// Collect a pickup
@@ -72,23 +72,23 @@ class PickupSystem {
         let pickup = state.pickups[pickupIndex]
 
         switch pickup.type {
-        case .data:
-            state.sessionData += pickup.value
-            state.stats.dataCollected += pickup.value
-            state.stats.dataEarned += pickup.value
+        case .hash:
+            state.sessionHash += pickup.value
+            state.stats.hashCollected += pickup.value
+            state.stats.hashEarned += pickup.value
 
-            // Charge potions with collected data
+            // Charge potions with collected hash
             chargePotions(state: &state, amount: pickup.value)
 
-            // Collection particle - green for Data (use state time instead of Date())
+            // Collection particle - cyan for Hash (use state time instead of Date())
             state.particles.append(Particle(
                 id: RandomUtils.generateId(),
-                type: .data,
+                type: .hash,
                 x: pickup.x,
                 y: pickup.y,
                 lifetime: 0.5,
                 createdAt: state.startTime + state.timeElapsed,
-                color: "#22c55e",  // Green for Data
+                color: "#06b6d4",  // Cyan for Hash
                 size: 12,
                 velocity: CGPoint(x: 0, y: -50)
             ))
@@ -96,7 +96,7 @@ class PickupSystem {
         case .health:
             state.player.health = min(state.player.maxHealth, state.player.health + CGFloat(pickup.value))
 
-        case .xp, .powerup:
+        case .xp:
             break // Not implemented yet
         }
     }

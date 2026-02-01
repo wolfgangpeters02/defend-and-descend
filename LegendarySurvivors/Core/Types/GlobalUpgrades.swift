@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // MARK: - Global Upgrades
-// Purchased with Watts, affect both game modes
+// Purchased with Hash, affect both game modes
 
 struct GlobalUpgrades: Codable, Equatable {
     var psuLevel: Int = 1           // Power capacity ceiling
@@ -304,9 +304,9 @@ struct Sector: Identifiable, Codable, Equatable {
     let description: String         // "Open arena, swarm survival"
 
     let difficulty: SectorDifficulty
-    let dataMultiplier: CGFloat     // 1.0, 1.5, 2.0, 3.0
+    let hashMultiplier: CGFloat     // 1.0, 1.5, 2.0, 3.0
 
-    let unlockCost: Int             // Data to unlock (0 = free)
+    let unlockCost: Int             // Hash to unlock (0 = free)
 
     let layout: SectorLayout
     let visualTheme: String         // "ram", "drive", "gpu"
@@ -316,14 +316,14 @@ struct Sector: Identifiable, Codable, Equatable {
     let gameMode: GameMode          // .arena or .dungeon
     let dungeonType: String?        // For dungeons: "cathedral", "frozen", "volcanic", "heist", "void_raid"
 
-    /// Whether this sector is unlocked for a given data balance
-    func canUnlock(withData data: Int) -> Bool {
-        return data >= unlockCost
+    /// Whether this sector is unlocked for a given Hash balance
+    func canUnlock(withHash hash: Int) -> Bool {
+        return hash >= unlockCost
     }
 
     /// Backwards compatible initializer (defaults to arena mode)
     init(id: String, name: String, subtitle: String, description: String,
-         difficulty: SectorDifficulty, dataMultiplier: CGFloat, unlockCost: Int,
+         difficulty: SectorDifficulty, hashMultiplier: CGFloat, unlockCost: Int,
          layout: SectorLayout, visualTheme: String, duration: TimeInterval,
          gameMode: GameMode = .arena, dungeonType: String? = nil) {
         self.id = id
@@ -331,7 +331,7 @@ struct Sector: Identifiable, Codable, Equatable {
         self.subtitle = subtitle
         self.description = description
         self.difficulty = difficulty
-        self.dataMultiplier = dataMultiplier
+        self.hashMultiplier = hashMultiplier
         self.unlockCost = unlockCost
         self.layout = layout
         self.visualTheme = visualTheme
@@ -403,7 +403,7 @@ struct SectorLibrary {
         subtitle: "Memory Banks",
         description: "Open arena. Pure swarm survival.",
         difficulty: .easy,
-        dataMultiplier: 1.0,
+        hashMultiplier: 1.0,
         unlockCost: 0,
         layout: .arena,
         visualTheme: "ram",
@@ -416,7 +416,7 @@ struct SectorLibrary {
         subtitle: "Data Storage",
         description: "Narrow corridors. Choke point tactics.",
         difficulty: .medium,
-        dataMultiplier: 1.5,
+        hashMultiplier: 1.5,
         unlockCost: 100,
         layout: .corridors,
         visualTheme: "drive",
@@ -429,7 +429,7 @@ struct SectorLibrary {
         subtitle: "Graphics Core",
         description: "Mixed terrain. Fast enemies.",
         difficulty: .hard,
-        dataMultiplier: 2.0,
+        hashMultiplier: 2.0,
         unlockCost: 300,
         layout: .mixed,
         visualTheme: "gpu",
@@ -442,7 +442,7 @@ struct SectorLibrary {
         subtitle: "System Core",
         description: "Glitched chaos. Unpredictable spawns.",
         difficulty: .chaos,
-        dataMultiplier: 3.0,
+        hashMultiplier: 3.0,
         unlockCost: 500,
         layout: .mixed,
         visualTheme: "bios",
@@ -457,7 +457,7 @@ struct SectorLibrary {
         subtitle: "Corrupted Sanctuary",
         description: "5 rooms. Fight the Void Harbinger.",
         difficulty: .hard,
-        dataMultiplier: 2.5,
+        hashMultiplier: 2.5,
         unlockCost: 0,  // Free starter dungeon
         layout: .corridors,
         visualTheme: "drive",
@@ -472,7 +472,7 @@ struct SectorLibrary {
         subtitle: "Frozen Depths",
         description: "5 rooms. Defeat the Frost Titan.",
         difficulty: .hard,
-        dataMultiplier: 2.5,
+        hashMultiplier: 2.5,
         unlockCost: 50,
         layout: .corridors,
         visualTheme: "ram",
@@ -487,7 +487,7 @@ struct SectorLibrary {
         subtitle: "Molten Depths",
         description: "5 rooms. Face the Inferno Lord.",
         difficulty: .hard,
-        dataMultiplier: 3.0,
+        hashMultiplier: 3.0,
         unlockCost: 100,
         layout: .mixed,
         visualTheme: "gpu",
@@ -502,7 +502,7 @@ struct SectorLibrary {
         subtitle: "High Security",
         description: "5 rooms. Hack the Cyberboss.",
         difficulty: .chaos,
-        dataMultiplier: 4.0,
+        hashMultiplier: 4.0,
         unlockCost: 200,
         layout: .mixed,
         visualTheme: "bios",
@@ -517,7 +517,7 @@ struct SectorLibrary {
         subtitle: "Direct Assault",
         description: "Boss rush. Confront the Harbinger.",
         difficulty: .chaos,
-        dataMultiplier: 5.0,
+        hashMultiplier: 5.0,
         unlockCost: 300,
         layout: .arena,
         visualTheme: "bios",

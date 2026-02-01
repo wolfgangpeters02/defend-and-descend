@@ -144,8 +144,8 @@ class PotionSystem {
                     size: state.enemies[i].size ?? 20
                 )
 
-                // Drop Data pickup
-                PickupSystem.dropData(
+                // Drop Hash pickup
+                PickupSystem.dropHash(
                     state: &state,
                     x: state.enemies[i].x,
                     y: state.enemies[i].y,
@@ -203,12 +203,12 @@ class PotionSystem {
     private static func useShieldPotion(state: inout GameState) -> Bool {
         state.potions.shield = 0
 
-        // Use state time instead of Date()
-        let currentTime = state.startTime + state.timeElapsed
+        // Use currentFrameTime for consistent time base (context.timestamp)
+        let frameTime = state.currentFrameTime
         let shieldDuration: TimeInterval = 5.0
         state.player.invulnerable = true
-        state.player.invulnerableUntil = currentTime + shieldDuration
-        state.activePotionEffects.shieldUntil = currentTime + shieldDuration
+        state.player.invulnerableUntil = frameTime + shieldDuration
+        state.activePotionEffects.shieldUntil = frameTime + shieldDuration
 
         // Shield activation particles
         for i in 0..<30 {
@@ -221,7 +221,7 @@ class PotionSystem {
                 x: state.player.x + cos(angle) * radius,
                 y: state.player.y + sin(angle) * radius,
                 lifetime: 0.5,
-                createdAt: currentTime,
+                createdAt: frameTime,
                 color: "#00ffff",
                 size: 6,
                 velocity: CGPoint(x: cos(angle) * 50, y: sin(angle) * 50)

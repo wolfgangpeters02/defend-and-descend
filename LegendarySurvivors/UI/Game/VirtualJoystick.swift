@@ -94,7 +94,7 @@ struct VirtualJoystick: View {
                             if !isPortrait {
                                 Spacer().frame(width: 30)
                             }
-                            Text("Touch to move")
+                            Text(L10n.Game.touchToMove)
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.3))
                             if isPortrait {

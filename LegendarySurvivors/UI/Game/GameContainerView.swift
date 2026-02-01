@@ -1,6 +1,13 @@
 import SwiftUI
 import SpriteKit
 
+// MARK: - Notification for Boss Fight Completion
+// Used to reliably communicate boss fight results back to TDGameContainerView
+// (SwiftUI closure capture in fullScreenCover is unreliable)
+extension Notification.Name {
+    static let bossFightCompleted = Notification.Name("bossFightCompleted")
+}
+
 // MARK: - Game Container View
 // System: Reboot - Active/Debugger Mode
 // Terminal hacker aesthetic with scan lines and glitch effects
@@ -9,10 +16,12 @@ struct GameContainerView: View {
     let gameMode: GameMode
     var bossDifficulty: BossDifficulty = .normal
     let onExit: () -> Void
+    var onBossFightComplete: ((Bool) -> Void)? = nil  // Called with victory result for boss mode
 
     @ObservedObject var appState = AppState.shared
     @State private var gameState: GameState?
     @State private var gameScene: GameScene?
+    @State private var sceneId = UUID()  // Forces SpriteView refresh on retry
     @State private var showGameOver = false
     @State private var showVictory = false
     @State private var inputState = InputState()
@@ -21,6 +30,8 @@ struct GameContainerView: View {
     @State private var scanLineOffset: CGFloat = 0
     @State private var previousHealth: CGFloat = 0
     @State private var awardedBlueprint: String?  // Protocol ID awarded from boss
+    @State private var showBlueprintDiscovery = false
+    @State private var blueprintDropResult: BlueprintDropSystem.DropResult?
 
     var body: some View {
         GeometryReader { geometry in
@@ -28,6 +39,7 @@ struct GameContainerView: View {
                 // Game scene
                 if let scene = gameScene {
                     SpriteView(scene: scene)
+                        .id(sceneId)  // Force refresh on retry
                         .ignoresSafeArea()
                 } else {
                     Color.black
@@ -78,6 +90,8 @@ struct GameContainerView: View {
 
                                 // Health bar - wider
                                 GeometryReader { geo in
+                                    let healthPercent = state.player.maxHealth > 0 ? max(0, min(1, state.player.health / state.player.maxHealth)) : 0
+                                    let barWidth = max(1, geo.size.width * healthPercent)
                                     ZStack(alignment: .leading) {
                                         RoundedRectangle(cornerRadius: 4)
                                             .fill(Color.gray.opacity(0.3))
@@ -89,7 +103,7 @@ struct GameContainerView: View {
                                                     endPoint: .trailing
                                                 )
                                             )
-                                            .frame(width: geo.size.width * (state.player.health / state.player.maxHealth))
+                                            .frame(width: barWidth)
                                     }
                                 }
                                 .frame(width: 140, height: 10)
@@ -101,7 +115,7 @@ struct GameContainerView: View {
                         // Center: Timer (prominent)
                         if let state = gameState {
                             VStack(spacing: 2) {
-                                Text("TIME")
+                                Text(L10n.Game.HUD.time)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundColor(.gray)
                                 Text(formatTime(state.timeElapsed))
@@ -151,6 +165,45 @@ struct GameContainerView: View {
                         )
                     )
 
+                    // Boss Health Bar (boss mode only)
+                    if gameMode == .boss || gameMode == .dungeon,
+                       let state = gameState,
+                       let boss = state.enemies.first(where: { $0.isBoss && !$0.isDead }) {
+                        VStack(spacing: 4) {
+                            // Boss name (format type string for display)
+                            Text(boss.type.replacingOccurrences(of: "_", with: " ").uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(.purple)
+
+                            // Boss HP bar - full width
+                            GeometryReader { geo in
+                                let healthPercent = boss.maxHealth > 0 ? max(0, min(1, boss.health / boss.maxHealth)) : 0
+                                let barWidth = max(1, geo.size.width * CGFloat(healthPercent))
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(Color.gray.opacity(0.3))
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [.purple, .red],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: barWidth)
+                                }
+                            }
+                            .frame(height: 12)
+
+                            // Boss HP text
+                            Text("\(Int(boss.health)) / \(Int(boss.maxHealth))")
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundColor(.white.opacity(0.8))
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.top, 8)
+                    }
+
                     Spacer()
 
                     // Bottom: Level/XP indicator (optional)
@@ -158,7 +211,7 @@ struct GameContainerView: View {
                         HStack(spacing: 16) {
                             // Level
                             HStack(spacing: 4) {
-                                Text("LV")
+                                Text(L10n.Game.HUD.level)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(.gray)
                                 Text("\(state.upgradeLevel + 1)")
@@ -168,35 +221,26 @@ struct GameContainerView: View {
 
                             // XP bar
                             GeometryReader { geo in
+                                let xpPercent = max(0, min(1, state.xpBarProgress))
+                                let xpWidth = max(1, geo.size.width * xpPercent)
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 3)
                                         .fill(Color.gray.opacity(0.3))
                                     RoundedRectangle(cornerRadius: 3)
                                         .fill(Color.cyan)
-                                        .frame(width: geo.size.width * state.xpBarProgress)
+                                        .frame(width: xpWidth)
                                 }
                             }
                             .frame(width: 100, height: 6)
 
-                            // Data (◈) for survival mode, Coins for others
-                            if gameMode == .survival || gameMode == .arena {
-                                HStack(spacing: 4) {
-                                    Text("◈")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(DesignColors.primary)
-                                    Text("\(state.stats.dataEarned)")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(DesignColors.primary)
-                                }
-                            } else {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "memorychip")
-                                        .font(DesignTypography.headline(18))
-                                        .foregroundColor(DesignColors.success)
-                                    Text("\(state.sessionData)")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(DesignColors.success)
-                                }
+                            // Hash (Ħ) earned display
+                            HStack(spacing: 4) {
+                                Text("Ħ")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(DesignColors.primary)
+                                Text("\(state.stats.hashEarned)")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundColor(DesignColors.primary)
                             }
 
                             // Extraction button (survival mode only, after 3 min)
@@ -208,7 +252,7 @@ struct GameContainerView: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "arrow.up.circle.fill")
                                             .font(.system(size: 16, weight: .bold))
-                                        Text("EXTRACT")
+                                        Text(L10n.Game.HUD.extract)
                                             .font(.system(size: 14, weight: .bold))
                                     }
                                     .foregroundColor(.black)
@@ -236,18 +280,19 @@ struct GameContainerView: View {
                         gameState: gameState,
                         onRetry: {
                             showGameOver = false
+                            sceneId = UUID()  // Force SpriteView refresh
                             setupGame()
                         },
                         onExit: {
-                            // Save run stats with Data rewards
+                            // Save run stats with Hash rewards
                             if let state = gameState {
                                 appState.recordSurvivorRun(
                                     time: state.timeElapsed,
                                     kills: state.stats.enemiesKilled,
-                                    sessionData: state.sessionData,
+                                    sessionHash: state.sessionHash,
                                     gameMode: gameMode,
                                     victory: false,
-                                    dataEarned: state.stats.dataEarned,
+                                    hashEarned: state.stats.hashEarned,
                                     extracted: state.stats.extracted
                                 )
                             }
@@ -257,7 +302,7 @@ struct GameContainerView: View {
                 }
 
                 // Victory overlay (includes extraction and boss rewards)
-                if showVictory {
+                if showVictory && !showBlueprintDiscovery {
                     GameOverOverlay(
                         victory: true,
                         gameState: gameState,
@@ -265,6 +310,8 @@ struct GameContainerView: View {
                         onRetry: {
                             showVictory = false
                             awardedBlueprint = nil
+                            blueprintDropResult = nil
+                            sceneId = UUID()  // Force SpriteView refresh
                             setupGame()
                         },
                         onExit: {
@@ -272,14 +319,25 @@ struct GameContainerView: View {
                                 appState.recordSurvivorRun(
                                     time: state.timeElapsed,
                                     kills: state.stats.enemiesKilled,
-                                    sessionData: state.sessionData,
+                                    sessionHash: state.sessionHash,
                                     gameMode: gameMode,
                                     victory: true,
-                                    dataEarned: state.stats.dataEarned,
+                                    hashEarned: state.stats.hashEarned,
                                     extracted: state.stats.extracted
                                 )
                             }
                             onExit()
+                        }
+                    )
+                }
+
+                // Blueprint reveal modal (4-tap decoding experience)
+                if showBlueprintDiscovery, let dropResult = blueprintDropResult, let protocolId = dropResult.protocolId {
+                    BlueprintRevealModal(
+                        protocolId: protocolId,
+                        isFirstKill: dropResult.isFirstKill,
+                        onDismiss: {
+                            showBlueprintDiscovery = false
                         }
                     )
                 }
@@ -307,35 +365,16 @@ struct GameContainerView: View {
 
         // Use selected Protocol from AppState (unified weapon system)
         let gameProtocol = appState.selectedProtocolObject
-        let powerUpType = appState.selectedPowerup
         let arenaType = appState.selectedArena
 
-        // Create game state based on mode using Protocol
-        let state: GameState
-        switch gameMode {
-        case .survival, .arena:
-            // Survival mode with dynamic events
-            state = GameStateFactory.shared.createArenaGameState(
-                gameProtocol: gameProtocol,
-                powerUpType: powerUpType,
-                arenaType: "memory_core"  // Use the survival arena
-            )
-        case .boss, .dungeon:
-            // Boss encounter - map dungeon type to boss type
-            let bossType = mapArenaToBoss(arenaType)
-            state = GameStateFactory.shared.createBossGameState(
-                gameProtocol: gameProtocol,
-                bossType: bossType,
-                difficulty: bossDifficulty
-            )
-        case .towerDefense:
-            // Tower defense mode (unchanged)
-            state = GameStateFactory.shared.createArenaGameState(
-                gameProtocol: gameProtocol,
-                powerUpType: powerUpType,
-                arenaType: arenaType
-            )
-        }
+        // All active game modes now use boss encounter architecture
+        let bossType = mapArenaToBoss(arenaType)
+        let state = GameStateFactory.shared.createBossGameState(
+            gameProtocol: gameProtocol,
+            bossType: bossType,
+            difficulty: bossDifficulty,
+            playerProfile: appState.currentPlayer
+        )
         gameState = state
 
         print("[GameContainerView] Created game state - arena: \(state.arena.width)x\(state.arena.height), player at: (\(state.player.x), \(state.player.y))")
@@ -350,20 +389,40 @@ struct GameContainerView: View {
         }
 
         scene.onGameOver = { finalState in
+            print("[GameContainer] onGameOver called - victory=\(finalState.victory), gameMode=\(gameMode)")
             gameState = finalState
             if finalState.victory {
-                // Handle boss rewards before showing victory
+                // For boss mode from TD: dismiss first, then post notification with delay
                 if gameMode == .boss {
-                    let bossId = finalState.activeBossId ?? mapArenaToBoss(appState.selectedArena)
-                    awardedBlueprint = appState.recordBossDefeat(
-                        bossId: bossId,
-                        difficulty: finalState.bossDifficulty ?? .normal,
-                        time: finalState.timeElapsed,
-                        kills: finalState.stats.enemiesKilled
-                    )
+                    print("[GameContainer] Boss mode victory - dismissing and posting notification")
+                    onExit()  // Dismiss fullScreenCover first
+                    // Post notification after a short delay so parent view is active
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        print("[GameContainer] Posting bossFightCompleted notification (victory)")
+                        NotificationCenter.default.post(
+                            name: .bossFightCompleted,
+                            object: nil,
+                            userInfo: ["victory": true]
+                        )
+                    }
+                    return
                 }
                 showVictory = true
             } else {
+                // For boss mode, losing means player retreated
+                if gameMode == .boss {
+                    print("[GameContainer] Boss mode loss - dismissing and posting notification")
+                    onExit()  // Dismiss fullScreenCover first
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        print("[GameContainer] Posting bossFightCompleted notification (loss)")
+                        NotificationCenter.default.post(
+                            name: .bossFightCompleted,
+                            object: nil,
+                            userInfo: ["victory": false]
+                        )
+                    }
+                    return
+                }
                 showGameOver = true
             }
         }
@@ -429,16 +488,16 @@ struct GameOverOverlay: View {
     let onRetry: () -> Void
     let onExit: () -> Void
 
-    // Calculate actual Data reward from session
-    private var dataEarned: Int {
+    // Calculate actual Hash reward from session
+    private var hashEarned: Int {
         guard let state = gameState else { return 0 }
-        return state.stats.dataEarned
+        return state.stats.hashEarned
     }
 
     // Final reward after extraction multiplier
-    private var finalDataReward: Int {
+    private var finalHashReward: Int {
         guard let state = gameState else { return 0 }
-        return state.stats.finalDataReward()
+        return state.stats.finalHashReward()
     }
 
     // Did player extract successfully?
@@ -460,7 +519,7 @@ struct GameOverOverlay: View {
             VStack(spacing: 30) {
                 // System: Reboot themed titles
                 if victory {
-                    Text("EXTRACTION_COMPLETE")
+                    Text(L10n.GameOver.victory)
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.green)
 
@@ -468,7 +527,7 @@ struct GameOverOverlay: View {
                         .font(.system(size: 60))
                         .foregroundColor(.green)
                 } else {
-                    Text("DEBUG_FAILED")
+                    Text(L10n.GameOver.defeat)
                         .font(.system(size: 36, weight: .black, design: .monospaced))
                         .foregroundColor(.red)
 
@@ -479,42 +538,42 @@ struct GameOverOverlay: View {
 
                 if let state = gameState {
                     VStack(spacing: 12) {
-                        StatRow(label: "Time Survived", value: formatTime(state.timeElapsed))
-                        StatRow(label: "Viruses Killed", value: "\(state.stats.enemiesKilled)")
-                        StatRow(label: "Damage Dealt", value: formatNumber(Int(state.stats.damageDealt)))
+                        StatRow(label: L10n.GameOver.timeSurvived, value: formatTime(state.timeElapsed))
+                        StatRow(label: L10n.GameOver.virusesKilled, value: "\(state.stats.enemiesKilled)")
+                        StatRow(label: L10n.GameOver.damageDealt, value: formatNumber(Int(state.stats.damageDealt)))
 
                         Divider().background(Color.white.opacity(0.3))
 
-                        // Data reward - primary currency from Active mode
+                        // Hash reward - universal currency
                         VStack(spacing: 8) {
                             HStack {
                                 HStack(spacing: 6) {
-                                    Text("◈")
-                                        .font(.system(size: 18))
-                                    Text("DATA COLLECTED")
+                                    Text("Ħ")
+                                        .font(.system(size: 18, weight: .bold))
+                                    Text(L10n.GameOver.hashCollected)
                                 }
                                 .font(.system(size: 14))
                                 .foregroundColor(.gray)
 
                                 Spacer()
 
-                                Text("\(dataEarned)")
+                                Text("\(hashEarned)")
                                     .font(.system(size: 18, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.7))
+                                    .foregroundColor(.cyan.opacity(0.8))
                             }
 
                             HStack {
                                 HStack(spacing: 6) {
                                     Image(systemName: didExtract ? "checkmark.circle.fill" : "xmark.circle.fill")
                                         .foregroundColor(didExtract ? .green : .orange)
-                                    Text(didExtract ? "EXTRACTION BONUS (100%)" : "DEATH PENALTY (50%)")
+                                    Text(didExtract ? L10n.GameOver.extractionBonus : L10n.GameOver.deathPenalty)
                                 }
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(didExtract ? .green : .orange)
 
                                 Spacer()
 
-                                Text("+\(finalDataReward)")
+                                Text("+Ħ\(finalHashReward)")
                                     .font(.system(size: 24, weight: .bold, design: .monospaced))
                                     .foregroundColor(didExtract ? .green : .orange)
                             }
@@ -527,7 +586,7 @@ struct GameOverOverlay: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "doc.badge.plus")
                                             .foregroundColor(.purple)
-                                        Text("BLUEPRINT ACQUIRED")
+                                        Text(L10n.GameOver.blueprintAcquired)
                                     }
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.purple)
@@ -556,7 +615,7 @@ struct GameOverOverlay: View {
                     Button(action: onRetry) {
                         HStack {
                             Image(systemName: "arrow.counterclockwise")
-                            Text("RETRY")
+                            Text(L10n.Common.retry)
                         }
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
@@ -571,7 +630,7 @@ struct GameOverOverlay: View {
                     Button(action: onExit) {
                         HStack {
                             Image(systemName: "house.fill")
-                            Text("MENU")
+                            Text(L10n.Common.menu)
                         }
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)

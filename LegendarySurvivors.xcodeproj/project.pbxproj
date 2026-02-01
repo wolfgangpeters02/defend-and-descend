@@ -7,39 +7,37 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		FRMCTXBLD /* FrameContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRMCTX001 /* FrameContext.swift */; };
-		OBJPOLBLD /* ObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJPOOL01 /* ObjectPool.swift */; };
-		SPTGRDBLD /* SpatialGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPTGRID01 /* SpatialGrid.swift */; };
-		SURVARBLD /* SurvivalArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = SURVARENA /* SurvivalArenaSystem.swift */; };
-		NODEPLBLD /* NodePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = NODEPOOL1 /* NodePool.swift */; };
-		SCRLCTBLD /* ScrollingCombatText.swift in Sources */ = {isa = PBXBuildFile; fileRef = SCROLLCT1 /* ScrollingCombatText.swift */; };
-		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
-		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
-		TWRGALBLD /* TowerGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERGAL1 /* TowerGalleryView.swift */; };
+		01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */; };
+		04461EF9164A14B078C039DF /* BlueprintDiscoveryModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */; };
+		05461EF9164A14B078C039E0 /* BlueprintRevealModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */; };
+		06461EF9164A14B078C039E1 /* BossLootModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */; };
 		132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */; };
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
 		2096E9DBF01F2416463E54D1 /* MegaBoardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642FC35778370BD58869415C /* MegaBoardTypes.swift */; };
+		21C537CEC27D011FCFC30E1B /* IdleSpawnSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */; };
 		24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652706E4D090EB81125BDB8E /* TowerSystem.swift */; };
 		41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */; };
 		44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */; };
 		469B93F994E728C789F86031 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F896AC2E9B27982965DBAF /* Protocol.swift */; };
 		47C2EC65CDFEE77D87E73F93 /* TDConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 31EF22FB9EBD5242CFCD38DD /* TDConfig.json */; };
+		50A8B0A9C7780F96391DAD35 /* BlueprintDropSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */; };
 		594042117873415AD5954A69 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */; };
+		6C248F4AC18463B47DE591BF /* SectorSchematics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0730EB976BE58FD41672919 /* SectorSchematics.swift */; };
 		6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */; };
 		6FAF2498EB10A21AABF8C5D8 /* TDGameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */; };
 		7584C9579299C011354D004E /* MegaBoardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */; };
-		76264979E6D40ACBE476736D /* FirewallUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */; };
 		80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */; };
 		8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC456BE2F341A8C1006B747 /* CoreSystem.swift */; };
 		85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */; };
+		8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */; };
 		8F2433B0984EE3015CE09545 /* MegaBoardSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */; };
+		991A0F5ED7D6C9F7F159B95D /* LootTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF752985D9BB05F3C19C6308 /* LootTables.swift */; };
 		9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE64BB27463A150B6F32451C /* TDTypes.swift */; };
 		A322E4133BD75AF92145044F /* WaveSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260E703394574A0E21D9E82C /* WaveSystem.swift */; };
 		AA000001 /* LegendarySurvivorsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* LegendarySurvivorsApp.swift */; };
 		AA000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002 /* ContentView.swift */; };
 		AA000003 /* GameTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100003 /* GameTypes.swift */; };
 		AA000004 /* GameConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100004 /* GameConfig.swift */; };
-		AA000005 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100005 /* Constants.swift */; };
 		AA000006 /* MathUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100006 /* MathUtils.swift */; };
 		AA000007 /* RandomUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100007 /* RandomUtils.swift */; };
 		AA000008 /* GameState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100008 /* GameState.swift */; };
@@ -62,7 +60,6 @@
 		AA000025 /* PotionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100026 /* PotionSystem.swift */; };
 		AA000026 /* LevelingSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100027 /* LevelingSystem.swift */; };
 		AA000027 /* XPSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100028 /* XPSystem.swift */; };
-		AA000028 /* SynergySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100029 /* SynergySystem.swift */; };
 		AA000029 /* UpgradeModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030 /* UpgradeModalView.swift */; };
 		AA000030 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100031 /* AppState.swift */; };
 		AA000031 /* StorageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100032 /* StorageService.swift */; };
@@ -70,28 +67,36 @@
 		AA000038 /* CyberbossAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100039 /* CyberbossAI.swift */; };
 		AA000039 /* VoidHarbingerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100040 /* VoidHarbingerAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
-		AA000041 /* AudioService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* AudioService.swift */; };
+		AA000042 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* NotificationService.swift */; };
+		AA000043 /* NotificationSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100043 /* NotificationSettingsSheet.swift */; };
+		BALCFGBLD /* BalanceConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BALCFGREF /* BalanceConfig.swift */; };
 		D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */; };
 		D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */; };
 		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
+		E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651BD9A10095829CA07C1FDB /* OverclockSystem.swift */; };
 		ENTID00001 /* EntityIDs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTIDFILE1 /* EntityIDs.swift */; };
+		FRMCTXBLD /* FrameContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRMCTX001 /* FrameContext.swift */; };
+		INTROBLD01234567890ABCDEF /* IntroSequenceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = INTROREF01234567890ABCDEF /* IntroSequenceView.swift */; };
+		L10NSWBLD /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = L10NSWREF /* L10n.swift */; };
+		LOCSTRSBLD /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = LOCSTRSREF /* Localizable.xcstrings */; };
 		MBRD00001 /* MotherboardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = MBRDFILE01 /* MotherboardTypes.swift */; };
+		NODEPLBLD /* NodePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = NODEPOOL1 /* NodePool.swift */; };
+		OBJPOLBLD /* ObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJPOOL01 /* ObjectPool.swift */; };
+		SCRLCTBLD /* ScrollingCombatText.swift in Sources */ = {isa = PBXBuildFile; fileRef = SCROLLCT1 /* ScrollingCombatText.swift */; };
+		SPTGRDBLD /* SpatialGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPTGRID01 /* SpatialGrid.swift */; };
+		SURVARBLD /* SurvivalArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = SURVARENA /* SurvivalArenaSystem.swift */; };
+		TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */; };
+		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
+		TWRGALBLD /* TowerGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERGAL1 /* TowerGalleryView.swift */; };
+		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		FRMCTX001 /* FrameContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameContext.swift; sourceTree = "<group>"; };
-		OBJPOOL01 /* ObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectPool.swift; sourceTree = "<group>"; };
-		SPTGRID01 /* SpatialGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialGrid.swift; sourceTree = "<group>"; };
-		SURVARENA /* SurvivalArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurvivalArenaSystem.swift; sourceTree = "<group>"; };
-		NODEPOOL1 /* NodePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodePool.swift; sourceTree = "<group>"; };
-		SCROLLCT1 /* ScrollingCombatText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCombatText.swift; sourceTree = "<group>"; };
-		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
-		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
-		TOWERGAL1 /* TowerGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerGalleryView.swift; sourceTree = "<group>"; };
-		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MegaBoardSystem.swift; path = Systems/MegaBoardSystem.swift; sourceTree = "<group>"; };
+		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardSystem.swift; sourceTree = "<group>"; };
 		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		09DD228498839C35BD9C1D41 /* PathSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PathSystem.swift; sourceTree = "<group>"; };
-		1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SectorUnlockSystem.swift; path = Systems/SectorUnlockSystem.swift; sourceTree = "<group>"; };
+		0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintDropSystem.swift; sourceTree = "<group>"; };
+		1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorUnlockSystem.swift; sourceTree = "<group>"; };
 		1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		260E703394574A0E21D9E82C /* WaveSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveSystem.swift; sourceTree = "<group>"; };
 		31EF22FB9EBD5242CFCD38DD /* TDConfig.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = TDConfig.json; sourceTree = "<group>"; };
@@ -99,15 +104,17 @@
 		524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideView.swift; sourceTree = "<group>"; };
 		529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameScene.swift; sourceTree = "<group>"; };
 		642FC35778370BD58869415C /* MegaBoardTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardTypes.swift; sourceTree = "<group>"; };
+		651BD9A10095829CA07C1FDB /* OverclockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverclockSystem.swift; sourceTree = "<group>"; };
 		652706E4D090EB81125BDB8E /* TowerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerSystem.swift; sourceTree = "<group>"; };
-		81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FirewallUnlockSystem.swift; sourceTree = "<group>"; };
+		7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintDiscoveryModal.swift; sourceTree = "<group>"; };
+		8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintRevealModal.swift; sourceTree = "<group>"; };
+		9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootModal.swift; sourceTree = "<group>"; };
 		9BC456BE2F341A8C1006B747 /* CoreSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreSystem.swift; sourceTree = "<group>"; };
 		A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemTabView.swift; sourceTree = "<group>"; };
 		AA100001 /* LegendarySurvivorsApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegendarySurvivorsApp.swift; sourceTree = "<group>"; };
 		AA100002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA100003 /* GameTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameTypes.swift; sourceTree = "<group>"; };
 		AA100004 /* GameConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameConfig.swift; sourceTree = "<group>"; };
-		AA100005 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AA100006 /* MathUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MathUtils.swift; sourceTree = "<group>"; };
 		AA100007 /* RandomUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RandomUtils.swift; sourceTree = "<group>"; };
 		AA100008 /* GameState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameState.swift; sourceTree = "<group>"; };
@@ -131,7 +138,6 @@
 		AA100026 /* PotionSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PotionSystem.swift; sourceTree = "<group>"; };
 		AA100027 /* LevelingSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelingSystem.swift; sourceTree = "<group>"; };
 		AA100028 /* XPSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPSystem.swift; sourceTree = "<group>"; };
-		AA100029 /* SynergySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynergySystem.swift; sourceTree = "<group>"; };
 		AA100030 /* UpgradeModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeModalView.swift; sourceTree = "<group>"; };
 		AA100031 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		AA100032 /* StorageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageService.swift; sourceTree = "<group>"; };
@@ -139,17 +145,37 @@
 		AA100039 /* CyberbossAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberbossAI.swift; sourceTree = "<group>"; };
 		AA100040 /* VoidHarbingerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoidHarbingerAI.swift; sourceTree = "<group>"; };
 		AA100041 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
-		AA100042 /* AudioService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioService.swift; sourceTree = "<group>"; };
+		AA100042 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		AA100043 /* NotificationSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsSheet.swift; sourceTree = "<group>"; };
 		AA200001 /* LegendarySurvivors.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LegendarySurvivors.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBossSystem.swift; sourceTree = "<group>"; };
+		B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PillarSystem.swift; sourceTree = "<group>"; };
+		BALCFGREF /* BalanceConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BalanceConfig.swift; sourceTree = "<group>"; };
 		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
 		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
 		CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZeroDaySystem.swift; sourceTree = "<group>"; };
+		D0730EB976BE58FD41672919 /* SectorSchematics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorSchematics.swift; sourceTree = "<group>"; };
 		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		EF752985D9BB05F3C19C6308 /* LootTables.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = LootTables.swift; sourceTree = "<group>"; };
 		ENTIDFILE1 /* EntityIDs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntityIDs.swift; sourceTree = "<group>"; };
 		F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardRenderer.swift; sourceTree = "<group>"; };
 		F5F896AC2E9B27982965DBAF /* Protocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
+		F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IdleSpawnSystem.swift; sourceTree = "<group>"; };
 		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
+		FRMCTX001 /* FrameContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameContext.swift; sourceTree = "<group>"; };
+		INTROREF01234567890ABCDEF /* IntroSequenceView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IntroSequenceView.swift; sourceTree = "<group>"; };
+		L10NSWREF /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		LOCSTRSREF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		MBRDFILE01 /* MotherboardTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardTypes.swift; sourceTree = "<group>"; };
+		NODEPOOL1 /* NodePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodePool.swift; sourceTree = "<group>"; };
+		OBJPOOL01 /* ObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectPool.swift; sourceTree = "<group>"; };
+		SCROLLCT1 /* ScrollingCombatText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCombatText.swift; sourceTree = "<group>"; };
+		SPTGRID01 /* SpatialGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialGrid.swift; sourceTree = "<group>"; };
+		SURVARENA /* SurvivalArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurvivalArenaSystem.swift; sourceTree = "<group>"; };
+		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
+		TOWERGAL1 /* TowerGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerGalleryView.swift; sourceTree = "<group>"; };
+		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
+		TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TutorialHintOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -212,6 +238,7 @@
 				AA400012 /* Config */,
 				AA400013 /* Utils */,
 				B8763795AB941FBACFABA17D /* Systems */,
+				L10NGROUP /* Localization */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -260,7 +287,7 @@
 			children = (
 				AA100032 /* StorageService.swift */,
 				AA100041 /* HapticsService.swift */,
-				AA100042 /* AudioService.swift */,
+				AA100042 /* NotificationService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -271,6 +298,7 @@
 				AA100015 /* GameConfig.json */,
 				AA400019 /* ParticleEffects */,
 				31EF22FB9EBD5242CFCD38DD /* TDConfig.json */,
+				LOCSTRSREF /* Localizable.xcstrings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -295,8 +323,10 @@
 			isa = PBXGroup;
 			children = (
 				AA100004 /* GameConfig.swift */,
-				AA100005 /* Constants.swift */,
+				BALCFGREF /* BalanceConfig.swift */,
 				E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */,
+				D0730EB976BE58FD41672919 /* SectorSchematics.swift */,
+				EF752985D9BB05F3C19C6308 /* LootTables.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -325,16 +355,18 @@
 				AA100026 /* PotionSystem.swift */,
 				AA100027 /* LevelingSystem.swift */,
 				AA100028 /* XPSystem.swift */,
-				AA100029 /* SynergySystem.swift */,
 				AA100038 /* ArenaSystem.swift */,
 				652706E4D090EB81125BDB8E /* TowerSystem.swift */,
 				260E703394574A0E21D9E82C /* WaveSystem.swift */,
 				09DD228498839C35BD9C1D41 /* PathSystem.swift */,
 				9BC456BE2F341A8C1006B747 /* CoreSystem.swift */,
 				FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */,
-				81A9465E2459CDCE019C8D95 /* FirewallUnlockSystem.swift */,
 				CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */,
 				SURVARENA /* SurvivalArenaSystem.swift */,
+				B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */,
+				F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */,
+				AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */,
+				651BD9A10095829CA07C1FDB /* OverclockSystem.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -352,6 +384,12 @@
 			isa = PBXGroup;
 			children = (
 				3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */,
+				7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */,
+				8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */,
+				9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */,
+				INTROREF01234567890ABCDEF /* IntroSequenceView.swift */,
+				TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */,
+				AA100043 /* NotificationSettingsSheet.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -383,6 +421,16 @@
 			path = Tabs;
 			sourceTree = "<group>";
 		};
+		B8763795AB941FBACFABA17D /* Systems */ = {
+			isa = PBXGroup;
+			children = (
+				02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */,
+				1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */,
+				0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */,
+			);
+			path = Systems;
+			sourceTree = "<group>";
+		};
 		DBGGRP001 /* Debug */ = {
 			isa = PBXGroup;
 			children = (
@@ -391,13 +439,12 @@
 			path = Debug;
 			sourceTree = "<group>";
 		};
-		B8763795AB941FBACFABA17D /* Systems */ = {
+		L10NGROUP /* Localization */ = {
 			isa = PBXGroup;
 			children = (
-				02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */,
-				1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */,
+				L10NSWREF /* L10n.swift */,
 			);
-			name = Systems;
+			path = Localization;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -441,6 +488,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				de,
 				Base,
 			);
 			mainGroup = AA400001;
@@ -461,6 +509,7 @@
 				AA000014 /* Assets.xcassets in Resources */,
 				AA000015 /* GameConfig.json in Resources */,
 				47C2EC65CDFEE77D87E73F93 /* TDConfig.json in Resources */,
+				LOCSTRSBLD /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -475,7 +524,6 @@
 				AA000002 /* ContentView.swift in Sources */,
 				AA000003 /* GameTypes.swift in Sources */,
 				AA000004 /* GameConfig.swift in Sources */,
-				AA000005 /* Constants.swift in Sources */,
 				AA000006 /* MathUtils.swift in Sources */,
 				AA000007 /* RandomUtils.swift in Sources */,
 				AA000008 /* GameState.swift in Sources */,
@@ -496,7 +544,6 @@
 				AA000025 /* PotionSystem.swift in Sources */,
 				AA000026 /* LevelingSystem.swift in Sources */,
 				AA000027 /* XPSystem.swift in Sources */,
-				AA000028 /* SynergySystem.swift in Sources */,
 				AA000029 /* UpgradeModalView.swift in Sources */,
 				AA000030 /* AppState.swift in Sources */,
 				AA000031 /* StorageService.swift in Sources */,
@@ -504,7 +551,8 @@
 				AA000038 /* CyberbossAI.swift in Sources */,
 				AA000039 /* VoidHarbingerAI.swift in Sources */,
 				AA000040 /* HapticsService.swift in Sources */,
-				AA000041 /* AudioService.swift in Sources */,
+				AA000042 /* NotificationService.swift in Sources */,
+				AA000043 /* NotificationSettingsSheet.swift in Sources */,
 				41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */,
 				9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */,
 				24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */,
@@ -516,7 +564,6 @@
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
-				76264979E6D40ACBE476736D /* FirewallUnlockSystem.swift in Sources */,
 				85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */,
 				469B93F994E728C789F86031 /* Protocol.swift in Sources */,
 				ENTID00001 /* EntityIDs.swift in Sources */,
@@ -537,6 +584,20 @@
 				TWRANMBLD /* TowerAnimations.swift in Sources */,
 				TWRVFABLD /* TowerVisualFactory.swift in Sources */,
 				TWRGALBLD /* TowerGalleryView.swift in Sources */,
+				01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */,
+				21C537CEC27D011FCFC30E1B /* IdleSpawnSystem.swift in Sources */,
+				6C248F4AC18463B47DE591BF /* SectorSchematics.swift in Sources */,
+				50A8B0A9C7780F96391DAD35 /* BlueprintDropSystem.swift in Sources */,
+				991A0F5ED7D6C9F7F159B95D /* LootTables.swift in Sources */,
+				BALCFGBLD /* BalanceConfig.swift in Sources */,
+				04461EF9164A14B078C039DF /* BlueprintDiscoveryModal.swift in Sources */,
+				05461EF9164A14B078C039E0 /* BlueprintRevealModal.swift in Sources */,
+				06461EF9164A14B078C039E1 /* BossLootModal.swift in Sources */,
+				INTROBLD01234567890ABCDEF /* IntroSequenceView.swift in Sources */,
+				TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */,
+				L10NSWBLD /* L10n.swift in Sources */,
+				8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */,
+				E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

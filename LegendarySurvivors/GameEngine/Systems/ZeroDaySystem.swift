@@ -17,8 +17,8 @@ struct ZeroDaySystem {
     /// Efficiency drain rate per second while Zero-Day is active
     static let efficiencyDrainRate: CGFloat = 2.0
 
-    /// Bonus Data for defeating Zero-Day
-    static let defeatDataBonus = 25
+    /// Bonus Hash for defeating Zero-Day
+    static let defeatHashBonus = 525  // Combined reward
 
     /// Efficiency restored when Zero-Day is defeated
     static let defeatEfficiencyRestore = 30
@@ -128,9 +128,8 @@ struct ZeroDaySystem {
         state.zeroDayTimer = state.zeroDayCooldown
 
         return ZeroDayReward(
-            dataBonus: defeatDataBonus,
-            efficiencyRestored: defeatEfficiencyRestore,
-            wattsBonus: 500
+            hashBonus: defeatHashBonus,
+            efficiencyRestored: defeatEfficiencyRestore
         )
     }
 
@@ -145,9 +144,8 @@ struct ZeroDaySystem {
 // MARK: - Zero-Day Reward
 
 struct ZeroDayReward {
-    let dataBonus: Int
+    let hashBonus: Int
     let efficiencyRestored: Int
-    let wattsBonus: Int
 }
 
 // MARK: - TDEnemy Extension for Zero-Day

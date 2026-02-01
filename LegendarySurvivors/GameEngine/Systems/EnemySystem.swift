@@ -174,6 +174,11 @@ class EnemySystem {
                 continue
             }
 
+            // Skip pylons - they don't move (but can be damaged)
+            if state.enemies[i].type == "void_pylon" {
+                continue
+            }
+
             // Proximity activation
             if state.enemies[i].inactive == true {
                 let dx = player.x - state.enemies[i].x
@@ -306,6 +311,14 @@ class EnemySystem {
         state.enemies[enemyIndex].health -= damage
         state.stats.damageDealt += damage
 
+        // Sync pylon damage with VoidHarbinger state (keeps health bars in sync)
+        if enemy.type == "void_pylon", let pylonId = enemy.pylonId {
+            if var bossState = state.voidHarbingerState {
+                VoidHarbingerAI.damagePylon(pylonId: pylonId, damage: damage, bossState: &bossState)
+                state.voidHarbingerState = bossState
+            }
+        }
+
         // Emit scrolling combat text event
         let eventType: DamageEventType = isCritical ? .critical : damageType
         let damageEvent = DamageEvent(
@@ -341,6 +354,14 @@ class EnemySystem {
         let enemySize = enemy.size ?? 20
         state.enemies[enemyIndex].isDead = true
         state.stats.enemiesKilled += 1
+
+        // Sync pylon destruction with VoidHarbinger state
+        if enemy.type == "void_pylon", let pylonId = enemy.pylonId {
+            if var bossState = state.voidHarbingerState {
+                VoidHarbingerAI.damagePylon(pylonId: pylonId, damage: 99999, bossState: &bossState)
+                state.voidHarbingerState = bossState
+            }
+        }
 
         // Survival mode: Earn Hash for kills
         if state.gameMode == .survival || state.gameMode == .arena {

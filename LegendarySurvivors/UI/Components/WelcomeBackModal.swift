@@ -11,6 +11,24 @@ struct WelcomeBackModal: View {
     @State private var showContent = false
     @State private var showStats = false
 
+    private var efficiencyColor: Color {
+        switch earnings.newEfficiency {
+        case 0.7...: return .green
+        case 0.4..<0.7: return .yellow
+        case 0.2..<0.4: return .orange
+        default: return .red
+        }
+    }
+
+    private var threatColor: Color {
+        switch earnings.newThreatLevel {
+        case 0..<2: return .green
+        case 2..<5: return .yellow
+        case 5..<10: return .orange
+        default: return .red
+        }
+    }
+
     var body: some View {
         ZStack {
             // Dark overlay
@@ -24,11 +42,11 @@ struct WelcomeBackModal: View {
             VStack(spacing: 24) {
                 // Header
                 VStack(spacing: 8) {
-                    Text("SYSTEM_RESTORE_COMPLETE")
+                    Text(L10n.Welcome.header)
                         .font(.system(size: 28, weight: .black, design: .monospaced))
                         .foregroundColor(.cyan)
 
-                    Text("Welcome back, Guardian")
+                    Text(L10n.Welcome.subtitle)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
                 }
@@ -37,7 +55,7 @@ struct WelcomeBackModal: View {
 
                 // Time away
                 VStack(spacing: 4) {
-                    Text("OFFLINE DURATION")
+                    Text(L10n.Welcome.offlineDuration)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
 
@@ -46,50 +64,74 @@ struct WelcomeBackModal: View {
                         .foregroundColor(.white)
 
                     if earnings.wasCapped {
-                        Text("(capped at 8h)")
+                        Text(L10n.Welcome.cappedAt8h)
                             .font(.system(size: 10, design: .monospaced))
                             .foregroundColor(.orange)
                     }
                 }
                 .opacity(showStats ? 1 : 0)
 
-                // Earnings card
+                // Simulation report card
                 VStack(spacing: 16) {
-                    Text("GENERATED_PWR")
+                    // Status row - show if there were issues
+                    if earnings.leaksOccurred > 0 {
+                        HStack(spacing: 16) {
+                            // Leaks
+                            VStack(spacing: 2) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                                Text(L10n.Welcome.leaks(earnings.leaksOccurred))
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(.orange)
+                            }
+
+                            // Efficiency change
+                            VStack(spacing: 2) {
+                                Image(systemName: "gauge.with.dots.needle.33percent")
+                                    .font(.caption)
+                                    .foregroundColor(efficiencyColor)
+                                Text(L10n.Welcome.efficiency(Int(earnings.newEfficiency * 100)))
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(efficiencyColor)
+                            }
+
+                            // Threat level
+                            VStack(spacing: 2) {
+                                Image(systemName: "bolt.fill")
+                                    .font(.caption)
+                                    .foregroundColor(threatColor)
+                                Text(L10n.Welcome.threatLevel(String(format: "%.1f", earnings.newThreatLevel)))
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(threatColor)
+                            }
+                        }
+                        .padding(.bottom, 8)
+                    }
+
+                    Text(L10n.Welcome.generatedPwr)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.gray)
 
-                    HStack(spacing: 32) {
-                        // Watts earned
-                        VStack(spacing: 4) {
-                            Image(systemName: "number.circle.fill")
-                                .font(.title2)
-                                .foregroundColor(.cyan)
+                    // Hash earned
+                    VStack(spacing: 4) {
+                        Image(systemName: "number.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.cyan)
 
-                            Text("+\(earnings.hashEarned)")
-                                .font(.system(size: 22, weight: .bold, design: .monospaced))
-                                .foregroundColor(.cyan)
+                        Text("+Ħ\(earnings.hashEarned)")
+                            .font(.system(size: 22, weight: .bold, design: .monospaced))
+                            .foregroundColor(.cyan)
 
-                            Text("HASH")
-                                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray)
-                        }
+                        Text(L10n.Common.hash)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundColor(.gray)
 
-                        // Data earned (if any)
-                        if earnings.dataEarned > 0 {
-                            VStack(spacing: 4) {
-                                Image(systemName: "memorychip")
-                                    .font(.title2)
-                                    .foregroundColor(.green)
-
-                                Text("+\(earnings.dataEarned)")
-                                    .font(.system(size: 22, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.green)
-
-                                Text("DATA")
-                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.gray)
-                            }
+                        // Show if efficiency reduced earnings
+                        if earnings.newEfficiency < earnings.startEfficiency {
+                            Text(L10n.Welcome.reduced(Int((1 - earnings.newEfficiency / earnings.startEfficiency) * 100)))
+                                .font(.system(size: 9, design: .monospaced))
+                                .foregroundColor(.orange.opacity(0.8))
                         }
                     }
                 }
@@ -99,7 +141,7 @@ struct WelcomeBackModal: View {
                         .fill(Color(hex: "0d1117") ?? Color.black)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.cyan.opacity(0.3), lineWidth: 1)
+                                .stroke(earnings.leaksOccurred > 0 ? Color.orange.opacity(0.3) : Color.cyan.opacity(0.3), lineWidth: 1)
                         )
                 )
                 .opacity(showStats ? 1 : 0)
@@ -107,7 +149,7 @@ struct WelcomeBackModal: View {
 
                 // Collect button
                 Button(action: dismiss) {
-                    Text("COLLECT")
+                    Text(L10n.Common.collect)
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
                         .frame(width: 200, height: 50)
@@ -151,10 +193,13 @@ struct WelcomeBackModal: View {
     WelcomeBackModal(
         earnings: OfflineEarningsResult(
             hashEarned: 1250,
-            dataEarned: 3,
             timeAwaySeconds: 7200,
             cappedTimeSeconds: 7200,
-            wasCapped: false
+            wasCapped: false,
+            leaksOccurred: 3,
+            newThreatLevel: 4.5,
+            newEfficiency: 0.65,
+            startEfficiency: 1.0
         ),
         onDismiss: {}
     )

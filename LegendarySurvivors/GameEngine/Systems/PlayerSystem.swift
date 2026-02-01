@@ -6,9 +6,8 @@ import CoreGraphics
 class PlayerSystem {
     /// Update player based on input
     static func update(state: inout GameState, input: InputState, context: FrameContext) {
-        // Check invulnerability (use game time, not context.timestamp which is SpriteKit time)
-        let currentTime = state.startTime + state.timeElapsed
-        if state.player.invulnerable && currentTime > state.player.invulnerableUntil {
+        // Check invulnerability (use context.timestamp for consistent time base across all systems)
+        if state.player.invulnerable && context.timestamp > state.player.invulnerableUntil {
             state.player.invulnerable = false
         }
 
@@ -86,11 +85,11 @@ class PlayerSystem {
             state.player.y = max(state.player.size, min(state.arena.height - state.player.size, state.player.y))
 
             // Add trail effect
-            if RandomUtils.randomBool(probability: GameConstants.trailSpawnChance) {
+            if RandomUtils.randomBool(probability: BalanceConfig.Visual.trailSpawnChance) {
                 state.player.trail.append(TrailEffect(
                     x: state.player.x,
                     y: state.player.y,
-                    lifetime: GameConstants.trailLifetime,
+                    lifetime: BalanceConfig.Visual.trailLifetime,
                     createdAt: context.timestamp
                 ))
             }
@@ -235,6 +234,14 @@ class PlayerSystem {
             let minDist = state.player.size + (state.enemies[i].size ?? 20)
 
             if distSq < minDist * minDist {
+                // Cyberboss in ranged mode doesn't deal contact damage
+                if state.enemies[i].isBoss,
+                   state.activeBossType == .cyberboss,
+                   let bossState = state.cyberbossState,
+                   bossState.mode == .ranged {
+                    continue // Skip contact damage for Cyberboss in ranged mode
+                }
+
                 // Deal contact damage
                 let damageDealt = state.enemies[i].damage * (1 - state.player.armor)
                 damagePlayer(state: &state, rawDamage: state.enemies[i].damage)
@@ -248,10 +255,9 @@ class PlayerSystem {
                     }
                 }
 
-                // Brief invulnerability (use state time instead of Date())
-                let currentTime = state.startTime + state.timeElapsed
+                // Brief invulnerability (use currentFrameTime for consistent time base)
                 state.player.invulnerable = true
-                state.player.invulnerableUntil = currentTime + GameConstants.invulnerabilityDuration
+                state.player.invulnerableUntil = state.currentFrameTime + BalanceConfig.Player.invulnerabilityDuration
 
                 break // Only one enemy hits per frame
             }
@@ -265,15 +271,15 @@ class PlayerSystem {
         state.player.health -= damage
         state.stats.damageTaken += damage
 
-        // Use state time instead of Date()
-        let currentTime = state.startTime + state.timeElapsed
+        // Use currentFrameTime for consistent time base (context.timestamp)
+        let frameTime = state.currentFrameTime
 
         // Emit scrolling combat text event for player damage
         let damageEvent = DamageEvent(
             type: .playerDamage,
             amount: Int(damage),
             position: CGPoint(x: state.player.x, y: state.player.y),
-            timestamp: currentTime
+            timestamp: frameTime
         )
         state.damageEvents.append(damageEvent)
 
@@ -284,7 +290,7 @@ class PlayerSystem {
             x: state.player.x,
             y: state.player.y,
             lifetime: 0.3,
-            createdAt: currentTime,
+            createdAt: frameTime,
             color: "#ff4444",
             size: 10
         ))
@@ -296,7 +302,7 @@ class PlayerSystem {
                 state.player.abilities?.revive = revives - 1
                 state.player.health = state.player.maxHealth
                 state.player.invulnerable = true
-                state.player.invulnerableUntil = currentTime + GameConstants.reviveInvulnerabilityDuration
+                state.player.invulnerableUntil = frameTime + BalanceConfig.Player.reviveInvulnerabilityDuration
 
                 // Phoenix particle effect
                 for i in 0..<50 {
@@ -308,7 +314,7 @@ class PlayerSystem {
                         x: state.player.x,
                         y: state.player.y,
                         lifetime: 1.0,
-                        createdAt: currentTime,
+                        createdAt: frameTime,
                         color: "#ff6600",
                         size: 8,
                         velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed)

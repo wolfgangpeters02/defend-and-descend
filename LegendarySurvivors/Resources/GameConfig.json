@@ -1,101 +1,4 @@
 {
-  "powerups": {
-    "tank": {
-      "id": "tank",
-      "name": "Tank",
-      "description": "+150% max health",
-      "rarity": "common",
-      "icon": "tank_icon",
-      "effects": {
-        "healthMultiplier": 2.5
-      }
-    },
-    "berserker": {
-      "id": "berserker",
-      "name": "Berserker",
-      "description": "+150% damage",
-      "rarity": "common",
-      "icon": "berserker_icon",
-      "effects": {
-        "damageMultiplier": 2.5
-      }
-    },
-    "sniper": {
-      "id": "sniper",
-      "name": "Sniper",
-      "description": "+50% weapon range",
-      "rarity": "common",
-      "icon": "sniper_icon",
-      "effects": {
-        "startWithAbility": "rangeBoost"
-      }
-    },
-    "gunslinger": {
-      "id": "gunslinger",
-      "name": "Gunslinger",
-      "description": "+30% attack speed",
-      "rarity": "common",
-      "icon": "gunslinger_icon",
-      "effects": {
-        "startWithAbility": "attackSpeedBoost"
-      }
-    },
-    "giant": {
-      "id": "giant",
-      "name": "Giant",
-      "description": "+250% max health",
-      "rarity": "rare",
-      "icon": "giant_icon",
-      "effects": {
-        "healthMultiplier": 3.5
-      }
-    },
-    "assassin": {
-      "id": "assassin",
-      "name": "Assassin",
-      "description": "+70% damage, -15% health",
-      "rarity": "rare",
-      "icon": "assassin_icon",
-      "effects": {
-        "damageMultiplier": 1.7,
-        "healthMultiplier": 0.85
-      }
-    },
-    "warrior": {
-      "id": "warrior",
-      "name": "Warrior",
-      "description": "+80% damage, +80% health",
-      "rarity": "rare",
-      "icon": "warrior_icon",
-      "effects": {
-        "damageMultiplier": 1.8,
-        "healthMultiplier": 1.8
-      }
-    },
-    "mage": {
-      "id": "mage",
-      "name": "Mage",
-      "description": "+180% damage, -25% health",
-      "rarity": "epic",
-      "icon": "mage_icon",
-      "effects": {
-        "damageMultiplier": 2.8,
-        "healthMultiplier": 0.75
-      }
-    },
-    "godmode": {
-      "id": "godmode",
-      "name": "Ascension",
-      "description": "+100% to ALL stats",
-      "rarity": "legendary",
-      "icon": "godmode_icon",
-      "effects": {
-        "damageMultiplier": 2.0,
-        "healthMultiplier": 2.0,
-        "speedMultiplier": 1.7
-      }
-    }
-  },
   "arenas": {
     "memory_core": {
       "id": "memory_core",
@@ -543,7 +446,7 @@
     "cyberboss": {
       "id": "cyberboss",
       "name": "Cyber Overlord",
-      "health": 50000,
+      "health": 12500,
       "speed": 100,
       "damage": 50,
       "coinValue": 500,
@@ -555,7 +458,7 @@
     "voidharbinger": {
       "id": "voidharbinger",
       "name": "Void Harbinger",
-      "health": 100000,
+      "health": 25000,
       "speed": 80,
       "damage": 60,
       "coinValue": 1000,
@@ -574,42 +477,22 @@
       "size": 14,
       "color": "#6600aa",
       "shape": "triangle"
+    },
+    "elite": {
+      "id": "elite",
+      "name": "Elite Trooper",
+      "health": 120,
+      "speed": 100,
+      "damage": 25,
+      "coinValue": 15,
+      "size": 16,
+      "color": "#ffaa00",
+      "shape": "diamond"
     }
   },
   "spawning": {
     "maxEnemiesOnScreen": 200,
-    "waves": [
-      {
-        "startTime": 0,
-        "enemiesPerMinute": 45,
-        "enemyTypes": ["basic"]
-      },
-      {
-        "startTime": 30,
-        "enemiesPerMinute": 70,
-        "enemyTypes": ["basic", "fast"]
-      },
-      {
-        "startTime": 60,
-        "enemiesPerMinute": 100,
-        "enemyTypes": ["basic", "fast"]
-      },
-      {
-        "startTime": 90,
-        "enemiesPerMinute": 140,
-        "enemyTypes": ["basic", "fast", "tank"]
-      },
-      {
-        "startTime": 150,
-        "enemiesPerMinute": 190,
-        "enemyTypes": ["basic", "fast", "tank"]
-      },
-      {
-        "startTime": 210,
-        "enemiesPerMinute": 250,
-        "enemyTypes": ["basic", "fast", "tank", "boss"]
-      }
-    ]
+    "waves": []
   },
   "upgrades": {
     "common": [

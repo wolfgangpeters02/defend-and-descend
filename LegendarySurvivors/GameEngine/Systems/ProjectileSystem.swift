@@ -84,13 +84,65 @@ class ProjectileSystem {
                 candidates = state.enemies
             }
 
-            // Skip enemy collision check for enemy projectiles (they only hit the player)
+            // Enemy projectiles hit the player, not enemies
             if state.projectiles[i].isEnemyProjectile {
+                // Check collision with player
+                if !state.player.invulnerable || state.player.invulnerableUntil < context.timestamp {
+                    let dx = state.player.x - state.projectiles[i].x
+                    let dy = state.player.y - state.projectiles[i].y
+                    let dist = sqrt(dx * dx + dy * dy)
+                    let playerSize = state.player.size
+
+                    if dist < playerSize + projectileSize {
+                        // Deal damage to player
+                        PlayerSystem.damagePlayer(state: &state, rawDamage: state.projectiles[i].damage)
+
+                        // Impact effect
+                        ParticleFactory.createImpactEffect(
+                            state: &state,
+                            x: state.projectiles[i].x,
+                            y: state.projectiles[i].y,
+                            weaponType: "enemy"
+                        )
+
+                        // Brief invulnerability after hit
+                        state.player.invulnerable = true
+                        state.player.invulnerableUntil = context.timestamp + BalanceConfig.Player.invulnerabilityDuration
+
+                        indicesToRemove.append(i)
+                    }
+                }
                 continue
             }
 
+            // Pylons are now Enemy objects (type: "void_pylon") so they're hit through normal
+            // enemy collision below. EnemySystem.damageEnemy syncs damage to VoidHarbingerState.
+
             for enemy in candidates {
                 if enemy.isDead { continue }
+
+                // Skip invulnerable boss (VoidHarbinger Phase 2) - show IMMUNE text and let projectiles pass through to hit pylons
+                if enemy.isBoss {
+                    if let bossState = state.voidHarbingerState, bossState.isInvulnerable {
+                        // Check if projectile would hit boss - show IMMUNE text
+                        let dx = enemy.x - state.projectiles[i].x
+                        let dy = enemy.y - state.projectiles[i].y
+                        let dist = sqrt(dx * dx + dy * dy)
+                        let enemySize = enemy.size ?? 20
+
+                        if dist < enemySize + projectileSize {
+                            // Emit IMMUNE scrolling combat text (throttle to avoid spam)
+                            let immuneEvent = DamageEvent(
+                                type: .immune,
+                                amount: 0,
+                                position: CGPoint(x: enemy.x, y: enemy.y),
+                                timestamp: state.startTime + state.timeElapsed
+                            )
+                            state.damageEvents.append(immuneEvent)
+                        }
+                        continue
+                    }
+                }
 
                 // Find enemy index for damage handling
                 guard let j = state.enemies.firstIndex(where: { $0.id == enemy.id }) else { continue }
@@ -122,48 +174,6 @@ class ProjectileSystem {
             if hit {
                 indicesToRemove.append(i)
                 continue
-            }
-
-            // Check collision with VoidHarbinger pylons (Phase 2 mechanic)
-            if var bossState = state.voidHarbingerState, bossState.phase == 2 {
-                var hitPylon = false
-                for pylon in bossState.pylons where !pylon.isDestroyed {
-                    let dx = pylon.x - state.projectiles[i].x
-                    let dy = pylon.y - state.projectiles[i].y
-                    let dist = sqrt(dx * dx + dy * dy)
-                    let pylonRadius: CGFloat = 30 // Pylon collision radius
-
-                    if dist < pylonRadius + projectileSize {
-                        // Don't damage pylons with enemy projectiles
-                        guard !state.projectiles[i].isEnemyProjectile else { continue }
-
-                        // Deal damage to pylon
-                        VoidHarbingerAI.damagePylon(
-                            pylonId: pylon.id,
-                            damage: state.projectiles[i].damage,
-                            bossState: &bossState
-                        )
-
-                        // Impact effect
-                        ParticleFactory.createImpactEffect(
-                            state: &state,
-                            x: state.projectiles[i].x,
-                            y: state.projectiles[i].y,
-                            weaponType: state.projectiles[i].sourceType ?? "default"
-                        )
-
-                        hitPylon = true
-                        break
-                    }
-                }
-
-                // Save updated boss state
-                state.voidHarbingerState = bossState
-
-                if hitPylon {
-                    indicesToRemove.append(i)
-                    continue
-                }
             }
         }
 

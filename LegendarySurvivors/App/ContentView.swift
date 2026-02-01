@@ -11,6 +11,16 @@ struct ContentView: View {
             // Main game hub - Board, Arsenal, Upgrades, Debug tabs
             SystemTabView(onExit: nil)
 
+            // FTUE: Intro sequence for first-time players
+            if appState.showIntroSequence {
+                IntroSequenceView(onComplete: {
+                    appState.completeIntroSequence()
+                })
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: appState.showIntroSequence)
+                .zIndex(100)  // Ensure it's on top
+            }
+
             // Welcome Back modal overlay (System: Reboot offline earnings)
             if appState.showWelcomeBack, let earnings = appState.pendingOfflineEarnings {
                 WelcomeBackModal(

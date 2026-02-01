@@ -21,9 +21,9 @@ struct Protocol: Identifiable, Codable, Equatable {
     let firewallBaseStats: FirewallStats
     let weaponBaseStats: WeaponStats
 
-    // Costs
-    let compileCost: Int              // Data cost to unlock
-    let baseUpgradeCost: Int          // Base Data cost to level up
+    // Costs (Hash currency)
+    let compileCost: Int              // Hash cost to unlock
+    let baseUpgradeCost: Int          // Base Hash cost to level up
 
     // MARK: - Computed Properties
 
@@ -58,7 +58,7 @@ struct Protocol: Identifiable, Codable, Equatable {
         )
     }
 
-    /// Data cost to upgrade to next level
+    /// Hash cost to upgrade to next level
     var upgradeCost: Int {
         guard level < 10 else { return 0 }
         return baseUpgradeCost * level
@@ -76,9 +76,10 @@ struct Protocol: Identifiable, Codable, Equatable {
 
     // MARK: - Level Scaling
 
-    /// Level multiplier: each level = +15% stats
+    /// Level multiplier: each level = +100% stats (aggressive scaling like WoW/progression games)
+    /// Level 1 = 1.0x, Level 5 = 5.0x, Level 10 = 10.0x
     static func levelMultiplier(level: Int) -> CGFloat {
-        return 1.0 + (CGFloat(level - 1) * 0.15)
+        return CGFloat(level)
     }
 
     // MARK: - Mutations
@@ -120,7 +121,7 @@ struct Protocol: Identifiable, Codable, Equatable {
             type: id,
             level: level,
             damage: stats.damage,
-            range: 300,  // Active mode uses longer range (screen-based targeting)
+            range: 600,  // Boss arena is 1200x900, need range to reach across
             attackSpeed: stats.fireRate,
             lastAttackTime: 0,
             projectileCount: stats.projectileCount,

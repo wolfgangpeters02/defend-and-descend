@@ -5,9 +5,25 @@ import CoreGraphics
 
 class ParticleFactory {
 
+    /// Maximum particles allowed (prevents lag from particle accumulation)
+    private static let maxParticles = 300
+
     /// Get current timestamp from game state (avoids Date() calls)
     private static func timestamp(from state: GameState) -> TimeInterval {
         return state.startTime + state.timeElapsed
+    }
+
+    /// Check if we can add more particles (enforces cap)
+    private static func canAddParticles(state: GameState, count: Int = 1) -> Bool {
+        return state.particles.count + count < maxParticles
+    }
+
+    /// Trim excess particles if over limit (removes oldest)
+    private static func enforceParticleLimit(state: inout GameState) {
+        if state.particles.count > maxParticles {
+            // Use suffix instead of removeFirst to avoid O(n) array shift
+            state.particles = Array(state.particles.suffix(maxParticles))
+        }
     }
 
     /// Create explosion particles
@@ -19,9 +35,14 @@ class ParticleFactory {
         count: Int,
         size: CGFloat
     ) {
+        // Limit particle count based on current particle count
+        let availableSlots = max(0, maxParticles - state.particles.count)
+        let actualCount = min(count, availableSlots)
+        guard actualCount > 0 else { return }
+
         let now = timestamp(from: state)
 
-        for i in 0..<count {
+        for i in 0..<actualCount {
             let angle = CGFloat.random(in: 0...(2 * .pi))
             let speed = CGFloat.random(in: 50...150)
             let particleSize = CGFloat.random(in: size * 0.3...size)
@@ -72,8 +93,8 @@ class ParticleFactory {
         }
     }
 
-    /// Create Data sparkle effect (green)
-    static func createDataSparkle(
+    /// Create Hash sparkle effect (cyan)
+    static func createHashSparkle(
         state: inout GameState,
         x: CGFloat,
         y: CGFloat
@@ -86,12 +107,12 @@ class ParticleFactory {
 
             state.particles.append(Particle(
                 id: "\(RandomUtils.generateId())-sparkle-\(i)",
-                type: .data,
+                type: .hash,
                 x: x,
                 y: y,
                 lifetime: 0.4,
                 createdAt: now,
-                color: "#22c55e",
+                color: "#06b6d4",  // Cyan for Hash
                 size: CGFloat.random(in: 2...4),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
                 shape: .star

@@ -28,14 +28,12 @@ class AppState: ObservableObject {
     static let shared = AppState()
 
     @Published var currentPlayer: PlayerProfile
-    @Published var selectedProtocol: String = "kernel_pulse"  // Protocol ID (unified weapon system)
-    @Published var selectedPowerup: String = "tank"
     @Published var selectedArena: String = "grasslands"
-    @Published var gameMode: GameMode = .arena
+    @Published var gameMode: GameMode = .boss
 
-    /// Get the selected Protocol object
+    /// Get the equipped Protocol object from player profile
     var selectedProtocolObject: Protocol {
-        ProtocolLibrary.all.first { $0.id == selectedProtocol } ?? ProtocolLibrary.kernelPulse
+        ProtocolLibrary.all.first { $0.id == currentPlayer.equippedProtocolId } ?? ProtocolLibrary.kernelPulse
     }
 
     // Main mode selection (Survivor vs TD)
@@ -48,15 +46,28 @@ class AppState: ObservableObject {
     @Published var pendingOfflineEarnings: OfflineEarningsResult?
     @Published var showWelcomeBack: Bool = false
 
+    // FTUE (First Time User Experience)
+    @Published var showIntroSequence: Bool = false
+
     private init() {
         self.currentPlayer = StorageService.shared.getOrCreateDefaultPlayer()
-        checkOfflineEarnings()
+
+        // Check if we should show intro sequence for new players
+        if !currentPlayer.hasCompletedIntro {
+            showIntroSequence = true
+        } else {
+            // Only check offline earnings for returning players
+            checkOfflineEarnings()
+        }
     }
 
     // MARK: - Offline Earnings (System: Reboot)
 
     /// Check for offline earnings on app launch/return
     func checkOfflineEarnings() {
+        // Cancel any pending efficiency notifications since player has returned
+        NotificationService.shared.onPlayerReturned()
+
         if let earnings = StorageService.shared.calculateOfflineEarnings() {
             // Only show if meaningful earnings (at least 10 Hash)
             if earnings.hashEarned >= 10 {
@@ -89,6 +100,52 @@ class AppState: ObservableObject {
         checkOfflineEarnings()
     }
 
+    // MARK: - FTUE (First Time User Experience)
+
+    /// Called when player completes the intro sequence
+    func completeIntroSequence() {
+        updatePlayer { profile in
+            profile.hasCompletedIntro = true
+        }
+        showIntroSequence = false
+
+        // Activate initial tutorial hints
+        TutorialHintManager.shared.activateHint(.deckCard)
+        TutorialHintManager.shared.activateHint(.towerSlot)
+    }
+
+    /// Called when player places their first tower
+    func recordFirstTowerPlacement() {
+        guard !currentPlayer.firstTowerPlaced else { return }
+
+        updatePlayer { profile in
+            profile.firstTowerPlaced = true
+        }
+
+        // Dismiss the deck card and tower slot hints
+        markHintSeen(.deckCard)
+        markHintSeen(.towerSlot)
+    }
+
+    /// Mark a tutorial hint as seen (permanently dismissed)
+    func markHintSeen(_ hint: TutorialHintType) {
+        TutorialHintManager.shared.markHintSeen(hint)
+
+        updatePlayer { profile in
+            if !profile.tutorialHintsSeen.contains(hint.rawValue) {
+                profile.tutorialHintsSeen.append(hint.rawValue)
+            }
+        }
+    }
+
+    /// Check milestone and potentially show hints
+    func checkMilestone(hashEarned: Int) {
+        // Milestone: First 500 Hash earned - show PSU upgrade hint
+        if hashEarned >= 500 && !currentPlayer.tutorialHintsSeen.contains(TutorialHintType.psuUpgrade.rawValue) {
+            TutorialHintManager.shared.activateHint(.psuUpgrade)
+        }
+    }
+
     // MARK: - Player Management
 
     func refreshPlayer() {
@@ -112,10 +169,6 @@ class AppState: ObservableObject {
         compiledProtocolIds
     }
 
-    var unlockedPowerups: [String] {
-        currentPlayer.unlocks.powerups
-    }
-
     var unlockedArenas: [String] {
         currentPlayer.unlocks.arenas
     }
@@ -124,10 +177,6 @@ class AppState: ObservableObject {
 
     func weaponLevel(for id: String) -> Int {
         currentPlayer.weaponLevels[id] ?? 1
-    }
-
-    func powerupLevel(for id: String) -> Int {
-        currentPlayer.powerupLevels[id] ?? 1
     }
 
     // MARK: - Stats
@@ -142,9 +191,9 @@ class AppState: ObservableObject {
         }
     }
 
-    func recordRun(kills: Int, time: TimeInterval, sessionData: Int) {
-        // Use the full survivor run recording with Data rewards
-        recordSurvivorRun(time: time, kills: kills, sessionData: sessionData, gameMode: .arena, victory: false)
+    func recordRun(kills: Int, time: TimeInterval, sessionHash: Int) {
+        // Use the full survivor run recording with Hash rewards
+        recordSurvivorRun(time: time, kills: kills, sessionHash: sessionHash, gameMode: .arena, victory: false)
     }
 
     func unlockItem(category: String, id: String, rarity: Rarity) {
@@ -167,40 +216,28 @@ class AppState: ObservableObject {
     func selectNextProtocol() {
         let protocols = compiledProtocolIds
         guard !protocols.isEmpty else { return }
-        guard let currentIndex = protocols.firstIndex(of: selectedProtocol) else {
-            selectedProtocol = protocols[0]
+        guard let currentIndex = protocols.firstIndex(of: currentPlayer.equippedProtocolId) else {
+            currentPlayer.equippedProtocolId = protocols[0]
             return
         }
         let nextIndex = (currentIndex + 1) % protocols.count
-        selectedProtocol = protocols[nextIndex]
+        currentPlayer.equippedProtocolId = protocols[nextIndex]
     }
 
     func selectPreviousProtocol() {
         let protocols = compiledProtocolIds
         guard !protocols.isEmpty else { return }
-        guard let currentIndex = protocols.firstIndex(of: selectedProtocol) else {
-            selectedProtocol = protocols[0]
+        guard let currentIndex = protocols.firstIndex(of: currentPlayer.equippedProtocolId) else {
+            currentPlayer.equippedProtocolId = protocols[0]
             return
         }
         let prevIndex = (currentIndex - 1 + protocols.count) % protocols.count
-        selectedProtocol = protocols[prevIndex]
+        currentPlayer.equippedProtocolId = protocols[prevIndex]
     }
 
     /// Legacy support
     func selectNextWeapon() { selectNextProtocol() }
     func selectPreviousWeapon() { selectPreviousProtocol() }
-
-    func selectNextPowerup() {
-        guard let currentIndex = unlockedPowerups.firstIndex(of: selectedPowerup) else { return }
-        let nextIndex = (currentIndex + 1) % unlockedPowerups.count
-        selectedPowerup = unlockedPowerups[nextIndex]
-    }
-
-    func selectPreviousPowerup() {
-        guard let currentIndex = unlockedPowerups.firstIndex(of: selectedPowerup) else { return }
-        let prevIndex = (currentIndex - 1 + unlockedPowerups.count) % unlockedPowerups.count
-        selectedPowerup = unlockedPowerups[prevIndex]
-    }
 
     func selectNextArena() {
         guard let currentIndex = unlockedArenas.firstIndex(of: selectedArena) else { return }
@@ -212,12 +249,6 @@ class AppState: ObservableObject {
         guard let currentIndex = unlockedArenas.firstIndex(of: selectedArena) else { return }
         let prevIndex = (currentIndex - 1 + unlockedArenas.count) % unlockedArenas.count
         selectedArena = unlockedArenas[prevIndex]
-    }
-
-    // MARK: - Synergy Preview
-
-    var currentSynergy: (name: String, description: String)? {
-        SynergySystem.getSynergy(weaponType: selectedProtocol, powerupType: selectedPowerup)
     }
 
     // MARK: - TD Mode Support
@@ -276,16 +307,15 @@ class AppState: ObservableObject {
     }
 
     /// Record survivor run result with unified progression
-    /// Active/Debugger mode is the primary source of Data currency
-    /// - dataEarned: Actual Data collected during session (from SessionStats)
+    /// - hashEarned: Actual Hash collected during session (from SessionStats)
     /// - extracted: True if player extracted (100% reward), false if died (50% reward)
     func recordSurvivorRun(
         time: TimeInterval,
         kills: Int,
-        sessionData: Int,
+        sessionHash: Int,
         gameMode: GameMode,
         victory: Bool,
-        dataEarned: Int = 0,
+        hashEarned: Int = 0,
         extracted: Bool = false
     ) {
         updatePlayer { profile in
@@ -316,21 +346,21 @@ class AppState: ObservableObject {
             let xpReward = kills + Int(time / 10) + (victory || extracted ? 25 : 0)
             profile.xp += xpReward
 
-            // System: Reboot - Award DATA
-            // Use session-earned Data with extraction multiplier
-            let dataReward: Int
-            if dataEarned > 0 {
-                // New system: Use actual session Data with extraction bonus
-                dataReward = extracted ? dataEarned : dataEarned / 2
+            // System: Reboot - Award HASH
+            // Use session-earned Hash with extraction multiplier
+            let hashReward: Int
+            if hashEarned > 0 {
+                // New system: Use actual session Hash with extraction bonus
+                hashReward = extracted ? hashEarned : hashEarned / 2
             } else {
                 // Legacy fallback for old calls
-                let dataFromKills = kills / 20
-                let dataFromTime = Int(time / 30)
-                let dataVictoryBonus = victory ? 10 : 0
-                dataReward = max(1, dataFromKills + dataFromTime + dataVictoryBonus)
+                let hashFromKills = kills / 20
+                let hashFromTime = Int(time / 30)
+                let hashVictoryBonus = victory ? 10 : 0
+                hashReward = max(1, hashFromKills + hashFromTime + hashVictoryBonus)
             }
 
-            profile.data += dataReward
+            profile.addHash(hashReward)
 
             // Check level up
             while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -342,68 +372,52 @@ class AppState: ObservableObject {
 
     // MARK: - Boss Rewards
 
-    /// Boss-to-Protocol reward mapping
-    static let bossRewards: [String: [String]] = [
-        "cyberboss": ["burst_protocol", "trace_route"],      // Rogue Process drops ranged protocols
-        "void_harbinger": ["fork_bomb", "overflow"],          // Memory Leak drops advanced protocols
-        "frost_titan": ["ice_shard", "root_access"],          // (Future) Frozen Thread
-        "inferno_lord": ["null_pointer"]                      // (Future) Thermal Throttle
+    /// Difficulty-based Hash bonus
+    static let difficultyHashBonus: [BossDifficulty: Int] = [
+        .easy: 250,
+        .normal: 500,
+        .hard: 1500,
+        .nightmare: 3000
     ]
 
-    /// Difficulty-based Data bonus
-    static let difficultyDataBonus: [BossDifficulty: Int] = [
-        .normal: 50,
-        .hard: 150,
-        .nightmare: 300
-    ]
-
-    /// Record boss defeat and award blueprint
-    /// - Returns: The protocol ID that was awarded (nil if already owned)
+    /// Record boss defeat and award blueprint using RNG loot system
+    /// - Returns: BlueprintDropSystem.DropResult containing the awarded protocol (nil if no drop)
     @discardableResult
     func recordBossDefeat(
         bossId: String,
         difficulty: BossDifficulty,
         time: TimeInterval,
         kills: Int
-    ) -> String? {
-        var awardedProtocol: String?
+    ) -> BlueprintDropSystem.DropResult {
+        var dropResult = BlueprintDropSystem.DropResult.noDrop
 
         updatePlayer { profile in
+            // Calculate drop BEFORE recording the kill (for first-kill detection)
+            dropResult = BlueprintDropSystem.shared.calculateDrop(
+                bossId: bossId,
+                difficulty: difficulty,
+                profile: profile
+            )
+
+            // Record the boss kill
+            profile.recordBossKill(bossId, difficulty: difficulty)
             profile.survivorStats.bossesDefeated += 1
             profile.totalKills += kills
 
-            // Award Data based on difficulty
-            let dataBonus = Self.difficultyDataBonus[difficulty] ?? 50
-            profile.data += dataBonus
+            // Award Hash based on difficulty
+            let hashBonus = Self.difficultyHashBonus[difficulty] ?? 500
+            profile.addHash(hashBonus)
 
             // Award XP
             let xpReward = 100 + (difficulty == .nightmare ? 100 : difficulty == .hard ? 50 : 0)
             profile.xp += xpReward
 
-            // Award blueprint (if not already owned)
-            if let possibleRewards = Self.bossRewards[bossId] {
-                for protocolId in possibleRewards {
-                    // Check if player doesn't already have blueprint or compiled
-                    if !profile.hasBlueprint(protocolId) && !profile.isProtocolCompiled(protocolId) {
-                        profile.protocolBlueprints.append(protocolId)
-                        awardedProtocol = protocolId
-                        print("[Boss] Awarded blueprint: \(protocolId)")
-                        break
-                    }
-                }
-
-                // Nightmare difficulty: Award rare blueprint even if common ones owned
-                if awardedProtocol == nil && difficulty == .nightmare {
-                    // Try to give a random rare protocol they don't have
-                    let rareProtocols = ["null_pointer", "overflow", "root_access"]
-                    for protocolId in rareProtocols.shuffled() {
-                        if !profile.hasBlueprint(protocolId) && !profile.isProtocolCompiled(protocolId) {
-                            profile.protocolBlueprints.append(protocolId)
-                            awardedProtocol = protocolId
-                            print("[Boss] Nightmare bonus blueprint: \(protocolId)")
-                            break
-                        }
-                    }
+            // Award blueprint if one dropped
+            if let protocolId = dropResult.protocolId {
+                if !profile.hasBlueprint(protocolId) && !profile.isProtocolCompiled(protocolId) {
+                    profile.protocolBlueprints.append(protocolId)
+                    profile.recordBlueprintDrop(bossId, protocolId: protocolId)
+                    print("[Boss] Blueprint dropped: \(protocolId) (firstKill: \(dropResult.isFirstKill), guaranteed: \(dropResult.wasGuaranteed))")
                 }
             }
 
@@ -414,7 +428,7 @@ class AppState: ObservableObject {
             }
         }
 
-        return awardedProtocol
+        return dropResult
     }
 
 }

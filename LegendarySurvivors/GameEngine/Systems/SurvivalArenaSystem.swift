@@ -46,8 +46,8 @@ class SurvivalArenaSystem {
 
     // Data earning
     private var dataAccumulator: CGFloat = 0
-    private static let extractionTime: TimeInterval = 180  // 3 minutes
-    private static let dataPerSecond: CGFloat = 2.0  // Base Data per second survived
+    private static var extractionTime: TimeInterval { BalanceConfig.SurvivalEconomy.extractionTime }
+    private static var dataPerSecond: CGFloat { BalanceConfig.SurvivalEconomy.hashPerSecond }
 
     // MARK: - Update
 
@@ -96,17 +96,16 @@ class SurvivalArenaSystem {
     // MARK: - Economy
 
     private func updateDataEarnings(state: inout GameState, deltaTime: TimeInterval) {
-        // Base Data earning: 2 Data per second survived
-        // Bonus: +0.5 Data per minute survived (scales with time)
+        // Base Data earning + bonus per minute survived
         let minutesSurvived = CGFloat(state.timeElapsed / 60)
-        let dataRate = Self.dataPerSecond + (minutesSurvived * 0.5)
+        let dataRate = Self.dataPerSecond + (minutesSurvived * BalanceConfig.SurvivalEconomy.hashBonusPerMinute)
 
         dataAccumulator += dataRate * CGFloat(deltaTime)
 
-        // Convert accumulated fractional Data to integer
+        // Convert accumulated fractional Hash to integer
         if dataAccumulator >= 1.0 {
             let earned = Int(dataAccumulator)
-            state.stats.dataEarned += earned
+            state.stats.hashEarned += earned
             dataAccumulator -= CGFloat(earned)
         }
     }
@@ -116,7 +115,7 @@ class SurvivalArenaSystem {
         state.stats.extracted = true
         state.isGameOver = true
         state.victory = true  // Extraction counts as victory
-        print("[Survival] Extracted! Data earned: \(state.stats.dataEarned)")
+        print("[Survival] Extracted! Hash earned: \(state.stats.hashEarned)")
     }
 
     /// Get extraction status for UI
@@ -147,7 +146,7 @@ class SurvivalArenaSystem {
 
         // Special cooldown check for cache flush
         if config.type == .cacheFlush {
-            if state.timeElapsed - lastCacheFlushTime < 120 {
+            if state.timeElapsed - lastCacheFlushTime < BalanceConfig.SurvivalEvents.cacheFlushCooldown {
                 // Pick different event
                 let filteredEvents = availableEvents.filter { $0.type != .cacheFlush }
                 if let altConfig = filteredEvents.randomElement() {
@@ -186,7 +185,7 @@ class SurvivalArenaSystem {
         case .bufferOverflow:
             // Kill zone approach: Don't physically shrink arena
             // Instead, store danger zone depth - player takes damage in these zones
-            shrinkAmount = 100
+            shrinkAmount = BalanceConfig.SurvivalEvents.bufferOverflowZoneDepth
             state.eventData?.shrinkAmount = shrinkAmount
             // Damage is applied in updateEventEffect
 
@@ -197,13 +196,13 @@ class SurvivalArenaSystem {
         case .cacheFlush:
             // Clear all enemies!
             state.enemies.removeAll()
-            // Brief invulnerability
+            // Brief invulnerability (use currentFrameTime for consistent time base)
             state.player.invulnerable = true
-            state.player.invulnerableUntil = state.timeElapsed + 1.0
+            state.player.invulnerableUntil = state.currentFrameTime + 1.0
 
         case .dataCorruption:
             // Mark random obstacles as corrupted (hazardous)
-            let obstacleCount = min(3, state.arena.obstacles.count)
+            let obstacleCount = min(BalanceConfig.SurvivalEvents.maxCorruptedObstacles, state.arena.obstacles.count)
             var corruptedIds: [String] = []
             var indices = Array(0..<state.arena.obstacles.count).shuffled()
 
@@ -252,8 +251,8 @@ class SurvivalArenaSystem {
                 let dy = state.player.y - zonePos.y
                 let distance = sqrt(dx * dx + dy * dy)
 
-                if distance < 60 {  // Zone radius
-                    let healAmount = 5.0 * CGFloat(deltaTime)
+                if distance < BalanceConfig.SurvivalEvents.systemRestoreZoneRadius {
+                    let healAmount = BalanceConfig.SurvivalEvents.systemRestoreHealPerSecond * CGFloat(deltaTime)
                     state.player.health = min(state.player.maxHealth, state.player.health + healAmount)
                 }
             }
@@ -265,7 +264,7 @@ class SurvivalArenaSystem {
                     x: state.player.x, y: state.player.y,
                     radius: state.player.size, obstacle: obstacle
                 ) {
-                    let damage = 15.0 * CGFloat(deltaTime)
+                    let damage = BalanceConfig.SurvivalEvents.dataCorruptionDamagePerSecond * CGFloat(deltaTime)
                     state.player.health -= damage
                 }
             }
@@ -281,7 +280,7 @@ class SurvivalArenaSystem {
 
                 if inDangerZone {
                     // "Static" damage - rapid ticks
-                    let damage = 25.0 * CGFloat(deltaTime)
+                    let damage = BalanceConfig.SurvivalEvents.bufferOverflowDamagePerSecond * CGFloat(deltaTime)
                     state.player.health -= damage
                 }
             }
@@ -327,14 +326,14 @@ class SurvivalArenaSystem {
 
     private func scheduleNextEvent(state: GameState) {
         // Events get more frequent over time
-        let baseInterval: TimeInterval = 60
-        let minInterval: TimeInterval = 40
-        let reductionPerMinute: TimeInterval = 5
+        let baseInterval = BalanceConfig.SurvivalEvents.baseEventInterval
+        let minInterval = BalanceConfig.SurvivalEvents.minEventInterval
+        let reductionPerMinute = BalanceConfig.SurvivalEvents.intervalReductionPerMinute
 
         let minutesSurvived = state.timeElapsed / 60
         let interval = max(minInterval, baseInterval - (minutesSurvived * reductionPerMinute))
 
-        nextEventTime = state.timeElapsed + interval + Double.random(in: -5...5)
+        nextEventTime = state.timeElapsed + interval + Double.random(in: BalanceConfig.SurvivalEvents.intervalRandomRange)
     }
 
     private func spawnVirusSwarm(state: inout GameState, angle: CGFloat) {
@@ -362,8 +361,8 @@ class SurvivalArenaSystem {
         let baseX = centerX + cos(angle) * spawnDistance
         let baseY = centerY + sin(angle) * spawnDistance
 
-        // Spawn 50 enemies in a formation
-        for i in 0..<50 {
+        // Spawn enemies in a formation
+        for i in 0..<BalanceConfig.SurvivalEvents.virusSwarmCount {
             // Spread perpendicular to direction
             let perpAngle = angle + .pi / 2
             let offset = CGFloat(i % 10 - 5) * 20
@@ -397,9 +396,9 @@ class SurvivalArenaSystem {
 
         switch event {
         case .memorySurge:
-            return 1.5  // +50% speed
+            return BalanceConfig.SurvivalEvents.memorySurgeSpeedBoost
         case .thermalThrottle:
-            return 0.7  // -30% speed
+            return BalanceConfig.SurvivalEvents.thermalThrottleSpeedMult
         default:
             return 1.0
         }
@@ -411,7 +410,7 @@ class SurvivalArenaSystem {
 
         switch event {
         case .thermalThrottle:
-            return 1.5  // +50% damage
+            return BalanceConfig.SurvivalEvents.thermalThrottleDamageMult
         default:
             return 1.0
         }
@@ -423,7 +422,7 @@ class SurvivalArenaSystem {
 
         switch event {
         case .memorySurge:
-            return 2.0  // 2x spawn rate
+            return BalanceConfig.SurvivalEvents.memorySurgeSpawnRate
         default:
             return 1.0
         }

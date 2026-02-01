@@ -42,14 +42,14 @@ struct WeaponTower: Codable, Identifiable {
     var baseRange: CGFloat
     var baseAttackSpeed: CGFloat
 
-    /// Calculate stats for a given level
+    /// Calculate stats for a given level (matches Protocol.levelMultiplier)
     mutating func applyLevel(_ newLevel: Int) {
         level = min(10, max(1, newLevel))
-        let levelMultiplier: CGFloat = 1.0 + CGFloat(level - 1) * 0.1  // +10% per level
+        let levelMultiplier: CGFloat = CGFloat(level)  // Level 10 = 10x damage (aggressive scaling)
 
         damage = baseDamage * levelMultiplier
         range = baseRange * (1.0 + CGFloat(level - 1) * 0.05)  // +5% range per level
-        attackSpeed = baseAttackSpeed * (1.0 + CGFloat(level - 1) * 0.03)  // +3% speed per level
+        attackSpeed = baseAttackSpeed * (1.0 + CGFloat(level - 1) * 0.05)  // +5% speed per level
     }
 
     /// Gold cost to upgrade to next level
@@ -185,6 +185,7 @@ struct MapModifier: Codable {
 struct EnemyPath: Codable, Identifiable {
     var id: String
     var waypoints: [CGPoint]
+    var sectorId: String?  // Which sector this path originates from (for boss type selection)
 
     /// Total length of the path
     var length: CGFloat {
@@ -312,7 +313,6 @@ struct CollectionItem: Codable, Identifiable {
     enum CollectionCategory: String, Codable {
         case weapon      // Also unlocks tower
         case arena       // Also unlocks TD map
-        case powerup     // Survivor-only power-ups
     }
 }
 

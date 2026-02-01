@@ -41,7 +41,7 @@ struct ManualOverrideView: View {
 
                         // Timer
                         VStack(spacing: 2) {
-                            Text("SURVIVE")
+                            Text(L10n.Override.survive)
                                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                                 .foregroundColor(DesignColors.muted)
 
@@ -87,11 +87,11 @@ struct ManualOverrideView: View {
                 // Instructions (fade out after 2 seconds)
                 if gameController.showInstructions {
                     VStack(spacing: 8) {
-                        Text("DODGE THE HAZARDS")
+                        Text(L10n.Override.dodgeHazards)
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
 
-                        Text("Move with the joystick to survive")
+                        Text(L10n.Override.moveWithJoystick)
                             .font(.system(size: 14, design: .monospaced))
                             .foregroundColor(DesignColors.muted)
                     }
@@ -154,11 +154,11 @@ struct ManualOverrideView: View {
                         .font(.system(size: 80))
                         .foregroundColor(DesignColors.success)
 
-                    Text("SYSTEM RECOVERED")
+                    Text(L10n.Override.systemRecovered)
                         .font(.system(size: 24, weight: .black, design: .monospaced))
                         .foregroundColor(.white)
 
-                    Text("Efficiency restored to 50%")
+                    Text(L10n.Override.efficiencyRestored)
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(DesignColors.muted)
                 } else {
@@ -166,11 +166,11 @@ struct ManualOverrideView: View {
                         .font(.system(size: 80))
                         .foregroundColor(.red)
 
-                    Text("OVERRIDE FAILED")
+                    Text(L10n.Override.failed)
                         .font(.system(size: 24, weight: .black, design: .monospaced))
                         .foregroundColor(.white)
 
-                    Text("Try again or use Flush Memory")
+                    Text(L10n.Override.tryAgain)
                         .font(.system(size: 14, design: .monospaced))
                         .foregroundColor(DesignColors.muted)
                 }
@@ -487,8 +487,9 @@ class ManualOverrideScene: SKScene {
     }
 
     private func spawnSweepHazard() {
-        // Horizontal or vertical sweeping laser
+        // Horizontal or vertical sweeping laser with a gap for the player to escape
         let isHorizontal = Bool.random()
+        let gapSize: CGFloat = 70  // Gap wide enough for player (radius 15) to pass through
 
         let hazard = SKShapeNode()
         hazard.name = "hazard"
@@ -496,9 +497,17 @@ class ManualOverrideScene: SKScene {
 
         if isHorizontal {
             let startY = CGFloat.random(in: 150...(size.height - 150))
+            // Random gap position along the width
+            let gapStart = CGFloat.random(in: 40...(size.width - 40 - gapSize))
+
             let path = CGMutablePath()
+            // First segment: from left edge to gap
             path.move(to: CGPoint(x: 0, y: 0))
+            path.addLine(to: CGPoint(x: gapStart, y: 0))
+            // Second segment: from gap end to right edge
+            path.move(to: CGPoint(x: gapStart + gapSize, y: 0))
             path.addLine(to: CGPoint(x: size.width, y: 0))
+
             hazard.path = path
             hazard.position = CGPoint(x: 0, y: startY)
             hazard.strokeColor = DesignColors.dangerUI
@@ -506,12 +515,22 @@ class ManualOverrideScene: SKScene {
             hazard.glowWidth = 15
 
             let direction: CGFloat = Bool.random() ? 1 : -1
-            hazard.userData = ["sweepVelocity": 80.0 * direction, "isHorizontal": true]
+            hazard.userData = ["sweepVelocity": 80.0 * direction, "isHorizontal": true, "gapStart": gapStart, "gapEnd": gapStart + gapSize]
         } else {
             let startX = CGFloat.random(in: 50...(size.width - 50))
+            // Random gap position along the height
+            let playAreaTop = size.height - 120
+            let playAreaBottom: CGFloat = 120
+            let gapStart = CGFloat.random(in: (playAreaBottom + 20)...(playAreaTop - 20 - gapSize))
+
             let path = CGMutablePath()
-            path.move(to: CGPoint(x: 0, y: 120))
-            path.addLine(to: CGPoint(x: 0, y: size.height - 120))
+            // First segment: from bottom to gap
+            path.move(to: CGPoint(x: 0, y: playAreaBottom))
+            path.addLine(to: CGPoint(x: 0, y: gapStart))
+            // Second segment: from gap end to top
+            path.move(to: CGPoint(x: 0, y: gapStart + gapSize))
+            path.addLine(to: CGPoint(x: 0, y: playAreaTop))
+
             hazard.path = path
             hazard.position = CGPoint(x: startX, y: 0)
             hazard.strokeColor = DesignColors.dangerUI
@@ -519,7 +538,7 @@ class ManualOverrideScene: SKScene {
             hazard.glowWidth = 15
 
             let direction: CGFloat = Bool.random() ? 1 : -1
-            hazard.userData = ["sweepVelocity": 80.0 * direction, "isHorizontal": false]
+            hazard.userData = ["sweepVelocity": 80.0 * direction, "isHorizontal": false, "gapStart": gapStart, "gapEnd": gapStart + gapSize]
         }
 
         addChild(hazard)
@@ -606,16 +625,31 @@ class ManualOverrideScene: SKScene {
                 }
             }
 
-            // Check sweep collision (line)
+            // Check sweep collision (line with gap)
             if userData["sweepVelocity"] != nil {
                 let isHorizontal = userData["isHorizontal"] as? Bool ?? true
+                let gapStart = userData["gapStart"] as? CGFloat ?? 0
+                let gapEnd = userData["gapEnd"] as? CGFloat ?? 0
+
                 if isHorizontal {
+                    // Check if player is at the same Y level as the sweep line
                     if abs(playerNode.position.y - hazard.position.y) < playerRadius + 4 {
-                        collided = true
+                        // Check if player is NOT in the gap (gap is in X coordinates)
+                        let playerX = playerNode.position.x
+                        let inGap = playerX > gapStart && playerX < gapEnd
+                        if !inGap {
+                            collided = true
+                        }
                     }
                 } else {
+                    // Check if player is at the same X level as the sweep line
                     if abs(playerNode.position.x - hazard.position.x) < playerRadius + 4 {
-                        collided = true
+                        // Check if player is NOT in the gap (gap is in Y coordinates)
+                        let playerY = playerNode.position.y
+                        let inGap = playerY > gapStart && playerY < gapEnd
+                        if !inGap {
+                            collided = true
+                        }
                     }
                 }
             }

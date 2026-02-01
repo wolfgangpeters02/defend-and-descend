@@ -72,13 +72,19 @@ class StorageService {
         if let xp = json["xp"] as? Int { profile.xp = xp }
         if let gold = json["gold"] as? Int { profile.hash = gold }  // Legacy gold → hash
 
+        // Migrate hash from saved profile
+        if let hash = json["hash"] as? Int { profile.hash = hash }
+
+        // Migration: Convert legacy Data currency to Hash (Data is now removed)
+        // Add existing data balance to hash at 10:1 ratio (since Hash is more abundant)
+        if let data = json["data"] as? Int, data > 0 {
+            profile.hash += data * 10  // Convert data to hash
+        }
+
         // Migrate unlocks
         if let unlocksData = json["unlocks"] as? [String: Any] {
             if let weapons = unlocksData["weapons"] as? [String] {
                 profile.unlocks.weapons = weapons
-            }
-            if let powerups = unlocksData["powerups"] as? [String] {
-                profile.unlocks.powerups = powerups
             }
             if let arenas = unlocksData["arenas"] as? [String] {
                 profile.unlocks.arenas = arenas
@@ -88,9 +94,6 @@ class StorageService {
         // Migrate item levels
         if let weaponLevels = json["weaponLevels"] as? [String: Int] {
             profile.weaponLevels = weaponLevels
-        }
-        if let powerupLevels = json["powerupLevels"] as? [String: Int] {
-            profile.powerupLevels = powerupLevels
         }
 
         // Old stats become survivor stats
@@ -111,6 +114,15 @@ class StorageService {
 
         if let tdSectorProgress = json["tdSectorUnlockProgress"] as? [String: Int] {
             profile.tdSectorUnlockProgress = tdSectorProgress
+        }
+
+        // Blueprint system migration
+        // bossKillRecords defaults to empty dict (new field)
+        profile.bossKillRecords = [:]
+
+        // Migrate existing protocolBlueprints if present
+        if let blueprints = json["protocolBlueprints"] as? [String] {
+            profile.protocolBlueprints = blueprints
         }
 
         return profile
@@ -287,15 +299,105 @@ class StorageService {
 
     // MARK: - System: Reboot - Offline Earnings
 
-    /// Save timestamp when app goes to background
+    /// Save timestamp and game state when app goes to background
     func saveLastActiveTime() {
         var profile = getOrCreateDefaultPlayer()
         profile.tdStats.lastActiveTimestamp = Date().timeIntervalSince1970
         savePlayer(profile)
     }
 
-    /// Calculate and apply offline earnings
-    /// Returns: (hashEarned, timeAway) or nil if no earnings
+    /// Save current game state for offline simulation
+    /// Call this when the player leaves the TD game
+    func saveOfflineSimulationState(
+        threatLevel: CGFloat,
+        leakCounter: Int,
+        towerDefenseStrength: CGFloat,
+        activeLaneCount: Int,
+        efficiency: CGFloat
+    ) {
+        var profile = getOrCreateDefaultPlayer()
+        profile.tdStats.lastActiveTimestamp = Date().timeIntervalSince1970
+        profile.tdStats.lastThreatLevel = threatLevel
+        profile.tdStats.lastLeakCounter = leakCounter
+        profile.tdStats.towerDefenseStrength = towerDefenseStrength
+        profile.tdStats.activeLaneCount = max(1, activeLaneCount)
+        profile.tdStats.averageEfficiency = efficiency
+        savePlayer(profile)
+
+        // Schedule efficiency notification if enabled
+        if profile.notificationsEnabled && efficiency > 0 {
+            scheduleEfficiencyNotification(
+                efficiency: efficiency,
+                threatLevel: threatLevel,
+                towerDefenseStrength: towerDefenseStrength,
+                activeLaneCount: activeLaneCount
+            )
+        }
+    }
+
+    /// Schedule notification for when efficiency is predicted to hit 0%
+    private func scheduleEfficiencyNotification(
+        efficiency: CGFloat,
+        threatLevel: CGFloat,
+        towerDefenseStrength: CGFloat,
+        activeLaneCount: Int
+    ) {
+        // Use the same calculation as offline simulation to estimate leak rate
+        // Threat grows at 10% of normal rate (0.001 per second)
+        let offlineThreatGrowthRate: CGFloat = 0.001
+
+        // Estimate average threat over next 24 hours
+        let estimatedAvgThreat = threatLevel + (86400 * offlineThreatGrowthRate / 2)
+
+        // Expected enemy HP at this threat level (base HP 20, +15% per level)
+        let baseEnemyHP: CGFloat = 20
+        let avgEnemyHP = baseEnemyHP * (1 + estimatedAvgThreat * 0.15)
+
+        // Expected spawn rate (base 2s, faster at higher threat, min 0.3s)
+        let baseSpawnInterval: CGFloat = 2.0
+        let avgSpawnInterval = max(0.3, baseSpawnInterval / (1 + estimatedAvgThreat * 0.1))
+        let enemiesPerSecond = 1.0 / avgSpawnInterval
+
+        // Total enemy HP per second = enemies/sec * HP per enemy * lanes
+        let enemyHPPerSecond = enemiesPerSecond * avgEnemyHP * CGFloat(activeLaneCount)
+
+        // Defense strength (tower DPS)
+        let defensePerSecond = towerDefenseStrength
+
+        // If defense < offense, calculate leak rate
+        guard defensePerSecond < enemyHPPerSecond else {
+            // Defense is strong enough - no notification needed
+            NotificationService.shared.cancelEfficiencyNotifications()
+            return
+        }
+
+        // HP deficit per second
+        let hpDeficitPerSecond = enemyHPPerSecond - defensePerSecond
+
+        // One leak = one enemy getting through
+        // Estimate leaks per hour based on HP deficit
+        let hpDeficitPerHour = hpDeficitPerSecond * 3600
+        let leaksPerHour = hpDeficitPerHour / avgEnemyHP
+
+        // Each leak = 5% efficiency loss
+        let efficiencyPerLeak: CGFloat = 0.05
+        let leaksUntilZero = efficiency / efficiencyPerLeak
+
+        // Time until 0% efficiency
+        guard leaksPerHour > 0 else { return }
+        let hoursUntilZero = leaksUntilZero / leaksPerHour
+        let secondsUntilZero = hoursUntilZero * 3600
+
+        // Schedule notification (min 5 minutes, max 24 hours out)
+        if secondsUntilZero >= 300 && secondsUntilZero <= 86400 {
+            NotificationService.shared.scheduleEfficiencyZeroNotification(
+                estimatedTimeUntilZero: secondsUntilZero
+            )
+        }
+    }
+
+    /// Calculate offline earnings with defense simulation
+    /// Returns: (hashEarned, timeAway, leaks, etc.) or nil if no earnings
     func calculateOfflineEarnings() -> OfflineEarningsResult? {
         let profile = getOrCreateDefaultPlayer()
 
@@ -312,31 +414,81 @@ class StorageService {
             return nil
         }
 
-        // Cap at 8 hours (28800 seconds)
-        let cappedTime = min(timeAway, 28800)
+        // Cap at 24 hours (86400 seconds) - extended from 8 hours
+        let cappedTime = min(timeAway, 86400)
 
-        // Calculate earnings
-        // offlineHash = timeAway * baseRate * cpuMultiplier * avgEfficiency * 0.5 (offline penalty)
+        // ---- OFFLINE SIMULATION ----
+
+        // 1. Calculate threat growth (10% of normal rate = 0.001 per second)
+        let offlineThreatGrowthRate: CGFloat = 0.001
+        let startThreatLevel = profile.tdStats.lastThreatLevel
+        let threatGrowth = CGFloat(cappedTime) * offlineThreatGrowthRate
+        let endThreatLevel = startThreatLevel + threatGrowth
+
+        // 2. Calculate defense vs. offense
+        // Defense strength = sum of tower DPS (stored when player left)
+        let defenseStrength = profile.tdStats.towerDefenseStrength
+        let laneCount = max(1, profile.tdStats.activeLaneCount)
+
+        // Offense strength = f(threat level, lanes)
+        // Base enemy HP at threat 1 = ~20, spawn rate ~2s
+        // At threat 10: HP = 20 × 2.35 = 47, spawn rate ~0.5s
+        // Approximate incoming damage per second per lane
+        let avgThreatLevel = (startThreatLevel + endThreatLevel) / 2
+        let healthMultiplier = 1.0 + (avgThreatLevel - 1.0) * 0.15  // +15% per threat
+        let spawnRateMultiplier = 1.0 + avgThreatLevel * 0.1  // Faster spawns at higher threat
+        let baseEnemyHP: CGFloat = 20
+        let offenseStrengthPerLane = baseEnemyHP * healthMultiplier * spawnRateMultiplier
+        let totalOffenseStrength = offenseStrengthPerLane * CGFloat(laneCount)
+
+        // 3. Calculate leak rate
+        // If defense < offense, enemies leak through
+        let defenseRatio = defenseStrength > 0 ? defenseStrength / totalOffenseStrength : 0
+        let defenseThreshold: CGFloat = 0.8  // Need 80% of offense to hold
+
+        var leaksPerHour: CGFloat = 0
+        if defenseRatio < defenseThreshold {
+            // Leaks scale with how overwhelmed defense is
+            // At 0% defense: ~10 leaks per hour
+            // At 50% defense: ~5 leaks per hour
+            // At 80% defense: 0 leaks
+            let deficitRatio = 1.0 - (defenseRatio / defenseThreshold)
+            leaksPerHour = deficitRatio * 10.0
+        }
+
+        // 4. Calculate total leaks
+        let hoursOffline = CGFloat(cappedTime) / 3600.0
+        let totalLeaks = Int(leaksPerHour * hoursOffline)
+
+        // 5. Calculate new efficiency
+        let startLeakCounter = profile.tdStats.lastLeakCounter
+        let newLeakCounter = startLeakCounter + totalLeaks
+        let startEfficiency = max(0, min(100, 100 - CGFloat(startLeakCounter) * 5))
+        let newEfficiency = max(0, min(100, 100 - CGFloat(newLeakCounter) * 5))
+
+        // 6. Calculate average efficiency during offline period
+        let avgEfficiency = (startEfficiency + newEfficiency) / 2
+
+        // 7. Calculate hash earned based on average efficiency
         let baseRate = profile.tdStats.baseHashPerSecond
         let cpuMultiplier = profile.tdStats.cpuMultiplier
-        let efficiency = profile.tdStats.averageEfficiency / 100
-        let offlineMultiplier: CGFloat = 0.5  // 50% efficiency when offline
+        let offlineMultiplier: CGFloat = 0.5  // 50% of active rate when offline
 
-        let hashEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * efficiency * offlineMultiplier))
-
-        // Calculate passive Data from virus kills
-        let passiveData = profile.tdStats.passiveDataEarned
+        let hashEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * (avgEfficiency / 100) * offlineMultiplier))
 
         return OfflineEarningsResult(
             hashEarned: hashEarned,
-            dataEarned: passiveData,
             timeAwaySeconds: timeAway,
             cappedTimeSeconds: cappedTime,
-            wasCapped: timeAway > 28800
+            wasCapped: timeAway > 86400,
+            leaksOccurred: totalLeaks,
+            newThreatLevel: endThreatLevel,
+            newEfficiency: newEfficiency,
+            startEfficiency: startEfficiency
         )
     }
 
-    /// Apply offline earnings to player profile
+    /// Apply offline earnings and simulation results to player profile
     func applyOfflineEarnings(_ earnings: OfflineEarningsResult) {
         var profile = getOrCreateDefaultPlayer()
 
@@ -346,16 +498,25 @@ class StorageService {
         // Update timestamp
         profile.tdStats.lastActiveTimestamp = Date().timeIntervalSince1970
 
+        // Apply simulation results for next session
+        profile.tdStats.lastThreatLevel = earnings.newThreatLevel
+        profile.tdStats.lastLeakCounter += earnings.leaksOccurred
+        profile.tdStats.averageEfficiency = earnings.newEfficiency
+
         savePlayer(profile)
     }
 
-    /// Update virus kill count (for passive Data generation)
-    func addVirusKills(_ count: Int) {
-        var profile = getOrCreateDefaultPlayer()
-        profile.tdStats.totalVirusKills += count
-        profile.tdStats.totalTDKills += count
-        profile.totalKills += count
-        savePlayer(profile)
+    /// Apply offline simulation results to active game state
+    /// Call this when loading a saved session after offline time
+    func applyOfflineSimulationToGameState(
+        earnings: OfflineEarningsResult,
+        state: inout TDGameState
+    ) {
+        // Update threat level
+        state.idleThreatLevel = earnings.newThreatLevel
+
+        // Update leak counter (efficiency is computed from this)
+        state.leakCounter += earnings.leaksOccurred
     }
 
     /// Update average efficiency for offline calculations
@@ -369,7 +530,7 @@ class StorageService {
     // MARK: - CPU Tier Upgrades
 
     /// Attempt to upgrade CPU tier
-    /// Returns: true if upgrade successful, false if not enough Watts or max tier
+    /// Returns: true if upgrade successful, false if not enough Hash or max tier
     func upgradeCpuTier() -> Bool {
         var profile = getOrCreateDefaultPlayer()
 
@@ -438,10 +599,15 @@ class StorageService {
 
 struct OfflineEarningsResult {
     let hashEarned: Int
-    let dataEarned: Int
     let timeAwaySeconds: TimeInterval
     let cappedTimeSeconds: TimeInterval
     let wasCapped: Bool
+
+    // Simulation Results
+    let leaksOccurred: Int
+    let newThreatLevel: CGFloat
+    let newEfficiency: CGFloat
+    let startEfficiency: CGFloat
 
     /// Format time away as human-readable string
     var formattedTimeAway: String {
@@ -452,6 +618,22 @@ struct OfflineEarningsResult {
             return "\(hours)h \(minutes)m"
         } else {
             return "\(minutes)m"
+        }
+    }
+
+    /// Whether leaks occurred during offline time
+    var hadLeaks: Bool {
+        return leaksOccurred > 0
+    }
+
+    /// Damage report for UI display
+    var damageReport: String {
+        if leaksOccurred == 0 {
+            return "Defense held. No breaches detected."
+        } else if newEfficiency <= 0 {
+            return "System compromised. \(leaksOccurred) breaches. Efficiency: 0%"
+        } else {
+            return "\(leaksOccurred) breaches detected. Efficiency: \(Int(newEfficiency))%"
         }
     }
 }

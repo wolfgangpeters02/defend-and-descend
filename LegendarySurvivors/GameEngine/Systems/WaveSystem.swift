@@ -24,11 +24,11 @@ class WaveSystem {
         var enemies: [WaveEnemy] = []
 
         // Base enemy count scales with wave number
-        let baseCount = 5 + number * 2
+        let baseCount = BalanceConfig.Waves.baseEnemyCount + number * BalanceConfig.Waves.enemiesPerWave
 
         // Health and speed multipliers scale with wave
-        let healthMult: CGFloat = 1.0 + CGFloat(number - 1) * 0.15  // +15% per wave
-        let speedMult: CGFloat = 1.0 + CGFloat(number - 1) * 0.02   // +2% per wave
+        let healthMult = BalanceConfig.waveHealthMultiplier(waveNumber: number)
+        let speedMult = BalanceConfig.waveSpeedMultiplier(waveNumber: number)
 
         // Composition changes based on wave number
         if number <= 3 {
@@ -95,24 +95,24 @@ class WaveSystem {
             ))
         }
 
-        // Boss waves every 5 waves
-        if number % 5 == 0 {
+        // Boss waves every N waves
+        if number % BalanceConfig.Waves.bossWaveInterval == 0 {
             enemies.append(WaveEnemy(
                 type: "boss",
                 count: 1,
-                healthMultiplier: healthMult * 2,
-                speedMultiplier: speedMult * 0.8
+                healthMultiplier: healthMult * BalanceConfig.Waves.bossHealthMultiplier,
+                speedMultiplier: speedMult * BalanceConfig.Waves.bossSpeedMultiplier
             ))
         }
 
-        // Bonus gold increases with wave number
-        let bonusGold = number * 10
+        // Bonus Hash increases with wave number
+        let bonusHash = number * BalanceConfig.Waves.hashBonusPerWave
 
         return TDWave(
             waveNumber: number,
             enemies: enemies,
-            delayBetweenSpawns: max(0.3, 0.8 - CGFloat(number) * 0.02),  // Gets faster
-            bonusGold: bonusGold
+            delayBetweenSpawns: BalanceConfig.spawnDelay(waveNumber: number),
+            bonusGold: bonusHash
         )
     }
 
@@ -130,8 +130,13 @@ class WaveSystem {
     static func spawnNextEnemy(
         state: inout TDGameState,
         wave: TDWave,
-        currentTime: TimeInterval
+        currentTime: TimeInterval,
+        unlockedSectorIds: Set<String>? = nil
     ) -> TDEnemy? {
+        // Get available lanes for spawning
+        let lanes = getAvailableLanes(state: state, unlockedSectorIds: unlockedSectorIds)
+        guard !lanes.isEmpty else { return nil }
+
         // Find next enemy to spawn
         var spawnedSoFar = 0
         for waveEnemy in wave.enemies {
@@ -139,13 +144,22 @@ class WaveSystem {
             let spawnedFromThisType = max(0, state.waveEnemiesSpawned - spawnedSoFar)
 
             if spawnedFromThisType < countToSpawn {
-                // Spawn this type
+                // Select a lane for this enemy (rotate through available lanes)
+                let laneIndex = state.waveEnemiesSpawned % lanes.count
+                let selectedLane = lanes[laneIndex]
+
+                // Path index must match the lane index in state.paths
+                // (paths are ordered the same as lanes in MotherboardLaneConfig)
+                let pathIndex = laneIndex % max(1, state.paths.count)
+
+                // Spawn this type from the selected lane
                 let enemy = createEnemy(
                     type: waveEnemy.type,
-                    pathIndex: waveEnemy.pathIndex,
+                    pathIndex: pathIndex,
                     healthMult: waveEnemy.healthMultiplier,
                     speedMult: waveEnemy.speedMultiplier,
-                    spawnPoint: state.map.spawnPoints.first ?? .zero
+                    spawnPoint: selectedLane.spawnPoint,
+                    laneId: selectedLane.id
                 )
 
                 state.waveEnemiesSpawned += 1
@@ -158,13 +172,44 @@ class WaveSystem {
         return nil
     }
 
+    /// Get available lanes for spawning based on unlocked sectors
+    static func getAvailableLanes(state: TDGameState, unlockedSectorIds: Set<String>? = nil) -> [SectorLane] {
+        // For motherboard maps, use the 8-lane system
+        if state.map.theme == "motherboard" {
+            let allLanes = MotherboardLaneConfig.createAllLanes()
+            let unlocked = unlockedSectorIds ?? Set([SectorID.power.rawValue])
+
+            // Return only unlocked lanes
+            return allLanes.filter { lane in
+                lane.isStarterLane || unlocked.contains(lane.sectorId)
+            }
+        }
+
+        // Fallback for non-motherboard maps: create a single lane from legacy spawn point
+        guard let firstSpawnPoint = state.map.spawnPoints.first else { return [] }
+
+        let legacyLane = SectorLane(
+            id: "legacy",
+            sectorId: "legacy",
+            displayName: "Main",
+            path: EnemyPath(id: "legacy_path", waypoints: [firstSpawnPoint, CGPoint(x: 2100, y: 2100)]),
+            spawnPoint: firstSpawnPoint,
+            themeColorHex: "#4488ff",
+            unlockCost: 0,
+            unlockOrder: 0,
+            prerequisites: []
+        )
+        return [legacyLane]
+    }
+
     /// Create enemy from config
     static func createEnemy(
         type: String,
         pathIndex: Int,
         healthMult: CGFloat,
         speedMult: CGFloat,
-        spawnPoint: CGPoint
+        spawnPoint: CGPoint,
+        laneId: String? = nil
     ) -> TDEnemy {
         let config = GameConfigLoader.shared
         let enemyConfig = config.getEnemy(type)
@@ -189,7 +234,8 @@ class WaveSystem {
             size: CGFloat(enemyConfig?.size ?? 12),
             color: enemyConfig?.color ?? "#ff4444",
             shape: enemyConfig?.shape ?? "square",
-            isBoss: enemyConfig?.isBoss ?? false
+            isBoss: enemyConfig?.isBoss ?? false,
+            laneId: laneId
         )
     }
 
@@ -211,7 +257,7 @@ class WaveSystem {
         state.stats.goldEarned += actualBonus
 
         // Countdown to next wave
-        state.nextWaveCountdown = 10.0  // 10 seconds between waves
+        state.nextWaveCountdown = BalanceConfig.Waves.waveCooldown
     }
 
     /// Update wave countdown

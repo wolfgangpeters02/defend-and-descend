@@ -5,12 +5,11 @@ import CoreGraphics
 
 struct GameConfigData: Codable {
     var weapons: [String: WeaponConfig]?  // Optional - weapons now defined via Protocols
-    var powerups: [String: PowerUpConfig]
     var arenas: [String: ArenaConfig]
     var enemies: [String: EnemyConfig]
     var spawning: SpawnConfig
     var upgrades: UpgradePool
-    var dungeonUpgrades: UpgradePool?  // Dungeon-only upgrades (lifesteal, thorns, phoenix, etc.)
+    var dungeonUpgrades: UpgradePool?  // Boss-only upgrades (lifesteal, thorns, phoenix, etc.)
 }
 
 // MARK: - Weapon Config
@@ -38,24 +37,6 @@ struct WeaponSpecial: Codable {
     var slow: Double?         // Slow amount for Ice weapons/towers
     var slowDuration: Double? // Duration of slow effect
     var chain: Int?           // Chain count for Lightning weapons/towers
-}
-
-// MARK: - PowerUp Config
-
-struct PowerUpConfig: Codable {
-    var id: String
-    var name: String
-    var description: String
-    var rarity: String
-    var icon: String
-    var effects: PowerUpEffects
-}
-
-struct PowerUpEffects: Codable {
-    var healthMultiplier: Double?
-    var damageMultiplier: Double?
-    var speedMultiplier: Double?
-    var startWithAbility: String?
 }
 
 // MARK: - Arena Config
@@ -232,10 +213,6 @@ class GameConfigLoader {
 
     func getWeapon(_ id: String) -> WeaponConfig? {
         return config?.weapons?[id]
-    }
-
-    func getPowerUp(_ id: String) -> PowerUpConfig? {
-        return config?.powerups[id]
     }
 
     func getArena(_ id: String) -> ArenaConfig? {

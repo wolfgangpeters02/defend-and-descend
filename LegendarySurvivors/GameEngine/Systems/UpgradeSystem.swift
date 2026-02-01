@@ -253,7 +253,7 @@ class UpgradeSystem {
     static func shouldTriggerUpgrade(state: GameState) -> Bool {
         // Arena mode: every 60 seconds
         if state.gameMode == .arena {
-            let expectedLevel = Int(state.timeElapsed / GameConstants.upgradeIntervalArena)
+            let expectedLevel = Int(state.timeElapsed / BalanceConfig.Timing.upgradeInterval)
             return expectedLevel > state.upgradeLevel && !state.pendingUpgrade
         }
 

@@ -71,11 +71,13 @@ class GameScene: SKScene {
     private var hashEarnedLabel: SKLabelNode?
     private var extractionLabel: SKLabelNode?
     private var lastHashEarned: Int = 0
+    private var lastEventTimeRemaining: Int = -1  // Cache event timer to avoid per-frame string allocation
 
     // Callbacks
     var onGameOver: ((GameState) -> Void)?
     var onStateUpdate: ((GameState) -> Void)?
     var onExtraction: (() -> Void)?  // Called when extraction button pressed
+    private var didCallGameOver = false  // Prevent calling onGameOver multiple times
 
     // Screen size for dynamic scaling
     private var screenSize: CGSize = .zero
@@ -359,7 +361,7 @@ class GameScene: SKScene {
         hudLayer.addChild(timerText)
 
         // Create kill counter (cached)
-        killText = SKLabelNode(text: "Kills: 0")
+        killText = SKLabelNode(text: L10n.Game.HUD.kills(0))
         killText.fontName = "Helvetica"
         killText.fontSize = 16
         killText.fontColor = .white
@@ -457,7 +459,7 @@ class GameScene: SKScene {
         addChild(hashEarnedLabel!)
 
         // Extraction available label (bottom center) - hidden until 3 min
-        extractionLabel = SKLabelNode(text: "⬆ EXTRACTION READY")
+        extractionLabel = SKLabelNode(text: L10n.Game.HUD.extractionReady)
         extractionLabel?.fontName = "Menlo-Bold"
         extractionLabel?.fontSize = 16
         extractionLabel?.fontColor = SKColor(red: 0.13, green: 0.77, blue: 0.37, alpha: 1) // #22c55e
@@ -563,8 +565,10 @@ class GameScene: SKScene {
         // Notify state update
         onStateUpdate?(gameState)
 
-        // Check game over
-        if gameState.isGameOver {
+        // Check game over (only call callback once)
+        if gameState.isGameOver && !didCallGameOver {
+            didCallGameOver = true
+            print("[GameScene] Game over! Victory=\(gameState.victory), calling onGameOver callback")
             onGameOver?(gameState)
         }
     }
@@ -576,6 +580,7 @@ class GameScene: SKScene {
         // Update time
         gameState.timeElapsed += context.deltaTime
         gameState.gameTime = gameState.timeElapsed
+        gameState.currentFrameTime = context.timestamp  // Store frame timestamp for consistent time checks
 
         // Initialize spatial grid for collision detection (Phase 3)
         if gameState.enemyGrid == nil {
@@ -611,7 +616,7 @@ class GameScene: SKScene {
             SpawnSystem.update(state: &gameState, context: context)
 
             // Spawn boss every 2 minutes in survival mode
-            if gameState.timeElapsed - gameState.lastBossSpawnTime >= GameConstants.bossSpawnInterval {
+            if gameState.timeElapsed - gameState.lastBossSpawnTime >= BalanceConfig.BossSurvivor.spawnInterval {
                 SpawnSystem.spawnBoss(state: &gameState, context: context)
             }
         }
@@ -688,7 +693,7 @@ class GameScene: SKScene {
         let bossConfig = config.getEnemy(bossId) ?? EnemyConfig(
             id: bossId,
             name: "Boss",
-            health: 10000,
+            health: 5000,
             speed: 80,
             damage: 50,
             coinValue: 100,
@@ -788,6 +793,81 @@ class GameScene: SKScene {
 
     private var bossMechanicNodes: [String: SKNode] = [:]
 
+    /// Efficiently find boss mechanic keys to remove (avoids per-key string allocation)
+    /// Uses dropFirst instead of replacingOccurrences for better performance
+    private func findKeysToRemove(prefix: String, activeIds: Set<String>) -> [String] {
+        let prefixCount = prefix.count
+        var keysToRemove: [String] = []
+        keysToRemove.reserveCapacity(bossMechanicNodes.count / 4)  // Preallocate estimate
+
+        for key in bossMechanicNodes.keys {
+            guard key.hasPrefix(prefix) else { continue }
+            let id = String(key.dropFirst(prefixCount))
+            if !activeIds.contains(id) {
+                keysToRemove.append(key)
+            }
+        }
+        return keysToRemove
+    }
+
+    // Cached SKActions for boss mechanics (avoid recreating every frame)
+    private lazy var laserFlickerAction: SKAction = {
+        SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.8, duration: 0.08),
+            SKAction.fadeAlpha(to: 1.0, duration: 0.08)
+        ])
+    }()
+
+    private lazy var puddlePulseAction: SKAction = {
+        SKAction.sequence([
+            SKAction.scale(to: 1.15, duration: 0.3),
+            SKAction.scale(to: 1.0, duration: 0.3)
+        ])
+    }()
+
+    private lazy var voidZonePulseAction: SKAction = {
+        SKAction.sequence([
+            SKAction.scale(to: 1.1, duration: 0.4),
+            SKAction.scale(to: 1.0, duration: 0.4)
+        ])
+    }()
+
+    private lazy var pylonCrystalPulseAction: SKAction = {
+        SKAction.sequence([
+            SKAction.scale(to: 1.2, duration: 0.5),
+            SKAction.scale(to: 1.0, duration: 0.5)
+        ])
+    }()
+
+    private lazy var gravityWellRotateAction: SKAction = {
+        SKAction.rotate(byAngle: .pi * 2, duration: 3)
+    }()
+
+    private lazy var arenaBoundaryPulseAction: SKAction = {
+        SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.5, duration: 0.5),
+            SKAction.fadeAlpha(to: 1.0, duration: 0.5)
+        ])
+    }()
+
+    private lazy var chainsawRotateAction: SKAction = {
+        SKAction.rotate(byAngle: .pi * 2, duration: 0.8)
+    }()
+
+    private lazy var chainsawDangerPulseAction: SKAction = {
+        SKAction.sequence([
+            SKAction.scale(to: 1.1, duration: 0.2),
+            SKAction.scale(to: 1.0, duration: 0.2)
+        ])
+    }()
+
+    // Frame counter for visual update throttling
+    private var bossMechanicFrameCounter: Int = 0
+
+    // State caching for puddles/zones to avoid redundant color updates
+    private var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
+    private var zonePhaseCache: [String: Bool] = [:]       // id -> isActive
+
     private func renderBossMechanics() {
         // Render Cyberboss mechanics
         if let bossState = gameState.cyberbossState {
@@ -809,7 +889,18 @@ class GameScene: SKScene {
     private func cleanupBossNodes(prefix: String) {
         let keysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix(prefix) }
         for key in keysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+            if let node = bossMechanicNodes[key] {
+                // Determine pool type from key prefix
+                let poolType: String
+                if key.contains("puddle") { poolType = "boss_puddle" }
+                else if key.contains("laser") { poolType = "boss_laser" }
+                else if key.contains("zone") { poolType = "boss_zone" }
+                else if key.contains("pylon") { poolType = "boss_pylon" }
+                else if key.contains("rift") { poolType = "boss_rift" }
+                else if key.contains("well") { poolType = "boss_well" }
+                else { poolType = "boss_misc" }
+                nodePool.release(node, type: poolType)
+            }
             bossMechanicNodes.removeValue(forKey: key)
         }
     }
@@ -822,7 +913,7 @@ class GameScene: SKScene {
         // Render chainsaw effect for melee mode (Phase 1-2)
         renderChainsawEffect(bossState: bossState, boss: boss)
 
-        // Render damage puddles
+        // Render damage puddles (with state caching to avoid redundant color updates)
         var activePuddleIds = Set<String>()
         for puddle in bossState.damagePuddles {
             activePuddleIds.insert(puddle.id)
@@ -831,58 +922,71 @@ class GameScene: SKScene {
             let isWarningPhase = puddle.lifetime < puddle.warningDuration
             let isAboutToPop = puddle.lifetime > puddle.maxLifetime - 0.5
 
+            // Determine current phase for caching
+            let currentPhase: String
+            if isWarningPhase { currentPhase = "warning" }
+            else if isAboutToPop { currentPhase = "pop" }
+            else { currentPhase = "active" }
+
             if let node = bossMechanicNodes[nodeKey] as? SKShapeNode {
-                // Update existing node based on phase (using design system colors)
-                if isWarningPhase {
-                    // Warning phase - amber outline, subtle pulse
-                    node.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
-                    node.strokeColor = DesignColors.warningUI
-                    node.glowWidth = 3 + 3 * sin(CGFloat(puddle.lifetime * 6))
-                } else if isAboutToPop {
-                    // About to pop - danger red, high intensity
-                    node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.5)
-                    node.strokeColor = DesignColors.dangerUI
-                    node.glowWidth = 10
-                } else {
-                    // Active phase - danger fill at lower intensity
-                    node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.25)
-                    node.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
-                    node.glowWidth = 5
+                // Only update colors if phase changed (avoids redundant fillColor/strokeColor sets)
+                let cachedPhase = puddlePhaseCache[puddle.id]
+                if cachedPhase != currentPhase {
+                    puddlePhaseCache[puddle.id] = currentPhase
+
+                    if isWarningPhase {
+                        // Warning phase - amber outline, subtle pulse
+                        node.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
+                        node.strokeColor = DesignColors.warningUI
+                        node.lineWidth = 3
+                        node.glowWidth = 0  // Removed for performance
+                    } else if isAboutToPop {
+                        // About to pop - danger red, high intensity
+                        node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.5)
+                        node.strokeColor = DesignColors.dangerUI
+                        node.lineWidth = 5  // Thicker line instead of glow
+                        node.glowWidth = 0  // Removed for performance
+                    } else {
+                        // Active phase - danger fill at lower intensity
+                        node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.25)
+                        node.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
+                        node.lineWidth = 3
+                        node.glowWidth = 0  // Removed for performance
+                    }
                 }
             } else {
                 // Create new puddle node (starts in warning phase)
                 let puddleNode = SKShapeNode(circleOfRadius: puddle.radius)
                 puddleNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                 puddleNode.strokeColor = DesignColors.warningUI
-                puddleNode.lineWidth = 2
-                puddleNode.glowWidth = 3
+                puddleNode.lineWidth = 3
+                puddleNode.glowWidth = 0  // Removed for performance
                 // Convert to scene coordinates (flip Y)
                 puddleNode.position = CGPoint(x: puddle.x, y: gameState.arena.height - puddle.y)
                 puddleNode.zPosition = 5
                 puddleNode.name = nodeKey
 
-                // Add pulsing effect
-                let pulse = SKAction.sequence([
-                    SKAction.scale(to: 1.15, duration: 0.3),
-                    SKAction.scale(to: 1.0, duration: 0.3)
-                ])
-                puddleNode.run(SKAction.repeatForever(pulse))
+                // Add pulsing effect (use cached action)
+                puddleNode.run(SKAction.repeatForever(puddlePulseAction), withKey: "pulse")
 
                 addChild(puddleNode)
                 bossMechanicNodes[nodeKey] = puddleNode
             }
         }
 
-        // Remove puddles that no longer exist
-        let puddleKeysToRemove = bossMechanicNodes.keys.filter {
-            $0.hasPrefix("cyberboss_puddle_") && !activePuddleIds.contains($0.replacingOccurrences(of: "cyberboss_puddle_", with: ""))
-        }
-        for key in puddleKeysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+        // Remove puddles that no longer exist (release to pool for reuse)
+        let puddlePrefix = "cyberboss_puddle_"
+        for key in findKeysToRemove(prefix: puddlePrefix, activeIds: activePuddleIds) {
+            if let node = bossMechanicNodes[key] {
+                nodePool.release(node, type: "boss_puddle")
+            }
+            // Clear phase cache for removed puddle
+            let puddleId = String(key.dropFirst(puddlePrefix.count))
+            puddlePhaseCache.removeValue(forKey: puddleId)
             bossMechanicNodes.removeValue(forKey: key)
         }
 
-        // Render laser beams
+        // Render laser beams (optimized: use rotation instead of path rebuild)
         var activeLaserIds = Set<String>()
         for beam in bossState.laserBeams {
             activeLaserIds.insert(beam.id)
@@ -892,47 +996,44 @@ class GameScene: SKScene {
             let bossSceneX = boss.x
             let bossSceneY = gameState.arena.height - boss.y
 
-            let angleRad = beam.angle * .pi / 180
-            let endX = bossSceneX + cos(angleRad) * beam.length
-            let endY = bossSceneY + sin(angleRad) * beam.length
+            // Determine color based on warning vs active state
+            let laserColor: SKColor = beam.isActive ? DesignColors.dangerUI : SKColor.yellow
+            let laserWidth: CGFloat = beam.isActive ? 8 : 4  // Thicker line instead of glow
 
             if let node = bossMechanicNodes[nodeKey] as? SKShapeNode {
-                // Update existing laser position and rotation
-                let path = CGMutablePath()
-                path.move(to: CGPoint(x: bossSceneX, y: bossSceneY))
-                path.addLine(to: CGPoint(x: endX, y: endY))
-                node.path = path
+                // Update existing laser: position, rotation, and color
+                node.position = CGPoint(x: bossSceneX, y: bossSceneY)
+                node.zRotation = beam.angle * .pi / 180
+                node.strokeColor = laserColor
+                node.lineWidth = laserWidth
             } else {
-                // Create new laser beam node
+                // Create new laser beam node with horizontal path (rotated via zRotation)
                 let path = CGMutablePath()
-                path.move(to: CGPoint(x: bossSceneX, y: bossSceneY))
-                path.addLine(to: CGPoint(x: endX, y: endY))
+                path.move(to: CGPoint.zero)
+                path.addLine(to: CGPoint(x: beam.length, y: 0))
 
                 let laserNode = SKShapeNode(path: path)
-                laserNode.strokeColor = DesignColors.dangerUI
-                laserNode.lineWidth = 6
-                laserNode.glowWidth = 8
+                laserNode.strokeColor = laserColor
+                laserNode.lineWidth = laserWidth
+                laserNode.glowWidth = 0  // Removed for performance
                 laserNode.zPosition = 100
                 laserNode.name = nodeKey
+                laserNode.position = CGPoint(x: bossSceneX, y: bossSceneY)
+                laserNode.zRotation = beam.angle * .pi / 180
 
-                // Add subtle flicker effect
-                let flicker = SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0.8, duration: 0.08),
-                    SKAction.fadeAlpha(to: 1.0, duration: 0.08)
-                ])
-                laserNode.run(SKAction.repeatForever(flicker))
+                // Add subtle flicker effect (use cached action)
+                laserNode.run(SKAction.repeatForever(laserFlickerAction), withKey: "flicker")
 
                 addChild(laserNode)
                 bossMechanicNodes[nodeKey] = laserNode
             }
         }
 
-        // Remove lasers that no longer exist
-        let laserKeysToRemove = bossMechanicNodes.keys.filter {
-            $0.hasPrefix("cyberboss_laser_") && !activeLaserIds.contains($0.replacingOccurrences(of: "cyberboss_laser_", with: ""))
-        }
-        for key in laserKeysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+        // Remove lasers that no longer exist (release to pool for reuse)
+        for key in findKeysToRemove(prefix: "cyberboss_laser_", activeIds: activeLaserIds) {
+            if let node = bossMechanicNodes[key] {
+                nodePool.release(node, type: "boss_laser")
+            }
             bossMechanicNodes.removeValue(forKey: key)
         }
 
@@ -1005,16 +1106,11 @@ class GameScene: SKScene {
                 outerRing.name = "outerRing"
                 chainsawNode.addChild(outerRing)
 
-                // Rotation animation - fast spinning saw
-                let rotateAction = SKAction.rotate(byAngle: .pi * 2, duration: 0.8)
-                chainsawNode.run(SKAction.repeatForever(rotateAction), withKey: "rotate")
+                // Rotation animation - fast spinning saw (use cached action)
+                chainsawNode.run(SKAction.repeatForever(chainsawRotateAction), withKey: "rotate")
 
-                // Pulsing danger circle
-                let pulse = SKAction.sequence([
-                    SKAction.scale(to: 1.1, duration: 0.2),
-                    SKAction.scale(to: 1.0, duration: 0.2)
-                ])
-                dangerCircle.run(SKAction.repeatForever(pulse))
+                // Pulsing danger circle (use cached action)
+                dangerCircle.run(SKAction.repeatForever(chainsawDangerPulseAction), withKey: "pulse")
 
                 addChild(chainsawNode)
                 bossMechanicNodes[nodeKey] = chainsawNode
@@ -1035,21 +1131,27 @@ class GameScene: SKScene {
     // MARK: - Void Harbinger Rendering
 
     private func renderVoidHarbingerMechanics(bossState: VoidHarbingerAI.VoidHarbingerState) {
-        // Render void zones
+        // Render void zones (with state caching to avoid redundant color updates)
         var activeZoneIds = Set<String>()
         for zone in bossState.voidZones {
             activeZoneIds.insert(zone.id)
             let nodeKey = "voidharbinger_zone_\(zone.id)"
 
             if let node = bossMechanicNodes[nodeKey] as? SKShapeNode {
-                // Update existing node (using design system colors)
-                if zone.isActive {
-                    node.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.3)
-                    node.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
-                } else {
-                    // Warning phase - pulsing outline
-                    node.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
-                    node.strokeColor = DesignColors.warningUI
+                // Only update colors if active state changed
+                let cachedIsActive = zonePhaseCache[zone.id]
+                if cachedIsActive != zone.isActive {
+                    zonePhaseCache[zone.id] = zone.isActive
+
+                    if zone.isActive {
+                        node.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.3)
+                        node.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
+                        node.removeAction(forKey: "pulse")  // Stop warning pulse when active
+                    } else {
+                        // Warning phase - pulsing outline
+                        node.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
+                        node.strokeColor = DesignColors.warningUI
+                    }
                 }
             } else {
                 // Create new void zone node
@@ -1068,11 +1170,8 @@ class GameScene: SKScene {
                     // Warning phase
                     zoneNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                     zoneNode.strokeColor = DesignColors.warningUI
-                    let pulse = SKAction.sequence([
-                        SKAction.scale(to: 1.1, duration: 0.4),
-                        SKAction.scale(to: 1.0, duration: 0.4)
-                    ])
-                    zoneNode.run(SKAction.repeatForever(pulse))
+                    // Use cached action for pulse
+                    zoneNode.run(SKAction.repeatForever(voidZonePulseAction), withKey: "pulse")
                 }
 
                 addChild(zoneNode)
@@ -1080,12 +1179,15 @@ class GameScene: SKScene {
             }
         }
 
-        // Remove zones that no longer exist
-        let zoneKeysToRemove = bossMechanicNodes.keys.filter {
-            $0.hasPrefix("voidharbinger_zone_") && !activeZoneIds.contains($0.replacingOccurrences(of: "voidharbinger_zone_", with: ""))
-        }
-        for key in zoneKeysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+        // Remove zones that no longer exist (release to pool for reuse)
+        let zonePrefix = "voidharbinger_zone_"
+        for key in findKeysToRemove(prefix: zonePrefix, activeIds: activeZoneIds) {
+            if let node = bossMechanicNodes[key] {
+                nodePool.release(node, type: "boss_zone")
+            }
+            // Clear phase cache for removed zone
+            let zoneId = String(key.dropFirst(zonePrefix.count))
+            zonePhaseCache.removeValue(forKey: zoneId)
             bossMechanicNodes.removeValue(forKey: key)
         }
 
@@ -1140,28 +1242,244 @@ class GameScene: SKScene {
                 healthFill.name = "healthFill"
                 container.addChild(healthFill)
 
-                // Pulsing effect on crystal
-                let pulse = SKAction.sequence([
-                    SKAction.scale(to: 1.2, duration: 0.5),
-                    SKAction.scale(to: 1.0, duration: 0.5)
-                ])
-                crystal.run(SKAction.repeatForever(pulse))
+                // Pulsing effect on crystal (use cached action)
+                crystal.run(SKAction.repeatForever(pylonCrystalPulseAction), withKey: "pulse")
 
                 addChild(container)
                 bossMechanicNodes[nodeKey] = container
             }
         }
 
-        // Remove destroyed pylons
-        let pylonKeysToRemove = bossMechanicNodes.keys.filter {
-            $0.hasPrefix("voidharbinger_pylon_") && !activePylonIds.contains($0.replacingOccurrences(of: "voidharbinger_pylon_", with: ""))
-        }
-        for key in pylonKeysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+        // Remove destroyed pylons (release to pool for reuse)
+        for key in findKeysToRemove(prefix: "voidharbinger_pylon_", activeIds: activePylonIds) {
+            if let node = bossMechanicNodes[key] {
+                nodePool.release(node, type: "boss_pylon")
+            }
             bossMechanicNodes.removeValue(forKey: key)
         }
 
-        // Render void rifts (Phase 3+)
+        // Render shield around boss during Phase 2 (pylons provide shield)
+        let shieldKey = "voidharbinger_shield"
+        // Find boss position from enemies array
+        let bossEnemy = gameState.enemies.first { $0.isBoss && !$0.isDead }
+        if bossState.phase == 2 && bossState.isInvulnerable, let boss = bossEnemy {
+            let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
+
+            if let shieldNode = bossMechanicNodes[shieldKey] as? SKShapeNode {
+                shieldNode.position = bossScenePos
+            } else {
+                // Create hexagonal shield effect
+                let shieldRadius: CGFloat = 80
+                let hexPath = CGMutablePath()
+                for i in 0..<6 {
+                    let angle = CGFloat(i) * .pi / 3 - .pi / 6
+                    let point = CGPoint(
+                        x: cos(angle) * shieldRadius,
+                        y: sin(angle) * shieldRadius
+                    )
+                    if i == 0 {
+                        hexPath.move(to: point)
+                    } else {
+                        hexPath.addLine(to: point)
+                    }
+                }
+                hexPath.closeSubpath()
+
+                let shieldNode = SKShapeNode(path: hexPath)
+                shieldNode.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.15)
+                shieldNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
+                shieldNode.lineWidth = 3
+                shieldNode.glowWidth = 8
+                shieldNode.position = bossScenePos
+                shieldNode.zPosition = 45
+                shieldNode.name = shieldKey
+
+                // Pulsing shield animation
+                let shieldPulse = SKAction.sequence([
+                    SKAction.group([
+                        SKAction.scale(to: 1.08, duration: 0.8),
+                        SKAction.fadeAlpha(to: 0.7, duration: 0.8)
+                    ]),
+                    SKAction.group([
+                        SKAction.scale(to: 1.0, duration: 0.8),
+                        SKAction.fadeAlpha(to: 1.0, duration: 0.8)
+                    ])
+                ])
+                shieldNode.run(SKAction.repeatForever(shieldPulse), withKey: "pulse")
+
+                // Slow rotation
+                let rotation = SKAction.rotate(byAngle: .pi * 2, duration: 12)
+                shieldNode.run(SKAction.repeatForever(rotation), withKey: "rotate")
+
+                addChild(shieldNode)
+                bossMechanicNodes[shieldKey] = shieldNode
+            }
+        } else {
+            // Remove shield when not in Phase 2 or not invulnerable
+            if let shield = bossMechanicNodes[shieldKey] {
+                shield.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: shieldKey)
+            }
+        }
+
+        // Render energy lines from pylons to boss (Phase 2)
+        var activeLineIds = Set<String>()
+        if bossState.phase == 2, let boss = bossEnemy {
+            let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
+
+            for pylon in bossState.pylons where !pylon.isDestroyed {
+                activeLineIds.insert(pylon.id)
+                let lineKey = "voidharbinger_pylonline_\(pylon.id)"
+                let pylonScenePos = CGPoint(x: pylon.x, y: gameState.arena.height - pylon.y)
+
+                if let lineNode = bossMechanicNodes[lineKey] as? SKShapeNode {
+                    // Update line path to follow boss position
+                    let linePath = CGMutablePath()
+                    linePath.move(to: pylonScenePos)
+                    linePath.addLine(to: bossScenePos)
+                    lineNode.path = linePath
+                } else {
+                    // Create energy line from pylon to boss
+                    let linePath = CGMutablePath()
+                    linePath.move(to: pylonScenePos)
+                    linePath.addLine(to: bossScenePos)
+
+                    let lineNode = SKShapeNode(path: linePath)
+                    lineNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.6)
+                    lineNode.lineWidth = 2
+                    lineNode.glowWidth = 4
+                    lineNode.zPosition = 40
+                    lineNode.name = lineKey
+
+                    // Pulsing line animation (energy flow effect)
+                    let linePulse = SKAction.sequence([
+                        SKAction.fadeAlpha(to: 0.4, duration: 0.3),
+                        SKAction.fadeAlpha(to: 1.0, duration: 0.3)
+                    ])
+                    lineNode.run(SKAction.repeatForever(linePulse), withKey: "pulse")
+
+                    addChild(lineNode)
+                    bossMechanicNodes[lineKey] = lineNode
+                }
+            }
+        }
+
+        // Remove lines for destroyed pylons or when not in Phase 2
+        for key in findKeysToRemove(prefix: "voidharbinger_pylonline_", activeIds: activeLineIds) {
+            if let node = bossMechanicNodes[key] {
+                node.removeFromParent()
+            }
+            bossMechanicNodes.removeValue(forKey: key)
+        }
+
+        // Render pylon direction indicators (Phase 2 only) - help player find pylons
+        if bossState.phase == 2 && !bossState.pylons.filter({ !$0.isDestroyed }).isEmpty {
+            // Show hint text
+            let hintKey = "voidharbinger_pylon_hint"
+            if bossMechanicNodes[hintKey] == nil {
+                let hintLabel = SKLabelNode(text: "DESTROY THE PYLONS!")
+                hintLabel.fontName = "Menlo-Bold"
+                hintLabel.fontSize = 20
+                hintLabel.fontColor = DesignColors.warningUI
+                hintLabel.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height - 90)
+                hintLabel.zPosition = 200
+                hintLabel.name = hintKey
+
+                // Pulsing animation
+                let pulse = SKAction.sequence([
+                    SKAction.fadeAlpha(to: 0.5, duration: 0.5),
+                    SKAction.fadeAlpha(to: 1.0, duration: 0.5)
+                ])
+                hintLabel.run(SKAction.repeatForever(pulse), withKey: "pulse")
+
+                addChild(hintLabel)
+                bossMechanicNodes[hintKey] = hintLabel
+            }
+
+            // Show arrow indicators pointing to each pylon
+            let playerScenePos = CGPoint(x: gameState.player.x, y: gameState.arena.height - gameState.player.y)
+
+            for pylon in bossState.pylons where !pylon.isDestroyed {
+                let arrowKey = "voidharbinger_pylon_arrow_\(pylon.id)"
+                let pylonScenePos = CGPoint(x: pylon.x, y: gameState.arena.height - pylon.y)
+
+                // Calculate direction from player to pylon
+                let dx = pylonScenePos.x - playerScenePos.x
+                let dy = pylonScenePos.y - playerScenePos.y
+                let distance = sqrt(dx * dx + dy * dy)
+
+                // Only show arrow if pylon is far from player (off-screen or distant)
+                if distance > 200 {
+                    let angle = atan2(dy, dx)
+
+                    // Position arrow at edge of view near player, pointing toward pylon
+                    let arrowDistance: CGFloat = 120
+                    let arrowX = playerScenePos.x + cos(angle) * arrowDistance
+                    let arrowY = playerScenePos.y + sin(angle) * arrowDistance
+
+                    // Clamp to screen bounds
+                    let clampedX = max(50, min(gameState.arena.width - 50, arrowX))
+                    let clampedY = max(50, min(gameState.arena.height - 50, arrowY))
+
+                    if let arrow = bossMechanicNodes[arrowKey] as? SKShapeNode {
+                        arrow.position = CGPoint(x: clampedX, y: clampedY)
+                        arrow.zRotation = angle
+                    } else {
+                        // Create arrow pointing right (will be rotated)
+                        let arrowPath = CGMutablePath()
+                        arrowPath.move(to: CGPoint(x: -15, y: -8))
+                        arrowPath.addLine(to: CGPoint(x: 15, y: 0))
+                        arrowPath.addLine(to: CGPoint(x: -15, y: 8))
+                        arrowPath.addLine(to: CGPoint(x: -10, y: 0))
+                        arrowPath.closeSubpath()
+
+                        let arrowNode = SKShapeNode(path: arrowPath)
+                        arrowNode.fillColor = DesignColors.warningUI
+                        arrowNode.strokeColor = DesignColors.warningUI.withAlphaComponent(0.8)
+                        arrowNode.lineWidth = 2
+                        arrowNode.glowWidth = 4
+                        arrowNode.position = CGPoint(x: clampedX, y: clampedY)
+                        arrowNode.zRotation = angle
+                        arrowNode.zPosition = 150
+                        arrowNode.name = arrowKey
+
+                        // Pulsing animation
+                        let arrowPulse = SKAction.sequence([
+                            SKAction.scale(to: 1.2, duration: 0.3),
+                            SKAction.scale(to: 1.0, duration: 0.3)
+                        ])
+                        arrowNode.run(SKAction.repeatForever(arrowPulse), withKey: "pulse")
+
+                        addChild(arrowNode)
+                        bossMechanicNodes[arrowKey] = arrowNode
+                    }
+                } else {
+                    // Remove arrow if pylon is close
+                    if let arrow = bossMechanicNodes[arrowKey] {
+                        arrow.removeFromParent()
+                        bossMechanicNodes.removeValue(forKey: arrowKey)
+                    }
+                }
+            }
+        } else {
+            // Remove pylon indicators when not in Phase 2
+            let hintKey = "voidharbinger_pylon_hint"
+            if let hint = bossMechanicNodes[hintKey] {
+                hint.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: hintKey)
+            }
+
+            // Remove all pylon arrows
+            let arrowPrefix = "voidharbinger_pylon_arrow_"
+            for key in bossMechanicNodes.keys where key.hasPrefix(arrowPrefix) {
+                if let arrow = bossMechanicNodes[key] {
+                    arrow.removeFromParent()
+                }
+                bossMechanicNodes.removeValue(forKey: key)
+            }
+        }
+
+        // Render void rifts (Phase 3+) - optimized: use rotation instead of path rebuild
         var activeRiftIds = Set<String>()
         for rift in bossState.voidRifts {
             activeRiftIds.insert(rift.id)
@@ -1170,43 +1488,38 @@ class GameScene: SKScene {
             // Convert to scene coordinates (flip Y)
             let centerSceneX = bossState.arenaCenter.x
             let centerSceneY = gameState.arena.height - bossState.arenaCenter.y
-            let sceneCenter = CGPoint(x: centerSceneX, y: centerSceneY)
-
-            let angleRad = rift.angle * .pi / 180
-            let endX = centerSceneX + cos(angleRad) * 700
-            let endY = centerSceneY + sin(angleRad) * 700
 
             if let node = bossMechanicNodes[nodeKey] as? SKShapeNode {
-                // Update rift position
-                let path = CGMutablePath()
-                path.move(to: sceneCenter)
-                path.addLine(to: CGPoint(x: endX, y: endY))
-                node.path = path
+                // Update rift: just change rotation (no path rebuild)
+                node.position = CGPoint(x: centerSceneX, y: centerSceneY)
+                node.zRotation = rift.angle * .pi / 180
             } else {
-                // Create new rift node
+                // Create new rift node with horizontal path (rotated via zRotation)
+                let riftLength = BalanceConfig.VoidHarbinger.voidRiftLength
                 let path = CGMutablePath()
-                path.move(to: sceneCenter)
-                path.addLine(to: CGPoint(x: endX, y: endY))
+                path.move(to: CGPoint.zero)
+                path.addLine(to: CGPoint(x: riftLength, y: 0))
 
                 let riftNode = SKShapeNode(path: path)
                 riftNode.strokeColor = DesignColors.secondaryUI
                 riftNode.lineWidth = rift.width
-                riftNode.glowWidth = 15
+                riftNode.glowWidth = 6  // Reduced from 15 for performance
                 riftNode.alpha = 0.8
                 riftNode.zPosition = 10
                 riftNode.name = nodeKey
+                riftNode.position = CGPoint(x: centerSceneX, y: centerSceneY)
+                riftNode.zRotation = rift.angle * .pi / 180
 
                 addChild(riftNode)
                 bossMechanicNodes[nodeKey] = riftNode
             }
         }
 
-        // Remove rifts that no longer exist
-        let riftKeysToRemove = bossMechanicNodes.keys.filter {
-            $0.hasPrefix("voidharbinger_rift_") && !activeRiftIds.contains($0.replacingOccurrences(of: "voidharbinger_rift_", with: ""))
-        }
-        for key in riftKeysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+        // Remove rifts that no longer exist (release to pool for reuse)
+        for key in findKeysToRemove(prefix: "voidharbinger_rift_", activeIds: activeRiftIds) {
+            if let node = bossMechanicNodes[key] {
+                nodePool.release(node, type: "boss_rift")
+            }
             bossMechanicNodes.removeValue(forKey: key)
         }
 
@@ -1234,62 +1547,51 @@ class GameScene: SKScene {
                 innerCircle.glowWidth = 8
                 wellNode.addChild(innerCircle)
 
-                // Rotation animation
-                let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 3)
-                wellNode.run(SKAction.repeatForever(rotate))
+                // Rotation animation (use cached action)
+                wellNode.run(SKAction.repeatForever(gravityWellRotateAction), withKey: "rotate")
 
                 addChild(wellNode)
                 bossMechanicNodes[nodeKey] = wellNode
             }
         }
 
-        // Remove wells that no longer exist
-        let wellKeysToRemove = bossMechanicNodes.keys.filter {
-            $0.hasPrefix("voidharbinger_well_") && !activeWellIds.contains($0.replacingOccurrences(of: "voidharbinger_well_", with: ""))
-        }
-        for key in wellKeysToRemove {
-            bossMechanicNodes[key]?.removeFromParent()
+        // Remove wells that no longer exist (release to pool for reuse)
+        for key in findKeysToRemove(prefix: "voidharbinger_well_", activeIds: activeWellIds) {
+            if let node = bossMechanicNodes[key] {
+                nodePool.release(node, type: "boss_well")
+            }
             bossMechanicNodes.removeValue(forKey: key)
         }
 
-        // Render shrinking arena boundary (Phase 4)
+        // Render shrinking arena boundary (Phase 4) - optimized: use scale instead of path rebuild
         if bossState.phase == 4 {
             let arenaKey = "voidharbinger_arena"
             // Convert to scene coordinates (flip Y)
             let centerSceneY = gameState.arena.height - bossState.arenaCenter.y
 
-            if let node = bossMechanicNodes[arenaKey] as? SKShapeNode {
-                // Update arena size
-                let path = CGPath(ellipseIn: CGRect(
-                    x: bossState.arenaCenter.x - bossState.arenaRadius,
-                    y: centerSceneY - bossState.arenaRadius,
-                    width: bossState.arenaRadius * 2,
-                    height: bossState.arenaRadius * 2
-                ), transform: nil)
-                node.path = path
-            } else {
-                // Create arena boundary
-                let path = CGPath(ellipseIn: CGRect(
-                    x: bossState.arenaCenter.x - bossState.arenaRadius,
-                    y: centerSceneY - bossState.arenaRadius,
-                    width: bossState.arenaRadius * 2,
-                    height: bossState.arenaRadius * 2
-                ), transform: nil)
+            // Calculate scale based on current radius vs initial radius
+            let initialRadius = BalanceConfig.VoidHarbinger.arenaStartRadius
+            let currentScale = bossState.arenaRadius / initialRadius
 
-                let arenaNode = SKShapeNode(path: path)
+            if let node = bossMechanicNodes[arenaKey] as? SKShapeNode {
+                // Update arena size using scale (no path rebuild)
+                node.xScale = currentScale
+                node.yScale = currentScale
+            } else {
+                // Create arena boundary at full size (will be scaled down)
+                let arenaNode = SKShapeNode(circleOfRadius: initialRadius)
                 arenaNode.fillColor = SKColor.clear
                 arenaNode.strokeColor = DesignColors.dangerUI
                 arenaNode.lineWidth = 4
-                arenaNode.glowWidth = 8
+                arenaNode.glowWidth = 4  // Reduced from 8 for performance
                 arenaNode.zPosition = 3
                 arenaNode.name = arenaKey
+                arenaNode.position = CGPoint(x: bossState.arenaCenter.x, y: centerSceneY)
+                arenaNode.xScale = currentScale
+                arenaNode.yScale = currentScale
 
-                // Pulsing warning effect
-                let pulse = SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0.5, duration: 0.5),
-                    SKAction.fadeAlpha(to: 1.0, duration: 0.5)
-                ])
-                arenaNode.run(SKAction.repeatForever(pulse))
+                // Pulsing warning effect (use cached action)
+                arenaNode.run(SKAction.repeatForever(arenaBoundaryPulseAction), withKey: "pulse")
 
                 addChild(arenaNode)
                 bossMechanicNodes[arenaKey] = arenaNode
@@ -1312,10 +1614,10 @@ class GameScene: SKScene {
         let nodeKey = "\(bossType)_phase_indicator"
 
         if let label = bossMechanicNodes[nodeKey] as? SKLabelNode {
-            label.text = isInvulnerable ? "PHASE \(phase) - INVULNERABLE" : "PHASE \(phase)"
+            label.text = isInvulnerable ? L10n.Boss.phaseInvulnerable(phase) : L10n.Boss.phase(phase)
             label.fontColor = isInvulnerable ? DesignColors.warningUI : DesignColors.primaryUI
         } else {
-            let label = SKLabelNode(text: "PHASE \(phase)")
+            let label = SKLabelNode(text: L10n.Boss.phase(phase))
             label.fontName = "Menlo-Bold"
             label.fontSize = 18
             label.fontColor = DesignColors.primaryUI
@@ -1440,6 +1742,8 @@ class GameScene: SKScene {
                 combatText.showMiss(at: scenePosition)
             case .shield:
                 combatText.show("BLOCKED", type: .shield, at: scenePosition)
+            case .immune:
+                combatText.show("IMMUNE", type: .immune, at: scenePosition)
             }
 
             gameState.damageEvents[i].displayed = true
@@ -1740,10 +2044,14 @@ class GameScene: SKScene {
             eventAnnouncementLabel?.fontColor = eventBorderNode?.strokeColor ?? .white
             eventAnnouncementLabel?.alpha = 1
 
-            // Show event timer
+            // Show event timer (cached to avoid per-frame string allocation)
             if let endTime = gameState.eventEndTime {
                 let remaining = max(0, endTime - gameState.timeElapsed)
-                eventTimerLabel?.text = String(format: "%.1fs remaining", remaining)
+                let remainingTenths = Int(remaining * 10)  // Cache at 0.1s precision
+                if remainingTenths != lastEventTimeRemaining {
+                    lastEventTimeRemaining = remainingTenths
+                    eventTimerLabel?.text = String(format: "%.1fs remaining", remaining)
+                }
                 eventTimerLabel?.alpha = 1
             }
 
@@ -1759,6 +2067,7 @@ class GameScene: SKScene {
             eventTimerLabel?.alpha = 0
             healingZoneNode?.alpha = 0
             arenaOverlayNode?.alpha = 0
+            lastEventTimeRemaining = -1  // Reset cache when no event
 
             // Reset corrupted obstacle visuals
             resetCorruptedObstacles()
@@ -1931,7 +2240,7 @@ class GameScene: SKScene {
         let killCount = gameState.stats.enemiesKilled
         if killCount != lastKillCount {
             lastKillCount = killCount
-            killText?.text = "Kills: \(killCount)"
+            killText?.text = L10n.Game.HUD.kills(killCount)
         }
     }
 
@@ -1944,6 +2253,11 @@ class GameScene: SKScene {
         pickupNodes.removeAll()
         particleNodes.removeAll()
         pillarHealthBars.removeAll()
+        bossMechanicNodes.removeAll()
+
+        // Clear phase caches
+        puddlePhaseCache.removeAll()
+        zonePhaseCache.removeAll()
 
         // Clear node pool (Phase 5)
         nodePool?.clear()

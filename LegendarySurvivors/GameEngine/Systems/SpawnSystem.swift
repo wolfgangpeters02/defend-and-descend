@@ -64,13 +64,13 @@ class SpawnSystem {
 
         guard let bossConfig = config.getEnemy(type) else { return }
 
-        // Calculate boss HP based on player DPS
+        // Calculate boss HP with time-based scaling
         let minutesElapsed = state.timeElapsed / 60.0
-        let timeScaling = 1 + (minutesElapsed * 0.10)
+        let timeScaling = 1 + (minutesElapsed * BalanceConfig.BossSurvivor.healthScalingPerMinute)
 
         // Create custom boss config with scaled health
         var scaledConfig = bossConfig
-        scaledConfig.health = bossConfig.health * timeScaling * 10 // Scale boss health
+        scaledConfig.health = bossConfig.health * timeScaling * BalanceConfig.BossSurvivor.baseHealthMultiplier
 
         let boss = EnemySystem.spawnEnemy(state: &state, type: type, config: scaledConfig)
         state.enemies.append(boss)

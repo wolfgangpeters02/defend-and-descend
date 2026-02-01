@@ -47,15 +47,15 @@ final class SectorUnlockSystem {
 
         var statusMessage: String {
             if isAlreadyUnlocked {
-                return "Already decrypted"
+                return L10n.Sector.alreadyDecrypted
             }
             if !prerequisitesMet {
-                return "Requires: \(missingPrerequisites.joined(separator: ", "))"
+                return L10n.Sector.requires(missingPrerequisites.joined(separator: ", "))
             }
             if !canAfford {
-                return "Need \(unlockCost - currentHash) more Hash"
+                return L10n.Sector.needMoreHash(unlockCost - currentHash)
             }
-            return "Ready to decrypt"
+            return L10n.Sector.readyToDecrypt
         }
     }
 
@@ -70,7 +70,7 @@ final class SectorUnlockSystem {
         let isUnlocked = MegaBoardSystem.shared.isSectorUnlocked(sectorId, profile: profile)
         let currentHash = profile.hash
 
-        // Check prerequisites
+        // Check sector prerequisites (adjacent sectors)
         var missingPrereqs: [String] = []
         for prereqId in sector.prerequisiteSectorIds {
             if !MegaBoardSystem.shared.isSectorUnlocked(prereqId, profile: profile) {
@@ -80,6 +80,14 @@ final class SectorUnlockSystem {
             }
         }
 
+        // Check protocol requirements (schematic system)
+        let missingProtocols = SectorSchematicLibrary.missingProtocolNames(for: sectorId, profile: profile)
+        let protocolReqs = missingProtocols.map { "Compile: \($0)" }
+
+        // Combine all prerequisites
+        let allMissing = missingPrereqs + protocolReqs
+        let prerequisitesMet = allMissing.isEmpty
+
         return UnlockStatus(
             sectorId: sectorId,
             displayName: sector.displayName,
@@ -87,8 +95,8 @@ final class SectorUnlockSystem {
             unlockCost: sector.unlockCost,
             currentHash: currentHash,
             canAfford: currentHash >= sector.unlockCost,
-            prerequisitesMet: missingPrereqs.isEmpty,
-            missingPrerequisites: missingPrereqs,
+            prerequisitesMet: prerequisitesMet,
+            missingPrerequisites: allMissing,
             isAlreadyUnlocked: isUnlocked
         )
     }
@@ -115,7 +123,7 @@ final class SectorUnlockSystem {
 
         // Validate
         if status.isAlreadyUnlocked {
-            return .failure(sectorId: sectorId, reason: "Already decrypted")
+            return .failure(sectorId: sectorId, reason: L10n.Sector.alreadyDecrypted)
         }
 
         if !status.prerequisitesMet {
@@ -230,5 +238,65 @@ final class SectorUnlockSystem {
         let percentage = total > 0 ? Double(paid) / Double(total) * 100 : 0
 
         return (paid, total, percentage)
+    }
+
+    // MARK: - Boss Defeat & Visibility
+
+    /// Check if a district's boss has been defeated (visibility unlocked for next district)
+    func isDistrictBossDefeated(_ districtId: String, profile: PlayerProfile) -> Bool {
+        return profile.defeatedDistrictBosses.contains(districtId)
+    }
+
+    /// Check if a sector is visible (boss was defeated in previous sector or it's the starter)
+    func isSectorVisible(_ sectorId: String, profile: PlayerProfile) -> Bool {
+        // Starter sector is always visible
+        if sectorId == SectorID.power.rawValue {
+            return true
+        }
+
+        // Check if the previous sector's boss was defeated
+        if let previousDistrictId = TDBossSystem.previousDistrict(forDistrict: sectorId) {
+            return isDistrictBossDefeated(previousDistrictId, profile: profile)
+        }
+
+        return false
+    }
+
+    /// Record a district boss defeat (makes next district visible)
+    /// Returns the next district that became visible, if any
+    @discardableResult
+    func recordBossDefeat(_ districtId: String, profile: inout PlayerProfile) -> String? {
+        guard !profile.defeatedDistrictBosses.contains(districtId) else {
+            return nil  // Already defeated
+        }
+
+        profile.defeatedDistrictBosses.append(districtId)
+
+        // Get the next district that should become visible
+        let nextDistrict = TDBossSystem.nextDistrictAfterDefeat(districtId)
+
+        print("[SectorUnlockSystem] Boss in \(districtId) defeated - next district visible: \(nextDistrict ?? "none")")
+
+        return nextDistrict
+    }
+
+    /// Get all sectors that are visible (can be seen but may not be unlocked)
+    func getVisibleSectors(for profile: PlayerProfile) -> [MegaBoardSector] {
+        guard let config = MegaBoardSystem.shared.config else { return [] }
+
+        return config.sectors.filter { sector in
+            isSectorVisible(sector.id, profile: profile)
+        }
+    }
+
+    /// Get sectors that are visible but not yet unlocked (need Hash to unlock)
+    func getVisibleButLockedSectors(for profile: PlayerProfile) -> [MegaBoardSector] {
+        guard let config = MegaBoardSystem.shared.config else { return [] }
+
+        return config.sectors.filter { sector in
+            let isVisible = isSectorVisible(sector.id, profile: profile)
+            let isUnlocked = MegaBoardSystem.shared.isSectorUnlocked(sector.id, profile: profile)
+            return isVisible && !isUnlocked
+        }
     }
 }

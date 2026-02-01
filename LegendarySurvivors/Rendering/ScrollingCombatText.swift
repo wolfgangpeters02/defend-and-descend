@@ -17,6 +17,7 @@ enum SCTType {
     case currency            // Gold, currency/hash gained
     case miss                // Gray, missed/dodged
     case levelUp             // Rainbow/gold, level up
+    case immune              // Purple/magenta, immune to damage
 
     var color: UIColor {
         switch self {
@@ -32,6 +33,7 @@ enum SCTType {
         case .currency: return UIColor(hex: "fbbf24") ?? .yellow
         case .miss:     return UIColor(hex: "6b7280") ?? .gray
         case .levelUp:  return UIColor(hex: "fbbf24") ?? .yellow
+        case .immune:   return UIColor(hex: "d946ef") ?? .magenta
         }
     }
 
@@ -41,6 +43,7 @@ enum SCTType {
         case .execute:  return UIColor(hex: "ff0000") ?? .red
         case .levelUp:  return UIColor(hex: "ffffff") ?? .white
         case .healing:  return UIColor(hex: "00ff00") ?? .green
+        case .immune:   return UIColor(hex: "a855f7") ?? .purple
         default:        return color.withAlphaComponent(0.5)
         }
     }
@@ -49,6 +52,7 @@ enum SCTType {
         switch self {
         case .critical, .execute, .levelUp: return 18
         case .damage, .healing, .shield:    return 14
+        case .immune:                       return 16
         case .xp, .currency:                return 12
         default:                            return 13
         }
@@ -58,13 +62,14 @@ enum SCTType {
         switch self {
         case .critical, .execute, .levelUp: return .heavy
         case .damage, .healing:             return .bold
+        case .immune:                       return .heavy
         default:                            return .semibold
         }
     }
 
     var hasGlow: Bool {
         switch self {
-        case .critical, .execute, .levelUp, .healing: return true
+        case .critical, .execute, .levelUp, .healing, .immune: return true
         default: return false
         }
     }

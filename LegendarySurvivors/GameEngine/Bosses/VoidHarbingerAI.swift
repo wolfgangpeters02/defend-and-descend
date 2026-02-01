@@ -14,13 +14,13 @@ class VoidHarbingerAI {
         // Phase 1
         var voidZones: [VoidZone] = []
         var lastVoidZoneTime: Double = 0
-        var voidZoneInterval: Double = 8.0
+        var voidZoneInterval: Double = BalanceConfig.VoidHarbinger.voidZoneIntervalPhase1
 
         var lastVolleyTime: Double = 0
-        var volleyInterval: Double = 6.0
+        var volleyInterval: Double = BalanceConfig.VoidHarbinger.volleyInterval
 
         var lastMinionSpawnTime: Double = 0
-        var minionSpawnInterval: Double = 15.0
+        var minionSpawnInterval: Double = BalanceConfig.VoidHarbinger.minionSpawnInterval
 
         // Phase 2 (Pylon phase)
         var pylons: [Pylon] = []
@@ -31,18 +31,18 @@ class VoidHarbingerAI {
         var voidRifts: [VoidRift] = []
         var gravityWells: [GravityWell] = []
         var lastMeteorTime: Double = 0
-        var meteorInterval: Double = 6.0
+        var meteorInterval: Double = BalanceConfig.VoidHarbinger.meteorInterval
 
         var lastEliteMinionTime: Double = 0
-        var eliteMinionInterval: Double = 20.0
+        var eliteMinionInterval: Double = BalanceConfig.VoidHarbinger.eliteMinionInterval
 
         // Phase 4 (Enrage)
         var lastTeleportTime: Double = 0
-        var teleportInterval: Double = 3.0
+        var teleportInterval: Double = BalanceConfig.VoidHarbinger.teleportInterval
 
-        var arenaRadius: CGFloat = 1500
-        var minArenaRadius: CGFloat = 150
-        var arenaShrinkRate: CGFloat = 30 // pixels per second
+        var arenaRadius: CGFloat = BalanceConfig.VoidHarbinger.arenaStartRadius
+        var minArenaRadius: CGFloat = BalanceConfig.VoidHarbinger.arenaMinRadius
+        var arenaShrinkRate: CGFloat = BalanceConfig.VoidHarbinger.arenaShrinkRate
         var arenaCenter: CGPoint = .zero
     }
 
@@ -115,19 +115,19 @@ class VoidHarbingerAI {
         // Determine phase based on health
         let healthPercent = boss.health / boss.maxHealth
 
-        if healthPercent <= 0.1 {
+        if healthPercent <= BalanceConfig.VoidHarbinger.phase4Threshold {
             if bossState.phase != 4 {
                 enterPhase4(bossState: &bossState, boss: boss)
             }
             bossState.phase = 4
-        } else if healthPercent <= 0.4 {
+        } else if healthPercent <= BalanceConfig.VoidHarbinger.phase3Threshold {
             if bossState.phase != 3 {
                 enterPhase3(bossState: &bossState, boss: boss)
             }
             bossState.phase = 3
-        } else if healthPercent <= 0.7 {
+        } else if healthPercent <= BalanceConfig.VoidHarbinger.phase2Threshold {
             if bossState.phase != 2 && bossState.pylonsDestroyed < 4 {
-                enterPhase2(bossState: &bossState, boss: boss, gameState: gameState)
+                enterPhase2(bossState: &bossState, boss: boss, gameState: &gameState)
             }
             // Stay in phase 2 until all pylons destroyed
             if bossState.phase == 2 && bossState.pylonsDestroyed >= 4 {
@@ -150,6 +150,9 @@ class VoidHarbingerAI {
         default:
             break
         }
+
+        // Apply movement (convert velocity to position)
+        applyMovement(boss: &boss, gameState: &gameState, deltaTime: deltaTime)
 
         // Update void zones
         updateVoidZones(bossState: &bossState, gameState: &gameState, deltaTime: deltaTime)
@@ -174,7 +177,7 @@ class VoidHarbingerAI {
     private static func enterPhase2(
         bossState: inout VoidHarbingerState,
         boss: Enemy,
-        gameState: GameState
+        gameState: inout GameState
     ) {
         bossState.isInvulnerable = true
         bossState.pylonsDestroyed = 0
@@ -194,57 +197,79 @@ class VoidHarbingerAI {
         ]
 
         for pos in pylonPositions {
+            let pylonId = RandomUtils.generateId()
+
+            // Add pylon to boss state (for tracking beams, etc.)
             bossState.pylons.append(Pylon(
-                id: RandomUtils.generateId(),
+                id: pylonId,
                 x: pos.0,
                 y: pos.1,
-                health: 500,
-                maxHealth: 500,
+                health: BalanceConfig.VoidHarbinger.pylonHealth,
+                maxHealth: BalanceConfig.VoidHarbinger.pylonHealth,
                 lastBeamTime: 0,
-                beamInterval: 3.0,
+                beamInterval: BalanceConfig.VoidHarbinger.pylonBeamInterval,
                 isDestroyed: false
             ))
+
+            // ALSO spawn as Enemy so auto-targeting works
+            var pylonEnemy = Enemy(
+                id: pylonId,  // Same ID as pylon for easy linking
+                type: "void_pylon",
+                x: pos.0,
+                y: pos.1,
+                health: BalanceConfig.VoidHarbinger.pylonHealth,
+                maxHealth: BalanceConfig.VoidHarbinger.pylonHealth,
+                damage: 0,  // Pylons don't deal contact damage
+                speed: 0,   // Pylons don't move
+                xpValue: 10,
+                color: "#aa00ff"
+            )
+            pylonEnemy.pylonId = pylonId
+            pylonEnemy.size = 40  // Collision size for targeting
+            gameState.enemies.append(pylonEnemy)
         }
     }
 
     private static func enterPhase3(bossState: inout VoidHarbingerState, boss: Enemy) {
         bossState.isInvulnerable = false
 
-        // Create 3 rotating void rifts
+        // Create rotating void rifts
+        let riftCount = BalanceConfig.VoidHarbinger.voidRiftCount
+        let angleStep = 360.0 / CGFloat(riftCount)
         bossState.voidRifts = []
-        for i in 0..<3 {
+        for i in 0..<riftCount {
             bossState.voidRifts.append(VoidRift(
                 id: RandomUtils.generateId(),
-                angle: CGFloat(i) * 120,
+                angle: CGFloat(i) * angleStep,
                 distanceFromCenter: 200,
-                rotationSpeed: 45,
-                width: 40,
-                damage: 50
+                rotationSpeed: BalanceConfig.VoidHarbinger.voidRiftRotationSpeed,
+                width: BalanceConfig.VoidHarbinger.voidRiftWidth,
+                damage: BalanceConfig.VoidHarbinger.voidRiftDamage
             ))
         }
 
-        // Create 2 gravity wells
+        // Create gravity wells
         bossState.gravityWells = [
             GravityWell(
                 id: RandomUtils.generateId(),
                 x: bossState.arenaCenter.x - 300,
                 y: bossState.arenaCenter.y,
-                pullRadius: 250,
-                pullStrength: 50
+                pullRadius: BalanceConfig.VoidHarbinger.gravityWellPullRadius,
+                pullStrength: BalanceConfig.VoidHarbinger.gravityWellPullStrength
             ),
             GravityWell(
                 id: RandomUtils.generateId(),
                 x: bossState.arenaCenter.x + 300,
                 y: bossState.arenaCenter.y,
-                pullRadius: 250,
-                pullStrength: 50
+                pullRadius: BalanceConfig.VoidHarbinger.gravityWellPullRadius,
+                pullStrength: BalanceConfig.VoidHarbinger.gravityWellPullStrength
             )
         ]
     }
 
     private static func enterPhase4(bossState: inout VoidHarbingerState, boss: Enemy) {
         // Start shrinking arena
-        bossState.voidZoneInterval = 2.0 // Faster void zones
+        bossState.voidZoneInterval = BalanceConfig.VoidHarbinger.voidZoneIntervalPhase4
     }
 
     // MARK: - Phase Updates
@@ -273,7 +298,7 @@ class VoidHarbingerAI {
         // Spawn minions
         if gameState.gameTime - bossState.lastMinionSpawnTime >= bossState.minionSpawnInterval {
             bossState.lastMinionSpawnTime = gameState.gameTime
-            spawnVoidMinions(count: 4, near: boss, gameState: &gameState)
+            spawnVoidMinions(count: BalanceConfig.VoidHarbinger.minionCount, near: boss, gameState: &gameState)
         }
     }
 
@@ -317,8 +342,8 @@ class VoidHarbingerAI {
                 at: CGPoint(x: gameState.player.x + CGFloat.random(in: -100...100),
                            y: gameState.player.y + CGFloat.random(in: -100...100)),
                 bossState: &bossState,
-                radius: 100,
-                damage: 80
+                radius: BalanceConfig.VoidHarbinger.meteorRadius,
+                damage: BalanceConfig.VoidHarbinger.meteorDamage
             )
         }
 
@@ -368,21 +393,45 @@ class VoidHarbingerAI {
         boss.y = bossState.arenaCenter.y + CGFloat.random(in: -maxOffset...maxOffset)
     }
 
+    /// Apply velocity to position (with arena bounds checking)
+    private static func applyMovement(
+        boss: inout Enemy,
+        gameState: inout GameState,
+        deltaTime: TimeInterval
+    ) {
+        // Calculate new position from velocity
+        let moveX = boss.velocityX * CGFloat(deltaTime)
+        let moveY = boss.velocityY * CGFloat(deltaTime)
+
+        var newX = boss.x + moveX
+        var newY = boss.y + moveY
+
+        let bossSize = boss.size ?? 60
+
+        // Keep boss within arena bounds
+        let margin: CGFloat = bossSize
+        newX = max(margin, min(gameState.arena.width - margin, newX))
+        newY = max(margin, min(gameState.arena.height - margin, newY))
+
+        boss.x = newX
+        boss.y = newY
+    }
+
     // MARK: - Attacks
 
     private static func spawnVoidZone(
         at position: CGPoint,
         bossState: inout VoidHarbingerState,
-        radius: CGFloat = 80,
-        damage: CGFloat = 40
+        radius: CGFloat = BalanceConfig.VoidHarbinger.voidZoneRadius,
+        damage: CGFloat = BalanceConfig.VoidHarbinger.voidZoneDamage
     ) {
         let zone = VoidZone(
             id: RandomUtils.generateId(),
             x: position.x,
             y: position.y,
             radius: radius,
-            warningTime: 2.0,
-            activeTime: 5.0,
+            warningTime: BalanceConfig.VoidHarbinger.voidZoneWarningTime,
+            activeTime: BalanceConfig.VoidHarbinger.voidZoneActiveTime,
             lifetime: 0,
             isActive: false,
             damage: damage
@@ -391,8 +440,8 @@ class VoidHarbingerAI {
     }
 
     private static func fireShadowBoltVolley(boss: Enemy, gameState: inout GameState) {
-        // Fire 8 projectiles in a spread
-        let projectileCount = 8
+        // Fire projectiles in a spread
+        let projectileCount = BalanceConfig.VoidHarbinger.volleyProjectileCount
         let baseAngle = atan2(gameState.player.y - boss.y, gameState.player.x - boss.x)
 
         for i in 0..<projectileCount {
@@ -404,10 +453,10 @@ class VoidHarbingerAI {
                 weaponId: "void_bolt",
                 x: boss.x,
                 y: boss.y,
-                velocityX: cos(angle) * 350,
-                velocityY: sin(angle) * 350,
-                damage: 20,
-                radius: 10,
+                velocityX: cos(angle) * BalanceConfig.VoidHarbinger.volleyProjectileSpeed,
+                velocityY: sin(angle) * BalanceConfig.VoidHarbinger.volleyProjectileSpeed,
+                damage: BalanceConfig.VoidHarbinger.volleyProjectileDamage,
+                radius: BalanceConfig.VoidHarbinger.volleyProjectileRadius,
                 color: "#8800ff",
                 lifetime: 4.0,
                 piercing: 0,
@@ -434,11 +483,11 @@ class VoidHarbingerAI {
                 type: "void_minion",
                 x: x,
                 y: y,
-                health: 30,
-                maxHealth: 30,
-                damage: 10,
-                speed: 120,
-                xpValue: 5,
+                health: BalanceConfig.VoidHarbinger.minionHealth,
+                maxHealth: BalanceConfig.VoidHarbinger.minionHealth,
+                damage: BalanceConfig.VoidHarbinger.minionDamage,
+                speed: BalanceConfig.VoidHarbinger.minionSpeed,
+                xpValue: BalanceConfig.VoidHarbinger.minionXP,
                 color: "#6600aa",
                 velocityX: 0,
                 velocityY: 0
@@ -456,11 +505,11 @@ class VoidHarbingerAI {
             type: "void_elite",
             x: boss.x + cos(angle) * distance,
             y: boss.y + sin(angle) * distance,
-            health: 200,
-            maxHealth: 200,
-            damage: 25,
-            speed: 80,
-            xpValue: 50,
+            health: BalanceConfig.VoidHarbinger.eliteMinionHealth,
+            maxHealth: BalanceConfig.VoidHarbinger.eliteMinionHealth,
+            damage: BalanceConfig.VoidHarbinger.eliteMinionDamage,
+            speed: BalanceConfig.VoidHarbinger.eliteMinionSpeed,
+            xpValue: BalanceConfig.VoidHarbinger.eliteMinionXP,
             color: "#aa00ff",
             velocityX: 0,
             velocityY: 0
@@ -496,7 +545,7 @@ class VoidHarbingerAI {
                 let distance = sqrt(dx * dx + dy * dy)
 
                 if distance < mutableZone.radius &&
-                   gameState.player.invulnerableUntil < gameState.gameTime {
+                   gameState.player.invulnerableUntil < gameState.currentFrameTime {
                     gameState.player.health -= mutableZone.damage * CGFloat(deltaTime)
 
                     // Check for death
@@ -549,16 +598,16 @@ class VoidHarbingerAI {
                 weaponId: "pylon_beam",
                 x: pylon.x,
                 y: pylon.y,
-                velocityX: (dx / distance) * 400,
-                velocityY: (dy / distance) * 400,
-                damage: 30,
-                radius: 8,
+                velocityX: (dx / distance) * BalanceConfig.VoidHarbinger.pylonBeamSpeed,
+                velocityY: (dy / distance) * BalanceConfig.VoidHarbinger.pylonBeamSpeed,
+                damage: BalanceConfig.VoidHarbinger.pylonBeamDamage,
+                radius: BalanceConfig.VoidHarbinger.pylonBeamRadius,
                 color: "#ff00aa",
                 lifetime: 3.0,
                 piercing: 0,
                 hitEnemies: [],
                 isHoming: true,
-                homingStrength: 2.0,
+                homingStrength: BalanceConfig.VoidHarbinger.pylonBeamHomingStrength,
                 isEnemyProjectile: true
             )
             gameState.projectiles.append(projectile)
@@ -600,11 +649,11 @@ class VoidHarbingerAI {
             let rift = bossState.voidRifts[i]
             let angleRad = rift.angle * .pi / 180
 
-            // Rift extends from center (increased length for larger arena)
+            // Rift extends from center
             let riftStartX = center.x
             let riftStartY = center.y
-            let riftEndX = center.x + cos(angleRad) * 700  // Increased from 500
-            let riftEndY = center.y + sin(angleRad) * 700
+            let riftEndX = center.x + cos(angleRad) * BalanceConfig.VoidHarbinger.voidRiftLength
+            let riftEndY = center.y + sin(angleRad) * BalanceConfig.VoidHarbinger.voidRiftLength
 
             let distance = pointToLineDistance(
                 px: gameState.player.x, py: gameState.player.y,
@@ -612,8 +661,8 @@ class VoidHarbingerAI {
                 x2: riftEndX, y2: riftEndY
             )
 
-            if distance < rift.width / 2 + 15 && // 15 = player radius
-               gameState.player.invulnerableUntil < gameState.gameTime {
+            if distance < rift.width / 2 + BalanceConfig.Player.size &&
+               gameState.player.invulnerableUntil < gameState.currentFrameTime {
                 gameState.player.health -= rift.damage * CGFloat(deltaTime)
 
                 // Check for death
@@ -690,8 +739,8 @@ class VoidHarbingerAI {
         let distanceFromCenter = sqrt(dx * dx + dy * dy)
 
         if distanceFromCenter > bossState.arenaRadius {
-            // 40 damage per second outside
-            gameState.player.health -= 40 * CGFloat(deltaTime)
+            // Damage per second outside
+            gameState.player.health -= BalanceConfig.VoidHarbinger.outsideArenaDPS * CGFloat(deltaTime)
 
             // Check for death
             if gameState.player.health <= 0 {
@@ -702,7 +751,7 @@ class VoidHarbingerAI {
 
             // Push player back towards center
             if distanceFromCenter > 0 {
-                let pushStrength: CGFloat = 100
+                let pushStrength = BalanceConfig.VoidHarbinger.outsideArenaPushStrength
                 gameState.player.x -= (dx / distanceFromCenter) * pushStrength * CGFloat(deltaTime)
                 gameState.player.y -= (dy / distanceFromCenter) * pushStrength * CGFloat(deltaTime)
             }

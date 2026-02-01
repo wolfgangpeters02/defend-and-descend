@@ -64,12 +64,7 @@ class TowerSystem {
 
     /// Calculate tower placement cost based on rarity
     static func towerPlacementCost(rarity: Rarity) -> Int {
-        switch rarity {
-        case .common: return 50
-        case .rare: return 100
-        case .epic: return 200
-        case .legendary: return 400
-        }
+        return BalanceConfig.towerCost(rarity: rarity)
     }
 
     // MARK: - Protocol-Based Tower Placement (System: Reboot)
@@ -170,10 +165,10 @@ class TowerSystem {
 
         let tower = state.towers[towerIndex]
 
-        // Calculate refund (50% of total investment)
+        // Calculate refund based on total investment
         let baseCost = towerPlacementCost(rarity: tower.rarity)
-        let upgradeInvestment = (tower.level - 1) * 75  // Approximate upgrade costs
-        let refund = (baseCost + upgradeInvestment) / 2
+        let upgradeInvestment = (tower.level - 1) * BalanceConfig.Towers.upgradeInvestmentPerLevel
+        let refund = Int(CGFloat(baseCost + upgradeInvestment) * BalanceConfig.Towers.refundRate)
 
         // Free up slot
         if let slotIndex = state.towerSlots.firstIndex(where: { $0.id == tower.slotId }) {
@@ -186,79 +181,6 @@ class TowerSystem {
         let actualRefund = state.addHash(refund)
 
         return actualRefund
-    }
-
-    // MARK: - Tower Merging
-
-    /// Attempt to merge two towers (source merges INTO target)
-    static func mergeTowers(
-        state: inout TDGameState,
-        sourceTowerId: String,
-        targetTowerId: String
-    ) -> TowerMergeResult {
-        // Find both towers
-        guard let sourceIndex = state.towers.firstIndex(where: { $0.id == sourceTowerId }),
-              let targetIndex = state.towers.firstIndex(where: { $0.id == targetTowerId }) else {
-            return .cannotMerge
-        }
-
-        let sourceTower = state.towers[sourceIndex]
-        let targetTower = state.towers[targetIndex]
-
-        // Validate merge
-        if sourceTower.id == targetTower.id {
-            return .sameTower
-        }
-
-        if sourceTower.weaponType != targetTower.weaponType {
-            return .differentTypes
-        }
-
-        if sourceTower.mergeLevel != targetTower.mergeLevel {
-            return .differentMergeLevels
-        }
-
-        if !targetTower.canMerge {
-            return .maxMergeLevel
-        }
-
-        // Perform merge: upgrade target, remove source
-        let sourceSlotId = sourceTower.slotId
-
-        // Apply merge bonus to target tower
-        state.towers[targetIndex].applyMerge()
-
-        // Free up source slot
-        if let slotIndex = state.towerSlots.firstIndex(where: { $0.id == sourceSlotId }) {
-            state.towerSlots[slotIndex].occupied = false
-            state.towerSlots[slotIndex].towerId = nil
-        }
-
-        // Remove source tower (get updated index since array may have shifted)
-        if let newSourceIndex = state.towers.firstIndex(where: { $0.id == sourceTowerId }) {
-            state.towers.remove(at: newSourceIndex)
-        }
-
-        // Update stats
-        state.stats.towersUpgraded += 1
-
-        // Return success with the merged tower
-        let mergedTower = state.towers.first(where: { $0.id == targetTowerId })!
-        return .success(mergedTower: mergedTower, freedSlotId: sourceSlotId)
-    }
-
-    /// Find valid merge targets for a tower
-    static func findMergeTargets(state: TDGameState, towerId: String) -> [Tower] {
-        guard let tower = state.towers.first(where: { $0.id == towerId }) else {
-            return []
-        }
-
-        return state.towers.filter { tower.canMergeWith($0) }
-    }
-
-    /// Check if a tower can merge with any other tower
-    static func canMergeWithAny(state: TDGameState, towerId: String) -> Bool {
-        return !findMergeTargets(state: state, towerId: towerId).isEmpty
     }
 
     // MARK: - Tower Targeting
@@ -332,7 +254,7 @@ class TowerSystem {
         guard currentTime - tower.lastAttackTime >= attackInterval else { return }
 
         // Calculate lead targeting (predict where enemy will be)
-        let projectileSpeed: CGFloat = 600  // Faster projectiles for better hit rate
+        let projectileSpeed = BalanceConfig.Towers.projectileSpeed
 
         // Estimate enemy velocity from path direction
         let path = state.paths.indices.contains(target.pathIndex) ? state.paths[target.pathIndex] : nil
@@ -355,7 +277,7 @@ class TowerSystem {
 
         // Fire projectile(s)
         let projectileCount = tower.projectileCount
-        let spreadAngle: CGFloat = projectileCount > 1 ? 0.15 : 0  // Tighter spread
+        let spreadAngle: CGFloat = projectileCount > 1 ? BalanceConfig.Towers.multiShotSpreadAngle : 0
 
         for p in 0..<projectileCount {
             let angleOffset = (CGFloat(p) - CGFloat(projectileCount - 1) / 2) * spreadAngle
@@ -418,7 +340,7 @@ class TowerSystem {
         let timeToTarget = distance / projectileSpeed
 
         // Predict where enemy will be (with a cap to avoid overshooting)
-        let predictionTime = min(timeToTarget, 0.8)  // Cap at 0.8 seconds
+        let predictionTime = min(timeToTarget, BalanceConfig.Towers.maxPredictionTime)
         let predictedX = targetPos.x + targetVelocity.x * predictionTime
         let predictedY = targetPos.y + targetVelocity.y * predictionTime
 
@@ -444,13 +366,13 @@ class TowerSystem {
             velocityX: velocityX,
             velocityY: velocityY,
             damage: tower.damage,
-            radius: 8,  // Slightly larger hitbox for better hit detection
+            radius: BalanceConfig.Towers.projectileHitboxRadius,
             color: tower.color,
-            lifetime: 3.0,
+            lifetime: BalanceConfig.Towers.projectileLifetime,
             piercing: tower.pierce,
             hitEnemies: [],
             isHoming: tower.homing,
-            homingStrength: tower.homing ? 8.0 : 0,  // Stronger homing
+            homingStrength: tower.homing ? BalanceConfig.Towers.homingStrength : 0,
             isEnemyProjectile: false,
             targetId: tower.homing ? target.id : nil,
             speed: projectileSpeed,
