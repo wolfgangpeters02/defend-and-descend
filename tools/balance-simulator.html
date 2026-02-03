@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Defend & Descend - Balance Simulator</title>
+    <title>System: Reboot - Balance Simulator</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -15,6 +15,7 @@
             --accent-green: #22c55e;
             --accent-red: #ef4444;
             --accent-yellow: #eab308;
+            --accent-orange: #f97316;
             --text-primary: #e4e4e7;
             --text-secondary: #a1a1aa;
             --border: #27272a;
@@ -60,6 +61,7 @@
             cursor: pointer;
             color: var(--text-secondary);
             transition: all 0.2s;
+            font-size: 13px;
         }
 
         .tab:hover { border-color: var(--accent-cyan); }
@@ -74,7 +76,7 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 20px;
             margin-bottom: 20px;
         }
@@ -94,35 +96,27 @@
             letter-spacing: 1px;
         }
 
-        .section-intro {
-            background: var(--bg-input);
+        .cause-effect {
+            background: linear-gradient(90deg, var(--bg-input) 0%, rgba(0,212,255,0.1) 100%);
             border-left: 3px solid var(--accent-cyan);
-            padding: 15px;
+            padding: 12px 15px;
             margin-bottom: 20px;
             border-radius: 0 8px 8px 0;
-            font-size: 13px;
-            line-height: 1.6;
         }
 
-        .section-intro h2 {
-            color: var(--accent-cyan);
-            font-size: 16px;
-            margin-bottom: 10px;
-        }
-
-        .section-intro p {
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .section-intro .formula {
-            background: var(--bg-dark);
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-family: inherit;
+        .cause-effect .cause {
             color: var(--accent-yellow);
-            margin: 8px 0;
-            display: inline-block;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .cause-effect .effect {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .cause-effect .effect strong {
+            color: var(--accent-green);
         }
 
         .input-group {
@@ -136,13 +130,7 @@
             margin-bottom: 4px;
         }
 
-        .input-group .input-help {
-            font-size: 10px;
-            color: #666;
-            margin-top: 2px;
-        }
-
-        .input-group input {
+        .input-group input, .input-group select {
             width: 100%;
             padding: 8px 12px;
             background: var(--bg-input);
@@ -153,7 +141,7 @@
             font-size: 14px;
         }
 
-        .input-group input:focus {
+        .input-group input:focus, .input-group select:focus {
             outline: none;
             border-color: var(--accent-cyan);
         }
@@ -169,36 +157,6 @@
             position: relative;
             height: 300px;
             margin-top: 15px;
-        }
-
-        .chart-container.tall { height: 400px; }
-
-        .chart-description {
-            background: var(--bg-input);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        .chart-description strong {
-            color: var(--accent-cyan);
-        }
-
-        .chart-description .legend-item {
-            display: inline-flex;
-            align-items: center;
-            margin-right: 15px;
-            margin-top: 8px;
-        }
-
-        .chart-description .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            margin-right: 6px;
         }
 
         button {
@@ -226,93 +184,85 @@
             margin-top: 15px;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 12px;
         }
 
-        .stat-box {
+        .result-table th {
+            text-align: left;
+            padding: 10px 8px;
             background: var(--bg-input);
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 20px;
-            font-weight: bold;
             color: var(--accent-cyan);
+            border-bottom: 1px solid var(--border);
         }
 
-        .stat-label {
-            font-size: 10px;
-            color: var(--text-secondary);
-            margin-top: 4px;
+        .result-table td {
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .stat-help {
-            font-size: 9px;
-            color: #555;
-            margin-top: 2px;
+        .result-table tr:hover {
+            background: rgba(0,212,255,0.05);
         }
 
-        .simulation-log {
+        .result-table .highlight {
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+
+        .result-table .warning {
+            color: var(--accent-yellow);
+        }
+
+        .result-table .danger {
+            color: var(--accent-red);
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+        .stat-row:last-child { border-bottom: none; }
+
+        .stat-row .label { color: var(--text-secondary); }
+        .stat-row .value { color: var(--accent-cyan); font-weight: bold; }
+
+        .rarity-common { color: #71717a; }
+        .rarity-rare { color: #3b82f6; }
+        .rarity-epic { color: #a855f7; }
+        .rarity-legendary { color: #eab308; }
+
+        .summary-box {
             background: var(--bg-input);
             border-radius: 8px;
             padding: 15px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-size: 11px;
-            line-height: 1.6;
-        }
-
-        .log-entry { margin-bottom: 4px; }
-        .log-entry.drop { color: var(--accent-green); }
-        .log-entry.no-drop { color: var(--text-secondary); }
-        .log-entry.legendary { color: var(--accent-yellow); }
-        .log-entry.first-kill { color: var(--accent-purple); }
-
-        .drop-results {
             margin-top: 15px;
         }
 
-        .drop-bar {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .drop-bar-label {
-            width: 120px;
+        .summary-box h4 {
+            color: var(--accent-purple);
             font-size: 12px;
+            margin-bottom: 10px;
         }
 
-        .drop-bar-track {
-            flex: 1;
-            height: 20px;
-            background: var(--bg-input);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .drop-bar-fill {
-            height: 100%;
-            background: var(--accent-cyan);
-            transition: width 0.3s;
-        }
-
-        .drop-bar-value {
-            width: 60px;
-            text-align: right;
+        .summary-box ul {
+            list-style: none;
             font-size: 12px;
-            color: var(--text-secondary);
+            line-height: 1.8;
         }
 
-        .rarity-common .drop-bar-fill { background: #71717a; }
-        .rarity-rare .drop-bar-fill { background: #3b82f6; }
-        .rarity-epic .drop-bar-fill { background: #a855f7; }
-        .rarity-legendary .drop-bar-fill { background: #eab308; }
+        .summary-box li::before {
+            content: ">";
+            color: var(--accent-purple);
+            margin-right: 8px;
+        }
 
         .export-area {
             width: 100%;
@@ -327,670 +277,649 @@
             resize: vertical;
         }
 
-        .insights {
+        .phase-timeline {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .phase-block {
+            flex: 1;
+            padding: 10px;
             background: var(--bg-input);
-            border-left: 3px solid var(--accent-purple);
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
-            margin-top: 15px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 11px;
         }
 
-        .insights h4 {
-            color: var(--accent-purple);
-            margin-bottom: 10px;
-            font-size: 12px;
+        .phase-block.active {
+            border: 1px solid var(--accent-cyan);
         }
 
-        .insights ul {
-            list-style: none;
-            font-size: 12px;
-            line-height: 1.8;
-        }
-
-        .insights li::before {
-            content: ">";
-            color: var(--accent-purple);
-            margin-right: 8px;
-        }
-
-        .insights .warning { color: var(--accent-yellow); }
-        .insights .danger { color: var(--accent-red); }
-        .insights .success { color: var(--accent-green); }
-
-        .metric-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 12px;
-        }
-
-        .metric-table th {
-            text-align: left;
-            padding: 8px;
-            background: var(--bg-input);
+        .phase-block .phase-name {
             color: var(--accent-cyan);
-            border-bottom: 1px solid var(--border);
+            font-weight: bold;
+            margin-bottom: 4px;
         }
 
-        .metric-table td {
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .metric-table td:first-child {
+        .phase-block .phase-hp {
             color: var(--text-secondary);
         }
     </style>
 </head>
 <body>
     <h1>BALANCE SIMULATOR</h1>
-    <p class="subtitle">Defend & Descend // System: Reboot</p>
+    <p class="subtitle">System: Reboot // Tuning Dashboard</p>
 
     <div class="tabs">
-        <div class="tab active" data-panel="waves">Wave Scaling</div>
-        <div class="tab" data-panel="threat">Threat Level</div>
-        <div class="tab" data-panel="towers">Tower DPS</div>
-        <div class="tab" data-panel="economy">Economy</div>
-        <div class="tab" data-panel="drops">Drop Rates</div>
+        <div class="tab active" data-panel="protocols">Protocol Leveling</div>
+        <div class="tab" data-panel="hash">Hash Economy</div>
+        <div class="tab" data-panel="power">Power Grid</div>
+        <div class="tab" data-panel="threat">Threat System</div>
+        <div class="tab" data-panel="bosses">Boss Tuning</div>
         <div class="tab" data-panel="export">Export/Import</div>
     </div>
 
-    <!-- WAVE SCALING PANEL -->
-    <div id="waves" class="panel active">
-        <div class="section-intro">
-            <h2>Wave Scaling (Firewall Mode)</h2>
-            <p>Controls how enemies get stronger each wave in TD/Firewall mode. Each wave, enemy HP and speed increase by a percentage of their base values.</p>
-            <p><strong>Formula:</strong></p>
-            <div class="formula">enemyHP = baseHP × (1 + (waveNumber - 1) × healthScaling)</div>
-            <p>Example: At wave 10 with 15% scaling: HP = 20 × (1 + 9 × 0.15) = 20 × 2.35 = 47 HP</p>
+    <!-- PROTOCOL LEVELING PANEL -->
+    <div id="protocols" class="panel active">
+        <div class="cause-effect">
+            <div class="cause">If you increase level multiplier...</div>
+            <div class="effect"><strong>Higher levels deal more damage</strong>, but upgrade costs also grow exponentially. Balance determines how "worth it" late upgrades feel.</div>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h3>Wave Configuration</h3>
+                <h3>Level Scaling Config</h3>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Health Scaling / Wave</label>
-                        <input type="number" id="wave-health-scaling" value="0.15" step="0.01">
-                        <div class="input-help">% HP increase per wave (0.15 = +15%)</div>
+                        <label>Damage Multiplier per Level</label>
+                        <input type="number" id="proto-dmg-mult" value="1.0" step="0.1">
                     </div>
                     <div class="input-group">
-                        <label>Speed Scaling / Wave</label>
-                        <input type="number" id="wave-speed-scaling" value="0.02" step="0.01">
-                        <div class="input-help">% speed increase per wave (0.02 = +2%)</div>
+                        <label>Max Protocol Level</label>
+                        <input type="number" id="proto-max-level" value="10" min="5" max="20">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Base Enemy Count</label>
-                        <input type="number" id="wave-base-count" value="5">
-                        <div class="input-help">Enemies in wave 1</div>
+                        <label>Range per Level (%)</label>
+                        <input type="number" id="proto-range-mult" value="0.05" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label>Enemies / Wave</label>
-                        <input type="number" id="wave-enemies-per" value="2">
-                        <div class="input-help">Additional enemies per wave</div>
+                        <label>Fire Rate per Level (%)</label>
+                        <input type="number" id="proto-fire-mult" value="0.03" step="0.01">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:20px">Upgrade Costs (Base Hash)</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Common Base Cost</label>
+                        <input type="number" id="cost-common" value="50">
+                    </div>
+                    <div class="input-group">
+                        <label>Rare Base Cost</label>
+                        <input type="number" id="cost-rare" value="100">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Boss Wave Interval</label>
-                        <input type="number" id="wave-boss-interval" value="5">
-                        <div class="input-help">Boss appears every N waves</div>
+                        <label>Epic Base Cost</label>
+                        <input type="number" id="cost-epic" value="200">
                     </div>
                     <div class="input-group">
-                        <label>Boss HP Multiplier</label>
-                        <input type="number" id="wave-boss-hp-mult" value="2.0" step="0.1">
-                        <div class="input-help">Boss HP = enemy HP × this</div>
+                        <label>Legendary Base Cost</label>
+                        <input type="number" id="cost-legendary" value="400">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Base Enemy HP (from GameConfig)</label>
-                    <input type="number" id="wave-base-hp" value="20">
-                    <div class="input-help">Starting HP of basic enemy</div>
+                    <label>Cost Scaling Formula</label>
+                    <select id="cost-formula">
+                        <option value="exponential">Exponential: base * 2^(level-1)</option>
+                        <option value="linear">Linear: base * level</option>
+                        <option value="quadratic">Quadratic: base * level^2</option>
+                    </select>
                 </div>
+
                 <div class="button-row">
-                    <button onclick="updateWaveChart()">Update Chart</button>
+                    <button onclick="updateProtocolChart()">Calculate</button>
                 </div>
             </div>
 
             <div class="card">
-                <h3>Wave Analysis</h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="wave-stat-w10-hp">-</div>
-                        <div class="stat-label">Wave 10 HP</div>
-                        <div class="stat-help">Single enemy HP at wave 10</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="wave-stat-w20-hp">-</div>
-                        <div class="stat-label">Wave 20 HP</div>
-                        <div class="stat-help">Single enemy HP at wave 20</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="wave-stat-w10-total">-</div>
-                        <div class="stat-label">Wave 10 Total HP</div>
-                        <div class="stat-help">All enemies combined</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="wave-stat-w20-total">-</div>
-                        <div class="stat-label">Wave 20 Total HP</div>
-                        <div class="stat-help">All enemies combined</div>
-                    </div>
+                <h3>Damage Progression (Lv 1-10)</h3>
+                <div class="cause-effect">
+                    <div class="cause">Level multiplier = level number</div>
+                    <div class="effect">Lv1 = 1x damage, Lv5 = 5x damage, Lv10 = <strong id="max-dmg-display">10x</strong> damage</div>
                 </div>
-                <div class="insights" id="wave-insights">
-                    <h4>AI Insights</h4>
-                    <ul id="wave-insights-list"></ul>
+                <div class="chart-container">
+                    <canvas id="damageChart"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <h3>Enemy HP Over Waves</h3>
-            <div class="chart-description">
-                <strong>What this shows:</strong> How enemy HP grows across 20 waves.
-                <br><br>
-                <span class="legend-item"><span class="legend-color" style="background:#00d4ff"></span>Enemy HP (left axis) - Single enemy health</span>
-                <span class="legend-item"><span class="legend-color" style="background:#a855f7"></span>Total Wave HP (right axis) - HP × enemy count</span>
-                <br><br>
-                <strong>Goal:</strong> HP should grow 3-5× by wave 20. More feels "spongy", less feels too easy.
+            <h3>Upgrade Cost Breakdown by Rarity</h3>
+            <div class="cause-effect">
+                <div class="cause">Total cost Lv1 to Lv10 = sum of all upgrade costs</div>
+                <div class="effect">Players need this much Hash to fully max a protocol. <strong>Higher = longer grind</strong>.</div>
             </div>
-            <div class="chart-container">
-                <canvas id="waveChart"></canvas>
+            <table class="result-table" id="upgrade-cost-table">
+                <thead>
+                    <tr>
+                        <th>Level</th>
+                        <th class="rarity-common">Common</th>
+                        <th class="rarity-rare">Rare</th>
+                        <th class="rarity-epic">Epic</th>
+                        <th class="rarity-legendary">Legendary</th>
+                        <th>Damage</th>
+                        <th>DPS Gain</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="summary-box">
+                <h4>Total Cost to Max (Lv1 -> Lv10)</h4>
+                <ul id="total-cost-summary"></ul>
             </div>
         </div>
     </div>
 
-    <!-- THREAT LEVEL PANEL -->
+    <!-- HASH ECONOMY PANEL -->
+    <div id="hash" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If you increase Hash per second...</div>
+            <div class="effect"><strong>Players accumulate currency faster</strong>, affording towers/upgrades sooner. Too fast = trivial economy. Too slow = frustrating wait.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Hash Production</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Base Hash/sec (CPU Lv1)</label>
+                        <input type="number" id="hash-base" value="1.0" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>CPU Level Multiplier</label>
+                        <input type="number" id="hash-cpu-mult" value="1.5" step="0.1">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:20px">Storage Capacity</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Base Storage (DDR4)</label>
+                        <input type="number" id="storage-base" value="500">
+                    </div>
+                    <div class="input-group">
+                        <label>Storage per Upgrade</label>
+                        <input type="number" id="storage-per-level" value="500">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Max Storage Tier</label>
+                    <input type="number" id="storage-max-tier" value="8">
+                </div>
+
+                <h3 style="margin-top:20px">Multipliers</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Overclock Multiplier</label>
+                        <input type="number" id="overclock-mult" value="2.0" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Overclock Duration (sec)</label>
+                        <input type="number" id="overclock-duration" value="60">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Online Efficiency (%)</label>
+                        <input type="number" id="online-efficiency" value="100" min="0" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label>Offline Earnings (%)</label>
+                        <input type="number" id="offline-rate" value="20" min="0" max="100">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Max Offline Hours</label>
+                    <input type="number" id="offline-max-hours" value="8">
+                </div>
+
+                <div class="button-row">
+                    <button onclick="updateHashChart()">Calculate</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Hash Rate by CPU Level</h3>
+                <div class="cause-effect">
+                    <div class="cause">CPU Level increases Hash/sec exponentially</div>
+                    <div class="effect">Rate = base * mult^(level-1). <strong>Higher CPU = faster income</strong>.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="hashRateChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Hash Accumulation Over Time</h3>
+                <div class="cause-effect">
+                    <div class="cause">Comparing CPU levels over 10 minutes</div>
+                    <div class="effect">Shows how much Hash each CPU tier earns. <strong>Gap = upgrade incentive</strong>.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="hashAccumChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Storage & Offline Summary</h3>
+                <table class="result-table" id="storage-table">
+                    <thead>
+                        <tr><th>Tier</th><th>Capacity</th><th>Fill Time (Lv1 CPU)</th><th>Offline Cap (8h)</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="summary-box">
+                    <h4>Offline Earnings Example</h4>
+                    <ul id="offline-summary"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POWER GRID PANEL -->
+    <div id="power" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If power demand exceeds supply...</div>
+            <div class="effect"><strong>Towers shut down</strong> and Hash production stops. Players must balance tower count against CPU power budget.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Power Supply (CPU)</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Base Power (Watts)</label>
+                        <input type="number" id="power-base" value="100">
+                    </div>
+                    <div class="input-group">
+                        <label>Power per CPU Level</label>
+                        <input type="number" id="power-per-level" value="50">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Max CPU Level</label>
+                    <input type="number" id="power-max-cpu" value="10">
+                </div>
+
+                <h3 style="margin-top:20px">Tower Power Draw</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Common (W)</label>
+                        <input type="number" id="tower-power-common" value="15">
+                    </div>
+                    <div class="input-group">
+                        <label>Rare (W)</label>
+                        <input type="number" id="tower-power-rare" value="30">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Epic (W)</label>
+                        <input type="number" id="tower-power-epic" value="60">
+                    </div>
+                    <div class="input-group">
+                        <label>Legendary (W)</label>
+                        <input type="number" id="tower-power-legendary" value="100">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Power per Tower Level (%)</label>
+                    <input type="number" id="tower-power-scaling" value="0" step="1">
+                </div>
+
+                <h3 style="margin-top:20px">Overclock Power</h3>
+                <div class="input-group">
+                    <label>Overclock Power Multiplier</label>
+                    <input type="number" id="overclock-power-mult" value="2.0" step="0.1">
+                </div>
+
+                <div class="button-row">
+                    <button onclick="updatePowerChart()">Calculate</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Power Budget by CPU Level</h3>
+                <div class="cause-effect">
+                    <div class="cause">Total Power = base + (level * perLevel)</div>
+                    <div class="effect"><strong>Higher CPU = more towers allowed</strong>.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Max Towers per CPU Level</h3>
+            <div class="cause-effect">
+                <div class="cause">Max towers = power budget / tower power draw</div>
+                <div class="effect">Shows how many towers of each rarity fit in the power budget. <strong>Constraint = strategic choice</strong>.</div>
+            </div>
+            <table class="result-table" id="tower-limit-table">
+                <thead>
+                    <tr>
+                        <th>CPU Level</th>
+                        <th>Power Budget</th>
+                        <th class="rarity-common">Max Common</th>
+                        <th class="rarity-rare">Max Rare</th>
+                        <th class="rarity-epic">Max Epic</th>
+                        <th class="rarity-legendary">Max Legendary</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- THREAT SYSTEM PANEL -->
     <div id="threat" class="panel">
-        <div class="section-intro">
-            <h2>Threat Level Scaling (Idle TD Mode)</h2>
-            <p>In idle/endless mode, threat level increases over time. Higher threat = stronger enemies and new enemy types unlock.</p>
-            <p><strong>Formula:</strong></p>
-            <div class="formula">threatLevel = timeInSeconds × growthRate</div>
-            <p>Threat unlocks new enemy types at thresholds. At threat 5.0, tank enemies start appearing.</p>
+        <div class="cause-effect">
+            <div class="cause">If threat growth rate increases...</div>
+            <div class="effect"><strong>Enemies get stronger faster</strong>, unlocking harder enemy types sooner. Resets give players a chance to rebuild.</div>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h3>Threat Level Configuration</h3>
+                <h3>Threat Scaling</h3>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>HP Scaling / Threat</label>
-                        <input type="number" id="threat-hp-scaling" value="0.15" step="0.01">
-                        <div class="input-help">+15% HP per threat level</div>
+                        <label>Online Threat Growth (/sec)</label>
+                        <input type="number" id="threat-online-rate" value="0.01" step="0.001">
                     </div>
                     <div class="input-group">
-                        <label>Speed Scaling / Threat</label>
-                        <input type="number" id="threat-speed-scaling" value="0.02" step="0.01">
-                        <div class="input-help">+2% speed per threat level</div>
+                        <label>Offline Threat Growth (/sec)</label>
+                        <input type="number" id="threat-offline-rate" value="0.001" step="0.0001">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Damage Scaling / Threat</label>
-                        <input type="number" id="threat-damage-scaling" value="0.05" step="0.01">
-                        <div class="input-help">+5% enemy damage per threat</div>
+                        <label>HP Scaling per Threat</label>
+                        <input type="number" id="threat-hp-scale" value="0.15" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label>Threat Growth Rate</label>
-                        <input type="number" id="threat-growth-rate" value="0.1" step="0.01">
-                        <div class="input-help">Threat per second (0.1 = +6/min)</div>
+                        <label>Speed Scaling per Threat</label>
+                        <input type="number" id="threat-speed-scale" value="0.02" step="0.01">
                     </div>
                 </div>
-                <h3 style="margin-top:20px">Enemy Type Thresholds</h3>
-                <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">When each enemy type starts spawning:</p>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Fast Enemy</label>
-                        <input type="number" id="threat-fast-threshold" value="2.0" step="0.5">
-                        <div class="input-help">Quick but weak</div>
+                        <label>Damage Scaling per Threat</label>
+                        <input type="number" id="threat-dmg-scale" value="0.05" step="0.01">
                     </div>
                     <div class="input-group">
-                        <label>Tank Enemy</label>
-                        <input type="number" id="threat-tank-threshold" value="5.0" step="0.5">
-                        <div class="input-help">Slow but tanky</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Boss Enemy</label>
-                        <input type="number" id="threat-boss-threshold" value="10.0" step="0.5">
-                        <div class="input-help">Rare miniboss spawn</div>
+                        <label>Max Threat Level</label>
+                        <input type="number" id="threat-max" value="100">
                     </div>
                 </div>
-                <div class="button-row">
-                    <button onclick="updateThreatChart()">Update Chart</button>
-                </div>
-            </div>
 
-            <div class="card">
-                <h3>Threat Timeline</h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="threat-stat-fast">-</div>
-                        <div class="stat-label">Fast @ (min)</div>
-                        <div class="stat-help">When fast enemies appear</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="threat-stat-tank">-</div>
-                        <div class="stat-label">Tank @ (min)</div>
-                        <div class="stat-help">When tank enemies appear</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="threat-stat-boss">-</div>
-                        <div class="stat-label">Boss @ (min)</div>
-                        <div class="stat-help">When boss enemies appear</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="threat-stat-5min">-</div>
-                        <div class="stat-label">HP @ 5min</div>
-                        <div class="stat-help">HP multiplier at 5 minutes</div>
-                    </div>
-                </div>
-                <div class="insights" id="threat-insights">
-                    <h4>AI Insights</h4>
-                    <ul id="threat-insights-list"></ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Stat Multipliers Over Threat Level</h3>
-            <div class="chart-description">
-                <strong>What this shows:</strong> How enemy stats scale as threat level increases from 1 to 20.
-                <br><br>
-                <span class="legend-item"><span class="legend-color" style="background:#ef4444"></span>HP Multiplier - Enemy health scaling</span>
-                <span class="legend-item"><span class="legend-color" style="background:#22c55e"></span>Speed Multiplier - Movement speed</span>
-                <span class="legend-item"><span class="legend-color" style="background:#eab308"></span>Damage Multiplier - Attack damage</span>
-                <br><br>
-                <strong>X-Axis:</strong> Threat Level (1-20)<br>
-                <strong>Y-Axis:</strong> Multiplier (1.0 = base stats)
-            </div>
-            <div class="chart-container">
-                <canvas id="threatChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- TOWER DPS PANEL -->
-    <div id="towers" class="panel">
-        <div class="section-intro">
-            <h2>Tower DPS Analysis</h2>
-            <p>Compare tower damage output against enemy HP to check if towers can keep up with scaling.</p>
-            <p><strong>DPS Formula:</strong></p>
-            <div class="formula">DPS = damage × attackSpeed × projectileCount</div>
-            <p><strong>TTK (Time To Kill):</strong></p>
-            <div class="formula">TTK = enemyHP / DPS</div>
-            <p>If TTK exceeds 5 seconds, enemies feel too tanky. If TTK is under 0.5s, enemies die instantly.</p>
-        </div>
-
-        <div class="grid">
-            <div class="card">
-                <h3>Tower Stats (Protocol)</h3>
+                <h3 style="margin-top:20px">Enemy Unlock Thresholds</h3>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Base Damage</label>
-                        <input type="number" id="tower-damage" value="15">
-                        <div class="input-help">Damage per hit</div>
+                        <label>Fast Enemy @</label>
+                        <input type="number" id="unlock-fast" value="2.0" step="0.5">
                     </div>
                     <div class="input-group">
-                        <label>Attack Speed (per sec)</label>
-                        <input type="number" id="tower-attack-speed" value="1.5" step="0.1">
-                        <div class="input-help">Attacks per second</div>
+                        <label>Swarm Enemy @</label>
+                        <input type="number" id="unlock-swarm" value="4.0" step="0.5">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Projectile Count</label>
-                        <input type="number" id="tower-projectiles" value="1">
-                        <div class="input-help">Shots fired per attack</div>
+                        <label>Tank Enemy @</label>
+                        <input type="number" id="unlock-tank" value="5.0" step="0.5">
                     </div>
                     <div class="input-group">
-                        <label>Pierce</label>
-                        <input type="number" id="tower-pierce" value="0">
-                        <div class="input-help">Enemies hit per projectile</div>
-                    </div>
-                </div>
-                <div class="input-row">
-                    <div class="input-group">
-                        <label>Splash Radius (0=none)</label>
-                        <input type="number" id="tower-splash" value="0">
-                        <div class="input-help">AoE damage radius</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Tower Level</label>
-                        <input type="number" id="tower-level" value="1" min="1" max="10">
-                        <div class="input-help">Current upgrade level</div>
+                        <label>Elite Enemy @</label>
+                        <input type="number" id="unlock-elite" value="8.0" step="0.5">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Level Damage Multiplier (per level)</label>
-                    <input type="number" id="tower-level-mult" value="0.15" step="0.01">
-                    <div class="input-help">+15% damage per level (Lv10 = +135%)</div>
+                    <label>Mini-Boss Enemy @</label>
+                    <input type="number" id="unlock-boss" value="10.0" step="0.5">
                 </div>
+
+                <h3 style="margin-top:20px">Threat Reset</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Reset Trigger (Efficiency %)</label>
+                        <input type="number" id="threat-reset-trigger" value="0">
+                    </div>
+                    <div class="input-group">
+                        <label>Reset To Level</label>
+                        <input type="number" id="threat-reset-to" value="1.0" step="0.5">
+                    </div>
+                </div>
+
                 <div class="button-row">
-                    <button onclick="updateTowerChart()">Update Chart</button>
+                    <button onclick="updateThreatChart()">Calculate</button>
                 </div>
             </div>
 
             <div class="card">
-                <h3>DPS Analysis</h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="tower-stat-dps">-</div>
-                        <div class="stat-label">Current Level DPS</div>
-                        <div class="stat-help">Damage per second</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="tower-stat-dps-max">-</div>
-                        <div class="stat-label">Max Level DPS</div>
-                        <div class="stat-help">DPS at level 10</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="tower-stat-ttk-w1">-</div>
-                        <div class="stat-label">TTK Wave 1</div>
-                        <div class="stat-help">Seconds to kill 1 enemy</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="tower-stat-ttk-w10">-</div>
-                        <div class="stat-label">TTK Wave 10</div>
-                        <div class="stat-help">Seconds to kill 1 enemy</div>
-                    </div>
+                <h3>Stat Multipliers by Threat</h3>
+                <div class="cause-effect">
+                    <div class="cause">Higher threat = stronger enemies</div>
+                    <div class="effect">HP grows fastest, then damage, then speed. <strong>Spongier before deadlier</strong>.</div>
                 </div>
-                <div class="insights" id="tower-insights">
-                    <h4>AI Insights</h4>
-                    <ul id="tower-insights-list"></ul>
+                <div class="chart-container">
+                    <canvas id="threatChart"></canvas>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <h3>Tower DPS vs Enemy HP (by Wave)</h3>
-            <div class="chart-description">
-                <strong>What this shows:</strong> Tower DPS (flat lines) vs enemy HP (growing line) across waves.
-                <br><br>
-                <span class="legend-item"><span class="legend-color" style="background:#ef4444"></span>Enemy HP - Health per enemy (grows with waves)</span>
-                <span class="legend-item"><span class="legend-color" style="background:#00d4ff"></span>Tower DPS (current) - Your tower's output</span>
-                <span class="legend-item"><span class="legend-color" style="background:#22c55e"></span>Max Tower DPS - Fully upgraded tower</span>
-                <br><br>
-                <strong>Goal:</strong> Tower DPS should stay competitive with enemy HP. If HP line goes way above DPS line, you need more towers.
+            <h3>Threat Timeline (Online Play)</h3>
+            <div class="cause-effect">
+                <div class="cause">Time to reach each enemy unlock threshold</div>
+                <div class="effect">Shows when new enemy types appear. <strong>Pacing = player pressure curve</strong>.</div>
             </div>
-            <div class="chart-container">
-                <canvas id="towerChart"></canvas>
-            </div>
+            <table class="result-table" id="threat-timeline-table">
+                <thead>
+                    <tr>
+                        <th>Event</th>
+                        <th>Threat Level</th>
+                        <th>Time (Online)</th>
+                        <th>HP Mult</th>
+                        <th>Speed Mult</th>
+                        <th>Damage Mult</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- ECONOMY PANEL -->
-    <div id="economy" class="panel">
-        <div class="section-intro">
-            <h2>Economy & Hash Income</h2>
-            <p>Hash is earned passively in Survival mode and as bonuses in Firewall mode. This panel simulates how much you'll earn over time.</p>
-            <p><strong>Survival Mode Formula:</strong></p>
-            <div class="formula">hashRate = baseRate + (minutesSurvived × bonusPerMinute)</div>
-            <p>Example: At 5 minutes with base 2.0 and +0.5/min: rate = 2.0 + (5 × 0.5) = 4.5 Hash/sec</p>
+    <!-- BOSS TUNING PANEL -->
+    <div id="bosses" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If boss HP/damage increases...</div>
+            <div class="effect"><strong>Fights take longer and punish mistakes more</strong>. Phase thresholds create pacing; abilities create mechanics.</div>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h3>Economy Configuration</h3>
+                <h3>Cyberboss (TD Mode Boss)</h3>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Hash / Second (Survival)</label>
-                        <input type="number" id="econ-hash-per-sec" value="2.0" step="0.5">
-                        <div class="input-help">Base passive income rate</div>
+                        <label>Base HP</label>
+                        <input type="number" id="cyber-hp" value="5000">
                     </div>
                     <div class="input-group">
-                        <label>Hash Bonus / Minute</label>
-                        <input type="number" id="econ-hash-bonus" value="0.5" step="0.1">
-                        <div class="input-help">Added to rate each minute</div>
+                        <label>HP Scaling / Wave</label>
+                        <input type="number" id="cyber-hp-scale" value="0.15" step="0.01">
                     </div>
                 </div>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Hash / Wave Bonus</label>
-                        <input type="number" id="econ-wave-bonus" value="10">
-                        <div class="input-help">Bonus = waveNum × this value</div>
+                        <label>Laser Damage</label>
+                        <input type="number" id="cyber-laser-dmg" value="50">
                     </div>
                     <div class="input-group">
-                        <label>Extraction Time (sec)</label>
-                        <input type="number" id="econ-extraction" value="180">
-                        <div class="input-help">When you can safely exit</div>
+                        <label>Laser Warning (sec)</label>
+                        <input type="number" id="cyber-laser-warn" value="1.5" step="0.1">
                     </div>
                 </div>
-                <h3 style="margin-top:20px">Tower Placement Costs</h3>
-                <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Hash required to place a tower:</p>
                 <div class="input-row">
                     <div class="input-group">
-                        <label>Common</label>
-                        <input type="number" id="econ-cost-common" value="50">
+                        <label>Puddle Damage/sec</label>
+                        <input type="number" id="cyber-puddle-dmg" value="20">
                     </div>
                     <div class="input-group">
-                        <label>Rare</label>
-                        <input type="number" id="econ-cost-rare" value="100">
-                    </div>
-                    <div class="input-group">
-                        <label>Epic</label>
-                        <input type="number" id="econ-cost-epic" value="200">
-                    </div>
-                    <div class="input-group">
-                        <label>Legendary</label>
-                        <input type="number" id="econ-cost-legendary" value="400">
+                        <label>Puddle Duration (sec)</label>
+                        <input type="number" id="cyber-puddle-dur" value="5.0" step="0.5">
                     </div>
                 </div>
-                <div class="button-row">
-                    <button onclick="updateEconomyChart()">Update Chart</button>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Spawn Wave Size</label>
+                        <input type="number" id="cyber-spawn-count" value="5">
+                    </div>
+                    <div class="input-group">
+                        <label>Spawn Interval (sec)</label>
+                        <input type="number" id="cyber-spawn-interval" value="8">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:20px">Phase Thresholds (%HP)</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Phase 2 @</label>
+                        <input type="number" id="cyber-phase2" value="75">
+                    </div>
+                    <div class="input-group">
+                        <label>Phase 3 @</label>
+                        <input type="number" id="cyber-phase3" value="50">
+                    </div>
+                    <div class="input-group">
+                        <label>Phase 4 @</label>
+                        <input type="number" id="cyber-phase4" value="25">
+                    </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3>Economy Analysis</h3>
-                <div class="stats-grid">
-                    <div class="stat-box">
-                        <div class="stat-value" id="econ-stat-3min">-</div>
-                        <div class="stat-label">Hash @ 3min</div>
-                        <div class="stat-help">Total at extraction</div>
+                <h3>Zero-Day Virus (Survival Boss)</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Base HP</label>
+                        <input type="number" id="zeroday-hp" value="9999">
                     </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="econ-stat-5min">-</div>
-                        <div class="stat-label">Hash @ 5min</div>
-                        <div class="stat-help">Total at 5 minutes</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="econ-stat-rare-time">-</div>
-                        <div class="stat-label">Time to Rare</div>
-                        <div class="stat-help">Seconds to afford</div>
-                    </div>
-                    <div class="stat-box">
-                        <div class="stat-value" id="econ-stat-epic-time">-</div>
-                        <div class="stat-label">Time to Epic</div>
-                        <div class="stat-help">Seconds to afford</div>
+                    <div class="input-group">
+                        <label>Speed</label>
+                        <input type="number" id="zeroday-speed" value="30">
                     </div>
                 </div>
-                <div class="insights" id="econ-insights">
-                    <h4>AI Insights</h4>
-                    <ul id="econ-insights-list"></ul>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Efficiency Drain/sec</label>
+                        <input type="number" id="zeroday-drain" value="2.0" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Min Waves Before Spawn</label>
+                        <input type="number" id="zeroday-min-waves" value="3">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Defeat Hash Bonus</label>
+                        <input type="number" id="zeroday-hash" value="525">
+                    </div>
+                    <div class="input-group">
+                        <label>Defeat Efficiency Restore</label>
+                        <input type="number" id="zeroday-restore" value="30">
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button onclick="updateBossChart()">Calculate</button>
                 </div>
             </div>
-        </div>
-
-        <div class="card">
-            <h3>Hash Income Over Time (Survival Mode)</h3>
-            <div class="chart-description">
-                <strong>What this shows:</strong> Cumulative Hash earned over a 10-minute survival run.
-                <br><br>
-                <span class="legend-item"><span class="legend-color" style="background:#00d4ff"></span>Total Hash Earned - Running total</span>
-                <br><br>
-                <strong>X-Axis:</strong> Time (minutes)<br>
-                <strong>Y-Axis:</strong> Total Hash accumulated<br><br>
-                <strong>Note:</strong> The curve accelerates because bonus/minute stacks.
-            </div>
-            <div class="chart-container">
-                <canvas id="economyChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- DROP RATES PANEL -->
-    <div id="drops" class="panel">
-        <div class="section-intro">
-            <h2>Blueprint Drop Rates</h2>
-            <p>When you defeat a boss, RNG determines if you get a blueprint drop. Rates are affected by difficulty and diminishing returns.</p>
-            <p><strong>Drop Rate Formula:</strong></p>
-            <div class="formula">effectiveRate = baseRate × difficultyMult × (1 / (1 + diminishingFactor × killCount))</div>
-            <p><strong>Special Rules:</strong></p>
-            <ul style="margin-left:20px;font-size:12px;color:var(--text-secondary)">
-                <li>First boss kill = guaranteed drop</li>
-                <li>Pity system = guaranteed after N kills without drop</li>
-                <li>Already-owned blueprints excluded from pool</li>
-            </ul>
         </div>
 
         <div class="grid">
             <div class="card">
-                <h3>Drop Rate Configuration</h3>
-                <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Base chance for each rarity (before modifiers):</p>
-                <div class="input-row">
-                    <div class="input-group">
-                        <label>Common Rate</label>
-                        <input type="number" id="drop-common" value="0.60" step="0.05">
-                        <div class="input-help">60% = 0.60</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Rare Rate</label>
-                        <input type="number" id="drop-rare" value="0.30" step="0.05">
-                        <div class="input-help">30% = 0.30</div>
-                    </div>
+                <h3>Cyberboss HP by Wave</h3>
+                <div class="cause-effect">
+                    <div class="cause">Boss HP scales with wave number</div>
+                    <div class="effect">Later bosses = longer fights. <strong>TTK matters for pacing</strong>.</div>
                 </div>
-                <div class="input-row">
-                    <div class="input-group">
-                        <label>Epic Rate</label>
-                        <input type="number" id="drop-epic" value="0.08" step="0.01">
-                        <div class="input-help">8% = 0.08</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Legendary Rate</label>
-                        <input type="number" id="drop-legendary" value="0.02" step="0.01">
-                        <div class="input-help">2% = 0.02</div>
-                    </div>
-                </div>
-                <h3 style="margin-top:20px">Difficulty Multipliers</h3>
-                <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Drop rate × this value based on difficulty:</p>
-                <div class="input-row">
-                    <div class="input-group">
-                        <label>Easy</label>
-                        <input type="number" id="drop-mult-easy" value="0.5" step="0.1">
-                        <div class="input-help">50% of base rates</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Normal</label>
-                        <input type="number" id="drop-mult-normal" value="1.0" step="0.1">
-                        <div class="input-help">100% (baseline)</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Hard</label>
-                        <input type="number" id="drop-mult-hard" value="1.5" step="0.1">
-                        <div class="input-help">150% of base rates</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Nightmare</label>
-                        <input type="number" id="drop-mult-nightmare" value="2.5" step="0.1">
-                        <div class="input-help">250% of base rates</div>
-                    </div>
-                </div>
-                <div class="input-row">
-                    <div class="input-group">
-                        <label>Diminishing Factor</label>
-                        <input type="number" id="drop-diminishing" value="0.1" step="0.01">
-                        <div class="input-help">How fast rates decay (0.1 = slow)</div>
-                    </div>
-                    <div class="input-group">
-                        <label>Pity Threshold (kills)</label>
-                        <input type="number" id="drop-pity" value="10">
-                        <div class="input-help">Guaranteed drop after N misses</div>
-                    </div>
+                <div class="chart-container">
+                    <canvas id="bossHpChart"></canvas>
                 </div>
             </div>
 
             <div class="card">
-                <h3>Monte Carlo Simulation</h3>
-                <p style="font-size:11px;color:var(--text-secondary);margin-bottom:10px">Simulate many boss kills to see actual drop distribution:</p>
-                <div class="input-row">
-                    <div class="input-group">
-                        <label>Simulated Kills</label>
-                        <input type="number" id="sim-kills" value="1000">
-                        <div class="input-help">More = more accurate</div>
+                <h3>Cyberboss Phase Visualization</h3>
+                <div class="cause-effect">
+                    <div class="cause">Each phase adds new abilities</div>
+                    <div class="effect"><strong>Phase 1:</strong> Basic attacks | <strong>Phase 2:</strong> +Lasers | <strong>Phase 3:</strong> +Puddles | <strong>Phase 4:</strong> Enrage</div>
+                </div>
+                <div class="phase-timeline" id="phase-timeline">
+                    <div class="phase-block">
+                        <div class="phase-name">Phase 1</div>
+                        <div class="phase-hp">100% - 76%</div>
                     </div>
-                    <div class="input-group">
-                        <label>Difficulty</label>
-                        <select id="sim-difficulty" style="width:100%;padding:8px;background:var(--bg-input);border:1px solid var(--border);border-radius:6px;color:var(--text-primary)">
-                            <option value="easy">Easy</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="hard">Hard</option>
-                            <option value="nightmare">Nightmare</option>
-                        </select>
+                    <div class="phase-block">
+                        <div class="phase-name">Phase 2</div>
+                        <div class="phase-hp">75% - 51%</div>
+                    </div>
+                    <div class="phase-block">
+                        <div class="phase-name">Phase 3</div>
+                        <div class="phase-hp">50% - 26%</div>
+                    </div>
+                    <div class="phase-block">
+                        <div class="phase-name">Phase 4</div>
+                        <div class="phase-hp">25% - 0%</div>
                     </div>
                 </div>
-                <div class="button-row">
-                    <button onclick="runDropSimulation()">Run Simulation</button>
-                </div>
 
-                <div class="drop-results" id="drop-results"></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Drop Rate Decay (Diminishing Returns)</h3>
-            <div class="chart-description">
-                <strong>What this shows:</strong> How drop rates decrease over consecutive boss kills due to diminishing returns.
-                <br><br>
-                <span class="legend-item"><span class="legend-color" style="background:#71717a"></span>Common % chance</span>
-                <span class="legend-item"><span class="legend-color" style="background:#3b82f6"></span>Rare % chance</span>
-                <span class="legend-item"><span class="legend-color" style="background:#a855f7"></span>Epic % chance</span>
-                <span class="legend-item"><span class="legend-color" style="background:#eab308"></span>Legendary % chance</span>
-                <br><br>
-                <strong>X-Axis:</strong> Kill number (1-20)<br>
-                <strong>Y-Axis:</strong> Drop chance percentage<br><br>
-                <strong>Note:</strong> This doesn't show pity - just the raw diminishing formula.
-            </div>
-            <div class="chart-container">
-                <canvas id="dropChart"></canvas>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Simulation Log (First 20 Kills)</h3>
-            <div class="simulation-log" id="simulation-log">
-                Run a simulation to see detailed results...
+                <table class="result-table" style="margin-top:20px">
+                    <thead>
+                        <tr><th>Ability</th><th>Damage</th><th>Timing</th><th>Threat Level</th></tr>
+                    </thead>
+                    <tbody id="boss-ability-table"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <!-- EXPORT/IMPORT PANEL -->
     <div id="export" class="panel">
-        <div class="section-intro">
-            <h2>Export / Import Configuration</h2>
-            <p>Export your settings as JSON to share or backup. Import JSON from BalanceConfig.swift's exportJSON() function.</p>
-            <p>The Swift Code Generator creates copy-paste ready code for updating BalanceConfig.swift directly.</p>
+        <div class="cause-effect">
+            <div class="cause">Export your tuned values</div>
+            <div class="effect">Copy JSON to update BalanceConfig.swift or share with team.</div>
         </div>
 
         <div class="grid">
             <div class="card">
                 <h3>Export Configuration</h3>
-                <p style="color:var(--text-secondary);font-size:12px;margin-bottom:15px">
-                    Copy this JSON and update BalanceConfig.swift
-                </p>
                 <textarea class="export-area" id="export-json" readonly></textarea>
                 <div class="button-row">
-                    <button onclick="generateExport()">Generate Export</button>
-                    <button class="secondary" onclick="copyExport()">Copy to Clipboard</button>
+                    <button onclick="generateExport()">Generate JSON</button>
+                    <button class="secondary" onclick="copyToClipboard('export-json')">Copy</button>
                 </div>
             </div>
 
             <div class="card">
                 <h3>Import Configuration</h3>
-                <p style="color:var(--text-secondary);font-size:12px;margin-bottom:15px">
-                    Paste JSON to load values into the simulator
-                </p>
                 <textarea class="export-area" id="import-json" placeholder="Paste JSON here..."></textarea>
                 <div class="button-row">
                     <button onclick="importConfig()">Import</button>
@@ -1000,13 +929,10 @@
 
         <div class="card">
             <h3>Swift Code Generation</h3>
-            <p style="color:var(--text-secondary);font-size:12px;margin-bottom:15px">
-                Copy-paste ready Swift code for BalanceConfig.swift
-            </p>
-            <textarea class="export-area" id="swift-export" readonly style="height:300px"></textarea>
+            <textarea class="export-area" id="swift-export" readonly style="height:400px"></textarea>
             <div class="button-row">
-                <button onclick="generateSwiftExport()">Generate Swift Code</button>
-                <button class="secondary" onclick="copySwiftExport()">Copy to Clipboard</button>
+                <button onclick="generateSwiftCode()">Generate Swift</button>
+                <button class="secondary" onclick="copyToClipboard('swift-export')">Copy</button>
             </div>
         </div>
     </div>
@@ -1023,649 +949,607 @@
         });
 
         // Charts
-        let waveChart, threatChart, towerChart, economyChart, dropChart;
+        let damageChart, hashRateChart, hashAccumChart, powerChart, threatChart, bossHpChart;
 
-        // Initialize on load
+        const chartDefaults = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#a1a1aa' } } },
+            scales: {
+                x: { ticks: { color: '#a1a1aa' }, grid: { color: '#27272a' } },
+                y: { ticks: { color: '#a1a1aa' }, grid: { color: '#27272a' } }
+            }
+        };
+
         window.addEventListener('load', () => {
             initCharts();
-            updateWaveChart();
+            updateProtocolChart();
+            updateHashChart();
+            updatePowerChart();
             updateThreatChart();
-            updateTowerChart();
-            updateEconomyChart();
-            updateDropChart();
+            updateBossChart();
         });
 
         function initCharts() {
-            const chartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { labels: { color: '#a1a1aa' } }
-                },
-                scales: {
-                    x: {
-                        ticks: { color: '#a1a1aa' },
-                        grid: { color: '#27272a' },
-                        title: { display: true, color: '#a1a1aa' }
-                    },
-                    y: {
-                        ticks: { color: '#a1a1aa' },
-                        grid: { color: '#27272a' },
-                        title: { display: true, color: '#a1a1aa' }
-                    }
-                }
-            };
+            damageChart = new Chart(document.getElementById('damageChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Level', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Damage Multiplier', color: '#a1a1aa' } }
+                }}
+            });
 
-            waveChart = new Chart(document.getElementById('waveChart'), {
+            hashRateChart = new Chart(document.getElementById('hashRateChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'CPU Level', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Hash/sec', color: '#a1a1aa' } }
+                }}
+            });
+
+            hashAccumChart = new Chart(document.getElementById('hashAccumChart'), {
                 type: 'line',
                 data: { labels: [], datasets: [] },
-                options: {
-                    ...chartOptions,
-                    scales: {
-                        ...chartOptions.scales,
-                        x: { ...chartOptions.scales.x, title: { display: true, text: 'Wave Number', color: '#a1a1aa' } },
-                        y: { ...chartOptions.scales.y, title: { display: true, text: 'Enemy HP', color: '#a1a1aa' } }
-                    }
-                }
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Time (minutes)', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Total Hash', color: '#a1a1aa' } }
+                }}
+            });
+
+            powerChart = new Chart(document.getElementById('powerChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'CPU Level', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Power (Watts)', color: '#a1a1aa' } }
+                }}
             });
 
             threatChart = new Chart(document.getElementById('threatChart'), {
                 type: 'line',
                 data: { labels: [], datasets: [] },
-                options: {
-                    ...chartOptions,
-                    scales: {
-                        ...chartOptions.scales,
-                        x: { ...chartOptions.scales.x, title: { display: true, text: 'Threat Level', color: '#a1a1aa' } },
-                        y: { ...chartOptions.scales.y, title: { display: true, text: 'Stat Multiplier', color: '#a1a1aa' } }
-                    }
-                }
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Threat Level', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Multiplier', color: '#a1a1aa' } }
+                }}
             });
 
-            towerChart = new Chart(document.getElementById('towerChart'), {
+            bossHpChart = new Chart(document.getElementById('bossHpChart'), {
                 type: 'line',
                 data: { labels: [], datasets: [] },
-                options: {
-                    ...chartOptions,
-                    scales: {
-                        ...chartOptions.scales,
-                        x: { ...chartOptions.scales.x, title: { display: true, text: 'Wave Number', color: '#a1a1aa' } },
-                        y: { ...chartOptions.scales.y, title: { display: true, text: 'HP / DPS', color: '#a1a1aa' } }
-                    }
-                }
-            });
-
-            economyChart = new Chart(document.getElementById('economyChart'), {
-                type: 'line',
-                data: { labels: [], datasets: [] },
-                options: {
-                    ...chartOptions,
-                    scales: {
-                        ...chartOptions.scales,
-                        x: { ...chartOptions.scales.x, title: { display: true, text: 'Time (minutes)', color: '#a1a1aa' } },
-                        y: { ...chartOptions.scales.y, title: { display: true, text: 'Total Hash', color: '#a1a1aa' } }
-                    }
-                }
-            });
-
-            dropChart = new Chart(document.getElementById('dropChart'), {
-                type: 'line',
-                data: { labels: [], datasets: [] },
-                options: {
-                    ...chartOptions,
-                    scales: {
-                        ...chartOptions.scales,
-                        x: { ...chartOptions.scales.x, title: { display: true, text: 'Kill Number', color: '#a1a1aa' } },
-                        y: { ...chartOptions.scales.y, title: { display: true, text: 'Drop Chance (%)', color: '#a1a1aa' } }
-                    }
-                }
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Wave Number', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Boss HP', color: '#a1a1aa' } }
+                }}
             });
         }
 
-        function updateWaveChart() {
-            const healthScaling = parseFloat(document.getElementById('wave-health-scaling').value);
-            const speedScaling = parseFloat(document.getElementById('wave-speed-scaling').value);
-            const baseCount = parseInt(document.getElementById('wave-base-count').value);
-            const enemiesPerWave = parseInt(document.getElementById('wave-enemies-per').value);
-            const bossInterval = parseInt(document.getElementById('wave-boss-interval').value);
-            const bossHpMult = parseFloat(document.getElementById('wave-boss-hp-mult').value);
-            const baseHp = parseFloat(document.getElementById('wave-base-hp').value);
+        // ===== PROTOCOL LEVELING =====
+        function updateProtocolChart() {
+            const maxLevel = parseInt(document.getElementById('proto-max-level').value);
+            const dmgMult = parseFloat(document.getElementById('proto-dmg-mult').value);
+            const costCommon = parseInt(document.getElementById('cost-common').value);
+            const costRare = parseInt(document.getElementById('cost-rare').value);
+            const costEpic = parseInt(document.getElementById('cost-epic').value);
+            const costLegendary = parseInt(document.getElementById('cost-legendary').value);
+            const formula = document.getElementById('cost-formula').value;
 
-            const waves = [];
-            const hpData = [];
-            const speedData = [];
-            const totalHpData = [];
+            const levels = [];
+            const damages = [];
 
-            for (let w = 1; w <= 20; w++) {
-                waves.push(w);
-                const hpMult = 1 + (w - 1) * healthScaling;
-                const speedMult = 1 + (w - 1) * speedScaling;
-                const enemyCount = baseCount + w * enemiesPerWave;
-                const isBoss = w % bossInterval === 0;
-
-                hpData.push(baseHp * hpMult * (isBoss ? bossHpMult : 1));
-                speedData.push(speedMult);
-                totalHpData.push(baseHp * hpMult * enemyCount);
+            for (let l = 1; l <= maxLevel; l++) {
+                levels.push(l);
+                damages.push(l * dmgMult); // Level multiplier = level number
             }
 
-            waveChart.data.labels = waves;
-            waveChart.data.datasets = [
-                {
-                    label: 'Enemy HP',
-                    data: hpData,
-                    borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0,212,255,0.1)',
-                    fill: true
-                },
-                {
-                    label: 'Total Wave HP',
-                    data: totalHpData,
-                    borderColor: '#a855f7',
-                    backgroundColor: 'rgba(168,85,247,0.1)',
-                    fill: true,
-                    yAxisID: 'y1'
+            document.getElementById('max-dmg-display').textContent = (maxLevel * dmgMult).toFixed(1) + 'x';
+
+            damageChart.data.labels = levels;
+            damageChart.data.datasets = [{
+                label: 'Damage Multiplier',
+                data: damages,
+                backgroundColor: '#00d4ff',
+                borderColor: '#00d4ff'
+            }];
+            damageChart.update();
+
+            // Cost table
+            const tbody = document.querySelector('#upgrade-cost-table tbody');
+            tbody.innerHTML = '';
+
+            const costs = { common: costCommon, rare: costRare, epic: costEpic, legendary: costLegendary };
+            const totals = { common: 0, rare: 0, epic: 0, legendary: 0 };
+
+            for (let l = 1; l <= maxLevel; l++) {
+                const row = document.createElement('tr');
+                const dmg = l * dmgMult;
+                const prevDmg = l > 1 ? (l - 1) * dmgMult : 0;
+                const dpsGain = l > 1 ? ((dmg - prevDmg) / prevDmg * 100).toFixed(0) : '-';
+
+                let commonCost = 0, rareCost = 0, epicCost = 0, legendaryCost = 0;
+
+                if (l > 1) {
+                    switch (formula) {
+                        case 'exponential':
+                            commonCost = costCommon * Math.pow(2, l - 2);
+                            rareCost = costRare * Math.pow(2, l - 2);
+                            epicCost = costEpic * Math.pow(2, l - 2);
+                            legendaryCost = costLegendary * Math.pow(2, l - 2);
+                            break;
+                        case 'linear':
+                            commonCost = costCommon * (l - 1);
+                            rareCost = costRare * (l - 1);
+                            epicCost = costEpic * (l - 1);
+                            legendaryCost = costLegendary * (l - 1);
+                            break;
+                        case 'quadratic':
+                            commonCost = costCommon * Math.pow(l - 1, 2);
+                            rareCost = costRare * Math.pow(l - 1, 2);
+                            epicCost = costEpic * Math.pow(l - 1, 2);
+                            legendaryCost = costLegendary * Math.pow(l - 1, 2);
+                            break;
+                    }
+
+                    totals.common += commonCost;
+                    totals.rare += rareCost;
+                    totals.epic += epicCost;
+                    totals.legendary += legendaryCost;
                 }
+
+                row.innerHTML = `
+                    <td>${l}</td>
+                    <td class="rarity-common">${l === 1 ? '-' : Math.floor(commonCost).toLocaleString()}</td>
+                    <td class="rarity-rare">${l === 1 ? '-' : Math.floor(rareCost).toLocaleString()}</td>
+                    <td class="rarity-epic">${l === 1 ? '-' : Math.floor(epicCost).toLocaleString()}</td>
+                    <td class="rarity-legendary">${l === 1 ? '-' : Math.floor(legendaryCost).toLocaleString()}</td>
+                    <td class="highlight">${dmg.toFixed(1)}x</td>
+                    <td>${dpsGain}%</td>
+                `;
+                tbody.appendChild(row);
+            }
+
+            document.getElementById('total-cost-summary').innerHTML = `
+                <li><span class="rarity-common">Common:</span> ${Math.floor(totals.common).toLocaleString()} Hash</li>
+                <li><span class="rarity-rare">Rare:</span> ${Math.floor(totals.rare).toLocaleString()} Hash</li>
+                <li><span class="rarity-epic">Epic:</span> ${Math.floor(totals.epic).toLocaleString()} Hash</li>
+                <li><span class="rarity-legendary">Legendary:</span> ${Math.floor(totals.legendary).toLocaleString()} Hash</li>
+            `;
+        }
+
+        // ===== HASH ECONOMY =====
+        function updateHashChart() {
+            const base = parseFloat(document.getElementById('hash-base').value);
+            const cpuMult = parseFloat(document.getElementById('hash-cpu-mult').value);
+            const storageBase = parseInt(document.getElementById('storage-base').value);
+            const storagePerLevel = parseInt(document.getElementById('storage-per-level').value);
+            const maxTier = parseInt(document.getElementById('storage-max-tier').value);
+            const offlineRate = parseFloat(document.getElementById('offline-rate').value) / 100;
+            const maxOfflineHours = parseFloat(document.getElementById('offline-max-hours').value);
+
+            // Hash rate by CPU level
+            const levels = [];
+            const rates = [];
+            for (let l = 1; l <= 10; l++) {
+                levels.push(l);
+                rates.push(base * Math.pow(cpuMult, l - 1));
+            }
+
+            hashRateChart.data.labels = levels;
+            hashRateChart.data.datasets = [{
+                label: 'Hash/sec',
+                data: rates,
+                backgroundColor: '#00d4ff'
+            }];
+            hashRateChart.update();
+
+            // Hash accumulation over time (comparing CPU levels 1, 3, 5, 7)
+            const times = [];
+            const data1 = [], data3 = [], data5 = [], data7 = [];
+            const rate1 = base * Math.pow(cpuMult, 0);
+            const rate3 = base * Math.pow(cpuMult, 2);
+            const rate5 = base * Math.pow(cpuMult, 4);
+            const rate7 = base * Math.pow(cpuMult, 6);
+
+            for (let m = 0; m <= 10; m++) {
+                times.push(m);
+                data1.push(rate1 * m * 60);
+                data3.push(rate3 * m * 60);
+                data5.push(rate5 * m * 60);
+                data7.push(rate7 * m * 60);
+            }
+
+            hashAccumChart.data.labels = times;
+            hashAccumChart.data.datasets = [
+                { label: 'CPU Lv1', data: data1, borderColor: '#71717a', fill: false },
+                { label: 'CPU Lv3', data: data3, borderColor: '#3b82f6', fill: false },
+                { label: 'CPU Lv5', data: data5, borderColor: '#a855f7', fill: false },
+                { label: 'CPU Lv7', data: data7, borderColor: '#eab308', fill: false }
             ];
-            waveChart.options.scales.y1 = {
-                position: 'right',
-                ticks: { color: '#a1a1aa' },
-                grid: { display: false },
-                title: { display: true, text: 'Total Wave HP', color: '#a1a1aa' }
-            };
-            waveChart.update();
+            hashAccumChart.update();
 
-            // Update stats
-            document.getElementById('wave-stat-w10-hp').textContent = hpData[9].toFixed(0);
-            document.getElementById('wave-stat-w20-hp').textContent = hpData[19].toFixed(0);
-            document.getElementById('wave-stat-w10-total').textContent = totalHpData[9].toFixed(0);
-            document.getElementById('wave-stat-w20-total').textContent = totalHpData[19].toFixed(0);
+            // Storage table
+            const tbody = document.querySelector('#storage-table tbody');
+            tbody.innerHTML = '';
 
-            // Generate insights
-            const insights = [];
-            const w10Growth = hpData[9] / hpData[0];
-            const w20Growth = hpData[19] / hpData[0];
+            for (let t = 1; t <= maxTier; t++) {
+                const capacity = storageBase + (t - 1) * storagePerLevel;
+                const fillTime = capacity / rate1;
+                const offlineCap = Math.min(capacity, rate1 * offlineRate * maxOfflineHours * 3600);
 
-            if (w20Growth > 5) {
-                insights.push({ class: 'warning', text: `Wave 20 enemies have ${w20Growth.toFixed(1)}x HP - may feel too spongy` });
-            } else if (w20Growth < 2) {
-                insights.push({ class: 'warning', text: `Wave 20 only ${w20Growth.toFixed(1)}x HP - late game may be too easy` });
-            } else {
-                insights.push({ class: 'success', text: `Scaling looks balanced (${w20Growth.toFixed(1)}x at wave 20)` });
+                tbody.innerHTML += `
+                    <tr>
+                        <td>Tier ${t}</td>
+                        <td class="highlight">${capacity.toLocaleString()}</td>
+                        <td>${formatTime(fillTime)}</td>
+                        <td>${Math.floor(offlineCap).toLocaleString()}</td>
+                    </tr>
+                `;
             }
 
-            if (bossInterval > 7) {
-                insights.push({ class: 'warning', text: `Boss every ${bossInterval} waves - players may get bored` });
-            }
-
-            document.getElementById('wave-insights-list').innerHTML =
-                insights.map(i => `<li class="${i.class}">${i.text}</li>`).join('');
+            // Offline summary
+            document.getElementById('offline-summary').innerHTML = `
+                <li>8h offline @ CPU Lv1: ${Math.floor(rate1 * offlineRate * 8 * 3600).toLocaleString()} Hash (${(offlineRate * 100).toFixed(0)}% rate)</li>
+                <li>8h offline @ CPU Lv5: ${Math.floor(rate5 * offlineRate * 8 * 3600).toLocaleString()} Hash</li>
+                <li>Overclock bonus: ${(parseFloat(document.getElementById('overclock-mult').value) * 100).toFixed(0)}% for ${document.getElementById('overclock-duration').value}s</li>
+            `;
         }
 
+        // ===== POWER GRID =====
+        function updatePowerChart() {
+            const basePower = parseInt(document.getElementById('power-base').value);
+            const powerPerLevel = parseInt(document.getElementById('power-per-level').value);
+            const maxCPU = parseInt(document.getElementById('power-max-cpu').value);
+            const towerCommon = parseInt(document.getElementById('tower-power-common').value);
+            const towerRare = parseInt(document.getElementById('tower-power-rare').value);
+            const towerEpic = parseInt(document.getElementById('tower-power-epic').value);
+            const towerLegendary = parseInt(document.getElementById('tower-power-legendary').value);
+
+            const levels = [];
+            const powerBudgets = [];
+
+            for (let l = 1; l <= maxCPU; l++) {
+                levels.push(l);
+                powerBudgets.push(basePower + l * powerPerLevel);
+            }
+
+            powerChart.data.labels = levels;
+            powerChart.data.datasets = [{
+                label: 'Power Budget (W)',
+                data: powerBudgets,
+                backgroundColor: '#22c55e'
+            }];
+            powerChart.update();
+
+            // Tower limit table
+            const tbody = document.querySelector('#tower-limit-table tbody');
+            tbody.innerHTML = '';
+
+            for (let l = 1; l <= maxCPU; l++) {
+                const budget = basePower + l * powerPerLevel;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>CPU ${l}</td>
+                        <td class="highlight">${budget}W</td>
+                        <td class="rarity-common">${Math.floor(budget / towerCommon)}</td>
+                        <td class="rarity-rare">${Math.floor(budget / towerRare)}</td>
+                        <td class="rarity-epic">${Math.floor(budget / towerEpic)}</td>
+                        <td class="rarity-legendary">${Math.floor(budget / towerLegendary)}</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // ===== THREAT SYSTEM =====
         function updateThreatChart() {
-            const hpScaling = parseFloat(document.getElementById('threat-hp-scaling').value);
-            const speedScaling = parseFloat(document.getElementById('threat-speed-scaling').value);
-            const damageScaling = parseFloat(document.getElementById('threat-damage-scaling').value);
-            const growthRate = parseFloat(document.getElementById('threat-growth-rate').value);
-            const fastThreshold = parseFloat(document.getElementById('threat-fast-threshold').value);
-            const tankThreshold = parseFloat(document.getElementById('threat-tank-threshold').value);
-            const bossThreshold = parseFloat(document.getElementById('threat-boss-threshold').value);
+            const onlineRate = parseFloat(document.getElementById('threat-online-rate').value);
+            const hpScale = parseFloat(document.getElementById('threat-hp-scale').value);
+            const speedScale = parseFloat(document.getElementById('threat-speed-scale').value);
+            const dmgScale = parseFloat(document.getElementById('threat-dmg-scale').value);
+            const maxThreat = parseInt(document.getElementById('threat-max').value);
+
+            const unlockFast = parseFloat(document.getElementById('unlock-fast').value);
+            const unlockSwarm = parseFloat(document.getElementById('unlock-swarm').value);
+            const unlockTank = parseFloat(document.getElementById('unlock-tank').value);
+            const unlockElite = parseFloat(document.getElementById('unlock-elite').value);
+            const unlockBoss = parseFloat(document.getElementById('unlock-boss').value);
 
             const threats = [];
-            const hpData = [];
-            const speedData = [];
-            const damageData = [];
+            const hpData = [], speedData = [], dmgData = [];
 
-            for (let t = 1; t <= 20; t++) {
+            const displayMax = Math.min(maxThreat, 30);
+            for (let t = 1; t <= displayMax; t++) {
                 threats.push(t);
-                hpData.push(1 + (t - 1) * hpScaling);
-                speedData.push(1 + (t - 1) * speedScaling);
-                damageData.push(1 + (t - 1) * damageScaling);
+                hpData.push(1 + (t - 1) * hpScale);
+                speedData.push(1 + (t - 1) * speedScale);
+                dmgData.push(1 + (t - 1) * dmgScale);
             }
 
             threatChart.data.labels = threats;
             threatChart.data.datasets = [
-                { label: 'HP Multiplier', data: hpData, borderColor: '#ef4444' },
-                { label: 'Speed Multiplier', data: speedData, borderColor: '#22c55e' },
-                { label: 'Damage Multiplier', data: damageData, borderColor: '#eab308' }
+                { label: 'HP Multiplier', data: hpData, borderColor: '#ef4444', fill: false },
+                { label: 'Speed Multiplier', data: speedData, borderColor: '#22c55e', fill: false },
+                { label: 'Damage Multiplier', data: dmgData, borderColor: '#eab308', fill: false }
             ];
             threatChart.update();
 
-            // Calculate time to reach thresholds
-            const fastTime = fastThreshold / growthRate / 60;
-            const tankTime = tankThreshold / growthRate / 60;
-            const bossTime = bossThreshold / growthRate / 60;
-            const threat5min = 5 * 60 * growthRate;
-            const hp5min = 1 + (threat5min - 1) * hpScaling;
+            // Timeline table
+            const tbody = document.querySelector('#threat-timeline-table tbody');
+            tbody.innerHTML = '';
 
-            document.getElementById('threat-stat-fast').textContent = fastTime.toFixed(1);
-            document.getElementById('threat-stat-tank').textContent = tankTime.toFixed(1);
-            document.getElementById('threat-stat-boss').textContent = bossTime.toFixed(1);
-            document.getElementById('threat-stat-5min').textContent = hp5min.toFixed(1) + 'x';
+            const events = [
+                { name: 'Fast Enemy', threat: unlockFast },
+                { name: 'Swarm Enemy', threat: unlockSwarm },
+                { name: 'Tank Enemy', threat: unlockTank },
+                { name: 'Elite Enemy', threat: unlockElite },
+                { name: 'Mini-Boss', threat: unlockBoss }
+            ];
 
-            // Insights
-            const insights = [];
-            if (fastTime < 0.5) {
-                insights.push({ class: 'warning', text: 'Fast enemies appear very quickly - new players may struggle' });
-            }
-            if (bossTime > 10) {
-                insights.push({ class: 'danger', text: `Boss enemies take ${bossTime.toFixed(0)} min to appear - too slow?` });
-            }
-            if (hp5min > 2) {
-                insights.push({ class: 'success', text: `Good difficulty curve: ${hp5min.toFixed(1)}x HP at 5 minutes` });
-            }
+            events.forEach(e => {
+                const time = e.threat / onlineRate;
+                const hp = 1 + (e.threat - 1) * hpScale;
+                const spd = 1 + (e.threat - 1) * speedScale;
+                const dmg = 1 + (e.threat - 1) * dmgScale;
 
-            document.getElementById('threat-insights-list').innerHTML =
-                insights.map(i => `<li class="${i.class}">${i.text}</li>`).join('');
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${e.name}</td>
+                        <td class="highlight">${e.threat}</td>
+                        <td>${formatTime(time)}</td>
+                        <td>${hp.toFixed(2)}x</td>
+                        <td>${spd.toFixed(2)}x</td>
+                        <td>${dmg.toFixed(2)}x</td>
+                    </tr>
+                `;
+            });
         }
 
-        function updateTowerChart() {
-            const damage = parseFloat(document.getElementById('tower-damage').value);
-            const attackSpeed = parseFloat(document.getElementById('tower-attack-speed').value);
-            const projectiles = parseInt(document.getElementById('tower-projectiles').value);
-            const pierce = parseInt(document.getElementById('tower-pierce').value);
-            const level = parseInt(document.getElementById('tower-level').value);
-            const levelMult = parseFloat(document.getElementById('tower-level-mult').value);
+        // ===== BOSS TUNING =====
+        function updateBossChart() {
+            const baseHp = parseInt(document.getElementById('cyber-hp').value);
+            const hpScale = parseFloat(document.getElementById('cyber-hp-scale').value);
+            const laserDmg = parseInt(document.getElementById('cyber-laser-dmg').value);
+            const laserWarn = parseFloat(document.getElementById('cyber-laser-warn').value);
+            const puddleDmg = parseInt(document.getElementById('cyber-puddle-dmg').value);
+            const puddleDur = parseFloat(document.getElementById('cyber-puddle-dur').value);
+            const spawnCount = parseInt(document.getElementById('cyber-spawn-count').value);
+            const spawnInterval = parseInt(document.getElementById('cyber-spawn-interval').value);
 
-            const healthScaling = parseFloat(document.getElementById('wave-health-scaling').value);
-            const baseHp = parseFloat(document.getElementById('wave-base-hp').value);
+            const phase2 = parseInt(document.getElementById('cyber-phase2').value);
+            const phase3 = parseInt(document.getElementById('cyber-phase3').value);
+            const phase4 = parseInt(document.getElementById('cyber-phase4').value);
 
-            const baseDps = damage * attackSpeed * projectiles;
-            const levelDamage = damage * (1 + (level - 1) * levelMult);
-            const levelDps = levelDamage * attackSpeed * projectiles;
-            const maxDps = damage * (1 + 9 * levelMult) * attackSpeed * projectiles;
-
+            // Boss HP by wave (boss appears every 5 waves)
             const waves = [];
-            const enemyHpData = [];
-            const dpsLine = [];
-            const maxDpsLine = [];
-            const ttkData = [];
+            const hpData = [];
 
-            for (let w = 1; w <= 20; w++) {
+            for (let w = 5; w <= 30; w += 5) {
                 waves.push(w);
-                const hpMult = 1 + (w - 1) * healthScaling;
-                const hp = baseHp * hpMult;
-                enemyHpData.push(hp);
-                dpsLine.push(levelDps);
-                maxDpsLine.push(maxDps);
-                ttkData.push(hp / levelDps);
+                hpData.push(baseHp * (1 + (w - 1) * hpScale));
             }
 
-            towerChart.data.labels = waves;
-            towerChart.data.datasets = [
-                { label: 'Enemy HP', data: enemyHpData, borderColor: '#ef4444', fill: false },
-                { label: `Tower DPS (Lv${level})`, data: dpsLine, borderColor: '#00d4ff', borderDash: [5,5] },
-                { label: 'Max Tower DPS (Lv10)', data: maxDpsLine, borderColor: '#22c55e', borderDash: [5,5] }
-            ];
-            towerChart.update();
+            bossHpChart.data.labels = waves;
+            bossHpChart.data.datasets = [{
+                label: 'Cyberboss HP',
+                data: hpData,
+                borderColor: '#ef4444',
+                backgroundColor: 'rgba(239,68,68,0.1)',
+                fill: true
+            }];
+            bossHpChart.update();
 
-            // Stats
-            document.getElementById('tower-stat-dps').textContent = levelDps.toFixed(1);
-            document.getElementById('tower-stat-dps-max').textContent = maxDps.toFixed(1);
-            document.getElementById('tower-stat-ttk-w1').textContent = (enemyHpData[0] / levelDps).toFixed(2) + 's';
-            document.getElementById('tower-stat-ttk-w10').textContent = (enemyHpData[9] / levelDps).toFixed(2) + 's';
-
-            // Insights
-            const insights = [];
-            const ttkW10 = enemyHpData[9] / levelDps;
-            const ttkW20 = enemyHpData[19] / levelDps;
-
-            if (ttkW10 > 5) {
-                insights.push({ class: 'danger', text: `TTK at wave 10 is ${ttkW10.toFixed(1)}s - enemies feel too tanky` });
-            }
-            if (ttkW20 / ttkData[0] > 10) {
-                insights.push({ class: 'warning', text: 'TTK grows too fast - tower upgrades may not keep up' });
-            }
-            if (maxDps < enemyHpData[19] / 3) {
-                insights.push({ class: 'danger', text: 'Max DPS cannot kill wave 20 enemies in 3s - need more towers or scaling' });
-            } else {
-                insights.push({ class: 'success', text: 'Tower scaling keeps up with enemy HP growth' });
-            }
-
-            document.getElementById('tower-insights-list').innerHTML =
-                insights.map(i => `<li class="${i.class}">${i.text}</li>`).join('');
-        }
-
-        function updateEconomyChart() {
-            const hashPerSec = parseFloat(document.getElementById('econ-hash-per-sec').value);
-            const hashBonus = parseFloat(document.getElementById('econ-hash-bonus').value);
-            const waveBonus = parseInt(document.getElementById('econ-wave-bonus').value);
-            const extraction = parseInt(document.getElementById('econ-extraction').value);
-
-            const costCommon = parseInt(document.getElementById('econ-cost-common').value);
-            const costRare = parseInt(document.getElementById('econ-cost-rare').value);
-            const costEpic = parseInt(document.getElementById('econ-cost-epic').value);
-            const costLegendary = parseInt(document.getElementById('econ-cost-legendary').value);
-
-            const times = [];
-            const hashData = [];
-            let totalHash = 0;
-
-            for (let sec = 0; sec <= 600; sec += 30) {
-                times.push(sec / 60);
-                const minutes = sec / 60;
-                const rate = hashPerSec + minutes * hashBonus;
-                totalHash += rate * 30;
-                hashData.push(Math.floor(totalHash));
-            }
-
-            economyChart.data.labels = times;
-            economyChart.data.datasets = [
-                {
-                    label: 'Total Hash Earned',
-                    data: hashData,
-                    borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0,212,255,0.1)',
-                    fill: true
-                }
-            ];
-            economyChart.update();
-
-            // Stats
-            const hash3min = hashData[6]; // 180s / 30 = 6
-            const hash5min = hashData[10]; // 300s / 30 = 10
-
-            document.getElementById('econ-stat-3min').textContent = hash3min;
-            document.getElementById('econ-stat-5min').textContent = hash5min;
-
-            // Time to afford each rarity
-            function timeToAfford(cost) {
-                for (let i = 0; i < hashData.length; i++) {
-                    if (hashData[i] >= cost) return (i * 30) + 's';
-                }
-                return '>10m';
-            }
-
-            document.getElementById('econ-stat-rare-time').textContent = timeToAfford(costRare);
-            document.getElementById('econ-stat-epic-time').textContent = timeToAfford(costEpic);
-
-            // Insights
-            const insights = [];
-            if (hash3min < costRare) {
-                insights.push({ class: 'warning', text: `Can't afford Rare tower by extraction (${extraction}s)` });
-            }
-            if (hash5min < costEpic) {
-                insights.push({ class: 'warning', text: "Epic towers may be unreachable in typical 5min runs" });
-            }
-            if (hashBonus > hashPerSec / 2) {
-                insights.push({ class: 'success', text: 'Good late-game acceleration with bonus/minute' });
-            }
-
-            document.getElementById('econ-insights-list').innerHTML =
-                insights.map(i => `<li class="${i.class}">${i.text}</li>`).join('');
-        }
-
-        function updateDropChart() {
-            const baseCommon = parseFloat(document.getElementById('drop-common').value);
-            const baseRare = parseFloat(document.getElementById('drop-rare').value);
-            const baseEpic = parseFloat(document.getElementById('drop-epic').value);
-            const baseLegendary = parseFloat(document.getElementById('drop-legendary').value);
-            const diminishing = parseFloat(document.getElementById('drop-diminishing').value);
-
-            const kills = [];
-            const commonData = [];
-            const rareData = [];
-            const epicData = [];
-            const legendaryData = [];
-
-            for (let k = 1; k <= 20; k++) {
-                kills.push(k);
-                const dim = 1 / (1 + diminishing * k);
-                commonData.push(baseCommon * dim * 100);
-                rareData.push(baseRare * dim * 100);
-                epicData.push(baseEpic * dim * 100);
-                legendaryData.push(baseLegendary * dim * 100);
-            }
-
-            dropChart.data.labels = kills;
-            dropChart.data.datasets = [
-                { label: 'Common %', data: commonData, borderColor: '#71717a' },
-                { label: 'Rare %', data: rareData, borderColor: '#3b82f6' },
-                { label: 'Epic %', data: epicData, borderColor: '#a855f7' },
-                { label: 'Legendary %', data: legendaryData, borderColor: '#eab308' }
-            ];
-            dropChart.update();
-        }
-
-        function runDropSimulation() {
-            const kills = parseInt(document.getElementById('sim-kills').value);
-            const difficulty = document.getElementById('sim-difficulty').value;
-
-            const baseCommon = parseFloat(document.getElementById('drop-common').value);
-            const baseRare = parseFloat(document.getElementById('drop-rare').value);
-            const baseEpic = parseFloat(document.getElementById('drop-epic').value);
-            const baseLegendary = parseFloat(document.getElementById('drop-legendary').value);
-            const diminishing = parseFloat(document.getElementById('drop-diminishing').value);
-            const pity = parseInt(document.getElementById('drop-pity').value);
-
-            const diffMults = {
-                easy: parseFloat(document.getElementById('drop-mult-easy').value),
-                normal: parseFloat(document.getElementById('drop-mult-normal').value),
-                hard: parseFloat(document.getElementById('drop-mult-hard').value),
-                nightmare: parseFloat(document.getElementById('drop-mult-nightmare').value)
-            };
-
-            const diffMult = diffMults[difficulty];
-
-            let results = { common: 0, rare: 0, epic: 0, legendary: 0, none: 0 };
-            let killsSinceLastDrop = 0;
-            let log = [];
-
-            for (let k = 1; k <= kills; k++) {
-                killsSinceLastDrop++;
-                const dim = 1 / (1 + diminishing * k);
-
-                // Pity check
-                if (killsSinceLastDrop >= pity) {
-                    results.common++;
-                    killsSinceLastDrop = 0;
-                    if (k <= 20) log.push({ kill: k, type: 'pity', rarity: 'common' });
-                    continue;
-                }
-
-                const roll = Math.random();
-                let cumulative = 0;
-
-                // Legendary
-                cumulative += baseLegendary * diffMult * dim;
-                if (roll < cumulative) {
-                    results.legendary++;
-                    killsSinceLastDrop = 0;
-                    if (k <= 20) log.push({ kill: k, type: 'drop', rarity: 'legendary' });
-                    continue;
-                }
-
-                // Epic
-                cumulative += baseEpic * diffMult * dim;
-                if (roll < cumulative) {
-                    results.epic++;
-                    killsSinceLastDrop = 0;
-                    if (k <= 20) log.push({ kill: k, type: 'drop', rarity: 'epic' });
-                    continue;
-                }
-
-                // Rare
-                cumulative += baseRare * diffMult * dim;
-                if (roll < cumulative) {
-                    results.rare++;
-                    killsSinceLastDrop = 0;
-                    if (k <= 20) log.push({ kill: k, type: 'drop', rarity: 'rare' });
-                    continue;
-                }
-
-                // Common
-                cumulative += baseCommon * diffMult * dim;
-                if (roll < cumulative) {
-                    results.common++;
-                    killsSinceLastDrop = 0;
-                    if (k <= 20) log.push({ kill: k, type: 'drop', rarity: 'common' });
-                    continue;
-                }
-
-                results.none++;
-                if (k <= 20) log.push({ kill: k, type: 'none' });
-            }
-
-            // Render results
-            const total = kills;
-            const dropTotal = results.common + results.rare + results.epic + results.legendary;
-            document.getElementById('drop-results').innerHTML = `
-                <div class="drop-bar rarity-common">
-                    <div class="drop-bar-label">Common</div>
-                    <div class="drop-bar-track"><div class="drop-bar-fill" style="width:${results.common/total*100}%"></div></div>
-                    <div class="drop-bar-value">${(results.common/total*100).toFixed(1)}%</div>
+            // Update phase timeline
+            document.querySelector('.phase-timeline').innerHTML = `
+                <div class="phase-block">
+                    <div class="phase-name">Phase 1</div>
+                    <div class="phase-hp">100% - ${phase2 + 1}%</div>
                 </div>
-                <div class="drop-bar rarity-rare">
-                    <div class="drop-bar-label">Rare</div>
-                    <div class="drop-bar-track"><div class="drop-bar-fill" style="width:${results.rare/total*100}%"></div></div>
-                    <div class="drop-bar-value">${(results.rare/total*100).toFixed(1)}%</div>
+                <div class="phase-block">
+                    <div class="phase-name">Phase 2</div>
+                    <div class="phase-hp">${phase2}% - ${phase3 + 1}%</div>
                 </div>
-                <div class="drop-bar rarity-epic">
-                    <div class="drop-bar-label">Epic</div>
-                    <div class="drop-bar-track"><div class="drop-bar-fill" style="width:${results.epic/total*100}%"></div></div>
-                    <div class="drop-bar-value">${(results.epic/total*100).toFixed(1)}%</div>
+                <div class="phase-block">
+                    <div class="phase-name">Phase 3</div>
+                    <div class="phase-hp">${phase3}% - ${phase4 + 1}%</div>
                 </div>
-                <div class="drop-bar rarity-legendary">
-                    <div class="drop-bar-label">Legendary</div>
-                    <div class="drop-bar-track"><div class="drop-bar-fill" style="width:${results.legendary/total*100}%"></div></div>
-                    <div class="drop-bar-value">${(results.legendary/total*100).toFixed(1)}%</div>
+                <div class="phase-block">
+                    <div class="phase-name">Phase 4</div>
+                    <div class="phase-hp">${phase4}% - 0%</div>
                 </div>
-                <div class="drop-bar">
-                    <div class="drop-bar-label">No Drop</div>
-                    <div class="drop-bar-track"><div class="drop-bar-fill" style="width:${results.none/total*100}%;background:#333"></div></div>
-                    <div class="drop-bar-value">${(results.none/total*100).toFixed(1)}%</div>
-                </div>
-                <table class="metric-table">
-                    <tr><th>Metric</th><th>Value</th></tr>
-                    <tr><td>Total Drops</td><td>${dropTotal} / ${kills} kills</td></tr>
-                    <tr><td>Overall Drop Rate</td><td>${(dropTotal/kills*100).toFixed(1)}%</td></tr>
-                    <tr><td>Avg Kills per Drop</td><td>${(kills/dropTotal).toFixed(1)}</td></tr>
-                    <tr><td>Legendary Chance</td><td>1 in ${Math.round(kills/Math.max(1,results.legendary))}</td></tr>
-                </table>
             `;
 
-            // Render log
-            document.getElementById('simulation-log').innerHTML = log.map(l => {
-                if (l.type === 'none') {
-                    return `<div class="log-entry no-drop">Kill ${l.kill}: No drop</div>`;
-                } else if (l.type === 'pity') {
-                    return `<div class="log-entry first-kill">Kill ${l.kill}: PITY ${l.rarity.toUpperCase()}</div>`;
-                } else {
-                    const cls = l.rarity === 'legendary' ? 'legendary' : 'drop';
-                    return `<div class="log-entry ${cls}">Kill ${l.kill}: ${l.rarity.toUpperCase()}</div>`;
-                }
-            }).join('') + `<div style="margin-top:10px;color:#666">... showing first 20 kills ...</div>`;
+            // Ability table
+            document.getElementById('boss-ability-table').innerHTML = `
+                <tr>
+                    <td>Laser Beam</td>
+                    <td class="danger">${laserDmg} (instant)</td>
+                    <td>${laserWarn}s warning</td>
+                    <td>High - avoid or die</td>
+                </tr>
+                <tr>
+                    <td>Acid Puddle</td>
+                    <td class="warning">${puddleDmg}/sec</td>
+                    <td>${puddleDur}s duration</td>
+                    <td>Medium - zone denial</td>
+                </tr>
+                <tr>
+                    <td>Spawn Adds</td>
+                    <td>${spawnCount} enemies</td>
+                    <td>Every ${spawnInterval}s</td>
+                    <td>Low - distraction</td>
+                </tr>
+            `;
         }
 
+        // ===== EXPORT/IMPORT =====
         function generateExport() {
             const config = {
-                waves: {
-                    healthScalingPerWave: parseFloat(document.getElementById('wave-health-scaling').value),
-                    speedScalingPerWave: parseFloat(document.getElementById('wave-speed-scaling').value),
-                    baseEnemyCount: parseInt(document.getElementById('wave-base-count').value),
-                    enemiesPerWave: parseInt(document.getElementById('wave-enemies-per').value),
-                    bossWaveInterval: parseInt(document.getElementById('wave-boss-interval').value),
-                    bossHealthMultiplier: parseFloat(document.getElementById('wave-boss-hp-mult').value)
-                },
-                threatLevel: {
-                    healthScaling: parseFloat(document.getElementById('threat-hp-scaling').value),
-                    speedScaling: parseFloat(document.getElementById('threat-speed-scaling').value),
-                    damageScaling: parseFloat(document.getElementById('threat-damage-scaling').value),
-                    fastEnemyThreshold: parseFloat(document.getElementById('threat-fast-threshold').value),
-                    tankEnemyThreshold: parseFloat(document.getElementById('threat-tank-threshold').value),
-                    bossEnemyThreshold: parseFloat(document.getElementById('threat-boss-threshold').value)
-                },
-                survivalEconomy: {
-                    hashPerSecond: parseFloat(document.getElementById('econ-hash-per-sec').value),
-                    hashBonusPerMinute: parseFloat(document.getElementById('econ-hash-bonus').value),
-                    extractionTime: parseInt(document.getElementById('econ-extraction').value)
-                },
-                towers: {
-                    placementCosts: {
-                        common: parseInt(document.getElementById('econ-cost-common').value),
-                        rare: parseInt(document.getElementById('econ-cost-rare').value),
-                        epic: parseInt(document.getElementById('econ-cost-epic').value),
-                        legendary: parseInt(document.getElementById('econ-cost-legendary').value)
+                protocolScaling: {
+                    damageMultiplierPerLevel: parseFloat(document.getElementById('proto-dmg-mult').value),
+                    rangePerLevel: parseFloat(document.getElementById('proto-range-mult').value),
+                    fireRatePerLevel: parseFloat(document.getElementById('proto-fire-mult').value),
+                    maxLevel: parseInt(document.getElementById('proto-max-level').value),
+                    upgradeCostFormula: document.getElementById('cost-formula').value,
+                    baseCosts: {
+                        common: parseInt(document.getElementById('cost-common').value),
+                        rare: parseInt(document.getElementById('cost-rare').value),
+                        epic: parseInt(document.getElementById('cost-epic').value),
+                        legendary: parseInt(document.getElementById('cost-legendary').value)
                     }
                 },
-                dropRates: {
-                    common: parseFloat(document.getElementById('drop-common').value),
-                    rare: parseFloat(document.getElementById('drop-rare').value),
-                    epic: parseFloat(document.getElementById('drop-epic').value),
-                    legendary: parseFloat(document.getElementById('drop-legendary').value),
-                    easyMultiplier: parseFloat(document.getElementById('drop-mult-easy').value),
-                    normalMultiplier: parseFloat(document.getElementById('drop-mult-normal').value),
-                    hardMultiplier: parseFloat(document.getElementById('drop-mult-hard').value),
-                    nightmareMultiplier: parseFloat(document.getElementById('drop-mult-nightmare').value),
-                    pityThreshold: parseInt(document.getElementById('drop-pity').value),
-                    diminishingFactor: parseFloat(document.getElementById('drop-diminishing').value)
+                hashEconomy: {
+                    baseHashPerSecond: parseFloat(document.getElementById('hash-base').value),
+                    cpuLevelMultiplier: parseFloat(document.getElementById('hash-cpu-mult').value),
+                    baseStorageCapacity: parseInt(document.getElementById('storage-base').value),
+                    storagePerUpgrade: parseInt(document.getElementById('storage-per-level').value),
+                    overclockMultiplier: parseFloat(document.getElementById('overclock-mult').value),
+                    overclockDuration: parseInt(document.getElementById('overclock-duration').value),
+                    offlineEarningsRate: parseFloat(document.getElementById('offline-rate').value) / 100,
+                    maxOfflineHours: parseFloat(document.getElementById('offline-max-hours').value)
+                },
+                powerGrid: {
+                    basePowerBudget: parseInt(document.getElementById('power-base').value),
+                    powerPerCPULevel: parseInt(document.getElementById('power-per-level').value),
+                    towerPowerDraw: {
+                        common: parseInt(document.getElementById('tower-power-common').value),
+                        rare: parseInt(document.getElementById('tower-power-rare').value),
+                        epic: parseInt(document.getElementById('tower-power-epic').value),
+                        legendary: parseInt(document.getElementById('tower-power-legendary').value)
+                    },
+                    overclockPowerMultiplier: parseFloat(document.getElementById('overclock-power-mult').value)
+                },
+                threatLevel: {
+                    onlineGrowthRate: parseFloat(document.getElementById('threat-online-rate').value),
+                    offlineGrowthRate: parseFloat(document.getElementById('threat-offline-rate').value),
+                    healthScaling: parseFloat(document.getElementById('threat-hp-scale').value),
+                    speedScaling: parseFloat(document.getElementById('threat-speed-scale').value),
+                    damageScaling: parseFloat(document.getElementById('threat-dmg-scale').value),
+                    maxThreatLevel: parseInt(document.getElementById('threat-max').value),
+                    enemyUnlocks: {
+                        fast: parseFloat(document.getElementById('unlock-fast').value),
+                        swarm: parseFloat(document.getElementById('unlock-swarm').value),
+                        tank: parseFloat(document.getElementById('unlock-tank').value),
+                        elite: parseFloat(document.getElementById('unlock-elite').value),
+                        boss: parseFloat(document.getElementById('unlock-boss').value)
+                    }
+                },
+                cyberboss: {
+                    baseHP: parseInt(document.getElementById('cyber-hp').value),
+                    hpScalingPerWave: parseFloat(document.getElementById('cyber-hp-scale').value),
+                    laserDamage: parseInt(document.getElementById('cyber-laser-dmg').value),
+                    laserWarningDuration: parseFloat(document.getElementById('cyber-laser-warn').value),
+                    puddleDamagePerSecond: parseInt(document.getElementById('cyber-puddle-dmg').value),
+                    puddleDuration: parseFloat(document.getElementById('cyber-puddle-dur').value),
+                    spawnWaveSize: parseInt(document.getElementById('cyber-spawn-count').value),
+                    spawnInterval: parseInt(document.getElementById('cyber-spawn-interval').value),
+                    phaseThresholds: {
+                        phase2: parseInt(document.getElementById('cyber-phase2').value) / 100,
+                        phase3: parseInt(document.getElementById('cyber-phase3').value) / 100,
+                        phase4: parseInt(document.getElementById('cyber-phase4').value) / 100
+                    }
+                },
+                zeroDay: {
+                    baseHP: parseInt(document.getElementById('zeroday-hp').value),
+                    speed: parseInt(document.getElementById('zeroday-speed').value),
+                    efficiencyDrainRate: parseFloat(document.getElementById('zeroday-drain').value),
+                    minWavesBeforeSpawn: parseInt(document.getElementById('zeroday-min-waves').value),
+                    defeatHashBonus: parseInt(document.getElementById('zeroday-hash').value),
+                    defeatEfficiencyRestore: parseInt(document.getElementById('zeroday-restore').value)
                 }
             };
 
             document.getElementById('export-json').value = JSON.stringify(config, null, 2);
         }
 
-        function copyExport() {
-            const textarea = document.getElementById('export-json');
-            textarea.select();
-            document.execCommand('copy');
-            alert('Copied to clipboard!');
-        }
-
         function importConfig() {
             try {
-                const json = document.getElementById('import-json').value;
-                const config = JSON.parse(json);
+                const config = JSON.parse(document.getElementById('import-json').value);
 
-                if (config.waves) {
-                    document.getElementById('wave-health-scaling').value = config.waves.healthScalingPerWave ?? 0.15;
-                    document.getElementById('wave-speed-scaling').value = config.waves.speedScalingPerWave ?? 0.02;
-                    document.getElementById('wave-base-count').value = config.waves.baseEnemyCount ?? 5;
-                    document.getElementById('wave-enemies-per').value = config.waves.enemiesPerWave ?? 2;
-                    document.getElementById('wave-boss-interval').value = config.waves.bossWaveInterval ?? 5;
-                    document.getElementById('wave-boss-hp-mult').value = config.waves.bossHealthMultiplier ?? 2.0;
+                if (config.protocolScaling) {
+                    document.getElementById('proto-dmg-mult').value = config.protocolScaling.damageMultiplierPerLevel ?? 1.0;
+                    document.getElementById('proto-range-mult').value = config.protocolScaling.rangePerLevel ?? 0.05;
+                    document.getElementById('proto-fire-mult').value = config.protocolScaling.fireRatePerLevel ?? 0.03;
+                    document.getElementById('proto-max-level').value = config.protocolScaling.maxLevel ?? 10;
+                    document.getElementById('cost-formula').value = config.protocolScaling.upgradeCostFormula ?? 'exponential';
+                    if (config.protocolScaling.baseCosts) {
+                        document.getElementById('cost-common').value = config.protocolScaling.baseCosts.common ?? 50;
+                        document.getElementById('cost-rare').value = config.protocolScaling.baseCosts.rare ?? 100;
+                        document.getElementById('cost-epic').value = config.protocolScaling.baseCosts.epic ?? 200;
+                        document.getElementById('cost-legendary').value = config.protocolScaling.baseCosts.legendary ?? 400;
+                    }
+                }
+
+                if (config.hashEconomy) {
+                    document.getElementById('hash-base').value = config.hashEconomy.baseHashPerSecond ?? 1.0;
+                    document.getElementById('hash-cpu-mult').value = config.hashEconomy.cpuLevelMultiplier ?? 1.5;
+                    document.getElementById('storage-base').value = config.hashEconomy.baseStorageCapacity ?? 500;
+                    document.getElementById('storage-per-level').value = config.hashEconomy.storagePerUpgrade ?? 500;
+                    document.getElementById('overclock-mult').value = config.hashEconomy.overclockMultiplier ?? 2.0;
+                    document.getElementById('overclock-duration').value = config.hashEconomy.overclockDuration ?? 60;
+                    document.getElementById('offline-rate').value = (config.hashEconomy.offlineEarningsRate ?? 0.2) * 100;
+                    document.getElementById('offline-max-hours').value = config.hashEconomy.maxOfflineHours ?? 8;
+                }
+
+                if (config.powerGrid) {
+                    document.getElementById('power-base').value = config.powerGrid.basePowerBudget ?? 100;
+                    document.getElementById('power-per-level').value = config.powerGrid.powerPerCPULevel ?? 50;
+                    document.getElementById('overclock-power-mult').value = config.powerGrid.overclockPowerMultiplier ?? 2.0;
+                    if (config.powerGrid.towerPowerDraw) {
+                        document.getElementById('tower-power-common').value = config.powerGrid.towerPowerDraw.common ?? 15;
+                        document.getElementById('tower-power-rare').value = config.powerGrid.towerPowerDraw.rare ?? 30;
+                        document.getElementById('tower-power-epic').value = config.powerGrid.towerPowerDraw.epic ?? 60;
+                        document.getElementById('tower-power-legendary').value = config.powerGrid.towerPowerDraw.legendary ?? 100;
+                    }
                 }
 
                 if (config.threatLevel) {
-                    document.getElementById('threat-hp-scaling').value = config.threatLevel.healthScaling ?? 0.15;
-                    document.getElementById('threat-speed-scaling').value = config.threatLevel.speedScaling ?? 0.02;
-                    document.getElementById('threat-damage-scaling').value = config.threatLevel.damageScaling ?? 0.05;
-                    document.getElementById('threat-fast-threshold').value = config.threatLevel.fastEnemyThreshold ?? 2.0;
-                    document.getElementById('threat-tank-threshold').value = config.threatLevel.tankEnemyThreshold ?? 5.0;
-                    document.getElementById('threat-boss-threshold').value = config.threatLevel.bossEnemyThreshold ?? 10.0;
+                    document.getElementById('threat-online-rate').value = config.threatLevel.onlineGrowthRate ?? 0.01;
+                    document.getElementById('threat-offline-rate').value = config.threatLevel.offlineGrowthRate ?? 0.001;
+                    document.getElementById('threat-hp-scale').value = config.threatLevel.healthScaling ?? 0.15;
+                    document.getElementById('threat-speed-scale').value = config.threatLevel.speedScaling ?? 0.02;
+                    document.getElementById('threat-dmg-scale').value = config.threatLevel.damageScaling ?? 0.05;
+                    document.getElementById('threat-max').value = config.threatLevel.maxThreatLevel ?? 100;
+                    if (config.threatLevel.enemyUnlocks) {
+                        document.getElementById('unlock-fast').value = config.threatLevel.enemyUnlocks.fast ?? 2.0;
+                        document.getElementById('unlock-swarm').value = config.threatLevel.enemyUnlocks.swarm ?? 4.0;
+                        document.getElementById('unlock-tank').value = config.threatLevel.enemyUnlocks.tank ?? 5.0;
+                        document.getElementById('unlock-elite').value = config.threatLevel.enemyUnlocks.elite ?? 8.0;
+                        document.getElementById('unlock-boss').value = config.threatLevel.enemyUnlocks.boss ?? 10.0;
+                    }
                 }
 
-                if (config.survivalEconomy) {
-                    document.getElementById('econ-hash-per-sec').value = config.survivalEconomy.hashPerSecond ?? 2.0;
-                    document.getElementById('econ-hash-bonus').value = config.survivalEconomy.hashBonusPerMinute ?? 0.5;
-                    document.getElementById('econ-extraction').value = config.survivalEconomy.extractionTime ?? 180;
+                if (config.cyberboss) {
+                    document.getElementById('cyber-hp').value = config.cyberboss.baseHP ?? 5000;
+                    document.getElementById('cyber-hp-scale').value = config.cyberboss.hpScalingPerWave ?? 0.15;
+                    document.getElementById('cyber-laser-dmg').value = config.cyberboss.laserDamage ?? 50;
+                    document.getElementById('cyber-laser-warn').value = config.cyberboss.laserWarningDuration ?? 1.5;
+                    document.getElementById('cyber-puddle-dmg').value = config.cyberboss.puddleDamagePerSecond ?? 20;
+                    document.getElementById('cyber-puddle-dur').value = config.cyberboss.puddleDuration ?? 5.0;
+                    document.getElementById('cyber-spawn-count').value = config.cyberboss.spawnWaveSize ?? 5;
+                    document.getElementById('cyber-spawn-interval').value = config.cyberboss.spawnInterval ?? 8;
+                    if (config.cyberboss.phaseThresholds) {
+                        document.getElementById('cyber-phase2').value = (config.cyberboss.phaseThresholds.phase2 ?? 0.75) * 100;
+                        document.getElementById('cyber-phase3').value = (config.cyberboss.phaseThresholds.phase3 ?? 0.50) * 100;
+                        document.getElementById('cyber-phase4').value = (config.cyberboss.phaseThresholds.phase4 ?? 0.25) * 100;
+                    }
                 }
 
-                if (config.towers?.placementCosts) {
-                    document.getElementById('econ-cost-common').value = config.towers.placementCosts.common ?? 50;
-                    document.getElementById('econ-cost-rare').value = config.towers.placementCosts.rare ?? 100;
-                    document.getElementById('econ-cost-epic').value = config.towers.placementCosts.epic ?? 200;
-                    document.getElementById('econ-cost-legendary').value = config.towers.placementCosts.legendary ?? 400;
-                }
-
-                if (config.dropRates) {
-                    document.getElementById('drop-common').value = config.dropRates.common ?? 0.60;
-                    document.getElementById('drop-rare').value = config.dropRates.rare ?? 0.30;
-                    document.getElementById('drop-epic').value = config.dropRates.epic ?? 0.08;
-                    document.getElementById('drop-legendary').value = config.dropRates.legendary ?? 0.02;
-                    document.getElementById('drop-mult-easy').value = config.dropRates.easyMultiplier ?? 0.5;
-                    document.getElementById('drop-mult-normal').value = config.dropRates.normalMultiplier ?? 1.0;
-                    document.getElementById('drop-mult-hard').value = config.dropRates.hardMultiplier ?? 1.5;
-                    document.getElementById('drop-mult-nightmare').value = config.dropRates.nightmareMultiplier ?? 2.5;
-                    document.getElementById('drop-pity').value = config.dropRates.pityThreshold ?? 10;
-                    document.getElementById('drop-diminishing').value = config.dropRates.diminishingFactor ?? 0.1;
+                if (config.zeroDay) {
+                    document.getElementById('zeroday-hp').value = config.zeroDay.baseHP ?? 9999;
+                    document.getElementById('zeroday-speed').value = config.zeroDay.speed ?? 30;
+                    document.getElementById('zeroday-drain').value = config.zeroDay.efficiencyDrainRate ?? 2.0;
+                    document.getElementById('zeroday-min-waves').value = config.zeroDay.minWavesBeforeSpawn ?? 3;
+                    document.getElementById('zeroday-hash').value = config.zeroDay.defeatHashBonus ?? 525;
+                    document.getElementById('zeroday-restore').value = config.zeroDay.defeatEfficiencyRestore ?? 30;
                 }
 
                 // Update all charts
-                updateWaveChart();
+                updateProtocolChart();
+                updateHashChart();
+                updatePowerChart();
                 updateThreatChart();
-                updateTowerChart();
-                updateEconomyChart();
-                updateDropChart();
+                updateBossChart();
 
                 alert('Configuration imported successfully!');
             } catch (e) {
@@ -1673,64 +1557,90 @@
             }
         }
 
-        function generateSwiftExport() {
+        function generateSwiftCode() {
             const swift = `// Generated by Balance Simulator
 // Copy relevant sections to BalanceConfig.swift
 
-struct Waves {
-    static let healthScalingPerWave: CGFloat = ${document.getElementById('wave-health-scaling').value}
-    static let speedScalingPerWave: CGFloat = ${document.getElementById('wave-speed-scaling').value}
-    static let baseEnemyCount: Int = ${document.getElementById('wave-base-count').value}
-    static let enemiesPerWave: Int = ${document.getElementById('wave-enemies-per').value}
-    static let bossWaveInterval: Int = ${document.getElementById('wave-boss-interval').value}
-    static let bossHealthMultiplier: CGFloat = ${document.getElementById('wave-boss-hp-mult').value}
+struct ProtocolScaling {
+    static let damageMultiplierPerLevel: CGFloat = ${document.getElementById('proto-dmg-mult').value}
+    static let rangePerLevel: CGFloat = ${document.getElementById('proto-range-mult').value}
+    static let fireRatePerLevel: CGFloat = ${document.getElementById('proto-fire-mult').value}
+    static let maxLevel: Int = ${document.getElementById('proto-max-level').value}
+}
+
+struct HashEconomy {
+    static let baseHashPerSecond: CGFloat = ${document.getElementById('hash-base').value}
+    static let cpuLevelScaling: CGFloat = ${document.getElementById('hash-cpu-mult').value}
+    static let baseStorageCapacity: Int = ${document.getElementById('storage-base').value}
+    static let storagePerUpgrade: Int = ${document.getElementById('storage-per-level').value}
+    static let offlineEarningsRate: CGFloat = ${parseFloat(document.getElementById('offline-rate').value) / 100}
+    static let maxOfflineHours: CGFloat = ${document.getElementById('offline-max-hours').value}
+}
+
+struct Overclock {
+    static let duration: TimeInterval = ${document.getElementById('overclock-duration').value}
+    static let hashMultiplier: CGFloat = ${document.getElementById('overclock-mult').value}
+    static let powerDemandMultiplier: CGFloat = ${document.getElementById('overclock-power-mult').value}
+}
+
+struct PowerGrid {
+    static let basePowerBudget: Int = ${document.getElementById('power-base').value}
+    static let powerPerCPULevel: Int = ${document.getElementById('power-per-level').value}
+    // Tower power is defined per-protocol in Protocol.swift
 }
 
 struct ThreatLevel {
-    static let healthScaling: CGFloat = ${document.getElementById('threat-hp-scaling').value}
-    static let speedScaling: CGFloat = ${document.getElementById('threat-speed-scaling').value}
-    static let damageScaling: CGFloat = ${document.getElementById('threat-damage-scaling').value}
-    static let fastEnemyThreshold: CGFloat = ${document.getElementById('threat-fast-threshold').value}
-    static let tankEnemyThreshold: CGFloat = ${document.getElementById('threat-tank-threshold').value}
-    static let bossEnemyThreshold: CGFloat = ${document.getElementById('threat-boss-threshold').value}
+    static let maxThreatLevel: CGFloat = ${document.getElementById('threat-max').value}
+    static let onlineThreatGrowthRate: CGFloat = ${document.getElementById('threat-online-rate').value}
+    static let offlineThreatGrowthRate: CGFloat = ${document.getElementById('threat-offline-rate').value}
+    static let healthScaling: CGFloat = ${document.getElementById('threat-hp-scale').value}
+    static let speedScaling: CGFloat = ${document.getElementById('threat-speed-scale').value}
+    static let damageScaling: CGFloat = ${document.getElementById('threat-dmg-scale').value}
+    static let fastEnemyThreshold: CGFloat = ${document.getElementById('unlock-fast').value}
+    static let swarmEnemyThreshold: CGFloat = ${document.getElementById('unlock-swarm').value}
+    static let tankEnemyThreshold: CGFloat = ${document.getElementById('unlock-tank').value}
+    static let eliteEnemyThreshold: CGFloat = ${document.getElementById('unlock-elite').value}
+    static let bossEnemyThreshold: CGFloat = ${document.getElementById('unlock-boss').value}
 }
 
-struct SurvivalEconomy {
-    static let hashPerSecond: CGFloat = ${document.getElementById('econ-hash-per-sec').value}
-    static let hashBonusPerMinute: CGFloat = ${document.getElementById('econ-hash-bonus').value}
-    static let extractionTime: TimeInterval = ${document.getElementById('econ-extraction').value}
+struct Cyberboss {
+    static let baseHealth: CGFloat = ${document.getElementById('cyber-hp').value}
+    static let healthScalingPerWave: CGFloat = ${document.getElementById('cyber-hp-scale').value}
+    static let laserDamage: CGFloat = ${document.getElementById('cyber-laser-dmg').value}
+    static let laserWarningDuration: TimeInterval = ${document.getElementById('cyber-laser-warn').value}
+    static let puddleDamagePerSecond: CGFloat = ${document.getElementById('cyber-puddle-dmg').value}
+    static let puddleDuration: TimeInterval = ${document.getElementById('cyber-puddle-dur').value}
+    static let spawnWaveSize: Int = ${document.getElementById('cyber-spawn-count').value}
+    static let spawnInterval: TimeInterval = ${document.getElementById('cyber-spawn-interval').value}
+    static let phase2Threshold: CGFloat = ${parseInt(document.getElementById('cyber-phase2').value) / 100}
+    static let phase3Threshold: CGFloat = ${parseInt(document.getElementById('cyber-phase3').value) / 100}
+    static let phase4Threshold: CGFloat = ${parseInt(document.getElementById('cyber-phase4').value) / 100}
 }
 
-struct Towers {
-    static let placementCosts: [Rarity: Int] = [
-        .common: ${document.getElementById('econ-cost-common').value},
-        .rare: ${document.getElementById('econ-cost-rare').value},
-        .epic: ${document.getElementById('econ-cost-epic').value},
-        .legendary: ${document.getElementById('econ-cost-legendary').value}
-    ]
-}
-
-struct DropRates {
-    static let common: Double = ${document.getElementById('drop-common').value}
-    static let rare: Double = ${document.getElementById('drop-rare').value}
-    static let epic: Double = ${document.getElementById('drop-epic').value}
-    static let legendary: Double = ${document.getElementById('drop-legendary').value}
-    static let easyMultiplier: Double = ${document.getElementById('drop-mult-easy').value}
-    static let normalMultiplier: Double = ${document.getElementById('drop-mult-normal').value}
-    static let hardMultiplier: Double = ${document.getElementById('drop-mult-hard').value}
-    static let nightmareMultiplier: Double = ${document.getElementById('drop-mult-nightmare').value}
-    static let pityThreshold: Int = ${document.getElementById('drop-pity').value}
-    static let diminishingFactor: Double = ${document.getElementById('drop-diminishing').value}
+struct ZeroDay {
+    static let baseHealth: CGFloat = ${document.getElementById('zeroday-hp').value}
+    static let speed: CGFloat = ${document.getElementById('zeroday-speed').value}
+    static let efficiencyDrainRate: CGFloat = ${document.getElementById('zeroday-drain').value}
+    static let minWavesBeforeSpawn: Int = ${document.getElementById('zeroday-min-waves').value}
+    static let defeatHashBonus: Int = ${document.getElementById('zeroday-hash').value}
+    static let defeatEfficiencyRestore: Int = ${document.getElementById('zeroday-restore').value}
 }`;
 
             document.getElementById('swift-export').value = swift;
         }
 
-        function copySwiftExport() {
-            const textarea = document.getElementById('swift-export');
+        function copyToClipboard(elementId) {
+            const textarea = document.getElementById(elementId);
             textarea.select();
             document.execCommand('copy');
             alert('Copied to clipboard!');
+        }
+
+        // Utility functions
+        function formatTime(seconds) {
+            if (seconds < 60) return Math.floor(seconds) + 's';
+            if (seconds < 3600) return (seconds / 60).toFixed(1) + 'm';
+            return (seconds / 3600).toFixed(1) + 'h';
         }
     </script>
 </body>

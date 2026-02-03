@@ -1,466 +1,449 @@
 #!/usr/bin/env swift
 //
 //  Balance Simulator CLI
-//  Runs automated simulations for game balance analysis
+//  Focused analysis for the 8 key balance areas
 //
 //  Usage:
-//    swift main.swift [command] [options]
+//    swift main.swift [command]
 //
 //  Commands:
-//    waves       Simulate wave progression
-//    drops       Monte Carlo drop simulation
-//    economy     Economy flow analysis
-//    threat      Threat level scaling
-//    all         Run all simulations
-//    analyze     AI-ready analysis output (JSON)
+//    protocols   Protocol level costs & damage scaling
+//    hash        Hash economy (production, storage, offline)
+//    power       Power grid (CPU budget, tower limits)
+//    threat      Threat system (scaling, enemy unlocks)
+//    bosses      Boss tuning (HP, damage, phases)
+//    all         Run all analyses
+//    help        Show this help
 //
 
 import Foundation
 
-// MARK: - Balance Config (Mirror of BalanceConfig.swift)
+// MARK: - Balance Config (Matches BalanceConfig.swift)
 
-struct BalanceConfig {
-    struct Waves {
-        static var healthScalingPerWave: Double = 0.15
-        static var speedScalingPerWave: Double = 0.02
-        static var baseEnemyCount: Int = 5
-        static var enemiesPerWave: Int = 2
-        static var bossWaveInterval: Int = 5
-        static var bossHealthMultiplier: Double = 2.0
-        static var bossSpeedMultiplier: Double = 0.8
-        static var hashBonusPerWave: Int = 10
-    }
+struct Config {
 
-    struct ThreatLevel {
-        static var healthScaling: Double = 0.15
-        static var speedScaling: Double = 0.02
-        static var damageScaling: Double = 0.05
-        static var fastEnemyThreshold: Double = 2.0
-        static var tankEnemyThreshold: Double = 5.0
-        static var bossEnemyThreshold: Double = 10.0
-        static var fastEnemyWeightPerThreat: Double = 15
-        static var tankEnemyWeightPerThreat: Double = 10
-        static var bossEnemyWeightPerThreat: Double = 2
-    }
+    // Protocol Scaling
+    struct ProtocolScaling {
+        static let damageMultiplierPerLevel: Double = 1.0  // Level = multiplier
+        static let rangePerLevel: Double = 0.05
+        static let fireRatePerLevel: Double = 0.03
+        static let maxLevel: Int = 10
 
-    struct Towers {
-        static var placementCosts: [String: Int] = [
+        // Base upgrade costs by rarity
+        static let baseCosts: [String: Int] = [
             "common": 50,
             "rare": 100,
             "epic": 200,
             "legendary": 400
         ]
-        static var refundRate: Double = 0.5
-        static var projectileSpeed: Double = 600
     }
 
-    struct SurvivalEconomy {
-        static var extractionTime: Double = 180
-        static var hashPerSecond: Double = 2.0
-        static var hashBonusPerMinute: Double = 0.5
+    // Hash Economy
+    struct HashEconomy {
+        static let baseHashPerSecond: Double = 1.0
+        static let cpuLevelMultiplier: Double = 1.5
+        static let baseStorageCapacity: Int = 500
+        static let storagePerUpgrade: Int = 500
+        static let maxStorageTier: Int = 8
+        static let offlineEarningsRate: Double = 0.2
+        static let maxOfflineHours: Double = 8.0
     }
 
-    struct DropRates {
-        static var common: Double = 0.60
-        static var rare: Double = 0.30
-        static var epic: Double = 0.08
-        static var legendary: Double = 0.02
-        static var easyMultiplier: Double = 0.5
-        static var normalMultiplier: Double = 1.0
-        static var hardMultiplier: Double = 1.5
-        static var nightmareMultiplier: Double = 2.5
-        static var pityThreshold: Int = 10
-        static var diminishingFactor: Double = 0.1
+    // Overclock
+    struct Overclock {
+        static let duration: Double = 60
+        static let hashMultiplier: Double = 2.0
+        static let powerMultiplier: Double = 2.0
     }
 
-    static func waveHealthMultiplier(wave: Int) -> Double {
-        return 1.0 + Double(wave - 1) * Waves.healthScalingPerWave
+    // Power Grid
+    struct PowerGrid {
+        static let basePowerBudget: Int = 100
+        static let powerPerCPULevel: Int = 50
+        static let maxCPULevel: Int = 10
+
+        // Tower power draw by rarity
+        static let towerPower: [String: Int] = [
+            "common": 15,
+            "rare": 30,
+            "epic": 60,
+            "legendary": 100
+        ]
     }
 
-    static func waveSpeedMultiplier(wave: Int) -> Double {
-        return 1.0 + Double(wave - 1) * Waves.speedScalingPerWave
+    // Threat Level
+    struct ThreatLevel {
+        static let maxThreatLevel: Double = 100.0
+        static let onlineGrowthRate: Double = 0.01  // per second
+        static let offlineGrowthRate: Double = 0.001
+        static let healthScaling: Double = 0.15
+        static let speedScaling: Double = 0.02
+        static let damageScaling: Double = 0.05
+
+        // Enemy unlock thresholds
+        static let fastThreshold: Double = 2.0
+        static let swarmThreshold: Double = 4.0
+        static let tankThreshold: Double = 5.0
+        static let eliteThreshold: Double = 8.0
+        static let bossThreshold: Double = 10.0
     }
 
-    static func threatHealthMultiplier(threat: Double) -> Double {
-        return 1.0 + (threat - 1.0) * ThreatLevel.healthScaling
+    // Cyberboss
+    struct Cyberboss {
+        static let baseHealth: Double = 5000
+        static let healthScalingPerWave: Double = 0.15
+        static let laserDamage: Double = 50
+        static let laserWarningDuration: Double = 1.5
+        static let puddleDamagePerSecond: Double = 20
+        static let puddleDuration: Double = 5.0
+        static let spawnWaveSize: Int = 5
+        static let spawnInterval: Double = 8.0
+        static let phase2Threshold: Double = 0.75
+        static let phase3Threshold: Double = 0.50
+        static let phase4Threshold: Double = 0.25
+    }
+
+    // Zero-Day Virus
+    struct ZeroDay {
+        static let baseHealth: Double = 9999
+        static let speed: Double = 30
+        static let efficiencyDrainRate: Double = 2.0
+        static let minWavesBeforeSpawn: Int = 3
+        static let defeatHashBonus: Int = 525
+        static let defeatEfficiencyRestore: Int = 30
     }
 }
 
-// MARK: - Simulation Results
+// MARK: - Output Helpers
 
-struct WaveSimulation: Codable {
-    struct WaveData: Codable {
-        let wave: Int
-        let enemyHP: Double
-        let enemySpeed: Double
-        let enemyCount: Int
-        let totalWaveHP: Double
-        let isBossWave: Bool
-        let hashReward: Int
-    }
-
-    let waves: [WaveData]
-    let insights: [String]
+func printHeader(_ title: String) {
+    print("\n" + String(repeating: "=", count: 60))
+    print(" \(title)")
+    print(String(repeating: "=", count: 60))
 }
 
-struct DropSimulation: Codable {
-    struct DropResult: Codable {
-        let common: Int
-        let rare: Int
-        let epic: Int
-        let legendary: Int
-        let noDrop: Int
-        let totalDrops: Int
-        let dropRate: Double
-    }
-
-    let kills: Int
-    let difficulty: String
-    let results: DropResult
-    let insights: [String]
+func printSubheader(_ title: String) {
+    print("\n--- \(title) ---")
 }
 
-struct EconomySimulation: Codable {
-    struct TimePoint: Codable {
-        let seconds: Int
-        let totalHash: Int
-        let hashRate: Double
-    }
-
-    let timeline: [TimePoint]
-    let timeToAfford: [String: Int]
-    let insights: [String]
+func printRow(_ label: String, _ value: String) {
+    let padding = 35 - label.count
+    print("  \(label)" + String(repeating: " ", count: max(1, padding)) + value)
 }
 
-struct ThreatSimulation: Codable {
-    struct ThreatPoint: Codable {
-        let threat: Double
-        let hpMultiplier: Double
-        let speedMultiplier: Double
-        let damageMultiplier: Double
-        let availableEnemyTypes: [String]
-    }
-
-    let points: [ThreatPoint]
-    let milestones: [String: Double]
-    let insights: [String]
+func printCauseEffect(_ cause: String, _ effect: String) {
+    print("\n  IF: \(cause)")
+    print("  THEN: \(effect)")
 }
 
-struct FullAnalysis: Codable {
-    let timestamp: String
-    let waves: WaveSimulation
-    let drops: DropSimulation
-    let economy: EconomySimulation
-    let threat: ThreatSimulation
-    let recommendations: [String]
-}
-
-// MARK: - Simulators
-
-func simulateWaves(totalWaves: Int = 20, baseEnemyHP: Double = 20) -> WaveSimulation {
-    var waves: [WaveSimulation.WaveData] = []
-    var insights: [String] = []
-
-    for w in 1...totalWaves {
-        let hpMult = BalanceConfig.waveHealthMultiplier(wave: w)
-        let speedMult = BalanceConfig.waveSpeedMultiplier(wave: w)
-        let enemyCount = BalanceConfig.Waves.baseEnemyCount + w * BalanceConfig.Waves.enemiesPerWave
-        let isBoss = w % BalanceConfig.Waves.bossWaveInterval == 0
-
-        let enemyHP = baseEnemyHP * hpMult * (isBoss ? BalanceConfig.Waves.bossHealthMultiplier : 1.0)
-        let totalHP = baseEnemyHP * hpMult * Double(enemyCount)
-
-        waves.append(WaveSimulation.WaveData(
-            wave: w,
-            enemyHP: enemyHP,
-            enemySpeed: speedMult,
-            enemyCount: enemyCount,
-            totalWaveHP: totalHP,
-            isBossWave: isBoss,
-            hashReward: w * BalanceConfig.Waves.hashBonusPerWave
-        ))
-    }
-
-    // Generate insights (handle variable wave counts)
-    let totalHashFromWaves = waves.reduce(0) { $0 + $1.hashReward }
-    guard let lastWave = waves.last, let firstWave = waves.first else {
-        return WaveSimulation(waves: waves, insights: ["ERROR: No waves generated"])
-    }
-    let growth = lastWave.enemyHP / firstWave.enemyHP
-
-    if growth > 5 {
-        insights.append("WARNING: Wave \(totalWaves) enemies have \(String(format: "%.1f", growth))x HP - may feel too spongy")
-    } else if growth < 2 && totalWaves >= 10 {
-        insights.append("WARNING: Wave \(totalWaves) only \(String(format: "%.1f", growth))x HP - late game may be too easy")
+func formatNumber(_ n: Double) -> String {
+    if n >= 1_000_000 {
+        return String(format: "%.1fM", n / 1_000_000)
+    } else if n >= 1_000 {
+        return String(format: "%.1fK", n / 1_000)
+    } else if n == floor(n) {
+        return String(format: "%.0f", n)
     } else {
-        insights.append("OK: Scaling balanced (\(String(format: "%.1f", growth))x at wave \(totalWaves))")
+        return String(format: "%.2f", n)
     }
-
-    insights.append("INFO: Total hash from \(totalWaves) waves: \(totalHashFromWaves)")
-    let epicCost = BalanceConfig.Towers.placementCosts["epic"] ?? 200
-    insights.append("INFO: Can afford \(totalHashFromWaves / epicCost) epic towers")
-
-    return WaveSimulation(waves: waves, insights: insights)
 }
 
-func simulateDrops(kills: Int = 1000, difficulty: String = "normal") -> DropSimulation {
-    var results = (common: 0, rare: 0, epic: 0, legendary: 0, noDrop: 0)
-    var insights: [String] = []
-    var killsSinceLastDrop = 0
-
-    let diffMult: Double
-    switch difficulty {
-    case "easy": diffMult = BalanceConfig.DropRates.easyMultiplier
-    case "hard": diffMult = BalanceConfig.DropRates.hardMultiplier
-    case "nightmare": diffMult = BalanceConfig.DropRates.nightmareMultiplier
-    default: diffMult = BalanceConfig.DropRates.normalMultiplier
+func formatTime(_ seconds: Double) -> String {
+    if seconds < 60 {
+        return String(format: "%.0fs", seconds)
+    } else if seconds < 3600 {
+        return String(format: "%.1fm", seconds / 60)
+    } else {
+        return String(format: "%.1fh", seconds / 3600)
     }
+}
 
-    for k in 1...kills {
-        killsSinceLastDrop += 1
-        let dim = 1.0 / (1.0 + BalanceConfig.DropRates.diminishingFactor * Double(k))
+// MARK: - Analysis Functions
 
-        // Pity check
-        if killsSinceLastDrop >= BalanceConfig.DropRates.pityThreshold {
-            results.common += 1
-            killsSinceLastDrop = 0
-            continue
-        }
+func analyzeProtocols() {
+    printHeader("PROTOCOL LEVELING")
 
-        let roll = Double.random(in: 0..<1)
-        var cumulative = 0.0
-
-        // Legendary
-        cumulative += BalanceConfig.DropRates.legendary * diffMult * dim
-        if roll < cumulative {
-            results.legendary += 1
-            killsSinceLastDrop = 0
-            continue
-        }
-
-        // Epic
-        cumulative += BalanceConfig.DropRates.epic * diffMult * dim
-        if roll < cumulative {
-            results.epic += 1
-            killsSinceLastDrop = 0
-            continue
-        }
-
-        // Rare
-        cumulative += BalanceConfig.DropRates.rare * diffMult * dim
-        if roll < cumulative {
-            results.rare += 1
-            killsSinceLastDrop = 0
-            continue
-        }
-
-        // Common
-        cumulative += BalanceConfig.DropRates.common * diffMult * dim
-        if roll < cumulative {
-            results.common += 1
-            killsSinceLastDrop = 0
-            continue
-        }
-
-        results.noDrop += 1
-    }
-
-    let totalDrops = results.common + results.rare + results.epic + results.legendary
-    let dropRate = Double(totalDrops) / Double(kills) * 100
-
-    // Insights
-    insights.append("INFO: Drop rate: \(String(format: "%.1f", dropRate))%")
-    insights.append("INFO: Legendary drop rate: \(String(format: "%.2f", Double(results.legendary) / Double(kills) * 100))%")
-
-    if results.legendary == 0 && kills >= 100 {
-        insights.append("WARNING: No legendaries in \(kills) kills - rate may be too low")
-    }
-
-    if dropRate < 50 {
-        insights.append("WARNING: Overall drop rate below 50% - may feel unrewarding")
-    }
-
-    return DropSimulation(
-        kills: kills,
-        difficulty: difficulty,
-        results: DropSimulation.DropResult(
-            common: results.common,
-            rare: results.rare,
-            epic: results.epic,
-            legendary: results.legendary,
-            noDrop: results.noDrop,
-            totalDrops: totalDrops,
-            dropRate: dropRate
-        ),
-        insights: insights
+    printCauseEffect(
+        "Level multiplier increases",
+        "Higher levels deal more damage, but costs grow exponentially"
     )
+
+    printSubheader("Damage Progression")
+    print("\n  Level  Damage Mult  DPS Gain")
+    print("  " + String(repeating: "-", count: 35))
+
+    for level in 1...Config.ProtocolScaling.maxLevel {
+        let dmgMult = Double(level) * Config.ProtocolScaling.damageMultiplierPerLevel
+        let prevMult = level > 1 ? Double(level - 1) * Config.ProtocolScaling.damageMultiplierPerLevel : 0
+        let dpsGain = level > 1 ? ((dmgMult - prevMult) / prevMult * 100) : 0
+
+        let dpsGainStr = level > 1 ? String(format: "+%.0f%%", dpsGain) : "-"
+        print("  \(String(format: "%2d", level))       \(String(format: "%.1f", dmgMult))x        \(dpsGainStr)")
+    }
+
+    printSubheader("Upgrade Costs (Exponential: base * 2^(level-1))")
+    print("\n  Level  Common    Rare      Epic      Legendary")
+    print("  " + String(repeating: "-", count: 50))
+
+    var totals: [String: Int] = ["common": 0, "rare": 0, "epic": 0, "legendary": 0]
+
+    for level in 2...Config.ProtocolScaling.maxLevel {
+        let multiplier = Int(pow(2.0, Double(level - 2)))
+
+        let common = Config.ProtocolScaling.baseCosts["common"]! * multiplier
+        let rare = Config.ProtocolScaling.baseCosts["rare"]! * multiplier
+        let epic = Config.ProtocolScaling.baseCosts["epic"]! * multiplier
+        let legendary = Config.ProtocolScaling.baseCosts["legendary"]! * multiplier
+
+        totals["common"]! += common
+        totals["rare"]! += rare
+        totals["epic"]! += epic
+        totals["legendary"]! += legendary
+
+        print(String(format: "  %2d     %6d    %6d    %6d    %6d",
+            level, common, rare, epic, legendary))
+    }
+
+    printSubheader("Total Cost to Max (Lv1 -> Lv10)")
+    printRow("Common Protocol", "\(totals["common"]!) Hash")
+    printRow("Rare Protocol", "\(totals["rare"]!) Hash")
+    printRow("Epic Protocol", "\(totals["epic"]!) Hash")
+    printRow("Legendary Protocol", "\(totals["legendary"]!) Hash")
 }
 
-func simulateEconomy(durationSeconds: Int = 600) -> EconomySimulation {
-    var timeline: [EconomySimulation.TimePoint] = []
-    var totalHash: Double = 0
-    var insights: [String] = []
+func analyzeHash() {
+    printHeader("HASH ECONOMY")
 
-    for sec in stride(from: 0, through: durationSeconds, by: 30) {
-        let minutes = Double(sec) / 60.0
-        let rate = BalanceConfig.SurvivalEconomy.hashPerSecond + minutes * BalanceConfig.SurvivalEconomy.hashBonusPerMinute
-        totalHash += rate * 30
+    printCauseEffect(
+        "CPU level increases",
+        "Hash/sec grows exponentially (base * mult^(level-1))"
+    )
 
-        timeline.append(EconomySimulation.TimePoint(
-            seconds: sec,
-            totalHash: Int(totalHash),
-            hashRate: rate
-        ))
+    printSubheader("Hash Rate by CPU Level")
+    print("\n  CPU Lv  Hash/sec   10min Earnings")
+    print("  " + String(repeating: "-", count: 40))
+
+    for level in 1...10 {
+        let rate = Config.HashEconomy.baseHashPerSecond * pow(Config.HashEconomy.cpuLevelMultiplier, Double(level - 1))
+        let tenMin = rate * 600
+        print("  \(String(format: "%2d", level))       \(String(format: "%6.2f", rate))     \(formatNumber(tenMin))")
     }
 
-    // Time to afford each rarity
-    var timeToAfford: [String: Int] = [:]
-    for (rarity, cost) in BalanceConfig.Towers.placementCosts {
-        for point in timeline {
-            if point.totalHash >= cost {
-                timeToAfford[rarity] = point.seconds
-                break
-            }
-        }
+    printSubheader("Storage Capacity")
+    print("\n  Tier  Capacity   Fill Time (Lv1 CPU)")
+    print("  " + String(repeating: "-", count: 40))
+
+    let baseRate = Config.HashEconomy.baseHashPerSecond
+    for tier in 1...Config.HashEconomy.maxStorageTier {
+        let capacity = Config.HashEconomy.baseStorageCapacity + (tier - 1) * Config.HashEconomy.storagePerUpgrade
+        let fillTime = Double(capacity) / baseRate
+        print("  \(String(format: "%2d", tier))     \(String(format: "%5d", capacity))      \(formatTime(fillTime))")
     }
 
-    // Insights
-    let hash3min = timeline.first(where: { $0.seconds >= 180 })?.totalHash ?? 0
-    let hash5min = timeline.first(where: { $0.seconds >= 300 })?.totalHash ?? 0
+    printSubheader("Offline Earnings")
+    let rate1 = Config.HashEconomy.baseHashPerSecond
+    let rate5 = Config.HashEconomy.baseHashPerSecond * pow(Config.HashEconomy.cpuLevelMultiplier, 4)
+    let offline8h1 = rate1 * Config.HashEconomy.offlineEarningsRate * 8 * 3600
+    let offline8h5 = rate5 * Config.HashEconomy.offlineEarningsRate * 8 * 3600
 
-    insights.append("INFO: Hash at extraction (3min): \(hash3min)")
-    insights.append("INFO: Hash at 5min: \(hash5min)")
+    printRow("Offline Rate", "\(Int(Config.HashEconomy.offlineEarningsRate * 100))% of online")
+    printRow("Max Offline Hours", "\(Int(Config.HashEconomy.maxOfflineHours))h")
+    printRow("8h @ CPU Lv1", "\(formatNumber(offline8h1)) Hash")
+    printRow("8h @ CPU Lv5", "\(formatNumber(offline8h5)) Hash")
 
-    if hash3min < BalanceConfig.Towers.placementCosts["rare"]! {
-        insights.append("WARNING: Can't afford Rare tower by extraction time")
-    }
-
-    if hash5min < BalanceConfig.Towers.placementCosts["epic"]! {
-        insights.append("WARNING: Epic towers may be unreachable in typical 5min runs")
-    }
-
-    return EconomySimulation(timeline: timeline, timeToAfford: timeToAfford, insights: insights)
+    printSubheader("Overclock")
+    printRow("Duration", "\(Int(Config.Overclock.duration))s")
+    printRow("Hash Multiplier", "\(Config.Overclock.hashMultiplier)x")
+    printRow("Power Multiplier", "\(Config.Overclock.powerMultiplier)x")
 }
 
-func simulateThreat(maxThreat: Double = 20, growthRate: Double = 0.1) -> ThreatSimulation {
-    var points: [ThreatSimulation.ThreatPoint] = []
-    var insights: [String] = []
+func analyzePower() {
+    printHeader("POWER GRID")
 
-    for t in stride(from: 1.0, through: maxThreat, by: 1.0) {
-        let hpMult = 1.0 + (t - 1.0) * BalanceConfig.ThreatLevel.healthScaling
-        let speedMult = 1.0 + (t - 1.0) * BalanceConfig.ThreatLevel.speedScaling
-        let damageMult = 1.0 + (t - 1.0) * BalanceConfig.ThreatLevel.damageScaling
+    printCauseEffect(
+        "Power demand exceeds budget",
+        "Towers shut down. Must balance tower count against CPU capacity."
+    )
 
-        var types = ["basic"]
-        if t >= BalanceConfig.ThreatLevel.fastEnemyThreshold { types.append("fast") }
-        if t >= BalanceConfig.ThreatLevel.tankEnemyThreshold { types.append("tank") }
-        if t >= BalanceConfig.ThreatLevel.bossEnemyThreshold { types.append("boss") }
+    printSubheader("Power Budget by CPU Level")
+    print("\n  CPU Lv  Budget    Max Common  Max Rare  Max Epic  Max Legendary")
+    print("  " + String(repeating: "-", count: 65))
 
-        points.append(ThreatSimulation.ThreatPoint(
-            threat: t,
-            hpMultiplier: hpMult,
-            speedMultiplier: speedMult,
-            damageMultiplier: damageMult,
-            availableEnemyTypes: types
-        ))
+    let tCommon = Config.PowerGrid.towerPower["common"]!
+    let tRare = Config.PowerGrid.towerPower["rare"]!
+    let tEpic = Config.PowerGrid.towerPower["epic"]!
+    let tLegendary = Config.PowerGrid.towerPower["legendary"]!
+
+    for level in 1...Config.PowerGrid.maxCPULevel {
+        let budget = Config.PowerGrid.basePowerBudget + level * Config.PowerGrid.powerPerCPULevel
+        print(String(format: "  %2d       %4dW     %4d        %4d      %4d      %4d",
+            level, budget, budget / tCommon, budget / tRare, budget / tEpic, budget / tLegendary))
     }
 
-    // Milestones (time in minutes to reach each threshold)
-    let milestones: [String: Double] = [
-        "fast_unlocks": BalanceConfig.ThreatLevel.fastEnemyThreshold / growthRate / 60,
-        "tank_unlocks": BalanceConfig.ThreatLevel.tankEnemyThreshold / growthRate / 60,
-        "boss_unlocks": BalanceConfig.ThreatLevel.bossEnemyThreshold / growthRate / 60
+    printSubheader("Tower Power Draw")
+    printRow("Common", "\(tCommon)W")
+    printRow("Rare", "\(tRare)W")
+    printRow("Epic", "\(tEpic)W")
+    printRow("Legendary", "\(tLegendary)W")
+
+    printSubheader("Strategic Insight")
+    let lvl5Budget = Config.PowerGrid.basePowerBudget + 5 * Config.PowerGrid.powerPerCPULevel
+    print("  At CPU Lv5 (\(lvl5Budget)W budget):")
+    print("  - Option A: \(lvl5Budget / tCommon) common towers (high quantity)")
+    print("  - Option B: \(lvl5Budget / tEpic) epic + \((lvl5Budget % tEpic) / tCommon) common (quality mix)")
+    print("  - Option C: \(lvl5Budget / tLegendary) legendary (elite setup)")
+}
+
+func analyzeThreat() {
+    printHeader("THREAT SYSTEM")
+
+    printCauseEffect(
+        "Threat growth rate increases",
+        "Enemies get stronger faster, new types unlock sooner"
+    )
+
+    printSubheader("Enemy Unlock Timeline (Online Play)")
+    print("\n  Event          Threat   Time        HP Mult   Spd Mult   Dmg Mult")
+    print("  " + String(repeating: "-", count: 70))
+
+    let events: [(String, Double)] = [
+        ("Fast Enemy", Config.ThreatLevel.fastThreshold),
+        ("Swarm Enemy", Config.ThreatLevel.swarmThreshold),
+        ("Tank Enemy", Config.ThreatLevel.tankThreshold),
+        ("Elite Enemy", Config.ThreatLevel.eliteThreshold),
+        ("Mini-Boss", Config.ThreatLevel.bossThreshold)
     ]
 
-    // Insights
-    if milestones["fast_unlocks"]! < 0.5 {
-        insights.append("WARNING: Fast enemies appear very quickly - new players may struggle")
+    for (name, threshold) in events {
+        let time = threshold / Config.ThreatLevel.onlineGrowthRate
+        let hpMult = 1 + (threshold - 1) * Config.ThreatLevel.healthScaling
+        let spdMult = 1 + (threshold - 1) * Config.ThreatLevel.speedScaling
+        let dmgMult = 1 + (threshold - 1) * Config.ThreatLevel.damageScaling
+
+        let paddedName = name.padding(toLength: 12, withPad: " ", startingAt: 0)
+        let timeStr = formatTime(time).padding(toLength: 8, withPad: " ", startingAt: 0)
+        print("  \(paddedName)   \(String(format: "%4.1f", threshold))     \(timeStr)    \(String(format: "%.2f", hpMult))x      \(String(format: "%.2f", spdMult))x      \(String(format: "%.2f", dmgMult))x")
     }
 
-    if milestones["boss_unlocks"]! > 10 {
-        insights.append("WARNING: Boss enemies take \(String(format: "%.0f", milestones["boss_unlocks"]!)) min - too slow?")
-    }
+    printSubheader("Stat Scaling Formula")
+    printRow("HP Scaling", "+\(Int(Config.ThreatLevel.healthScaling * 100))% per threat level")
+    printRow("Speed Scaling", "+\(Int(Config.ThreatLevel.speedScaling * 100))% per threat level")
+    printRow("Damage Scaling", "+\(Int(Config.ThreatLevel.damageScaling * 100))% per threat level")
+    printRow("Max Threat Cap", "\(Int(Config.ThreatLevel.maxThreatLevel))")
 
-    let hp5min = 1.0 + ((5 * 60 * growthRate) - 1.0) * BalanceConfig.ThreatLevel.healthScaling
-    insights.append("INFO: HP multiplier at 5 min: \(String(format: "%.1f", hp5min))x")
+    printSubheader("Threat at Key Milestones")
+    let threat5min = 5 * 60 * Config.ThreatLevel.onlineGrowthRate
+    let threat10min = 10 * 60 * Config.ThreatLevel.onlineGrowthRate
+    let hp5min = 1 + (threat5min - 1) * Config.ThreatLevel.healthScaling
+    let hp10min = 1 + (threat10min - 1) * Config.ThreatLevel.healthScaling
 
-    return ThreatSimulation(points: points, milestones: milestones, insights: insights)
+    printRow("5 min online", String(format: "Threat %.1f (HP: %.1fx)", threat5min, hp5min))
+    printRow("10 min online", String(format: "Threat %.1f (HP: %.1fx)", threat10min, hp10min))
 }
 
-func runFullAnalysis() -> FullAnalysis {
-    let waves = simulateWaves()
-    let drops = simulateDrops()
-    let economy = simulateEconomy()
-    let threat = simulateThreat()
+func analyzeBosses() {
+    printHeader("BOSS TUNING")
 
-    var recommendations: [String] = []
-
-    // Cross-system analysis
-    let hash5min = economy.timeline.first(where: { $0.seconds >= 300 })?.totalHash ?? 0
-    let epicCost = BalanceConfig.Towers.placementCosts["epic"]!
-
-    if hash5min < epicCost * 2 {
-        recommendations.append("BALANCE: Consider increasing hash rate or reducing epic tower cost")
-    }
-
-    if waves.waves[9].enemyHP > 100 && drops.results.dropRate < 70 {
-        recommendations.append("BALANCE: Wave 10 HP is high but drop rate is low - players may feel underpowered")
-    }
-
-    if threat.milestones["boss_unlocks"]! > 8 {
-        recommendations.append("BALANCE: Boss enemies appear late - consider lowering threshold")
-    }
-
-    let formatter = ISO8601DateFormatter()
-
-    return FullAnalysis(
-        timestamp: formatter.string(from: Date()),
-        waves: waves,
-        drops: drops,
-        economy: economy,
-        threat: threat,
-        recommendations: recommendations
+    printCauseEffect(
+        "Boss HP/damage increases",
+        "Fights take longer and punish mistakes more"
     )
+
+    printSubheader("Cyberboss (TD Mode)")
+
+    print("\n  Boss HP by Wave:")
+    print("  Wave   Boss HP     Phase 2 @   Phase 3 @   Phase 4 @")
+    print("  " + String(repeating: "-", count: 55))
+
+    for wave in stride(from: 5, through: 30, by: 5) {
+        let hp = Config.Cyberboss.baseHealth * (1 + Double(wave - 1) * Config.Cyberboss.healthScalingPerWave)
+        let p2 = hp * Config.Cyberboss.phase2Threshold
+        let p3 = hp * Config.Cyberboss.phase3Threshold
+        let p4 = hp * Config.Cyberboss.phase4Threshold
+
+        let hpStr = formatNumber(hp).padding(toLength: 8, withPad: " ", startingAt: 0)
+        let p2Str = formatNumber(p2).padding(toLength: 8, withPad: " ", startingAt: 0)
+        let p3Str = formatNumber(p3).padding(toLength: 8, withPad: " ", startingAt: 0)
+        let p4Str = formatNumber(p4).padding(toLength: 8, withPad: " ", startingAt: 0)
+        print("  \(String(format: "%3d", wave))    \(hpStr)    \(p2Str)    \(p3Str)    \(p4Str)")
+    }
+
+    printSubheader("Cyberboss Abilities")
+    print("\n  Ability        Damage          Timing           Threat Level")
+    print("  " + String(repeating: "-", count: 60))
+    print(String(format: "  Laser Beam     %.0f (instant)    %.1fs warning      High",
+        Config.Cyberboss.laserDamage, Config.Cyberboss.laserWarningDuration))
+    print(String(format: "  Acid Puddle    %.0f/sec         %.1fs duration     Medium",
+        Config.Cyberboss.puddleDamagePerSecond, Config.Cyberboss.puddleDuration))
+    print(String(format: "  Spawn Adds     %d enemies      Every %.0fs        Low",
+        Config.Cyberboss.spawnWaveSize, Config.Cyberboss.spawnInterval))
+
+    printSubheader("Zero-Day Virus (Survival Mode)")
+    printRow("Base HP", formatNumber(Config.ZeroDay.baseHealth))
+    printRow("Speed", "\(Int(Config.ZeroDay.speed))")
+    printRow("Efficiency Drain", "\(Config.ZeroDay.efficiencyDrainRate)/sec")
+    printRow("Min Waves Before Spawn", "\(Config.ZeroDay.minWavesBeforeSpawn)")
+    printRow("Defeat Hash Bonus", "\(Config.ZeroDay.defeatHashBonus)")
+    printRow("Defeat Efficiency Restore", "\(Config.ZeroDay.defeatEfficiencyRestore)%")
 }
 
-// MARK: - CLI
+func runAll() {
+    analyzeProtocols()
+    analyzeHash()
+    analyzePower()
+    analyzeThreat()
+    analyzeBosses()
 
-func printJSON<T: Encodable>(_ value: T) {
-    let encoder = JSONEncoder()
-    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-    if let data = try? encoder.encode(value),
-       let json = String(data: data, encoding: .utf8) {
-        print(json)
-    }
+    printHeader("CROSS-SYSTEM INSIGHTS")
+
+    // Calculate some cross-system balance checks
+    let hashAt5Min = Config.HashEconomy.baseHashPerSecond * 5 * 60
+    let epicPlacementCost = 200  // Typical epic tower placement
+
+    print("\n  Balance Check: Hash vs Upgrades")
+    printRow("Hash in 5min (CPU Lv1)", formatNumber(hashAt5Min))
+    printRow("Epic Tower Cost", "\(epicPlacementCost)")
+    printRow("Can afford epic in 5min?", hashAt5Min >= Double(epicPlacementCost) ? "YES" : "NO")
+
+    print("\n  Balance Check: Power vs Towers")
+    let maxBudget = Config.PowerGrid.basePowerBudget + 10 * Config.PowerGrid.powerPerCPULevel
+    let maxLegendary = maxBudget / Config.PowerGrid.towerPower["legendary"]!
+    printRow("Max power (CPU Lv10)", "\(maxBudget)W")
+    printRow("Max legendary towers", "\(maxLegendary)")
+
+    print("\n  Balance Check: Threat vs Progression")
+    let timeToBoss = Config.ThreatLevel.bossThreshold / Config.ThreatLevel.onlineGrowthRate
+    printRow("Time to mini-boss unlock", formatTime(timeToBoss))
+    printRow("Hash earned by then (Lv1)", formatNumber(Config.HashEconomy.baseHashPerSecond * timeToBoss))
 }
 
 func printHelp() {
     print("""
-    Balance Simulator CLI
 
-    Usage: swift main.swift [command] [options]
+    Balance Simulator CLI
+    Focused analysis for 8 key balance areas
+
+    Usage: swift main.swift [command]
 
     Commands:
-      waves [count]         Simulate wave progression (default: 20 waves)
-      drops [kills] [diff]  Monte Carlo drop simulation (default: 1000 kills, normal)
-      economy [seconds]     Economy flow analysis (default: 600 seconds)
-      threat [max]          Threat level scaling (default: max 20)
-      all                   Run all simulations
-      analyze               Full AI-ready analysis (JSON)
-      help                  Show this help
-
-    Options:
-      --json                Output as JSON (default for analyze)
-      --csv                 Output as CSV
+      protocols   Protocol level costs & damage scaling
+      hash        Hash economy (production, storage, offline)
+      power       Power grid (CPU budget, tower limits)
+      threat      Threat system (scaling, enemy unlocks)
+      bosses      Boss tuning (HP, damage, phases)
+      all         Run all analyses with cross-system insights
+      help        Show this help
 
     Examples:
-      swift main.swift waves 30
-      swift main.swift drops 5000 nightmare
-      swift main.swift analyze > analysis.json
+      swift main.swift protocols
+      swift main.swift all
+      swift main.swift all > balance-report.txt
+
     """)
 }
 
-// Main
+// MARK: - Main
+
 let args = CommandLine.arguments
 
 if args.count < 2 {
@@ -468,49 +451,27 @@ if args.count < 2 {
     exit(0)
 }
 
-let command = args[1]
+let command = args[1].lowercased()
 
 switch command {
-case "waves":
-    let count = args.count > 2 ? Int(args[2]) ?? 20 : 20
-    let result = simulateWaves(totalWaves: count)
-    printJSON(result)
-
-case "drops":
-    let kills = args.count > 2 ? Int(args[2]) ?? 1000 : 1000
-    let diff = args.count > 3 ? args[3] : "normal"
-    let result = simulateDrops(kills: kills, difficulty: diff)
-    printJSON(result)
-
-case "economy":
-    let duration = args.count > 2 ? Int(args[2]) ?? 600 : 600
-    let result = simulateEconomy(durationSeconds: duration)
-    printJSON(result)
-
+case "protocols", "protocol":
+    analyzeProtocols()
+case "hash", "economy":
+    analyzeHash()
+case "power", "energy":
+    analyzePower()
 case "threat":
-    let maxThreat = args.count > 2 ? Double(args[2]) ?? 20 : 20
-    let result = simulateThreat(maxThreat: maxThreat)
-    printJSON(result)
-
+    analyzeThreat()
+case "bosses", "boss":
+    analyzeBosses()
 case "all":
-    print("=== Wave Simulation ===")
-    printJSON(simulateWaves())
-    print("\n=== Drop Simulation ===")
-    printJSON(simulateDrops())
-    print("\n=== Economy Simulation ===")
-    printJSON(simulateEconomy())
-    print("\n=== Threat Simulation ===")
-    printJSON(simulateThreat())
-
-case "analyze":
-    let analysis = runFullAnalysis()
-    printJSON(analysis)
-
+    runAll()
 case "help", "--help", "-h":
     printHelp()
-
 default:
     print("Unknown command: \(command)")
     printHelp()
     exit(1)
 }
+
+print("")  // Final newline

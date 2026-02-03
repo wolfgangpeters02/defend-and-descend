@@ -7,8 +7,8 @@
 ### Rules
 
 1. **Never hardcode user-facing strings** - All text shown to users must go through L10n
-2. **Use L10n helpers** - Located at `LegendarySurvivors/Core/Localization/L10n.swift`
-3. **Add translations** - Located at `LegendarySurvivors/Resources/Localizable.xcstrings`
+2. **Use L10n helpers** - Located at `SystemReboot/Core/Localization/L10n.swift`
+3. **Add translations** - Located at `SystemReboot/Resources/Localizable.xcstrings`
 
 ### How to Add New Localized Strings
 
@@ -75,13 +75,24 @@ When adding new strings, always provide both English and German translations.
 
 ## Balance System (BalanceConfig)
 
-**IMPORTANT**: All game balance values MUST be centralized in `LegendarySurvivors/Core/Config/BalanceConfig.swift`.
+**IMPORTANT**: All game balance values AND formulas MUST be centralized in `SystemReboot/Core/Config/BalanceConfig.swift`.
 
 ### Rules
 
 1. **Never hardcode balance values** - No magic numbers in game systems
-2. **Use BalanceConfig** - Reference values as `BalanceConfig.StructName.valueName`
-3. **Update simulator** - When adding tunable parameters, update `tools/balance-simulator.html`
+2. **Never duplicate formulas** - If a calculation is used in multiple places, it belongs in BalanceConfig as a function
+3. **Use BalanceConfig** - Reference values as `BalanceConfig.StructName.valueName`
+4. **Update simulator** - When adding tunable parameters, update `tools/balance-simulator.html`
+
+### Core Formulas (MUST use these, never reimplement)
+
+```swift
+// Upgrade costs - exponential: base × 2^(level-1)
+BalanceConfig.exponentialUpgradeCost(baseCost: Int, currentLevel: Int) -> Int
+
+// Level stat multiplier - linear: level number as multiplier (Lv1=1x, Lv5=5x)
+BalanceConfig.levelStatMultiplier(level: Int) -> CGFloat
+```
 
 ### How to Add New Balance Values
 
@@ -102,12 +113,31 @@ When adding new strings, always provide both English and German translations.
    let cooldown = BalanceConfig.MySystem.cooldownDuration
    ```
 
-3. **Add helper functions** if formula is reused:
+3. **Add helper functions for reused formulas**:
    ```swift
-   static func scaledDamage(base: CGFloat, level: Int) -> CGFloat {
-       return base * (1 + CGFloat(level) * MySystem.damageMultiplier)
-   }
+   // ❌ Bad - formula duplicated in Protocol.swift, TDTypes.swift, UI code
+   let cost = baseCost * Int(pow(2.0, Double(level - 1)))
+
+   // ✅ Good - single source of truth
+   let cost = BalanceConfig.exponentialUpgradeCost(baseCost: baseCost, currentLevel: level)
    ```
+
+### What IS a Balance Value (put in BalanceConfig)
+
+- Damage numbers, health values, speeds
+- Costs (upgrade costs, placement costs, compile costs)
+- Durations (cooldowns, timers, intervals)
+- Rates (spawn rate, growth rate, decay rate)
+- Multipliers and scaling factors
+- Thresholds (when events trigger, level caps)
+- Formulas that calculate any of the above
+
+### What is NOT a Balance Value (keep in code)
+
+- UI layout constants (use DesignSystem.swift)
+- String literals (use L10n)
+- Technical implementation details (array indices, enum cases)
+- One-off calculations that aren't reused
 
 ### Existing BalanceConfig Sections
 

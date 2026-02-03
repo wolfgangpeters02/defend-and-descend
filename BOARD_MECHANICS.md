@@ -762,12 +762,12 @@ The motherboard map uses an 8-lane sector system:
 
 All mechanics documented above have been verified in the codebase:
 
-- **Protocols:** Defined in [Protocol.swift](LegendarySurvivors/Core/Types/Protocol.swift)
-- **Tower System:** [TowerSystem.swift](LegendarySurvivors/GameEngine/Systems/TowerSystem.swift)
-- **Tower Visuals:** [TowerVisualFactory.swift](LegendarySurvivors/Rendering/TowerVisualFactory.swift)
-- **Tower Animations:** [TowerAnimations.swift](LegendarySurvivors/Rendering/TowerAnimations.swift)
-- **Enemies:** [GameConfig.json](LegendarySurvivors/Resources/GameConfig.json)
-- **Idle Spawning:** [IdleSpawnSystem.swift](LegendarySurvivors/GameEngine/Systems/IdleSpawnSystem.swift)
-- **Wave Spawning:** [WaveSystem.swift](LegendarySurvivors/GameEngine/Systems/WaveSystem.swift)
-- **Balance Config:** [BalanceConfig.swift](LegendarySurvivors/Core/Config/BalanceConfig.swift)
-- **Entity Rendering:** [EntityRenderer.swift](LegendarySurvivors/Rendering/EntityRenderer.swift)
+- **Protocols:** Defined in [Protocol.swift](SystemReboot/Core/Types/Protocol.swift)
+- **Tower System:** [TowerSystem.swift](SystemReboot/GameEngine/Systems/TowerSystem.swift)
+- **Tower Visuals:** [TowerVisualFactory.swift](SystemReboot/Rendering/TowerVisualFactory.swift)
+- **Tower Animations:** [TowerAnimations.swift](SystemReboot/Rendering/TowerAnimations.swift)
+- **Enemies:** [GameConfig.json](SystemReboot/Resources/GameConfig.json)
+- **Idle Spawning:** [IdleSpawnSystem.swift](SystemReboot/GameEngine/Systems/IdleSpawnSystem.swift)
+- **Wave Spawning:** [WaveSystem.swift](SystemReboot/GameEngine/Systems/WaveSystem.swift)
+- **Balance Config:** [BalanceConfig.swift](SystemReboot/Core/Config/BalanceConfig.swift)
+- **Entity Rendering:** [EntityRenderer.swift](SystemReboot/Rendering/EntityRenderer.swift)

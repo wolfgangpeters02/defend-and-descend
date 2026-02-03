@@ -705,7 +705,7 @@ PSU (Free) ──┬──▶ GPU (5K) ──┬──▶ Storage (12K) ──�
 ### File Structure
 
 ```
-LegendarySurvivors/
+SystemReboot/
 ├── Core/
 │   ├── Config/          # BalanceConfig, LootTables, SectorSchematics
 │   ├── Types/           # GameTypes, TDTypes, Protocol, etc.

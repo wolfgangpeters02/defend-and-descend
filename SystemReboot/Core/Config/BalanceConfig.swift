@@ -1,0 +1,1655 @@
+import Foundation
+import CoreGraphics
+
+// MARK: - Balance Config
+// Centralized game balance values for easy tuning
+// All hardcoded numbers should live here for discoverability
+
+struct BalanceConfig {
+
+    // MARK: - Core Formulas
+    // Centralized formulas used by Protocols, Towers, Components, etc.
+    // ALL upgrade cost calculations should call these functions
+
+    /// Maximum upgrade level for protocols, towers, and components
+    static let maxUpgradeLevel: Int = 10
+
+    /// Exponential upgrade cost formula: baseCost × 2^(level-1)
+    /// Level 1→2: base, Level 2→3: 2x, Level 3→4: 4x, ... Level 9→10: 256x
+    /// Example: Common protocol (base 50): Total Lv1→10 = 25,550 Hash
+    static func exponentialUpgradeCost(baseCost: Int, currentLevel: Int) -> Int {
+        guard currentLevel < maxUpgradeLevel else { return 0 }
+        return baseCost * Int(pow(2.0, Double(currentLevel - 1)))
+    }
+
+    /// Level damage/stat multiplier: each level = level number as multiplier
+    /// Level 1 = 1.0x, Level 5 = 5.0x, Level 10 = 10.0x
+    /// Used by Protocol and Tower damage scaling
+    static func levelStatMultiplier(level: Int) -> CGFloat {
+        return CGFloat(level)
+    }
+
+    // MARK: - Player Stats
+
+    struct Player {
+        /// Base health at level 1, before upgrades
+        static let baseHealth: CGFloat = 200
+
+        /// Base movement speed (units/second)
+        static let baseSpeed: CGFloat = 200
+
+        /// Player hitbox radius
+        static let size: CGFloat = 15
+
+        /// Base pickup magnet radius
+        static let pickupRange: CGFloat = 50
+
+        /// Base health regeneration per second
+        static let baseRegen: CGFloat = 1.5
+
+        /// Duration of invulnerability after taking damage
+        static let invulnerabilityDuration: TimeInterval = 0.5
+
+        /// Duration of invulnerability after revive
+        static let reviveInvulnerabilityDuration: TimeInterval = 3.0
+
+        /// Speed of coins/pickups being magnetized toward player
+        static let coinMagnetSpeed: CGFloat = 400
+
+        /// Player weapon projectile speed (survivor/boss mode)
+        static let weaponProjectileSpeed: CGFloat = 500
+    }
+
+    // MARK: - Enemy Time Scaling (Survivor Mode)
+
+    struct EnemyScaling {
+        /// HP increase per minute (+10%)
+        static let hpScalingPerMinute: CGFloat = 0.10
+
+        /// Damage increase per minute (+5%)
+        static let damageScalingPerMinute: CGFloat = 0.05
+    }
+
+    // MARK: - Dungeon Mode Scaling
+
+    struct DungeonMode {
+        /// Base health multiplier for dungeon enemies
+        static let healthMultiplier: CGFloat = 3.0
+
+        /// Base speed multiplier for dungeon enemies
+        static let speedMultiplier: CGFloat = 1.5
+
+        /// Base damage multiplier for dungeon enemies
+        static let damageMultiplier: CGFloat = 2.0
+
+        /// Additional health multiplier for boss/tank enemies
+        static let bossHealthMultiplier: CGFloat = 2.0
+
+        /// Additional damage multiplier for boss/tank enemies
+        static let bossDamageMultiplier: CGFloat = 1.5
+    }
+
+    // MARK: - Spawn System
+
+    struct Spawn {
+        /// Dungeon spawn center margin (ratio of arena size)
+        static let dungeonCenterMarginRatio: CGFloat = 0.25
+
+        /// Dungeon safe spawn zone (ratio of arena size)
+        static let dungeonSafeZoneRatio: CGFloat = 0.5
+
+        /// Edge spawn margin (distance from arena edge)
+        static let edgeMargin: CGFloat = 50
+
+        /// Default enemy activation radius
+        static let defaultActivationRadius: CGFloat = 400
+    }
+
+    // MARK: - Enemy Defaults
+    // Default fallback values when enemy config is missing
+    // Note: Uses Double for config compatibility (EnemyConfig uses Double)
+
+    struct EnemyDefaults {
+        /// Default health when config is missing (Double for EnemyConfig compat)
+        static let health: Double = 20
+
+        /// Default speed when config is missing (Double for EnemyConfig compat)
+        static let speed: Double = 80
+
+        /// Default damage when config is missing (Double for EnemyConfig compat)
+        static let damage: Double = 10
+
+        /// Default visual size when config is missing (Double for EnemyConfig compat)
+        static let size: Double = 12
+
+        /// Default collision size for enemy interactions (CGFloat for game logic)
+        static let collisionSize: CGFloat = 20
+
+        /// Default coin/xp value when config is missing
+        static let coinValue: Int = 1
+
+        /// Default boss size when config is missing
+        static let bossSize: CGFloat = 60
+
+        /// Default enemy color (hex)
+        static let color: String = "#ff4444"
+
+        /// Default enemy shape
+        static let shape: String = "square"
+    }
+
+    // MARK: - Threat Level Display
+    // Thresholds for UI display of threat level names/colors
+
+    struct ThreatDisplay {
+        /// Low threat threshold (0 to this value)
+        static let lowMax: CGFloat = 2
+
+        /// Medium threat threshold (low to this value)
+        static let mediumMax: CGFloat = 5
+
+        /// High threat threshold (medium to this value)
+        static let highMax: CGFloat = 10
+
+        /// Critical threat threshold (high to this value)
+        static let criticalMax: CGFloat = 20
+
+        /// Colors for each threat level
+        static let lowColor: String = "#44ff44"       // Green
+        static let mediumColor: String = "#ffff44"    // Yellow
+        static let highColor: String = "#ff8844"      // Orange
+        static let criticalColor: String = "#ff4444"  // Red
+        static let extremeColor: String = "#ff00ff"   // Magenta
+    }
+
+    // MARK: - Wave Scaling (TD Mode)
+
+    struct Waves {
+        /// Health multiplier increase per wave (+15% = 0.15)
+        static let healthScalingPerWave: CGFloat = 0.15
+
+        /// Speed multiplier increase per wave (+2% = 0.02)
+        static let speedScalingPerWave: CGFloat = 0.02
+
+        /// Base enemy count formula: baseCount + (waveNumber * countPerWave)
+        static let baseEnemyCount: Int = 5
+        static let enemiesPerWave: Int = 2
+
+        /// Boss waves occur every N waves
+        static let bossWaveInterval: Int = 5
+
+        /// Boss health multiplier (on top of wave scaling)
+        static let bossHealthMultiplier: CGFloat = 2.0
+
+        /// Boss speed multiplier (slower than normal)
+        static let bossSpeedMultiplier: CGFloat = 0.8
+
+        /// Minimum delay between enemy spawns (gets faster over waves)
+        static let minSpawnDelay: CGFloat = 0.3
+        static let baseSpawnDelay: CGFloat = 0.8
+        static let spawnDelayReductionPerWave: CGFloat = 0.02
+
+        /// Bonus Hash per wave completion (waveNumber × this value)
+        static let hashBonusPerWave: Int = 10
+
+        /// Seconds between waves
+        static let waveCooldown: TimeInterval = 10.0
+
+        /// Wave composition tier thresholds
+        /// Tier 1 (early): waves 1 to earlyWaveMax - basic only
+        /// Tier 2 (mid-early): waves earlyWaveMax+1 to midEarlyWaveMax - basic + fast
+        /// Tier 3 (mid): waves midEarlyWaveMax+1 to midWaveMax - basic + fast + tank
+        /// Tier 4 (late): waves midWaveMax+1 onwards - all types + bosses
+        static let earlyWaveMax: Int = 3
+        static let midEarlyWaveMax: Int = 6
+        static let midWaveMax: Int = 10
+    }
+
+    // MARK: - Threat Level Scaling (Idle TD Mode)
+
+    struct ThreatLevel {
+        /// Maximum threat level (caps enemy scaling so Lv10 towers remain viable)
+        /// At threat 100: enemies have +1485% HP, +198% speed, +495% damage
+        /// A Lv10 tower (10x damage) can still handle this with proper placement
+        static let maxThreatLevel: CGFloat = 100.0
+
+        /// Health scaling per threat level (+15%)
+        static let healthScaling: CGFloat = 0.15
+
+        /// Speed scaling per threat level (+2%)
+        static let speedScaling: CGFloat = 0.02
+
+        /// Damage scaling per threat level (+5%)
+        static let damageScaling: CGFloat = 0.05
+
+        /// Threat level thresholds for enemy type unlocks
+        static let fastEnemyThreshold: CGFloat = 2.0
+        static let swarmEnemyThreshold: CGFloat = 4.0   // Swarm enemies - weak but fast
+        static let tankEnemyThreshold: CGFloat = 5.0
+        static let eliteEnemyThreshold: CGFloat = 8.0   // Stronger fast enemies
+        static let bossEnemyThreshold: CGFloat = 10.0
+
+        /// Weight scaling for enemy types (how fast they ramp up)
+        static let fastEnemyWeightPerThreat: CGFloat = 15  // max 60
+        static let swarmEnemyWeightPerThreat: CGFloat = 12 // max 50
+        static let tankEnemyWeightPerThreat: CGFloat = 10  // max 40
+        static let eliteEnemyWeightPerThreat: CGFloat = 8  // max 30
+        static let bossEnemyWeightPerThreat: CGFloat = 2   // max 10
+
+        /// Max weights for each enemy type
+        static let fastEnemyMaxWeight: Int = 60
+        static let swarmEnemyMaxWeight: Int = 50
+        static let tankEnemyMaxWeight: Int = 40
+        static let eliteEnemyMaxWeight: Int = 30
+        static let bossEnemyMaxWeight: Int = 10
+
+        /// Base idle spawn rate (seconds between spawns at threat 0)
+        static let baseIdleSpawnRate: TimeInterval = 2.0
+
+        /// Minimum spawn interval (floor at high threat)
+        static let minSpawnInterval: TimeInterval = 0.3
+
+        /// Spawn rate scaling with threat (divisor increases with threat)
+        static let spawnRateThreatScaling: CGFloat = 0.1
+
+        /// Online threat growth rate (per second)
+        static let onlineThreatGrowthRate: CGFloat = 0.01
+
+        /// Offline threat growth rate (10% of online rate)
+        static let offlineThreatGrowthRate: CGFloat = 0.001
+
+        /// Efficiency loss per leaked enemy (5%)
+        static let efficiencyPerLeak: CGFloat = 0.05
+
+        /// Level bonus per tower/protocol level (+5% stats)
+        static let levelBonusPercent: CGFloat = 0.05
+
+        /// Maximum enemies on screen (performance cap)
+        static let maxEnemiesOnScreen: Int = 50
+    }
+
+    // MARK: - Tower Economy
+
+    struct Towers {
+        /// Placement cost by rarity (Hash) - also used as base upgrade cost
+        static let placementCosts: [Rarity: Int] = [
+            .common: 50,
+            .rare: 100,
+            .epic: 200,
+            .legendary: 400
+        ]
+
+        /// Base upgrade cost by rarity (same as placement cost)
+        /// Upgrade cost formula: baseUpgradeCost × 2^(level-1)
+        /// Total Lv1→10 for common: 50 × (1+2+4+8+16+32+64+128+256) = 25,550 Ħ
+        static func baseUpgradeCost(for rarity: Rarity) -> Int {
+            return placementCosts[rarity] ?? 50
+        }
+
+        /// Upgrade investment per level (for refund calculation)
+        static let upgradeInvestmentPerLevel: Int = 75
+
+        /// Refund percentage when selling (50%)
+        static let refundRate: CGFloat = 0.5
+
+        /// Projectile settings
+        static let projectileSpeed: CGFloat = 600
+        static let projectileHitboxRadius: CGFloat = 8
+        static let projectileLifetime: TimeInterval = 3.0
+        static let homingStrength: CGFloat = 8.0
+        static let multiShotSpreadAngle: CGFloat = 0.15
+
+        /// Lead targeting prediction cap (seconds)
+        static let maxPredictionTime: CGFloat = 0.8
+    }
+
+    // MARK: - Boss Scaling (Survivor Mode)
+
+    struct BossSurvivor {
+        /// Time-based health scaling: 1 + (minutes × this)
+        static let healthScalingPerMinute: Double = 0.10
+
+        /// Base health multiplier for boss spawns
+        static let baseHealthMultiplier: Double = 4.0
+
+        /// Spawn interval in seconds
+        static let spawnInterval: TimeInterval = 120
+
+        /// Phase transition health thresholds (percentage)
+        static let phase2Threshold: CGFloat = 0.75
+        static let phase3Threshold: CGFloat = 0.50
+        static let phase4Threshold: CGFloat = 0.25
+
+        /// Phase bonuses
+        static let phaseSpeedMultiplier: CGFloat = 1.2
+        static let phaseDamageMultiplier: CGFloat = 1.15
+    }
+
+    // MARK: - Cyberboss Configuration
+
+    struct Cyberboss {
+        // Phase thresholds (health percentage)
+        static let phase2Threshold: CGFloat = 0.75
+        static let phase3Threshold: CGFloat = 0.50
+        static let phase4Threshold: CGFloat = 0.25
+
+        // Mode switching (Phase 1-2)
+        static let modeSwitchInterval: Double = 5.0
+
+        // Minion spawns
+        static let minionSpawnIntervalPhase1: Double = 10.0
+        static let minionSpawnIntervalPhase2: Double = 8.0
+        static let maxMinionsOnScreen: Int = 25
+        static let fastMinionCountMin: Int = 5
+        static let fastMinionCountMax: Int = 6
+        static let tankMinionCountMin: Int = 4
+        static let tankMinionCountMax: Int = 5
+
+        // Melee mode
+        static let meleeDPS: CGFloat = 150
+        static let meleeChaseSpeedMultiplier: CGFloat = 1.2
+
+        // Ranged mode
+        static let rangedAttackCooldown: Double = 1.2
+        static let rangedProjectileCount: Int = 5
+        static let rangedSpreadAngle: CGFloat = .pi / 4.5  // ~40 degrees total
+        static let rangedProjectileSpeed: CGFloat = 180
+        static let rangedProjectileDamage: CGFloat = 25
+        static let rangedPreferredDistance: CGFloat = 450
+
+        // Damage puddles (Phase 3-4)
+        static let puddleSpawnIntervalPhase3: Double = 2.0
+        static let puddleSpawnIntervalPhase4: Double = 1.5
+        static let puddleCountMin: Int = 2  // Reduced from 3 for performance
+        static let puddleCountMax: Int = 3  // Reduced from 5 for performance
+        static let puddleRadius: CGFloat = 60
+        static let puddleDPS: CGFloat = 10
+        static let puddlePopDamage: CGFloat = 30
+        static let puddleDamageInterval: Double = 0.5
+        static let puddleMaxLifetime: Double = 4.0
+        static let puddleWarningDuration: Double = 1.0
+
+        // Laser beams (Phase 4)
+        static let laserBeamCount: Int = 5
+        static let laserBeamLength: CGFloat = 800
+        static let laserBeamDamage: CGFloat = 50
+        static let laserRotationSpeed: CGFloat = 25.0  // degrees per second
+        static let laserBeamWidth: CGFloat = 10
+
+        // Melee AoE range (added to boss size)
+        static let meleeRangeAoE: CGFloat = 30
+
+        // Arena bounds padding
+        static let boundsPadding: CGFloat = 20
+
+        // Minion spawn distance range
+        static let minionSpawnDistanceMin: CGFloat = 80
+        static let minionSpawnDistanceMax: CGFloat = 150
+
+        // Movement behavior multipliers
+        static let rangedMoveAwaySpeed: CGFloat = 0.5      // Speed when moving away from player
+        static let rangedMoveCloserSpeed: CGFloat = 0.3    // Speed when closing distance
+        static let rangedStrafeSpeed: CGFloat = 0.4        // Speed when strafing
+        static let rangedDistanceThreshold: CGFloat = 150  // Extra distance before moving closer
+
+        // Projectile settings
+        static let rangedProjectileLifetime: TimeInterval = 5.0
+        static let rangedSpawnOffset: CGFloat = 5          // Extra offset from boss for projectile spawn
+        static let rangedProjectileSizeRatio: CGFloat = 0.35  // Projectile size as ratio of boss size
+
+        // Damage puddle spawn area margin
+        static let puddleSpawnMargin: CGFloat = 100
+
+        // Pop damage threshold (how close to end of lifetime to trigger pop)
+        static let puddlePopThreshold: TimeInterval = 0.1
+
+        // Minion spawn collision padding
+        static let minionSpawnPadding: CGFloat = 10
+
+        // Laser hit invulnerability duration
+        static let laserHitInvulnerability: TimeInterval = 0.5
+    }
+
+    // MARK: - Void Harbinger Configuration
+
+    struct VoidHarbinger {
+        // Phase thresholds (health percentage)
+        static let phase2Threshold: CGFloat = 0.70
+        static let phase3Threshold: CGFloat = 0.40
+        static let phase4Threshold: CGFloat = 0.10
+
+        // Void zones
+        static let voidZoneIntervalPhase1: Double = 8.0
+        static let voidZoneIntervalPhase4: Double = 2.0
+        static let voidZoneRadius: CGFloat = 80
+        static let voidZoneDamage: CGFloat = 40  // DPS
+        static let voidZoneWarningTime: Double = 2.0
+        static let voidZoneActiveTime: Double = 5.0
+
+        // Meteor strikes (Phase 3+)
+        static let meteorInterval: Double = 6.0
+        static let meteorRadius: CGFloat = 100
+        static let meteorDamage: CGFloat = 80
+
+        // Shadow bolt volley
+        static let volleyInterval: Double = 6.0
+        static let volleyProjectileCount: Int = 8
+        static let volleyProjectileSpeed: CGFloat = 350
+        static let volleyProjectileDamage: CGFloat = 20
+        static let volleyProjectileRadius: CGFloat = 10
+        static let volleySpreadAngle: CGFloat = 0.2       // Angle between each projectile
+        static let volleyProjectileLifetime: TimeInterval = 4.0
+
+        // Minion spawns
+        static let minionSpawnInterval: Double = 15.0
+        static let minionCount: Int = 4
+        static let minionHealth: CGFloat = 30
+        static let minionDamage: CGFloat = 10
+        static let minionSpeed: CGFloat = 120
+        static let minionXP: Int = 5
+
+        // Elite minions (Phase 3+)
+        static let eliteMinionInterval: Double = 20.0
+        static let eliteMinionHealth: CGFloat = 200
+        static let eliteMinionDamage: CGFloat = 25
+        static let eliteMinionSpeed: CGFloat = 80
+        static let eliteMinionXP: Int = 50
+
+        // Pylons (Phase 2)
+        static let pylonCount: Int = 4
+        static let pylonHealth: CGFloat = 500
+        static let pylonBeamInterval: Double = 3.0
+        static let pylonBeamSpeed: CGFloat = 400
+        static let pylonBeamDamage: CGFloat = 30
+        static let pylonBeamRadius: CGFloat = 8
+        static let pylonBeamHomingStrength: CGFloat = 2.0
+        static let pylonBeamLifetime: TimeInterval = 3.0
+
+        // Void rifts (Phase 3+)
+        static let voidRiftCount: Int = 3
+        static let voidRiftRotationSpeed: CGFloat = 45  // degrees per second
+        static let voidRiftWidth: CGFloat = 40
+        static let voidRiftDamage: CGFloat = 50  // DPS
+        static let voidRiftLength: CGFloat = 700
+
+        // Gravity wells (Phase 3+)
+        static let gravityWellCount: Int = 2
+        static let gravityWellPullRadius: CGFloat = 250
+        static let gravityWellPullStrength: CGFloat = 50
+
+        // Teleport (Phase 4)
+        static let teleportInterval: Double = 3.0
+
+        // Shrinking arena (Phase 4)
+        static let arenaStartRadius: CGFloat = 1500
+        static let arenaMinRadius: CGFloat = 150
+        static let arenaShrinkRate: CGFloat = 30  // pixels per second
+        static let outsideArenaDPS: CGFloat = 40
+        static let outsideArenaPushStrength: CGFloat = 100
+
+        // Position offsets (for 1200x900 arena)
+        static let pylonOffsetX: CGFloat = 500
+        static let pylonOffsetY: CGFloat = 350
+        static let voidRiftDistance: CGFloat = 200
+        static let gravityWellOffsetX: CGFloat = 300
+        static let phase1ChaseMultiplier: CGFloat = 0.6
+        static let phase3ChaseMultiplier: CGFloat = 0.8
+        static let eliteMinionSpawnDistance: CGFloat = 150
+
+        // Void minion spawn distance range
+        static let minionSpawnDistanceMin: CGFloat = 100
+        static let minionSpawnDistanceMax: CGFloat = 200
+
+        // Meteor spawn offset from player
+        static let meteorSpawnOffset: CGFloat = 100
+
+        // Teleport offset ratio (0.6 = 60% of arena radius)
+        static let teleportOffsetRatio: CGFloat = 0.6
+    }
+
+    // MARK: - Zero-Day System (TD Mode Boss)
+
+    struct ZeroDay {
+        /// Minimum waves before Zero-Day can spawn
+        static let minWavesBeforeSpawn: Int = 3
+
+        /// Minimum time between Zero-Day spawns
+        static let minSpawnTime: TimeInterval = 90
+
+        /// Maximum time between Zero-Day spawns
+        static let maxSpawnTime: TimeInterval = 180
+
+        /// Cooldown after defeating Zero-Day
+        static let cooldownAfterDefeat: TimeInterval = 180
+
+        /// Efficiency drain rate per second while Zero-Day is active
+        static let efficiencyDrainRate: CGFloat = 2.0
+
+        /// Hash bonus for defeating Zero-Day
+        static let defeatHashBonus: Int = 525
+
+        /// Efficiency restored when Zero-Day is defeated
+        static let defeatEfficiencyRestore: Int = 30
+
+        /// Maximum leak counter (100% efficiency loss)
+        static let maxLeakCounter: Int = 20
+
+        /// Zero-Day base health
+        static let baseHealth: CGFloat = 9999
+
+        /// Zero-Day movement speed
+        static let speed: CGFloat = 30
+
+        /// Zero-Day visual size
+        static let size: CGFloat = 60
+    }
+
+    // MARK: - Survival Events
+
+    struct SurvivalEvents {
+        /// Event interval settings
+        static let baseEventInterval: TimeInterval = 60
+        static let minEventInterval: TimeInterval = 40
+        static let intervalReductionPerMinute: TimeInterval = 5
+        static let intervalRandomRange: ClosedRange<Double> = -5...5
+
+        /// First event triggers at this time
+        static let firstEventTime: TimeInterval = 60
+
+        // MARK: Event Durations
+
+        /// Memory Surge duration and warning
+        static let memorySurgeDuration: TimeInterval = 8.0
+        static let memorySurgeWarningDuration: TimeInterval = 2.0
+        static let memorySurgeMinTime: TimeInterval = 60
+
+        /// Buffer Overflow duration and warning
+        static let bufferOverflowDuration: TimeInterval = 15.0
+        static let bufferOverflowWarningDuration: TimeInterval = 3.0
+
+        /// Thermal Throttle duration
+        static let thermalThrottleDuration: TimeInterval = 12.0
+        static let thermalThrottleWarningDuration: TimeInterval = 2.0
+
+        /// Cache Flush duration
+        static let cacheFlushDuration: TimeInterval = 3.0
+        static let cacheFlushWarningDuration: TimeInterval = 2.0
+
+        /// Data Corruption duration
+        static let dataCorruptionDuration: TimeInterval = 10.0
+        static let dataCorruptionWarningDuration: TimeInterval = 2.0
+
+        /// Virus Swarm duration
+        static let virusSwarmDuration: TimeInterval = 5.0
+        static let virusSwarmWarningDuration: TimeInterval = 3.0
+
+        /// System Restore duration
+        static let systemRestoreDuration: TimeInterval = 8.0
+        static let systemRestoreWarningDuration: TimeInterval = 2.0
+
+        /// Min survival time for event tiers
+        static let tier1MinTime: TimeInterval = 60
+        static let tier2MinTime: TimeInterval = 180
+        static let tier3MinTime: TimeInterval = 300
+
+        // MARK: Event Effects
+
+        /// Memory Surge: speed boost
+        static let memorySurgeSpeedBoost: CGFloat = 1.5  // +50%
+        static let memorySurgeSpawnRate: CGFloat = 2.0   // 2x spawns
+
+        /// Thermal Throttle: slow + damage boost
+        static let thermalThrottleSpeedMult: CGFloat = 0.7   // -30%
+        static let thermalThrottleDamageMult: CGFloat = 1.5  // +50%
+
+        /// Buffer Overflow: kill zone damage per second
+        static let bufferOverflowDamagePerSecond: CGFloat = 25.0
+        static let bufferOverflowZoneDepth: CGFloat = 100
+
+        /// Data Corruption: damage per second when touching corrupted obstacle
+        static let dataCorruptionDamagePerSecond: CGFloat = 15.0
+        static let maxCorruptedObstacles: Int = 3
+
+        /// System Restore: healing per second in zone
+        static let systemRestoreHealPerSecond: CGFloat = 5.0
+        static let systemRestoreZoneRadius: CGFloat = 60
+        static let healingZoneSpawnMargin: CGFloat = 80
+
+        /// Virus Swarm: enemy count and stats
+        static let virusSwarmCount: Int = 50
+        static let swarmVirusHealth: CGFloat = 5
+        static let swarmVirusSpeed: CGFloat = 200
+        static let swarmVirusDamage: CGFloat = 5
+        static let virusSpreadOffset: CGFloat = 20
+        static let virusRowOffset: CGFloat = 15
+
+        /// Cache Flush: cooldown before can trigger again
+        static let cacheFlushCooldown: TimeInterval = 120
+    }
+
+    // MARK: - Survival Economy
+
+    struct SurvivalEconomy {
+        /// Time until extraction is available (seconds)
+        static let extractionTime: TimeInterval = 180  // 3 minutes
+
+        /// Base Hash earned per second
+        static let hashPerSecond: CGFloat = 2.0
+
+        /// Bonus Hash per minute survived (adds to base rate)
+        static let hashBonusPerMinute: CGFloat = 0.5
+    }
+
+    // MARK: - Efficiency System (TD Mode)
+
+    struct Efficiency {
+        /// Base leak decay interval in seconds (modified by RAM upgrade)
+        static let leakDecayInterval: TimeInterval = 5.0
+
+        /// Efficiency warning threshold (haptic feedback when drops below)
+        static let warningThreshold: CGFloat = 25
+    }
+
+    // MARK: - TD Hash Economy
+    // Idle tower defense mode - Hash generation and scaling
+
+    struct HashEconomy {
+        /// Base Hash per second at CPU level 1
+        /// 1 Ħ/sec = 3,600/hour = ~7 hours to max a common tower (25,550 Ħ)
+        static let baseHashPerSecond: CGFloat = 1.0
+
+        /// CPU level scaling multiplier (1.5x per level)
+        /// Lv1: 1, Lv2: 1.5, Lv3: 2.25, Lv5: 5, Lv10: 38
+        static let cpuLevelScaling: CGFloat = 1.5
+
+        /// Offline earnings rate (percentage of active rate)
+        static let offlineEarningsRate: CGFloat = 0.2  // 20%
+
+        /// Maximum offline accumulation time (hours)
+        static let maxOfflineHours: CGFloat = 8.0
+
+        /// Calculate Hash per second at a given CPU level
+        static func hashPerSecond(at cpuLevel: Int) -> CGFloat {
+            return baseHashPerSecond * pow(cpuLevelScaling, CGFloat(cpuLevel - 1))
+        }
+    }
+
+    // MARK: - Potion System
+
+    struct Potions {
+        /// Max charges for each potion type
+        static let healthMaxCharge: CGFloat = 100
+        static let bombMaxCharge: CGFloat = 150
+        static let magnetMaxCharge: CGFloat = 75
+        static let shieldMaxCharge: CGFloat = 100
+
+        /// Charge multipliers (how fast each potion charges)
+        static let healthChargeMultiplier: CGFloat = 2.0
+        static let bombChargeMultiplier: CGFloat = 1.0
+        static let magnetChargeMultiplier: CGFloat = 1.5
+        static let shieldChargeMultiplier: CGFloat = 1.2
+
+        /// Health potion: restore percentage of max HP
+        static let healthRestorePercent: CGFloat = 0.5  // 50%
+
+        /// Magnet potion: expanded pickup range
+        static let magnetPickupRange: CGFloat = 2000
+
+        /// Shield potion: invulnerability duration
+        static let shieldDuration: TimeInterval = 5.0
+
+        /// Bomb potion: screen flash duration
+        static let bombFlashDuration: TimeInterval = 0.3
+
+        /// Magnet potion: expanded range duration
+        static let magnetDuration: TimeInterval = 0.5
+    }
+
+    // MARK: - Pickups
+
+    struct Pickups {
+        /// How long pickups stay on screen before despawning
+        static let lifetime: TimeInterval = 10.0
+
+        /// Projectile base lifetime before despawning
+        static let projectileLifetime: TimeInterval = 2.0
+    }
+
+    // MARK: - Timing
+
+    struct Timing {
+        /// Upgrade selection interval (survivor mode)
+        static let upgradeInterval: TimeInterval = 60  // 1 minute
+    }
+
+    // MARK: - TD Core (Guardian)
+
+    struct TDCore {
+        /// Core initial health
+        static let baseHealth: CGFloat = 100
+
+        /// Level bonus per player level (+2%)
+        static let levelBonusPercent: CGFloat = 0.02
+
+        /// Core attack projectile speed
+        static let projectileSpeed: CGFloat = 300
+
+        /// Core attack projectile radius
+        static let projectileRadius: CGFloat = 6
+
+        /// Core attack projectile lifetime
+        static let projectileLifetime: TimeInterval = 2.0
+
+        /// Core upgrade values
+        static let healthUpgradeBonus: CGFloat = 20
+        static let damageUpgradeMultiplier: CGFloat = 1.15
+        static let rangeUpgradeBonus: CGFloat = 20
+        static let attackSpeedUpgradeMultiplier: CGFloat = 1.1
+        static let armorUpgradeBonus: CGFloat = 0.05
+        static let maxArmor: CGFloat = 0.5
+
+        /// Core upgrade base costs
+        static let healthUpgradeCost: Int = 50
+        static let damageUpgradeCost: Int = 75
+        static let rangeUpgradeCost: Int = 60
+        static let attackSpeedUpgradeCost: Int = 100
+        static let armorUpgradeCost: Int = 80
+
+        /// Health thresholds for color changes
+        static let healthyThreshold: CGFloat = 0.6
+        static let damagedThreshold: CGFloat = 0.3
+
+        /// Pulse animation speed range
+        static let minPulseSpeed: CGFloat = 2.0
+        static let maxPulseSpeedVariation: CGFloat = 3.0
+
+        /// Pulse intensity multiplier for visual feedback (more visible at low health)
+        static let pulseIntensity: CGFloat = 0.05
+    }
+
+    // MARK: - TD Boss Integration
+    // Bosses spawn at threat milestones, immune to towers
+    // Player must manually engage or let them pass
+
+    struct TDBoss {
+        /// Threat level interval for boss spawns (every 6 threat)
+        static let threatMilestoneInterval: Int = 6
+
+        /// Boss walk speed (slower than regular enemies)
+        static let walkSpeed: CGFloat = 25
+
+        /// Time for boss to reach CPU (gives player time to engage)
+        static let pathDuration: TimeInterval = 60
+
+        /// Efficiency loss when boss reaches CPU (4 leaks = 20%)
+        static let efficiencyLossOnIgnore: Int = 4
+
+        /// Boss visual size
+        static let bossSize: CGFloat = 80
+
+        /// TD Boss health (immune to towers anyway)
+        static let health: CGFloat = 99999
+    }
+
+    // MARK: - Boss Difficulty Scaling
+    // Multipliers and rewards per difficulty level
+
+    struct BossDifficultyConfig {
+        /// Boss health multipliers by difficulty
+        static let healthMultipliers: [String: CGFloat] = [
+            "Easy": 1.0,
+            "Normal": 1.0,
+            "Hard": 1.5,
+            "Nightmare": 2.5
+        ]
+
+        /// Boss damage multipliers by difficulty
+        static let damageMultipliers: [String: CGFloat] = [
+            "Easy": 0.5,
+            "Normal": 1.0,
+            "Hard": 1.3,
+            "Nightmare": 1.8
+        ]
+
+        /// Player health multipliers by difficulty
+        static let playerHealthMultipliers: [String: CGFloat] = [
+            "Easy": 2.0,
+            "Normal": 1.0,
+            "Hard": 1.0,
+            "Nightmare": 1.0
+        ]
+
+        /// Player damage multipliers by difficulty
+        static let playerDamageMultipliers: [String: CGFloat] = [
+            "Easy": 4.0,
+            "Normal": 1.5,
+            "Hard": 1.0,
+            "Nightmare": 1.0
+        ]
+
+        /// Hash rewards by difficulty
+        static let hashRewards: [String: Int] = [
+            "Easy": 1000,
+            "Normal": 3000,
+            "Hard": 8000,
+            "Nightmare": 20000
+        ]
+
+        /// Blueprint drop chances by difficulty
+        static let blueprintChances: [String: CGFloat] = [
+            "Easy": 0.05,
+            "Normal": 0.15,
+            "Hard": 0.30,
+            "Nightmare": 0.50
+        ]
+    }
+
+    // MARK: - Tower Upgrades
+    // Per-level stat increases when upgrading towers
+
+    struct TowerUpgrades {
+        /// Damage multiplier per level (+10%)
+        static let damageMultiplier: CGFloat = 1.1
+
+        /// Range multiplier per level (+5%)
+        static let rangeMultiplier: CGFloat = 1.05
+
+        /// Attack speed multiplier per level (+3%)
+        static let attackSpeedMultiplier: CGFloat = 1.03
+
+        /// Chain lightning target count
+        static let chainTargets: Int = 3
+    }
+
+    // MARK: - Overclock System
+    // Player can overclock CPU for risk/reward gameplay
+
+    struct Overclock {
+        /// Duration of overclock effect
+        static let duration: TimeInterval = 60
+
+        /// Hash generation multiplier during overclock
+        static let hashMultiplier: CGFloat = 2.0
+
+        /// Threat growth multiplier during overclock
+        static let threatMultiplier: CGFloat = 10.0
+
+        /// Power demand multiplier during overclock
+        static let powerDemandMultiplier: CGFloat = 2.0
+    }
+
+    // MARK: - Boss Loot Modal
+    // Settings for the post-boss loot reveal experience
+
+    struct BossLoot {
+        /// Number of taps required to decrypt each item
+        static let tapsToDecrypt: Int = 2
+
+        /// Auto-advance delay if player doesn't tap (seconds)
+        static let autoAdvanceDelay: TimeInterval = 2.0
+
+        /// Delay between sequential card reveals (seconds)
+        static let revealDelay: TimeInterval = 0.3
+
+        /// Animation duration for decrypt reveal
+        static let decryptDuration: TimeInterval = 0.4
+
+        /// Glitch animation offset range
+        static let glitchOffsetRange: ClosedRange<CGFloat> = -5...5
+    }
+
+    // MARK: - Performance Limits
+
+    struct Limits {
+        /// Maximum particles on screen
+        static let maxParticles: Int = 500
+
+        /// Maximum projectiles on screen
+        static let maxProjectiles: Int = 1000
+
+        /// Particle update interval (batch processing)
+        static let particleUpdateInterval: TimeInterval = 0.05
+    }
+
+    // MARK: - Input
+
+    struct Input {
+        /// Joystick responsiveness curve exponent (lower = more responsive at low distances)
+        static let joystickResponsivenessCurve: CGFloat = 0.7
+    }
+
+    // MARK: - Effect Zones
+
+    struct EffectZones {
+        /// Default ice zone speed multiplier
+        static let defaultIceSpeedMultiplier: CGFloat = 1.5
+
+        /// Default speed boost zone multiplier
+        static let defaultSpeedZoneMultiplier: CGFloat = 1.5
+    }
+
+    // MARK: - Particles
+
+    struct Particles {
+        /// Hit particle lifetime (when enemies take damage)
+        static let hitParticleLifetime: TimeInterval = 0.2
+
+        /// Player hit particle lifetime (when player takes damage - longer for visibility)
+        static let playerHitParticleLifetime: TimeInterval = 0.3
+        static let playerHitParticleSize: CGFloat = 10
+
+        /// Phoenix revive particles
+        static let phoenixParticleCount: Int = 50
+        static let phoenixParticleBaseSpeed: CGFloat = 100
+        static let phoenixParticleSpeedVariation: CGFloat = 100
+        static let phoenixParticleLifetime: TimeInterval = 1.0
+
+        /// Heal particles (potion)
+        static let healParticleCount: Int = 20
+        static let healParticleSpeedMin: CGFloat = 30
+        static let healParticleSpeedMax: CGFloat = 80
+        static let healParticleVelocityOffset: CGFloat = -30  // Upward drift for healing effect
+
+        /// Shield particles
+        static let shieldParticleCount: Int = 30
+
+        /// Boss rage particles
+        static let rageParticleCount: Int = 30
+        static let rageParticleSize: CGFloat = 15
+
+        /// Death explosion particles
+        static let deathParticleCountNormal: Int = 15
+        static let deathParticleCountBoss: Int = 40
+
+        /// Blood splatter particles
+        static let bloodParticleCountNormal: Int = 10
+        static let bloodParticleCountBoss: Int = 20
+
+        /// Collection particle (when picking up hash)
+        static let collectionParticleLifetime: TimeInterval = 0.5
+        static let collectionParticleSize: CGFloat = 12
+        static let collectionParticleVelocity: CGFloat = -50
+
+        /// Bomb explosion particles per enemy
+        static let bombParticleCountPerEnemy: Int = 10
+
+        /// Magnet trail particles
+        static let magnetParticleLifetime: TimeInterval = 0.3
+        static let magnetParticleSize: CGFloat = 4
+
+        /// Shield activation particles
+        static let shieldActivationParticleLifetime: TimeInterval = 0.5
+        static let shieldActivationParticleSize: CGFloat = 6
+        static let shieldActivationParticleSpeed: CGFloat = 50
+    }
+
+    // MARK: - Visual Effects
+
+    struct Visual {
+        /// Screen shake on hit
+        static let screenShakeDuration: TimeInterval = 0.2
+        static let screenShakeIntensity: CGFloat = 5
+
+        /// Health bar sizing
+        static let healthBarWidth: CGFloat = 50
+        static let healthBarHeight: CGFloat = 6
+        static let healthBarOffset: CGFloat = 25
+
+        /// Trail effects
+        static let trailLifetime: TimeInterval = 0.5
+        static let trailSpawnChance: Double = 0.3
+    }
+
+    // MARK: - Abilities
+
+    struct Abilities {
+        /// Explosion on kill damage
+        static let explosionOnKillDamage: CGFloat = 50
+
+        /// Explosion on kill particle count
+        static let explosionParticleCount: Int = 25
+    }
+
+    // MARK: - Leveling & XP
+
+    struct Leveling {
+        /// Level bonus: +5% stats per level
+        static let bonusPerLevel: CGFloat = 0.05
+
+        /// XP required formula: base + ((level - 1) × perLevel)
+        static let baseXPRequired: Int = 100
+        static let xpPerLevel: Int = 75  // Weapon mastery XP progression
+
+        /// Weapon mastery max level
+        static let maxWeaponLevel: Int = 10
+
+        /// Weapon mastery damage formula: base + (level × perLevel)
+        static let baseDamageMultiplier: CGFloat = 1.0
+        static let damagePerLevel: CGFloat = 1.0  // Level 10 = 10x damage
+
+        /// Max player level (survivor mode)
+        static let maxPlayerLevel: Int = 20
+    }
+
+    // MARK: - Drop Rates (See also: LootTables.swift)
+
+    struct DropRates {
+        /// Base drop rates by rarity
+        static let common: Double = 0.60
+        static let rare: Double = 0.30
+        static let epic: Double = 0.08
+        static let legendary: Double = 0.02
+
+        /// Difficulty multipliers
+        static let easyMultiplier: Double = 0.5
+        static let normalMultiplier: Double = 1.0
+        static let hardMultiplier: Double = 1.5
+        static let nightmareMultiplier: Double = 2.5
+
+        /// Pity system: guaranteed drop after N kills without one
+        static let pityThreshold: Int = 10
+
+        /// Diminishing returns: 1 / (1 + factor × killCount)
+        static let diminishingFactor: Double = 0.1
+    }
+
+    // MARK: - Sector Unlock System
+    // Players unlock sectors by: 1) Defeating previous boss (visibility) 2) Paying Hash (unlock)
+    // Fixed progression: PSU (starter) → RAM → GPU → Cache → Storage → Expansion → Network → I/O → CPU
+
+    struct SectorUnlock {
+        /// Sector unlock order (index 0 = starter, always unlocked)
+        /// Each boss defeat makes the NEXT sector VISIBLE
+        /// Player must then pay Hash to actually UNLOCK the sector
+        static let unlockOrder: [String] = [
+            "psu",        // 0 - Starter (free, no boss defeat needed)
+            "ram",        // 1 - After PSU boss
+            "gpu",        // 2 - After RAM boss
+            "cache",      // 3 - After GPU boss
+            "storage",    // 4 - After Cache boss
+            "expansion",  // 5 - After Storage boss
+            "network",    // 6 - After Expansion boss
+            "io",         // 7 - After Network boss
+            "cpu"         // 8 - After I/O boss (final unlock)
+        ]
+
+        /// Hash cost to unlock each sector (index matches unlockOrder)
+        /// PSU is free, then costs escalate significantly
+        static let hashCosts: [Int] = [
+            0,           // PSU - starter, always free
+            25_000,      // RAM - first paid unlock
+            50_000,      // GPU
+            75_000,      // Cache
+            100_000,     // Storage
+            150_000,     // Expansion
+            200_000,     // Network
+            300_000,     // I/O
+            500_000      // CPU - final unlock, most expensive
+        ]
+
+        /// Blueprint drop chance on first boss kill (100% = guaranteed)
+        static let firstKillBlueprintChance: CGFloat = 1.0
+
+        /// Get unlock cost for a sector
+        static func unlockCost(for sectorId: String) -> Int {
+            guard let index = unlockOrder.firstIndex(of: sectorId) else { return 0 }
+            guard index < hashCosts.count else { return 0 }
+            return hashCosts[index]
+        }
+
+        /// Get the sector that becomes visible after defeating a boss in the given sector
+        /// Returns nil if this is the last sector
+        static func nextSector(after sectorId: String) -> String? {
+            guard let index = unlockOrder.firstIndex(of: sectorId) else { return nil }
+            let nextIndex = index + 1
+            guard nextIndex < unlockOrder.count else { return nil }
+            return unlockOrder[nextIndex]
+        }
+
+        /// Get the sector whose boss must be defeated to make this sector visible
+        /// Returns nil for the starter sector
+        static func previousSector(for sectorId: String) -> String? {
+            guard let index = unlockOrder.firstIndex(of: sectorId), index > 0 else { return nil }
+            return unlockOrder[index - 1]
+        }
+
+        /// Get unlock order index for a sector (0 = starter)
+        static func unlockIndex(for sectorId: String) -> Int? {
+            return unlockOrder.firstIndex(of: sectorId)
+        }
+
+        /// Check if a sector is the starter (always unlocked, no cost)
+        static func isStarterSector(_ sectorId: String) -> Bool {
+            return sectorId == unlockOrder.first
+        }
+
+        /// Check if a sector is the final unlock
+        static func isFinalSector(_ sectorId: String) -> Bool {
+            return sectorId == unlockOrder.last
+        }
+
+        /// Total Hash needed to unlock all sectors
+        static var totalUnlockCost: Int {
+            return hashCosts.reduce(0, +)
+        }
+    }
+
+    // MARK: - Component Upgrades (District-based system)
+    // Each district has a component that can be upgraded (Lv 1-10)
+    // Component unlock order matches sector unlock order from SectorUnlock
+
+    struct Components {
+        /// Maximum level for all component upgrades
+        static let maxLevel: Int = 10
+
+        /// Upgrade cost formula: baseCost × 2^(level-1)
+        /// Total Lv1→10: baseCost × 511 (sum of 2^0 to 2^8)
+
+        // MARK: - Unlock Order
+        /// Fixed progression order - references SectorUnlock.unlockOrder
+        static var unlockOrder: [String] {
+            return SectorUnlock.unlockOrder
+        }
+
+        // MARK: - PSU (Power Supply) - Starter Component
+        /// Power capacity in Watts per level
+        static let psuCapacities: [Int] = [300, 400, 550, 700, 900, 1100, 1350, 1600, 1900, 2300]
+        static let psuBaseCost: Int = 500
+
+        static func psuCapacity(at level: Int) -> Int {
+            return psuCapacities[min(max(level - 1, 0), psuCapacities.count - 1)]
+        }
+
+        // MARK: - Storage (SSD) - Hash Capacity + Offline Rate
+        /// Hash storage capacity: base × 2^(level-1)
+        static let storageBaseCapacity: Int = 25000
+        static let storageCapacityMultiplier: Double = 2.0
+        /// Offline earning rate: 20% at Lv1, scales to 60% at Lv10
+        static let storageBaseOfflineRate: CGFloat = 0.20
+        static let storageOfflineRatePerLevel: CGFloat = 0.044  // (0.60 - 0.20) / 9
+        static let storageBaseCost: Int = 400
+
+        static func storageCapacity(at level: Int) -> Int {
+            return Int(Double(storageBaseCapacity) * pow(storageCapacityMultiplier, Double(level - 1)))
+        }
+
+        static func storageOfflineRate(at level: Int) -> CGFloat {
+            return storageBaseOfflineRate + CGFloat(level - 1) * storageOfflineRatePerLevel
+        }
+
+        // MARK: - RAM (Memory Module) - Efficiency Recovery
+        /// Efficiency recovery multiplier: 1.0x at Lv1, 2.0x at Lv10
+        static let ramBaseEfficiencyRegen: CGFloat = 1.0
+        static let ramEfficiencyRegenPerLevel: CGFloat = 0.111  // (2.0 - 1.0) / 9
+        static let ramBaseCost: Int = 400
+
+        /// RAM health bonus (for Active/Boss mode): base + (level-1) × perLevel
+        static let ramBaseHealth: CGFloat = 100
+        static let ramHealthPerLevel: CGFloat = 20
+
+        static func ramEfficiencyRegen(at level: Int) -> CGFloat {
+            return ramBaseEfficiencyRegen + CGFloat(level - 1) * ramEfficiencyRegenPerLevel
+        }
+
+        // MARK: - GPU (Graphics Card) - Global Tower Damage
+        /// Damage multiplier: 1.0x at Lv1, 1.5x at Lv10 (+50%)
+        static let gpuBaseDamageMultiplier: CGFloat = 1.0
+        static let gpuDamagePerLevel: CGFloat = 0.055  // (1.5 - 1.0) / 9
+        static let gpuBaseCost: Int = 600
+
+        static func gpuDamageMultiplier(at level: Int) -> CGFloat {
+            return gpuBaseDamageMultiplier + CGFloat(level - 1) * gpuDamagePerLevel
+        }
+
+        // MARK: - Cache (Cache Chip) - Global Attack Speed
+        /// Attack speed multiplier: 1.0x at Lv1, 1.3x at Lv10 (+30%)
+        static let cacheBaseAttackSpeed: CGFloat = 1.0
+        static let cacheAttackSpeedPerLevel: CGFloat = 0.033  // (1.3 - 1.0) / 9
+        static let cacheBaseCost: Int = 550
+
+        static func cacheAttackSpeedMultiplier(at level: Int) -> CGFloat {
+            return cacheBaseAttackSpeed + CGFloat(level - 1) * cacheAttackSpeedPerLevel
+        }
+
+        // MARK: - Expansion (Expansion Card) - Extra Tower Slots
+        /// Extra slots per sector: 0 at Lv1, +2 at Lv10
+        /// Lv1-3: 0, Lv4-6: +1, Lv7-10: +2
+        static let expansionBaseCost: Int = 800
+
+        static func expansionExtraSlots(at level: Int) -> Int {
+            if level >= 7 { return 2 }
+            if level >= 4 { return 1 }
+            return 0
+        }
+
+        // MARK: - I/O (I/O Controller) - Pickup Radius
+        /// Pickup radius multiplier: 1.0x at Lv1, 2.5x at Lv10
+        static let ioBasePickupRadius: CGFloat = 1.0
+        static let ioPickupRadiusPerLevel: CGFloat = 0.167  // (2.5 - 1.0) / 9
+        static let ioBaseCost: Int = 450
+
+        static func ioPickupRadiusMultiplier(at level: Int) -> CGFloat {
+            return ioBasePickupRadius + CGFloat(level - 1) * ioPickupRadiusPerLevel
+        }
+
+        // MARK: - Network (Network Card) - Global Hash Multiplier
+        /// Hash multiplier: 1.0x at Lv1, 1.5x at Lv10 (+50% all Hash)
+        static let networkBaseHashMultiplier: CGFloat = 1.0
+        static let networkHashMultiplierPerLevel: CGFloat = 0.055  // (1.5 - 1.0) / 9
+        static let networkBaseCost: Int = 1000
+
+        static func networkHashMultiplier(at level: Int) -> CGFloat {
+            return networkBaseHashMultiplier + CGFloat(level - 1) * networkHashMultiplierPerLevel
+        }
+
+        // MARK: - CPU (Processor) - Hash Generation Rate
+        /// Hash/second: uses exponential scaling from HashEconomy
+        /// 1 Ħ/s at Lv1, ~38 Ħ/s at Lv10
+        static let cpuBaseCost: Int = 750
+
+        static func cpuHashPerSecond(at level: Int) -> CGFloat {
+            return HashEconomy.hashPerSecond(at: level)
+        }
+
+        // MARK: - Helper Functions
+
+        /// Get base upgrade cost for a component type
+        static func baseCost(for componentId: String) -> Int {
+            switch componentId {
+            case "psu": return psuBaseCost
+            case "storage": return storageBaseCost
+            case "ram": return ramBaseCost
+            case "gpu": return gpuBaseCost
+            case "cache": return cacheBaseCost
+            case "expansion": return expansionBaseCost
+            case "io": return ioBaseCost
+            case "network": return networkBaseCost
+            case "cpu": return cpuBaseCost
+            default: return 500
+            }
+        }
+
+        /// Calculate upgrade cost for a component at a given level
+        /// Uses centralized exponential formula from BalanceConfig
+        static func upgradeCost(for componentId: String, at level: Int) -> Int? {
+            guard level < maxLevel else { return nil }
+            let base = baseCost(for: componentId)
+            return BalanceConfig.exponentialUpgradeCost(baseCost: base, currentLevel: level)
+        }
+
+        /// Get unlock order index for a component (0 = starter)
+        static func unlockIndex(for componentId: String) -> Int? {
+            return unlockOrder.firstIndex(of: componentId)
+        }
+
+        /// Check if a component is unlocked based on defeated bosses count
+        static func isUnlocked(componentId: String, defeatedBossCount: Int) -> Bool {
+            guard let index = unlockIndex(for: componentId) else { return false }
+            // PSU (index 0) is always unlocked
+            // RAM (index 1) unlocks after defeating 1 boss (PSU boss)
+            return index <= defeatedBossCount
+        }
+    }
+
+    // MARK: - XP System (Survivor Mode)
+
+    struct XPSystem {
+        /// XP values by enemy type
+        static let basicEnemyXP: Int = 1
+        static let fastEnemyXP: Int = 2
+        static let tankEnemyXP: Int = 5
+        static let bossEnemyXP: Int = 20
+        static let cyberbossXP: Int = 50
+        static let voidHarbingerXP: Int = 100
+
+        /// Hash value for killing a boss enemy (survival/arena mode)
+        static let bossKillHashValue: Int = 50
+
+        /// XP multiplier reduction per weapon level (higher levels = less XP)
+        static let xpReductionPerLevel: CGFloat = 0.10  // 10% reduction per level
+        static let minXPMultiplier: CGFloat = 0.2       // Minimum 20% XP
+
+        /// Loot box tier thresholds (based on XP bar progress)
+        static let tier1Threshold: CGFloat = 0.33  // Wooden
+        static let tier2Threshold: CGFloat = 0.66  // Silver
+        static let tier3Threshold: CGFloat = 1.0   // Golden
+
+        /// Loot box rarity weights by tier (common, rare, epic, legendary)
+        /// Golden box - best odds
+        static let goldenCommonWeight: Double = 10
+        static let goldenRareWeight: Double = 30
+        static let goldenEpicWeight: Double = 40
+        static let goldenLegendaryWeight: Double = 20
+
+        /// Silver box - medium odds
+        static let silverCommonWeight: Double = 40
+        static let silverRareWeight: Double = 35
+        static let silverEpicWeight: Double = 20
+        static let silverLegendaryWeight: Double = 5
+
+        /// Wooden box - basic odds
+        static let woodenCommonWeight: Double = 80
+        static let woodenRareWeight: Double = 15
+        static let woodenEpicWeight: Double = 5
+        static let woodenLegendaryWeight: Double = 0
+    }
+
+    // MARK: - Protocol Scaling (Tower/Weapon Level Scaling)
+
+    struct ProtocolScaling {
+        /// Range scaling per level (+5%)
+        static let rangePerLevel: CGFloat = 0.05
+
+        /// Fire rate scaling per level (+3%)
+        static let fireRatePerLevel: CGFloat = 0.03
+
+        /// Attack speed scaling per level (+5%) - used by WeaponTower
+        static let attackSpeedPerLevel: CGFloat = 0.05
+
+        /// Ricochet ability chain targets
+        static let ricochetChainTargets: Int = 3
+
+        /// Explosive ability splash radius
+        static let explosiveSplashRadius: CGFloat = 50
+
+        /// Weapon range for boss arena conversion
+        static let bossArenaWeaponRange: CGFloat = 600
+
+        /// Legacy WeaponTower upgrade cost base
+        static let legacyUpgradeCostBase: Int = 100
+
+        /// Legacy WeaponTower upgrade cost per level
+        static let legacyUpgradeCostPerLevel: Int = 50
+    }
+
+    // MARK: - Pillar System (Boss Fight Cover)
+
+    struct Pillar {
+        /// Damage per second bosses deal to pillars when blocking line-of-sight
+        static let bossPillarDPS: CGFloat = 20
+
+        /// Default pillar size
+        static let defaultSize: CGFloat = 80
+
+        /// Default pillar health
+        static let defaultHealth: CGFloat = 300
+    }
+
+    // MARK: - Blocker System (TD Pathfinding)
+
+    struct BlockerSystem {
+        /// Detour distance for pathfinding around blockers
+        static let detourDistance: CGFloat = 60
+
+        /// Blocker collision radius
+        static let blockRadius: CGFloat = 40
+    }
+
+    // MARK: - Arena Layouts
+
+    struct Arena {
+        /// Boss arena dimensions
+        static let bossArenaWidth: CGFloat = 1200
+        static let bossArenaHeight: CGFloat = 900
+
+        /// Spawn distance multiplier for survival mode
+        static let spawnDistanceMultiplier: CGFloat = 0.6
+
+        /// Cache flush invulnerability duration
+        static let cacheFlushInvulnerability: TimeInterval = 1.0
+    }
+
+    // MARK: - Tower Placement (TD Mode Slots)
+
+    struct TowerPlacement {
+        /// Tower slot size
+        static let slotSize: CGFloat = 40
+
+        /// Margin from map edges
+        static let edgeMargin: CGFloat = 60
+
+        /// Slot spacing along paths
+        static let pathSlotSpacing: CGFloat = 80
+
+        /// Max distance from path to slot
+        static let maxPathDistance: CGFloat = 100
+
+        /// Motherboard slot size
+        static let motherboardSlotSize: CGFloat = 60
+
+        /// Minimum distance between slots
+        static let minSlotDistance: CGFloat = 70
+
+        /// CPU exclusion radius (no towers near CPU)
+        static let cpuExclusionRadius: CGFloat = 200
+    }
+
+    // MARK: - Projectile System
+
+    struct ProjectileSystem {
+        /// Splash damage multiplier (percentage of direct damage)
+        static let splashDamageMultiplier: CGFloat = 0.5
+
+        /// Search radius buffer for enemy detection
+        static let searchRadiusBuffer: CGFloat = 30
+
+        /// Weapon system projectile spacing for multi-shot
+        static let multiShotSpacing: CGFloat = 10
+
+        /// Critical hit chance (15% = 0.15)
+        static let criticalHitChance: Double = 0.15
+
+        /// Critical hit damage multiplier
+        static let criticalHitMultiplier: CGFloat = 2.0
+
+        /// Default projectile speed fallback
+        static let defaultProjectileSpeed: CGFloat = 300
+
+        /// Player weapon projectile radius
+        static let playerProjectileRadius: CGFloat = 5
+
+        /// Spawn offset from player edge
+        static let spawnOffset: CGFloat = 10
+    }
+
+    // MARK: - Overclock Duplicate Values (TD State)
+    // Note: These are also stored in TDTypes for state initialization
+    // The canonical values are here in BalanceConfig.Overclock
+
+    // MARK: - Manual Override Minigame
+
+    struct ManualOverride {
+        /// Duration of survival challenge
+        static let duration: TimeInterval = 30.0
+
+        /// Player movement speed
+        static let playerSpeed: CGFloat = 200
+
+        /// Initial hazard spawn interval
+        static let initialHazardSpawnInterval: TimeInterval = 1.5
+
+        /// Invincibility duration after hit
+        static let invincibilityDuration: TimeInterval = 1.5
+
+        /// Starting health (lives)
+        static let maxHealth: Int = 3
+
+        /// Hazard movement speed range
+        static let hazardSpeedMin: CGFloat = 150
+        static let hazardSpeedMax: CGFloat = 250
+
+        /// Hazard velocity variance (perpendicular to main direction)
+        static let hazardVelocityVariance: CGFloat = 50
+    }
+
+    // MARK: - TD Rendering
+
+    struct TDRendering {
+        /// Initial delay before wave 1 starts
+        static let gameStartDelay: TimeInterval = 2.0
+
+        /// Screen shake cooldown
+        static let screenShakeCooldown: TimeInterval = 0.5
+
+        /// Visibility update interval for sector culling
+        static let visibilityUpdateInterval: TimeInterval = 0.5
+
+        /// Data pulse travel speed (points per second)
+        static let pulseTravelSpeed: CGFloat = 600
+
+        /// Tower barrel rotation speed (radians per second) for smooth aiming
+        static let barrelRotationSpeed: CGFloat = 8.0
+
+        /// Max ambient particles per sector (performance cap)
+        static let maxAmbientParticles: Int = 30
+
+        /// Power flow particle spawn interval (seconds between particles)
+        static let powerFlowSpawnInterval: TimeInterval = 1.0
+
+        /// Enemy portal spawn animation duration
+        static let portalAnimationDuration: TimeInterval = 0.8
+
+        /// Decrypt animation duration (when unlocking sectors)
+        static let decryptAnimationDuration: TimeInterval = 1.5
+    }
+
+    // MARK: - Zero-Day Boss Fight
+
+    struct ZeroDayFight {
+        /// Timer warning threshold (seconds) - changes color when below this
+        static let timerWarningThreshold: TimeInterval = 10.0
+    }
+}
+
+// MARK: - Balance Helpers
+
+extension BalanceConfig {
+
+    /// Calculate wave health multiplier
+    static func waveHealthMultiplier(waveNumber: Int) -> CGFloat {
+        return 1.0 + CGFloat(waveNumber - 1) * Waves.healthScalingPerWave
+    }
+
+    /// Calculate wave speed multiplier
+    static func waveSpeedMultiplier(waveNumber: Int) -> CGFloat {
+        return 1.0 + CGFloat(waveNumber - 1) * Waves.speedScalingPerWave
+    }
+
+    /// Calculate threat level health multiplier
+    static func threatHealthMultiplier(threatLevel: CGFloat) -> CGFloat {
+        return 1.0 + (threatLevel - 1.0) * ThreatLevel.healthScaling
+    }
+
+    /// Calculate threat level speed multiplier
+    static func threatSpeedMultiplier(threatLevel: CGFloat) -> CGFloat {
+        return 1.0 + (threatLevel - 1.0) * ThreatLevel.speedScaling
+    }
+
+    /// Calculate threat level damage multiplier
+    static func threatDamageMultiplier(threatLevel: CGFloat) -> CGFloat {
+        return 1.0 + (threatLevel - 1.0) * ThreatLevel.damageScaling
+    }
+
+    /// Calculate spawn delay for a wave
+    static func spawnDelay(waveNumber: Int) -> CGFloat {
+        return max(
+            Waves.minSpawnDelay,
+            Waves.baseSpawnDelay - CGFloat(waveNumber) * Waves.spawnDelayReductionPerWave
+        )
+    }
+
+    /// Calculate XP required for a level
+    static func xpRequired(level: Int) -> Int {
+        return Leveling.baseXPRequired + (level - 1) * Leveling.xpPerLevel
+    }
+
+    /// Calculate level bonus multiplier
+    static func levelMultiplier(level: Int) -> CGFloat {
+        return 1.0 + CGFloat(level - 1) * Leveling.bonusPerLevel
+    }
+
+    /// Get tower placement cost
+    static func towerCost(rarity: Rarity) -> Int {
+        return Towers.placementCosts[rarity] ?? 50
+    }
+}
+
+// MARK: - JSON Export (for Balance Simulator sync)
+
+extension BalanceConfig {
+
+    /// Export current balance config as JSON for use with tools/balance-simulator.html
+    static func exportJSON() -> String {
+        // Build sub-dictionaries separately to help compiler
+        let wavesDict: [String: Any] = [
+            "healthScalingPerWave": Waves.healthScalingPerWave,
+            "speedScalingPerWave": Waves.speedScalingPerWave,
+            "baseEnemyCount": Waves.baseEnemyCount,
+            "enemiesPerWave": Waves.enemiesPerWave,
+            "bossWaveInterval": Waves.bossWaveInterval,
+            "bossHealthMultiplier": Waves.bossHealthMultiplier,
+            "bossSpeedMultiplier": Waves.bossSpeedMultiplier,
+            "hashBonusPerWave": Waves.hashBonusPerWave
+        ]
+
+        let threatDict: [String: Any] = [
+            "healthScaling": ThreatLevel.healthScaling,
+            "speedScaling": ThreatLevel.speedScaling,
+            "damageScaling": ThreatLevel.damageScaling,
+            "fastEnemyThreshold": ThreatLevel.fastEnemyThreshold,
+            "tankEnemyThreshold": ThreatLevel.tankEnemyThreshold,
+            "bossEnemyThreshold": ThreatLevel.bossEnemyThreshold
+        ]
+
+        let economyDict: [String: Any] = [
+            "hashPerSecond": SurvivalEconomy.hashPerSecond,
+            "hashBonusPerMinute": SurvivalEconomy.hashBonusPerMinute,
+            "extractionTime": SurvivalEconomy.extractionTime
+        ]
+
+        let costsDict: [String: Int] = [
+            "common": Towers.placementCosts[.common] ?? 50,
+            "rare": Towers.placementCosts[.rare] ?? 100,
+            "epic": Towers.placementCosts[.epic] ?? 200,
+            "legendary": Towers.placementCosts[.legendary] ?? 400
+        ]
+
+        let towersDict: [String: Any] = [
+            "placementCosts": costsDict,
+            "refundRate": Towers.refundRate
+        ]
+
+        let dropsDict: [String: Any] = [
+            "common": DropRates.common,
+            "rare": DropRates.rare,
+            "epic": DropRates.epic,
+            "legendary": DropRates.legendary,
+            "easyMultiplier": DropRates.easyMultiplier,
+            "normalMultiplier": DropRates.normalMultiplier,
+            "hardMultiplier": DropRates.hardMultiplier,
+            "nightmareMultiplier": DropRates.nightmareMultiplier,
+            "pityThreshold": DropRates.pityThreshold,
+            "diminishingFactor": DropRates.diminishingFactor
+        ]
+
+        let config: [String: Any] = [
+            "waves": wavesDict,
+            "threatLevel": threatDict,
+            "survivalEconomy": economyDict,
+            "towers": towersDict,
+            "dropRates": dropsDict
+        ]
+
+        if let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),
+           let json = String(data: data, encoding: .utf8) {
+            return json
+        }
+        return "{}"
+    }
+
+    /// Print balance config to console (for debugging)
+    static func printConfig() {
+        print("=== BalanceConfig Export ===")
+        print(exportJSON())
+    }
+}

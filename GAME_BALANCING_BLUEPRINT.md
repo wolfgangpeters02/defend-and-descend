@@ -290,7 +290,7 @@ Sectors (motherboard regions) unlock based on compiled Protocols:
 
 ## 8. Balancing Tables
 
-> **Source of Truth:** `LegendarySurvivors/Core/Config/BalanceConfig.swift`
+> **Source of Truth:** `SystemReboot/Core/Config/BalanceConfig.swift`
 
 ### Player Stats
 
@@ -564,7 +564,7 @@ This creates **meaningful choices** and **clear goals** at every stage of the ga
 
 ## Appendix: BalanceConfig Reference
 
-All balance values live in `LegendarySurvivors/Core/Config/BalanceConfig.swift`.
+All balance values live in `SystemReboot/Core/Config/BalanceConfig.swift`.
 
 ### Structure
 
