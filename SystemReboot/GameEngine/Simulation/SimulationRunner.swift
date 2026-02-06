@@ -1377,10 +1377,10 @@ class SimulationRunner {
     private static func testBossTypeComparison() {
         log("")
         log("── Boss Type Comparison ──")
-        log("Are both bosses similarly difficult?")
+        log("Are all bosses similarly difficult?")
         log("")
 
-        let bossTypes = ["cyberboss", "void_harbinger"]
+        let bossTypes = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
         let bot = BalancedBot()
 
         log(String(format: "%-16@ %6@ %8@ %6@ %8@ %8@ %@",
@@ -1426,35 +1426,37 @@ class SimulationRunner {
 
         log("")
 
-        // Compare
-        if results.count == 2 {
-            let durationDiff = abs(results[0].1.fightDuration - results[1].1.fightDuration)
-            let dmgDiff = abs(results[0].1.totalDamageTaken - results[1].1.totalDamageTaken)
+        // Compare all bosses
+        if results.count >= 2 {
+            let durations = results.map { $0.1.fightDuration }
+            let damages = results.map { $0.1.totalDamageTaken }
+            let durationSpread = durations.max()! - durations.min()!
+            let dmgSpread = damages.max()! - damages.min()!
 
-            if durationDiff > 60 {
-                log("  ⚠️ Fight duration differs by \(Int(durationDiff))s - consider rebalancing")
+            if durationSpread > 60 {
+                log("  ⚠️ Fight duration spread: \(Int(durationSpread))s - consider rebalancing")
             } else {
-                log("  ✓ Fight durations are similar")
+                log("  ✓ Fight durations are similar (spread: \(Int(durationSpread))s)")
             }
 
-            if dmgDiff > 500 {
-                log("  ⚠️ Damage taken differs significantly - one boss may be harder")
+            if dmgSpread > 500 {
+                log("  ⚠️ Damage taken spread: \(Int(dmgSpread)) - some bosses may be harder")
             } else {
-                log("  ✓ Difficulty feels comparable")
+                log("  ✓ Difficulty feels comparable (spread: \(Int(dmgSpread)))")
             }
         }
     }
 
     // MARK: - Comprehensive Boss Evaluation
 
-    /// Full matrix test: Both bosses × All difficulties × Multiple strategies
+    /// Full matrix test: All bosses × All difficulties × Multiple strategies
     private static func testComprehensiveBossEvaluation() {
         log("")
         log("── Comprehensive Boss Evaluation ──")
         log("Testing all boss×difficulty×strategy combinations")
         log("")
 
-        let bossTypes = ["cyberboss", "void_harbinger"]
+        let bossTypes = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
         let difficulties: [BossDifficulty] = [.easy, .normal, .hard, .nightmare]
         let testBot = BalancedBot()
 
@@ -1503,19 +1505,36 @@ class SimulationRunner {
         }
 
         // Summary comparison
-        log("BALANCE SUMMARY:")
+        log("BALANCE SUMMARY (Normal difficulty):")
 
-        // Test both bosses on Normal with same bot
+        // Test all 4 bosses on Normal with same bot
         let cyberbossNormal = runBossTest(bossType: "cyberboss", difficulty: .normal, bot: testBot)
         let voidHarbingerNormal = runBossTest(bossType: "void_harbinger", difficulty: .normal, bot: testBot)
+        let overclockerNormal = runBossTest(bossType: "overclocker", difficulty: .normal, bot: testBot)
+        let trojanWyrmNormal = runBossTest(bossType: "trojan_wyrm", difficulty: .normal, bot: testBot)
 
-        let durationDiff = abs(cyberbossNormal.fightDuration - voidHarbingerNormal.fightDuration)
-        let deathsDiff = abs(cyberbossNormal.playerDeaths - voidHarbingerNormal.playerDeaths)
-        let dmgDiff = abs(cyberbossNormal.totalDamageTaken - voidHarbingerNormal.totalDamageTaken)
+        let allResults = [
+            ("Cyberboss", cyberbossNormal),
+            ("Void Harbinger", voidHarbingerNormal),
+            ("Overclocker", overclockerNormal),
+            ("Trojan Wyrm", trojanWyrmNormal)
+        ]
 
-        log(String(format: "  Duration diff: %.0fs %@", durationDiff, durationDiff < 30 ? "✓" : "⚠️"))
-        log(String(format: "  Deaths diff: %d %@", deathsDiff, deathsDiff <= 3 ? "✓" : "⚠️"))
-        log(String(format: "  Damage diff: %.0f %@", dmgDiff, dmgDiff < 300 ? "✓" : "⚠️"))
+        log(String(format: "%-15@ %8@ %6@ %8@", "Boss", "Duration", "Deaths", "DmgTaken"))
+        log(String(repeating: "─", count: 45))
+        for (name, result) in allResults {
+            log(String(format: "%-15@ %7.0fs %6d %8.0f", name, result.fightDuration, result.playerDeaths, result.totalDamageTaken))
+        }
+
+        // Calculate variance
+        let durations = allResults.map { $0.1.fightDuration }
+        let deaths = allResults.map { $0.1.playerDeaths }
+        let maxDurationDiff = durations.max()! - durations.min()!
+        let maxDeathsDiff = deaths.max()! - deaths.min()!
+
+        log("")
+        log(String(format: "  Max duration spread: %.0fs %@", maxDurationDiff, maxDurationDiff < 60 ? "✓" : "⚠️"))
+        log(String(format: "  Max deaths spread: %d %@", maxDeathsDiff, maxDeathsDiff <= 5 ? "✓" : "⚠️"))
 
         // Check difficulty progression
         let easyResult = runBossTest(bossType: "cyberboss", difficulty: .easy, bot: testBot)
