@@ -507,6 +507,94 @@ struct BalanceConfig {
         static let teleportOffsetRatio: CGFloat = 0.6
     }
 
+    // MARK: - Overclocker Boss
+
+    struct Overclocker {
+        // Phase thresholds (health percentage)
+        static let phase2Threshold: CGFloat = 0.75
+        static let phase3Threshold: CGFloat = 0.50
+        static let phase4Threshold: CGFloat = 0.25
+
+        // Phase 1 - Turbine (Wind + Rotating Blades)
+        static let windForce: CGFloat = 20.0           // Applied to velocity
+        static let bladeCount: Int = 3
+        static let bladeOrbitRadius: CGFloat = 250
+        static let bladeRotationSpeed: CGFloat = 90    // Degrees per second
+        static let bladeDamage: CGFloat = 25           // Per hit
+        static let bladeWidth: CGFloat = 30
+
+        // Phase 2 - Heat Sink (Lava Grid)
+        static let tileChangeInterval: Double = 5.0
+        static let tileWarningDuration: Double = 2.0
+        static let lavaTileDPS: CGFloat = 60           // DPS while standing on lava
+        static let bossMoveSpeed: CGFloat = 1.0
+
+        // Phase 3 - Overheat (Chase + Steam Trail)
+        static let chaseSpeed: CGFloat = 160.0
+        static let steamDropInterval: Double = 0.2
+        static let steamRadius: CGFloat = 35
+        static let steamDPS: CGFloat = 40              // DPS while in steam
+        static let maxSteamSegments: Int = 80
+
+        // Phase 4 - Suction (Vacuum + Shredder)
+        static let vacuumPullStrength: CGFloat = 25.0
+        static let suctionPullDuration: Double = 2.5
+        static let suctionPauseDuration: Double = 1.5
+        static let shredderRadius: CGFloat = 140
+        static let shredderDPS: CGFloat = 100          // High damage when too close
+    }
+
+    // MARK: - Trojan Wyrm Boss
+
+    struct TrojanWyrm {
+        // Phase thresholds (health percentage)
+        static let phase2Threshold: CGFloat = 0.70
+        static let phase3Threshold: CGFloat = 0.40
+        static let phase4Threshold: CGFloat = 0.10
+
+        // Body geometry
+        static let segmentCount: Int = 24
+        static let segmentSpacing: CGFloat = 45.0
+        static let headCollisionRadius: CGFloat = 28
+        static let bodyCollisionRadius: CGFloat = 18
+
+        // Phase 1 - Packet Loss (Snake movement)
+        static let headSpeed: CGFloat = 190
+        static let turnSpeed: CGFloat = 2.5            // Radians per second
+        static let headContactDamage: CGFloat = 30
+        static let bodyContactDamage: CGFloat = 10
+        static let bodyKnockbackStrength: CGFloat = 100
+        static let bodyDamageMitigation: CGFloat = 0.80
+        static let boundsPadding: CGFloat = 30
+
+        // Phase 2 - Firewall (Wall sweep)
+        static let wallSweepSpeed: CGFloat = 80
+        static let turretFireInterval: Double = 1.5
+        static let turretProjectileSpeed: CGFloat = 250
+        static let turretProjectileDamage: CGFloat = 20
+        static let turretProjectileRadius: CGFloat = 8
+        static let turretProjectileLifetime: TimeInterval = 4.0
+
+        // Phase 3 - Data Corruption (Sub-worms)
+        static let subWormCount: Int = 4
+        static let subWormBodyCount: Int = 5
+        static let subWormSpeed: CGFloat = 240
+        static let subWormTurnSpeed: CGFloat = 4.0
+        static let subWormHeadSize: CGFloat = 20
+        static let subWormBodySize: CGFloat = 12
+        static let subWormBodyMitigation: CGFloat = 0.80
+
+        // Phase 4 - Format C: (Constricting ring)
+        static let ringInitialRadius: CGFloat = 250
+        static let ringMinRadius: CGFloat = 120
+        static let ringShrinkRate: CGFloat = 5
+        static let ringRotationSpeed: CGFloat = 1.0    // Radians per second
+        static let aimDuration: Double = 1.0
+        static let lungeSpeed: CGFloat = 600
+        static let lungeHeadDamage: CGFloat = 60
+        static let recoverDuration: Double = 1.5
+    }
+
     // MARK: - Zero-Day System (TD Mode Boss)
 
     struct ZeroDay {

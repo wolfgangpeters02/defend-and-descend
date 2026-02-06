@@ -270,6 +270,8 @@ enum L10n {
         static let superVirusDetected = String(localized: "boss.superVirusDetected")
         static let cyberboss = String(localized: "boss.cyberboss")
         static let voidHarbinger = String(localized: "boss.voidHarbinger")
+        static let overclocker = String(localized: "boss.overclocker")
+        static let trojanWyrm = String(localized: "boss.trojanWyrm")
         static let immuneToFirewalls = String(localized: "boss.immuneToFirewalls")
         static let engageTarget = String(localized: "boss.engageTarget")
         static let ignoreHint = String(localized: "boss.ignoreHint")

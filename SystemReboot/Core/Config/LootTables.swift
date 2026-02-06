@@ -104,10 +104,10 @@ struct LootTableLibrary {
         guaranteeOnFirstKill: true
     )
 
-    /// Frost Titan - Ice/Slow theme (future boss)
+    /// Overclocker - Heat/PSU theme
     /// Drops: Ice Shard (R), Null Pointer (L)
-    static let frostTitan = BossLootTable(
-        bossId: "frost_titan",
+    static let overclocker = BossLootTable(
+        bossId: "overclocker",
         entries: [
             LootTableEntry(
                 protocolId: "ice_shard",
@@ -123,25 +123,15 @@ struct LootTableLibrary {
         guaranteeOnFirstKill: true
     )
 
-    /// Inferno Lord - Fire/Destruction theme (future boss)
-    /// Drops: Root Access (E), Overflow (L), Null Pointer (L)
-    static let infernoLord = BossLootTable(
-        bossId: "inferno_lord",
+    /// Trojan Wyrm - Network/Worm theme
+    /// Drops: Root Access (E)
+    static let trojanWyrm = BossLootTable(
+        bossId: "trojan_wyrm",
         entries: [
             LootTableEntry(
                 protocolId: "root_access",
-                weight: 60,
+                weight: 100,
                 isFirstKillGuarantee: true
-            ),
-            LootTableEntry(
-                protocolId: "overflow",
-                weight: 50,
-                isFirstKillGuarantee: false
-            ),
-            LootTableEntry(
-                protocolId: "null_pointer",
-                weight: 50,
-                isFirstKillGuarantee: false
             )
         ],
         guaranteeOnFirstKill: true
@@ -151,8 +141,8 @@ struct LootTableLibrary {
     static let all: [BossLootTable] = [
         cyberboss,
         voidHarbinger,
-        frostTitan,
-        infernoLord
+        overclocker,
+        trojanWyrm
     ]
 
     /// Get loot table for a boss by ID
@@ -172,8 +162,8 @@ struct LootTableLibrary {
         switch bossId {
         case "cyberboss": return "Cyberboss"
         case "void_harbinger": return "Void Harbinger"
-        case "frost_titan": return "Frost Titan"
-        case "inferno_lord": return "Inferno Lord"
+        case "overclocker": return "Overclocker"
+        case "trojan_wyrm": return "Trojan Wyrm"
         default: return bossId.capitalized
         }
     }

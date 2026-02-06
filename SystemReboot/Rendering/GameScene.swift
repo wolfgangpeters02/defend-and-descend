@@ -667,12 +667,20 @@ class GameScene: SKScene {
             y: gameState.arena.height / 2
         )
 
+        let arenaRect = CGRect(x: 0, y: 0, width: gameState.arena.width, height: gameState.arena.height)
+
         if bossId.contains("cyberboss") || bossId.contains("server") {
             gameState.activeBossType = .cyberboss
             gameState.cyberbossState = CyberbossAI.createInitialState()
         } else if bossId.contains("void") || bossId.contains("harbinger") {
             gameState.activeBossType = .voidHarbinger
             gameState.voidHarbingerState = VoidHarbingerAI.createInitialState(arenaCenter: arenaCenter)
+        } else if bossId.contains("overclocker") || bossId.contains("thermal") {
+            gameState.activeBossType = .overclocker
+            gameState.overclockerState = OverclockerAI.createInitialState(arenaCenter: arenaCenter, arenaRect: arenaRect)
+        } else if bossId.contains("trojan") || bossId.contains("wyrm") || bossId.contains("packet") {
+            gameState.activeBossType = .trojanWyrm
+            gameState.trojanWyrmState = TrojanWyrmAI.createInitialState(arenaCenter: arenaCenter, arenaRect: arenaRect)
         }
 
         gameState.activeBossId = bossId
@@ -734,6 +742,8 @@ class GameScene: SKScene {
             gameState.activeBossId = nil
             gameState.cyberbossState = nil
             gameState.voidHarbingerState = nil
+            gameState.overclockerState = nil
+            gameState.trojanWyrmState = nil
             return
         }
 
@@ -766,9 +776,67 @@ class GameScene: SKScene {
                 gameState.voidHarbingerState = bossState
             }
 
-        case .frostTitan, .infernoLord:
-            // Future bosses - not implemented yet
-            break
+        case .overclocker:
+            if var bossState = gameState.overclockerState {
+                var boss = gameState.enemies[bossIndex]
+                OverclockerAI.update(
+                    boss: &boss,
+                    bossState: &bossState,
+                    gameState: &gameState,
+                    deltaTime: context.deltaTime
+                )
+
+                // Apply wind/vacuum forces to player
+                let bossPos = CGPoint(x: boss.x, y: boss.y)
+                let playerPos = CGPoint(x: gameState.player.x, y: gameState.player.y)
+                let wind = OverclockerAI.calculateWindForce(playerPos: playerPos, bossPos: bossPos, state: bossState)
+                let vacuum = OverclockerAI.calculateVacuumForce(playerPos: playerPos, bossPos: bossPos, state: bossState)
+
+                gameState.player.x += (wind.dx + vacuum.dx) * CGFloat(context.deltaTime)
+                gameState.player.y += (wind.dy + vacuum.dy) * CGFloat(context.deltaTime)
+
+                // Clamp player to arena
+                let padding: CGFloat = 30
+                gameState.player.x = max(padding, min(gameState.arena.width - padding, gameState.player.x))
+                gameState.player.y = max(padding, min(gameState.arena.height - padding, gameState.player.y))
+
+                // Check mechanics damage
+                let arenaRect = CGRect(x: 0, y: 0, width: gameState.arena.width, height: gameState.arena.height)
+                let mechanicsDamage = OverclockerAI.checkMechanicsDamage(
+                    playerPos: CGPoint(x: gameState.player.x, y: gameState.player.y),
+                    state: bossState,
+                    bossPos: bossPos,
+                    arenaRect: arenaRect,
+                    deltaTime: context.deltaTime
+                )
+                if mechanicsDamage > 0 {
+                    gameState.player.health -= mechanicsDamage
+                }
+
+                gameState.enemies[bossIndex] = boss
+                gameState.overclockerState = bossState
+            }
+
+        case .trojanWyrm:
+            if var bossState = gameState.trojanWyrmState {
+                var boss = gameState.enemies[bossIndex]
+                TrojanWyrmAI.update(
+                    boss: &boss,
+                    bossState: &bossState,
+                    gameState: &gameState,
+                    deltaTime: context.deltaTime
+                )
+
+                // Custom body segment collision (runs AFTER ProjectileSystem)
+                TrojanWyrmAI.checkBodySegmentCollisions(
+                    bossState: &bossState,
+                    gameState: &gameState,
+                    boss: &boss
+                )
+
+                gameState.enemies[bossIndex] = boss
+                gameState.trojanWyrmState = bossState
+            }
         }
     }
 
@@ -872,6 +940,20 @@ class GameScene: SKScene {
         } else {
             // Clean up void harbinger nodes if not in void harbinger fight
             cleanupBossNodes(prefix: "voidharbinger_")
+        }
+
+        // Render Overclocker mechanics
+        if let bossState = gameState.overclockerState {
+            renderOverclockerMechanics(bossState: bossState)
+        } else {
+            cleanupBossNodes(prefix: "overclocker_")
+        }
+
+        // Render Trojan Wyrm mechanics
+        if let bossState = gameState.trojanWyrmState {
+            renderTrojanWyrmMechanics(bossState: bossState)
+        } else {
+            cleanupBossNodes(prefix: "trojanwyrm_")
         }
     }
 
@@ -2000,6 +2082,312 @@ class GameScene: SKScene {
         container.addChild(fillNode)
 
         return container
+    }
+
+    // MARK: - Overclocker Rendering
+
+    private func renderOverclockerMechanics(bossState: OverclockerAI.OverclockerState) {
+        guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+        let bossPos = CGPoint(x: boss.x, y: boss.y)
+        let arenaH = gameState.arena.height
+
+        // Phase 1: Render rotating blades
+        if bossState.phase == 1 {
+            let bladeCount = BalanceConfig.Overclocker.bladeCount
+            let bladeRadius = BalanceConfig.Overclocker.bladeOrbitRadius
+
+            for i in 0..<bladeCount {
+                let nodeKey = "overclocker_blade_\(i)"
+                let angleOffset = CGFloat(i) * (2 * .pi / CGFloat(bladeCount))
+                let currentAngle = bossState.bladeAngle + angleOffset
+
+                let bladeNode: SKShapeNode
+                if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
+                    bladeNode = existing
+                } else {
+                    // Create blade as a line
+                    let path = CGMutablePath()
+                    path.move(to: .zero)
+                    path.addLine(to: CGPoint(x: bladeRadius, y: 0))
+                    bladeNode = SKShapeNode(path: path)
+                    bladeNode.strokeColor = SKColor.orange
+                    bladeNode.lineWidth = BalanceConfig.Overclocker.bladeWidth
+                    bladeNode.lineCap = .round
+                    bladeNode.zPosition = 100
+                    addChild(bladeNode)
+                    bossMechanicNodes[nodeKey] = bladeNode
+                }
+
+                bladeNode.position = CGPoint(x: bossPos.x, y: arenaH - bossPos.y)
+                bladeNode.zRotation = -currentAngle // Negative for Y-flip
+            }
+        } else {
+            // Clean up blades if not in Phase 1
+            for i in 0..<3 {
+                let nodeKey = "overclocker_blade_\(i)"
+                if let node = bossMechanicNodes[nodeKey] {
+                    node.removeFromParent()
+                    bossMechanicNodes.removeValue(forKey: nodeKey)
+                }
+            }
+        }
+
+        // Phase 2: Render lava tiles
+        if bossState.phase == 2 {
+            let arenaRect = bossState.arenaRect
+            let tileW = arenaRect.width / 4
+            let tileH = arenaRect.height / 4
+
+            for i in 0..<16 {
+                let nodeKey = "overclocker_tile_\(i)"
+                let col = i % 4
+                let row = i / 4
+
+                let tileNode: SKShapeNode
+                if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
+                    tileNode = existing
+                } else {
+                    tileNode = SKShapeNode(rectOf: CGSize(width: tileW - 4, height: tileH - 4), cornerRadius: 4)
+                    tileNode.zPosition = 1
+                    tileNode.lineWidth = 2
+                    addChild(tileNode)
+                    bossMechanicNodes[nodeKey] = tileNode
+                }
+
+                let tileX = arenaRect.minX + CGFloat(col) * tileW + tileW / 2
+                let tileY = arenaRect.minY + CGFloat(row) * tileH + tileH / 2
+                tileNode.position = CGPoint(x: tileX, y: arenaH - tileY)
+
+                // Color based on state
+                switch bossState.tileStates[i] {
+                case .normal:
+                    tileNode.fillColor = SKColor.darkGray.withAlphaComponent(0.3)
+                    tileNode.strokeColor = SKColor.gray
+                case .warning:
+                    tileNode.fillColor = SKColor.orange.withAlphaComponent(0.5)
+                    tileNode.strokeColor = SKColor.yellow
+                case .lava:
+                    tileNode.fillColor = SKColor.red.withAlphaComponent(0.7)
+                    tileNode.strokeColor = SKColor.orange
+                case .safe:
+                    tileNode.fillColor = SKColor.cyan.withAlphaComponent(0.4)
+                    tileNode.strokeColor = SKColor.blue
+                }
+            }
+        } else {
+            // Clean up tiles if not in Phase 2
+            for i in 0..<16 {
+                let nodeKey = "overclocker_tile_\(i)"
+                if let node = bossMechanicNodes[nodeKey] {
+                    node.removeFromParent()
+                    bossMechanicNodes.removeValue(forKey: nodeKey)
+                }
+            }
+        }
+
+        // Phase 3 & 4: Render steam trail
+        if bossState.phase >= 3 {
+            var activeSteamIds = Set<String>()
+            for segment in bossState.steamTrail {
+                activeSteamIds.insert(segment.id)
+                let nodeKey = "overclocker_steam_\(segment.id)"
+
+                let steamNode: SKShapeNode
+                if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
+                    steamNode = existing
+                } else {
+                    steamNode = SKShapeNode(circleOfRadius: BalanceConfig.Overclocker.steamRadius)
+                    steamNode.fillColor = SKColor.white.withAlphaComponent(0.3)
+                    steamNode.strokeColor = SKColor.gray.withAlphaComponent(0.5)
+                    steamNode.zPosition = 50
+                    addChild(steamNode)
+                    bossMechanicNodes[nodeKey] = steamNode
+                }
+
+                steamNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
+            }
+
+            // Clean up old steam segments
+            let keysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix("overclocker_steam_") && !activeSteamIds.contains(String($0.dropFirst("overclocker_steam_".count))) }
+            for key in keysToRemove {
+                bossMechanicNodes[key]?.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: key)
+            }
+        }
+
+        // Phase 4: Render shredder ring
+        if bossState.phase == 4 {
+            let nodeKey = "overclocker_shredder"
+            let shredderNode: SKShapeNode
+            if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
+                shredderNode = existing
+            } else {
+                shredderNode = SKShapeNode(circleOfRadius: BalanceConfig.Overclocker.shredderRadius)
+                shredderNode.fillColor = SKColor.red.withAlphaComponent(0.2)
+                shredderNode.strokeColor = bossState.isSuctionActive ? SKColor.red : SKColor.orange
+                shredderNode.lineWidth = 4
+                shredderNode.zPosition = 99
+                addChild(shredderNode)
+                bossMechanicNodes[nodeKey] = shredderNode
+            }
+
+            shredderNode.position = CGPoint(x: bossPos.x, y: arenaH - bossPos.y)
+            shredderNode.strokeColor = bossState.isSuctionActive ? SKColor.red : SKColor.orange
+        } else {
+            if let node = bossMechanicNodes["overclocker_shredder"] {
+                node.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: "overclocker_shredder")
+            }
+        }
+    }
+
+    // MARK: - Trojan Wyrm Rendering
+
+    private func renderTrojanWyrmMechanics(bossState: TrojanWyrmAI.TrojanWyrmState) {
+        let arenaH = gameState.arena.height
+
+        // Main head is rendered by standard enemy rendering, but we can add glow
+        guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+
+        // Render body segments (Phase 1, 2, 4)
+        if bossState.phase != 3 {
+            for (i, segment) in bossState.segments.enumerated() {
+                let nodeKey = "trojanwyrm_seg_\(i)"
+                let segNode: SKShapeNode
+                if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
+                    segNode = existing
+                } else {
+                    segNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.bodyCollisionRadius)
+                    segNode.lineWidth = 2
+                    segNode.zPosition = 100
+                    addChild(segNode)
+                    bossMechanicNodes[nodeKey] = segNode
+                }
+
+                segNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
+
+                // Phase 2: Ghost segment is cyan/transparent
+                if bossState.phase == 2 && i == bossState.ghostSegmentIndex {
+                    segNode.fillColor = SKColor.cyan.withAlphaComponent(0.2)
+                    segNode.strokeColor = SKColor.cyan
+                } else {
+                    segNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.7) // Hacker green
+                    segNode.strokeColor = SKColor(red: 0, green: 0.8, blue: 0.2, alpha: 1.0)
+                }
+            }
+
+            // Render head glow
+            let headKey = "trojanwyrm_head"
+            let headNode: SKShapeNode
+            if let existing = bossMechanicNodes[headKey] as? SKShapeNode {
+                headNode = existing
+            } else {
+                headNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.headCollisionRadius + 5)
+                headNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.9)
+                headNode.strokeColor = SKColor.white
+                headNode.lineWidth = 3
+                headNode.zPosition = 101
+                addChild(headNode)
+                bossMechanicNodes[headKey] = headNode
+            }
+            headNode.position = CGPoint(x: boss.x, y: arenaH - boss.y)
+        } else {
+            // Clean up main body in Phase 3
+            for i in 0..<BalanceConfig.TrojanWyrm.segmentCount {
+                let nodeKey = "trojanwyrm_seg_\(i)"
+                if let node = bossMechanicNodes[nodeKey] {
+                    node.removeFromParent()
+                    bossMechanicNodes.removeValue(forKey: nodeKey)
+                }
+            }
+            if let node = bossMechanicNodes["trojanwyrm_head"] {
+                node.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: "trojanwyrm_head")
+            }
+        }
+
+        // Phase 3: Render sub-worms
+        if bossState.phase == 3 {
+            for (wi, worm) in bossState.subWorms.enumerated() {
+                // Sub-worm head
+                let headKey = "trojanwyrm_sw_\(wi)_head"
+                let swHeadNode: SKShapeNode
+                if let existing = bossMechanicNodes[headKey] as? SKShapeNode {
+                    swHeadNode = existing
+                } else {
+                    swHeadNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.subWormHeadSize)
+                    swHeadNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.9)
+                    swHeadNode.strokeColor = SKColor.white
+                    swHeadNode.lineWidth = 2
+                    swHeadNode.zPosition = 101
+                    addChild(swHeadNode)
+                    bossMechanicNodes[headKey] = swHeadNode
+                }
+                swHeadNode.position = CGPoint(x: worm.head.x, y: arenaH - worm.head.y)
+
+                // Sub-worm body
+                for (si, seg) in worm.body.enumerated() {
+                    let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
+                    let swSegNode: SKShapeNode
+                    if let existing = bossMechanicNodes[segKey] as? SKShapeNode {
+                        swSegNode = existing
+                    } else {
+                        swSegNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.subWormBodySize)
+                        swSegNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.6)
+                        swSegNode.strokeColor = SKColor(red: 0, green: 0.8, blue: 0.2, alpha: 1.0)
+                        swSegNode.lineWidth = 1
+                        swSegNode.zPosition = 100
+                        addChild(swSegNode)
+                        bossMechanicNodes[segKey] = swSegNode
+                    }
+                    swSegNode.position = CGPoint(x: seg.x, y: arenaH - seg.y)
+                }
+            }
+        } else {
+            // Clean up sub-worms if not in Phase 3
+            for wi in 0..<4 {
+                if let node = bossMechanicNodes["trojanwyrm_sw_\(wi)_head"] {
+                    node.removeFromParent()
+                    bossMechanicNodes.removeValue(forKey: "trojanwyrm_sw_\(wi)_head")
+                }
+                for si in 0..<5 {
+                    let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
+                    if let node = bossMechanicNodes[segKey] {
+                        node.removeFromParent()
+                        bossMechanicNodes.removeValue(forKey: segKey)
+                    }
+                }
+            }
+        }
+
+        // Phase 4: Render aim line during aiming state
+        if bossState.phase == 4 && bossState.phase4SubState == .aiming {
+            let aimKey = "trojanwyrm_aimline"
+            let playerPos = CGPoint(x: gameState.player.x, y: gameState.player.y)
+            let headPos = CGPoint(x: boss.x, y: boss.y)
+
+            let aimNode: SKShapeNode
+            if let existing = bossMechanicNodes[aimKey] as? SKShapeNode {
+                aimNode = existing
+            } else {
+                aimNode = SKShapeNode()
+                aimNode.strokeColor = SKColor.red
+                aimNode.lineWidth = 3
+                aimNode.zPosition = 102
+                addChild(aimNode)
+                bossMechanicNodes[aimKey] = aimNode
+            }
+
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: headPos.x, y: arenaH - headPos.y))
+            path.addLine(to: CGPoint(x: playerPos.x, y: arenaH - playerPos.y))
+            aimNode.path = path
+        } else {
+            if let node = bossMechanicNodes["trojanwyrm_aimline"] {
+                node.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: "trojanwyrm_aimline")
+            }
+        }
     }
 
     // MARK: - Survival Event Rendering

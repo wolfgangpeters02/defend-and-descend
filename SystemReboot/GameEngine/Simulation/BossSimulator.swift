@@ -448,11 +448,10 @@ class BossSimulator {
             }
         }
 
-        // Check if all pylons destroyed
+        // Check if all pylons destroyed - boss becomes vulnerable again
         let activeCount = pylons.filter { !$0.destroyed }.count
         if activeCount == 0 {
             bossInvulnerable = false
-            result.pylonsDestroyed = 4
         }
     }
 
@@ -590,19 +589,72 @@ class BossSimulator {
 
     private func updatePlayerAttack() {
         guard currentTime >= playerAttackCooldown else { return }
+
+        let attackRange: CGFloat = 300
+        let damage = playerDamage * CGFloat(playerAttackInterval)
+
+        // Priority 1: Attack pylons if boss is invulnerable
+        let activePylons = pylons.filter { !$0.destroyed }
+        if bossInvulnerable && !activePylons.isEmpty {
+            // Find closest pylon
+            var closestPylon: (index: Int, dist: CGFloat)?
+            for (i, pylon) in pylons.enumerated() where !pylon.destroyed {
+                let dx = pylon.x - playerX
+                let dy = pylon.y - playerY
+                let dist = sqrt(dx * dx + dy * dy)
+                if dist <= attackRange {
+                    if closestPylon == nil || dist < closestPylon!.dist {
+                        closestPylon = (i, dist)
+                    }
+                }
+            }
+
+            if let target = closestPylon {
+                playerAttackCooldown = currentTime + playerAttackInterval
+                pylons[target.index].health -= damage
+                result.totalDamageDealt += damage
+
+                // Check if pylon destroyed
+                if pylons[target.index].health <= 0 {
+                    result.pylonsDestroyed += 1
+                }
+                return
+            }
+        }
+
+        // Priority 2: Attack minions if any are close
+        var closestMinion: (index: Int, dist: CGFloat)?
+        for (i, minion) in minions.enumerated() where !minion.isDead {
+            let dx = minion.x - playerX
+            let dy = minion.y - playerY
+            let dist = sqrt(dx * dx + dy * dy)
+            if dist <= attackRange {
+                if closestMinion == nil || dist < closestMinion!.dist {
+                    closestMinion = (i, dist)
+                }
+            }
+        }
+
+        if let target = closestMinion {
+            playerAttackCooldown = currentTime + playerAttackInterval
+            minions[target.index].health -= damage
+
+            if minions[target.index].health <= 0 {
+                minions[target.index].isDead = true
+                result.minionKills += 1
+            }
+            return
+        }
+
+        // Priority 3: Attack boss (if not invulnerable)
         guard !bossInvulnerable else { return }
 
-        // Auto-attack boss (simulate aiming)
         let dx = bossX - playerX
         let dy = bossY - playerY
         let dist = sqrt(dx * dx + dy * dy)
 
-        let attackRange: CGFloat = 300
         if dist <= attackRange {
             playerAttackCooldown = currentTime + playerAttackInterval
-
-            // Deal damage
-            let damage = playerDamage * CGFloat(playerAttackInterval)
             bossHealth -= damage
             result.totalDamageDealt += damage
         }

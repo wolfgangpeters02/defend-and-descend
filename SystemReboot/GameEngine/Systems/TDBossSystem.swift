@@ -22,13 +22,25 @@ struct TDBossSystem {
     // MARK: - District Boss Mapping
 
     /// Get the boss type for a given district
-    /// Alternates between Cyberboss (odd index) and Void Harbinger (even index)
+    /// Cycles through all 4 bosses: Cyberboss, Void Harbinger, Overclocker, Trojan Wyrm
     static func bossTypeForDistrict(_ districtId: String) -> String {
         guard let index = BalanceConfig.SectorUnlock.unlockIndex(for: districtId) else {
             return "cyberboss"
         }
-        // Alternate: even index = cyberboss, odd index = void_harbinger
-        return index % 2 == 0 ? "cyberboss" : "void_harbinger"
+        // 4-boss rotation cycle
+        let bossCycle = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
+        return bossCycle[index % bossCycle.count]
+    }
+
+    /// Get the color for a boss type
+    static func bossColorForType(_ bossType: String) -> String {
+        switch bossType {
+        case "cyberboss": return "#ff4444"           // Red
+        case "void_harbinger": return "#8844ff"      // Purple
+        case "overclocker": return "#ff6600"         // Orange
+        case "trojan_wyrm": return "#00ff44"         // Green
+        default: return "#ff4444"
+        }
     }
 
     /// Get the next district to unlock after defeating a boss
@@ -115,7 +127,7 @@ struct TDBossSystem {
             goldValue: 0,           // Reward comes from boss fight
             xpValue: 0,
             size: BalanceConfig.TDBoss.bossSize,
-            color: bossType == "cyberboss" ? "#ff4444" : "#8844ff",
+            color: bossColorForType(bossType),
             shape: "boss",
             isBoss: true
         )

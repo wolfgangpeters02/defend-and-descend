@@ -112,6 +112,8 @@ struct GameState {
     var activeBossType: BossType?
     var cyberbossState: CyberbossAI.CyberbossState?
     var voidHarbingerState: VoidHarbingerAI.VoidHarbingerState?
+    var overclockerState: OverclockerAI.OverclockerState?
+    var trojanWyrmState: TrojanWyrmAI.TrojanWyrmState?
 
     // UI state
     var isGameOver: Bool = false
@@ -124,8 +126,8 @@ struct GameState {
 enum BossType: String {
     case cyberboss = "cyberboss"
     case voidHarbinger = "voidharbinger"
-    case frostTitan = "frost_titan"      // Future
-    case infernoLord = "inferno_lord"    // Future
+    case overclocker = "overclocker"
+    case trojanWyrm = "trojan_wyrm"
 }
 
 // MARK: - Boss Difficulty

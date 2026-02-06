@@ -2884,6 +2884,28 @@ struct BossEncounter: Identifiable {
             bossId: "void_harbinger",
             rewards: ["fork_bomb", "overflow"],
             unlockCost: 200
+        ),
+        BossEncounter(
+            id: "thermal_runaway",
+            name: "THERMAL RUNAWAY",
+            subtitle: "Overclocker",
+            description: "An overheated PSU gone rogue. Rotating blades, lava floors, and deadly vacuum.",
+            iconName: "flame.fill",
+            color: "#ff6600",
+            bossId: "overclocker",
+            rewards: ["ice_shard", "null_pointer"],
+            unlockCost: 400
+        ),
+        BossEncounter(
+            id: "packet_worm",
+            name: "PACKET WORM",
+            subtitle: "Trojan Wyrm",
+            description: "A network worm burrowing through the system. Sweeps as a firewall, splits into sub-worms, and constricts with deadly force.",
+            iconName: "link.circle.fill",
+            color: "#00ff44",
+            bossId: "trojan_wyrm",
+            rewards: ["root_access"],
+            unlockCost: 600
         )
     ]
 }

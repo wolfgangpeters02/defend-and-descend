@@ -66,6 +66,8 @@
 		AA000037 /* ArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100038 /* ArenaSystem.swift */; };
 		AA000038 /* CyberbossAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100039 /* CyberbossAI.swift */; };
 		AA000039 /* VoidHarbingerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100040 /* VoidHarbingerAI.swift */; };
+		AA00003A /* OverclockerAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = OVERCLOCK01 /* OverclockerAI.swift */; };
+		AA00003B /* TrojanWyrmAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = TROJANWYRM1 /* TrojanWyrmAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
 		AA000042 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* NotificationService.swift */; };
 		AA000043 /* NotificationSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100043 /* NotificationSettingsSheet.swift */; };
@@ -152,6 +154,8 @@
 		AA100038 /* ArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaSystem.swift; sourceTree = "<group>"; };
 		AA100039 /* CyberbossAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberbossAI.swift; sourceTree = "<group>"; };
 		AA100040 /* VoidHarbingerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoidHarbingerAI.swift; sourceTree = "<group>"; };
+		OVERCLOCK01 /* OverclockerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverclockerAI.swift; sourceTree = "<group>"; };
+		TROJANWYRM1 /* TrojanWyrmAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrojanWyrmAI.swift; sourceTree = "<group>"; };
 		AA100041 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
 		AA100042 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		AA100043 /* NotificationSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsSheet.swift; sourceTree = "<group>"; };
@@ -392,6 +396,8 @@
 			children = (
 				AA100039 /* CyberbossAI.swift */,
 				AA100040 /* VoidHarbingerAI.swift */,
+				OVERCLOCK01 /* OverclockerAI.swift */,
+				TROJANWYRM1 /* TrojanWyrmAI.swift */,
 			);
 			path = Bosses;
 			sourceTree = "<group>";
@@ -579,6 +585,8 @@
 				AA000037 /* ArenaSystem.swift in Sources */,
 				AA000038 /* CyberbossAI.swift in Sources */,
 				AA000039 /* VoidHarbingerAI.swift in Sources */,
+				AA00003A /* OverclockerAI.swift in Sources */,
+				AA00003B /* TrojanWyrmAI.swift in Sources */,
 				AA000040 /* HapticsService.swift in Sources */,
 				AA000042 /* NotificationService.swift in Sources */,
 				AA000043 /* NotificationSettingsSheet.swift in Sources */,

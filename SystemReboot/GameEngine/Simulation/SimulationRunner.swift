@@ -1163,6 +1163,8 @@ class SimulationRunner {
         testBossPhaseProgression()
         testBotStrategyComparison()
         testBossTypeComparison()
+        testComprehensiveBossEvaluation()
+        testHazardAvoidance()
 
         let elapsed = CFAbsoluteTimeGetCurrent() - startTime
         log("")
@@ -1443,10 +1445,115 @@ class SimulationRunner {
         }
     }
 
+    // MARK: - Comprehensive Boss Evaluation
+
+    /// Full matrix test: Both bosses × All difficulties × Multiple strategies
+    private static func testComprehensiveBossEvaluation() {
+        log("")
+        log("── Comprehensive Boss Evaluation ──")
+        log("Testing all boss×difficulty×strategy combinations")
+        log("")
+
+        let bossTypes = ["cyberboss", "void_harbinger"]
+        let difficulties: [BossDifficulty] = [.easy, .normal, .hard, .nightmare]
+        let testBot = BalancedBot()
+
+        for bossType in bossTypes {
+            log("\(bossType.uppercased()):")
+            log(String(format: "%-10@ %8@ %6@ %6@ %8@ %6@ %@",
+                       "Difficulty", "Duration", "Deaths", "DPS", "DmgTaken", "Phase", "Result"))
+            log(String(repeating: "─", count: 70))
+
+            for difficulty in difficulties {
+                let config = BossSimulationConfig(
+                    seed: 42,
+                    bossType: bossType,
+                    difficulty: difficulty,
+                    bot: testBot,
+                    maxFightTime: 300,
+                    playerWeaponDamage: 50,
+                    playerHealth: 200,
+                    arenaSize: 1500
+                )
+
+                let sim = BossSimulator(config: config)
+                let result = sim.run()
+
+                let resultStr: String
+                if !result.victory {
+                    resultStr = "✗ TIMEOUT"
+                } else if result.playerDeaths == 0 {
+                    resultStr = "✓✓ CLEAN"
+                } else if result.playerDeaths <= 3 {
+                    resultStr = "✓ WIN"
+                } else {
+                    resultStr = "~ CLOSE"
+                }
+
+                log(String(format: "%-10@ %7.0fs %6d %6.1f %8.0f %6d %@",
+                           difficulty.displayName,
+                           result.fightDuration,
+                           result.playerDeaths,
+                           result.dps,
+                           result.totalDamageTaken,
+                           result.phaseReached,
+                           resultStr))
+            }
+            log("")
+        }
+
+        // Summary comparison
+        log("BALANCE SUMMARY:")
+
+        // Test both bosses on Normal with same bot
+        let cyberbossNormal = runBossTest(bossType: "cyberboss", difficulty: .normal, bot: testBot)
+        let voidHarbingerNormal = runBossTest(bossType: "void_harbinger", difficulty: .normal, bot: testBot)
+
+        let durationDiff = abs(cyberbossNormal.fightDuration - voidHarbingerNormal.fightDuration)
+        let deathsDiff = abs(cyberbossNormal.playerDeaths - voidHarbingerNormal.playerDeaths)
+        let dmgDiff = abs(cyberbossNormal.totalDamageTaken - voidHarbingerNormal.totalDamageTaken)
+
+        log(String(format: "  Duration diff: %.0fs %@", durationDiff, durationDiff < 30 ? "✓" : "⚠️"))
+        log(String(format: "  Deaths diff: %d %@", deathsDiff, deathsDiff <= 3 ? "✓" : "⚠️"))
+        log(String(format: "  Damage diff: %.0f %@", dmgDiff, dmgDiff < 300 ? "✓" : "⚠️"))
+
+        // Check difficulty progression
+        let easyResult = runBossTest(bossType: "cyberboss", difficulty: .easy, bot: testBot)
+        let hardResult = runBossTest(bossType: "cyberboss", difficulty: .hard, bot: testBot)
+        let nightmareResult = runBossTest(bossType: "cyberboss", difficulty: .nightmare, bot: testBot)
+
+        log("")
+        log("DIFFICULTY SCALING (Cyberboss):")
+        log(String(format: "  Easy→Normal deaths: %d→%d", easyResult.playerDeaths, cyberbossNormal.playerDeaths))
+        log(String(format: "  Normal→Hard deaths: %d→%d", cyberbossNormal.playerDeaths, hardResult.playerDeaths))
+        log(String(format: "  Hard→Nightmare deaths: %d→%d", hardResult.playerDeaths, nightmareResult.playerDeaths))
+
+        if nightmareResult.victory && nightmareResult.playerDeaths < 10 {
+            log("  ⚠️ Nightmare might be too easy")
+        } else if !nightmareResult.victory {
+            log("  ✓ Nightmare is appropriately challenging")
+        }
+    }
+
+    private static func runBossTest(bossType: String, difficulty: BossDifficulty, bot: BossBot) -> BossSimulationResult {
+        let config = BossSimulationConfig(
+            seed: 42,
+            bossType: bossType,
+            difficulty: difficulty,
+            bot: bot,
+            maxFightTime: 300,
+            playerWeaponDamage: 50,
+            playerHealth: 200,
+            arenaSize: 1500
+        )
+        let sim = BossSimulator(config: config)
+        return sim.run()
+    }
+
     // MARK: - Hazard Analysis Tests
 
     /// Detailed hazard avoidance analysis
-    static func testHazardAvoidance() {
+    private static func testHazardAvoidance() {
         log("")
         log("── Hazard Avoidance Analysis ──")
         log("Which hazards cause the most damage?")

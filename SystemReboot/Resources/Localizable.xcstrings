@@ -602,6 +602,40 @@
         }
       }
     },
+    "boss.overclocker" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ÜBERTAKTER"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OVERCLOCKER"
+          }
+        }
+      }
+    },
+    "boss.trojanWyrm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TROJANER-WYRM"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TROJAN WYRM"
+          }
+        }
+      }
+    },
     "bossLoot.decryptingPackets" : {
       "extractionState" : "manual",
       "localizations" : {
