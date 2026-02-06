@@ -14,6 +14,103 @@ extension SeededRNG {
     }
 }
 
+// MARK: - Simulated Weapon Types
+
+enum SimulatedWeaponType: String, CaseIterable {
+    case kernelPulse = "kernel_pulse"       // Baseline damage
+    case fragmenter = "burst_protocol"       // 50% DoT burn over 1.5s
+    case pinger = "trace_route"              // Tags boss for +20% damage
+    case throttler = "ice_shard"             // Slow + 10% stun chance
+    case recursion = "fork_bomb"             // 3 child projectiles (50% damage each)
+    case garbageCollector = "null_pointer"   // Lower DPS, marks for bonus
+
+    var displayName: String {
+        switch self {
+        case .kernelPulse: return "Kernel Pulse"
+        case .fragmenter: return "Fragmenter"
+        case .pinger: return "Pinger"
+        case .throttler: return "Throttler"
+        case .recursion: return "Recursion"
+        case .garbageCollector: return "Garbage Collector"
+        }
+    }
+
+    var rarity: String {
+        switch self {
+        case .kernelPulse, .fragmenter: return "Common"
+        case .pinger, .throttler: return "Rare"
+        case .recursion: return "Epic"
+        case .garbageCollector: return "Legendary"
+        }
+    }
+
+    /// Base damage at level 1
+    var baseDamage: CGFloat {
+        switch self {
+        case .kernelPulse: return 25
+        case .fragmenter: return 20          // Lower upfront, +50% as DoT
+        case .pinger: return 15              // Tags for team damage bonus
+        case .throttler: return 18           // Utility-focused
+        case .recursion: return 30           // Split into children
+        case .garbageCollector: return 12    // Support weapon
+        }
+    }
+
+    /// Attack interval in seconds
+    var attackInterval: TimeInterval {
+        switch self {
+        case .kernelPulse: return 0.4
+        case .fragmenter: return 0.5
+        case .pinger: return 0.6
+        case .throttler: return 0.7
+        case .recursion: return 0.8
+        case .garbageCollector: return 0.5
+        }
+    }
+
+    /// Attack range
+    var range: CGFloat {
+        switch self {
+        case .kernelPulse: return 200
+        case .fragmenter: return 180
+        case .pinger: return 250
+        case .throttler: return 220
+        case .recursion: return 200
+        case .garbageCollector: return 200
+        }
+    }
+}
+
+struct SimulatedWeapon {
+    let type: SimulatedWeaponType
+    let level: Int
+
+    /// Damage scaled by level (linear: Lv1=1x, Lv5=5x, Lv10=10x)
+    var damage: CGFloat {
+        type.baseDamage * CGFloat(level)
+    }
+
+    var attackInterval: TimeInterval { type.attackInterval }
+    var range: CGFloat { type.range }
+
+    /// Effective DPS accounting for attack interval and special mechanics
+    var theoreticalDPS: CGFloat {
+        let baseDPS = damage / CGFloat(attackInterval)
+        switch type {
+        case .fragmenter:
+            return baseDPS * 1.5  // +50% from DoT
+        case .pinger:
+            return baseDPS * 1.2  // +20% damage bonus while tagged
+        case .recursion:
+            return baseDPS * 2.5  // 3 children at 50% each = +150%
+        case .garbageCollector:
+            return baseDPS * 0.8  // Support weapon, lower raw DPS
+        default:
+            return baseDPS
+        }
+    }
+}
+
 // MARK: - Configuration
 
 struct BossSimulationConfig {
@@ -22,9 +119,10 @@ struct BossSimulationConfig {
     let difficulty: BossDifficulty
     let bot: BossBot
     let maxFightTime: TimeInterval          // Max fight duration before timeout
-    let playerWeaponDamage: CGFloat         // Base player DPS
+    let playerWeaponDamage: CGFloat         // Base player DPS (legacy, use weapon instead)
     let playerHealth: CGFloat               // Base player health
     let arenaSize: CGFloat                  // Arena width/height
+    let weapon: SimulatedWeapon?            // Optional weapon for detailed simulation
 
     static let defaultConfig = BossSimulationConfig(
         seed: 42,
@@ -34,7 +132,8 @@ struct BossSimulationConfig {
         maxFightTime: 300,
         playerWeaponDamage: 50,
         playerHealth: 200,
-        arenaSize: 1500
+        arenaSize: 1500,
+        weapon: nil
     )
 }
 
@@ -45,6 +144,10 @@ struct BossSimulationResult {
     let difficulty: BossDifficulty
     let botName: String
 
+    // Weapon info (optional)
+    var weaponType: SimulatedWeaponType?
+    var weaponLevel: Int = 1
+
     // Outcome
     var victory: Bool = false
     var fightDuration: TimeInterval = 0
@@ -53,6 +156,8 @@ struct BossSimulationResult {
 
     // Combat stats
     var totalDamageDealt: CGFloat = 0
+    var dotDamageDealt: CGFloat = 0         // Damage from DoT effects
+    var bonusDamageDealt: CGFloat = 0       // Damage from tags/marks
     var totalDamageTaken: CGFloat = 0
     var minionKills: Int = 0
     var pylonsDestroyed: Int = 0
@@ -156,6 +261,15 @@ class BossSimulator {
     var wyrmLungeVelocity: CGPoint = .zero
     var wyrmRecoverTimer: TimeInterval = 0
 
+    // Weapon-specific state
+    var weapon: SimulatedWeapon?
+    var bossTaggedUntil: TimeInterval = 0       // Pinger tag expiry
+    var bossSlowedUntil: TimeInterval = 0       // Throttler slow expiry
+    var bossStunnedUntil: TimeInterval = 0      // Throttler stun expiry
+    var dotDamageRemaining: CGFloat = 0         // Fragmenter DoT damage pool
+    var dotTickTimer: TimeInterval = 0          // Fragmenter DoT tick timer
+    var pendingChildProjectiles: Int = 0        // Recursion children to apply
+
     // Result tracking
     var result: BossSimulationResult
 
@@ -167,10 +281,13 @@ class BossSimulator {
         self.config = config
         self.rng = SeededRNG(seed: config.seed)
         self.bot = config.bot
+        self.weapon = config.weapon
         self.result = BossSimulationResult(
             bossType: config.bossType,
             difficulty: config.difficulty,
-            botName: config.bot.name
+            botName: config.bot.name,
+            weaponType: config.weapon?.type,
+            weaponLevel: config.weapon?.level ?? 1
         )
 
         setupFight()
@@ -187,7 +304,15 @@ class BossSimulator {
         playerY = arenaHeight * 0.8  // Start near bottom
         playerMaxHealth = config.playerHealth * config.difficulty.playerHealthMultiplier
         playerHealth = playerMaxHealth
-        playerDamage = config.playerWeaponDamage * config.difficulty.playerDamageMultiplier
+
+        // Use weapon damage if provided, otherwise fall back to config
+        if let weapon = weapon {
+            playerDamage = weapon.damage * config.difficulty.playerDamageMultiplier
+            playerAttackInterval = weapon.attackInterval
+        } else {
+            playerDamage = config.playerWeaponDamage * config.difficulty.playerDamageMultiplier
+            playerAttackInterval = 0.5
+        }
 
         // Boss setup
         bossX = arenaWidth / 2
@@ -1292,10 +1417,23 @@ class BossSimulator {
     // MARK: - Player Attack
 
     private func updatePlayerAttack() {
+        // Process DoT ticks (Fragmenter)
+        updateDoTDamage()
+
+        // Process pending child projectiles (Recursion)
+        processChildProjectiles()
+
         guard currentTime >= playerAttackCooldown else { return }
 
-        let attackRange: CGFloat = 300
-        let damage = playerDamage * CGFloat(playerAttackInterval)
+        let attackRange: CGFloat = weapon?.range ?? 300
+        var damage = playerDamage * CGFloat(playerAttackInterval)
+
+        // Apply tag bonus if boss is tagged (Pinger)
+        if currentTime < bossTaggedUntil {
+            let bonusDamage = damage * 0.2
+            damage += bonusDamage
+            result.bonusDamageDealt += bonusDamage
+        }
 
         // Priority 1: Attack pylons if boss is invulnerable
         let activePylons = pylons.filter { !$0.destroyed }
@@ -1359,9 +1497,82 @@ class BossSimulator {
 
         if dist <= attackRange {
             playerAttackCooldown = currentTime + playerAttackInterval
+
+            // Apply base damage
             bossHealth -= damage
             result.totalDamageDealt += damage
+
+            // Apply weapon-specific effects
+            applyWeaponEffects(baseDamage: damage)
         }
+    }
+
+    /// Apply weapon-specific effects on hit
+    private func applyWeaponEffects(baseDamage: CGFloat) {
+        guard let weapon = weapon else { return }
+
+        switch weapon.type {
+        case .fragmenter:
+            // Add 50% of damage as DoT over 1.5s (3 ticks of 0.5s)
+            let dotDamage = baseDamage * 0.5
+            dotDamageRemaining += dotDamage
+
+        case .pinger:
+            // Tag boss for 3 seconds (+20% damage from all sources)
+            bossTaggedUntil = currentTime + 3.0
+
+        case .throttler:
+            // Slow boss for 2 seconds
+            bossSlowedUntil = currentTime + 2.0
+            // 10% chance to stun for 0.5s
+            if rng.nextDouble() < 0.10 {
+                bossStunnedUntil = currentTime + 0.5
+            }
+
+        case .recursion:
+            // Queue 3 child projectiles (50% damage each, applied next frame)
+            pendingChildProjectiles += 3
+
+        case .garbageCollector:
+            // Mark boss - no combat effect in simulation, just tracks as support
+            break
+
+        case .kernelPulse:
+            // No special effect - baseline weapon
+            break
+        }
+    }
+
+    /// Process DoT damage (Fragmenter burn)
+    private func updateDoTDamage() {
+        guard dotDamageRemaining > 0 else { return }
+
+        let tickInterval: TimeInterval = 0.5
+        dotTickTimer += deltaTime
+
+        if dotTickTimer >= tickInterval {
+            dotTickTimer = 0
+
+            // Apply tick damage (1/3 of remaining over 3 ticks)
+            let tickDamage = min(dotDamageRemaining, dotDamageRemaining / 3)
+            bossHealth -= tickDamage
+            result.dotDamageDealt += tickDamage
+            result.totalDamageDealt += tickDamage
+            dotDamageRemaining -= tickDamage
+        }
+    }
+
+    /// Process child projectiles (Recursion)
+    private func processChildProjectiles() {
+        guard pendingChildProjectiles > 0, !bossInvulnerable else { return }
+
+        // Apply child damage instantly (50% of base per child)
+        let childDamage = (playerDamage * CGFloat(playerAttackInterval)) * 0.5
+        let totalChildDamage = childDamage * CGFloat(pendingChildProjectiles)
+
+        bossHealth -= totalChildDamage
+        result.totalDamageDealt += totalChildDamage
+        pendingChildProjectiles = 0
     }
 
     // MARK: - Hazard Updates

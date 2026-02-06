@@ -1164,6 +1164,7 @@ class SimulationRunner {
         testBotStrategyComparison()
         testBossTypeComparison()
         testComprehensiveBossEvaluation()
+        testWeaponBalance()
         testHazardAvoidance()
 
         let elapsed = CFAbsoluteTimeGetCurrent() - startTime
@@ -1202,7 +1203,8 @@ class SimulationRunner {
                 maxFightTime: 300,
                 playerWeaponDamage: 50,
                 playerHealth: 200,
-                arenaSize: 1500
+                arenaSize: 1500,
+                weapon: nil
             )
 
             let sim = BossSimulator(config: config)
@@ -1275,7 +1277,8 @@ class SimulationRunner {
                 maxFightTime: 300,
                 playerWeaponDamage: 60,
                 playerHealth: 200,
-                arenaSize: 1500
+                arenaSize: 1500,
+                weapon: nil
             )
 
             let sim = BossSimulator(config: config)
@@ -1341,7 +1344,8 @@ class SimulationRunner {
                 maxFightTime: 300,
                 playerWeaponDamage: 50,
                 playerHealth: 200,
-                arenaSize: 1500
+                arenaSize: 1500,
+                weapon: nil
             )
 
             let sim = BossSimulator(config: config)
@@ -1398,7 +1402,8 @@ class SimulationRunner {
                 maxFightTime: 300,
                 playerWeaponDamage: 50,
                 playerHealth: 200,
-                arenaSize: 1500
+                arenaSize: 1500,
+                weapon: nil
             )
 
             let sim = BossSimulator(config: config)
@@ -1475,7 +1480,8 @@ class SimulationRunner {
                     maxFightTime: 300,
                     playerWeaponDamage: 50,
                     playerHealth: 200,
-                    arenaSize: 1500
+                    arenaSize: 1500,
+                    weapon: nil
                 )
 
                 let sim = BossSimulator(config: config)
@@ -1563,10 +1569,173 @@ class SimulationRunner {
             maxFightTime: 300,
             playerWeaponDamage: 50,
             playerHealth: 200,
-            arenaSize: 1500
+            arenaSize: 1500,
+            weapon: nil
         )
         let sim = BossSimulator(config: config)
         return sim.run()
+    }
+
+    // MARK: - Weapon Balance Tests
+
+    /// Test all weapons against all bosses at different levels
+    private static func testWeaponBalance() {
+        log("")
+        log("── Weapon Balance Testing ──")
+        log("Testing 6 weapons × 4 bosses × 3 levels = 72 combinations")
+        log("")
+
+        let bossTypes = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
+        let levels = [1, 5, 10]
+        let bot = BalancedBot()
+
+        // Header
+        log(String(format: "%-18@ %6@ %8@ %8@ %6@ %8@ %8@ %8@",
+                   "Weapon", "Level", "Boss", "Duration", "Deaths", "DPS", "DoT", "Bonus"))
+        log(String(repeating: "─", count: 85))
+
+        // Test each weapon
+        for weaponType in SimulatedWeaponType.allCases {
+            for level in levels {
+                let weapon = SimulatedWeapon(type: weaponType, level: level)
+
+                // Test against Cyberboss as baseline (fastest to test)
+                let config = BossSimulationConfig(
+                    seed: 42,
+                    bossType: "cyberboss",
+                    difficulty: .normal,
+                    bot: bot,
+                    maxFightTime: 300,
+                    playerWeaponDamage: 50,
+                    playerHealth: 200,
+                    arenaSize: 1500,
+                    weapon: weapon
+                )
+
+                let sim = BossSimulator(config: config)
+                let result = sim.run()
+
+                log(String(format: "%-18@ Lv%-4d %-10@ %6.0fs %6d %7.1f %7.0f %7.0f",
+                           weaponType.displayName,
+                           level,
+                           "Cyberboss",
+                           result.fightDuration,
+                           result.playerDeaths,
+                           result.dps,
+                           result.dotDamageDealt,
+                           result.bonusDamageDealt))
+            }
+        }
+
+        log("")
+
+        // Cross-boss comparison at level 5
+        log("── Cross-Boss Weapon Comparison (Level 5) ──")
+        log("")
+
+        for bossType in bossTypes {
+            log("\(bossType.uppercased()):")
+            log(String(format: "%-18@ %8@ %6@ %8@ %@",
+                       "Weapon", "Duration", "Deaths", "DPS", "Verdict"))
+            log(String(repeating: "─", count: 55))
+
+            var results: [(SimulatedWeaponType, BossSimulationResult)] = []
+
+            for weaponType in SimulatedWeaponType.allCases {
+                let weapon = SimulatedWeapon(type: weaponType, level: 5)
+                let config = BossSimulationConfig(
+                    seed: 42,
+                    bossType: bossType,
+                    difficulty: .normal,
+                    bot: bot,
+                    maxFightTime: 300,
+                    playerWeaponDamage: 50,
+                    playerHealth: 200,
+                    arenaSize: 1500,
+                    weapon: weapon
+                )
+
+                let sim = BossSimulator(config: config)
+                let result = sim.run()
+                results.append((weaponType, result))
+
+                let verdict: String
+                if !result.victory {
+                    verdict = "✗ Timeout"
+                } else if result.playerDeaths <= 2 {
+                    verdict = "✓✓ Great"
+                } else if result.playerDeaths <= 5 {
+                    verdict = "✓ Good"
+                } else {
+                    verdict = "~ Struggle"
+                }
+
+                log(String(format: "%-18@ %7.0fs %6d %7.1f %@",
+                           weaponType.displayName,
+                           result.fightDuration,
+                           result.playerDeaths,
+                           result.dps,
+                           verdict))
+            }
+
+            // Find best and worst
+            let sorted = results.sorted { $0.1.dps > $1.1.dps }
+            if let best = sorted.first, let worst = sorted.last {
+                let dpsSpread = best.1.dps - worst.1.dps
+                if dpsSpread > 30 {
+                    log(String(format: "  ⚠️ DPS spread: %.1f (%@ vs %@)",
+                               dpsSpread, best.0.displayName, worst.0.displayName))
+                } else {
+                    log("  ✓ Weapons are balanced")
+                }
+            }
+            log("")
+        }
+
+        // Level scaling analysis
+        log("── Level Scaling Analysis ──")
+        log("Does damage scale appropriately with level?")
+        log("")
+
+        for weaponType in [SimulatedWeaponType.kernelPulse, .fragmenter, .recursion] {
+            log("\(weaponType.displayName):")
+
+            var levelDPS: [Int: CGFloat] = [:]
+            for level in [1, 3, 5, 7, 10] {
+                let weapon = SimulatedWeapon(type: weaponType, level: level)
+                let config = BossSimulationConfig(
+                    seed: 42,
+                    bossType: "cyberboss",
+                    difficulty: .normal,
+                    bot: bot,
+                    maxFightTime: 300,
+                    playerWeaponDamage: 50,
+                    playerHealth: 200,
+                    arenaSize: 1500,
+                    weapon: weapon
+                )
+
+                let sim = BossSimulator(config: config)
+                let result = sim.run()
+                levelDPS[level] = result.dps
+            }
+
+            // Check scaling ratios
+            if let lv1 = levelDPS[1], let lv5 = levelDPS[5], let lv10 = levelDPS[10] {
+                let ratio1to5 = lv5 / lv1
+                let ratio5to10 = lv10 / lv5
+                log(String(format: "  Lv1→5 ratio: %.2fx, Lv5→10 ratio: %.2fx",
+                           ratio1to5, ratio5to10))
+
+                if ratio1to5 < 3 {
+                    log("  ⚠️ Early levels may be underpowered")
+                } else if ratio1to5 > 7 {
+                    log("  ⚠️ Level scaling may be too steep")
+                } else {
+                    log("  ✓ Scaling looks reasonable")
+                }
+            }
+        }
     }
 
     // MARK: - Hazard Analysis Tests
@@ -1586,7 +1755,8 @@ class SimulationRunner {
             maxFightTime: 300,
             playerWeaponDamage: 50,
             playerHealth: 200,
-            arenaSize: 1500
+            arenaSize: 1500,
+            weapon: nil
         )
 
         let sim = BossSimulator(config: config)
@@ -1607,7 +1777,8 @@ class SimulationRunner {
             maxFightTime: 300,
             playerWeaponDamage: 50,
             playerHealth: 200,
-            arenaSize: 1500
+            arenaSize: 1500,
+            weapon: nil
         )
 
         let simVH = BossSimulator(config: configVH)
