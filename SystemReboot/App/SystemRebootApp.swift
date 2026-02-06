@@ -5,6 +5,13 @@ struct SystemRebootApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
 
+    init() {
+        #if DEBUG
+        // Run simulation economy analysis on launch (background thread)
+        // Uncomment to run: DispatchQueue.global(qos: .background).async { SimulationRunner.runEconomyAnalysis() }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

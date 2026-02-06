@@ -149,14 +149,14 @@ class TDSimulator {
             hasFrozen = false
         }
 
-        // 1. Idle spawn system
-        if let _ = IdleSpawnSystem.update(
+        // 1. Idle spawn system - add spawned enemies to state
+        if let enemy = IdleSpawnSystem.update(
             state: &state,
             deltaTime: deltaTime,
             currentTime: currentTime,
             unlockedSectorIds: unlockedSectorIds
         ) {
-            // Enemy spawned
+            state.enemies.append(enemy)
         }
 
         // 2. Overclock system
