@@ -1146,4 +1146,351 @@ class SimulationRunner {
             log("  ✓ Both strategies are viable")
         }
     }
+
+    // MARK: - Boss Fight Test Suite
+
+    /// Comprehensive boss fight balance testing
+    static func runBossFightTestSuite() {
+        logLines = []
+        let startTime = CFAbsoluteTimeGetCurrent()
+
+        log("")
+        log(String(repeating: "═", count: 80))
+        log("  BOSS FIGHT BALANCE TEST SUITE")
+        log(String(repeating: "═", count: 80))
+
+        testBossDifficultyTiers()
+        testBossPhaseProgression()
+        testBotStrategyComparison()
+        testBossTypeComparison()
+
+        let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+        log("")
+        log(String(repeating: "═", count: 80))
+        log(String(format: "Total boss test time: %.2fs", elapsed))
+        log(String(repeating: "═", count: 80))
+
+        writeLogFile()
+    }
+
+    // MARK: - Boss Test: Difficulty Tiers
+
+    /// Test if difficulty tiers are properly balanced
+    private static func testBossDifficultyTiers() {
+        log("")
+        log("── Boss Difficulty Tier Testing ──")
+        log("Do difficulty tiers scale appropriately?")
+        log("")
+
+        let difficulties: [BossDifficulty] = [.easy, .normal, .hard, .nightmare]
+        let bot = BalancedBot()
+
+        log(String(format: "%-12@ %8@ %8@ %6@ %6@ %@",
+                   "Difficulty", "Duration", "DmgTaken", "Deaths", "Win?", "Verdict"))
+        log(String(repeating: "─", count: 65))
+
+        var results: [(BossDifficulty, BossSimulationResult)] = []
+
+        for difficulty in difficulties {
+            let config = BossSimulationConfig(
+                seed: 42,
+                bossType: "cyberboss",
+                difficulty: difficulty,
+                bot: bot,
+                maxFightTime: 300,
+                playerWeaponDamage: 50,
+                playerHealth: 200,
+                arenaSize: 1500
+            )
+
+            let sim = BossSimulator(config: config)
+            let result = sim.run()
+            results.append((difficulty, result))
+
+            let verdict: String
+            if !result.victory {
+                verdict = "⚠️ Lost"
+            } else if result.playerDeaths > 0 {
+                verdict = "~ Close"
+            } else if result.fightDuration > 200 {
+                verdict = "~ Slow"
+            } else {
+                verdict = "✓ OK"
+            }
+
+            log(String(format: "%-12@ %7.0fs %8.0f %6d %6@ %@",
+                       difficulty.displayName,
+                       result.fightDuration,
+                       result.totalDamageTaken,
+                       result.playerDeaths,
+                       result.victory ? "Yes" : "No",
+                       verdict))
+        }
+
+        log("")
+        log("Analysis:")
+
+        // Check scaling
+        if let easyResult = results.first(where: { $0.0 == .easy })?.1,
+           let hardResult = results.first(where: { $0.0 == .hard })?.1 {
+            let dmgRatio = hardResult.totalDamageTaken / max(1, easyResult.totalDamageTaken)
+            if dmgRatio < 1.5 {
+                log("  ⚠️ Hard mode doesn't feel much harder than Easy (damage ratio: \(String(format: "%.1fx", dmgRatio)))")
+            } else if dmgRatio > 4 {
+                log("  ⚠️ Hard mode may be too punishing (damage ratio: \(String(format: "%.1fx", dmgRatio)))")
+            } else {
+                log("  ✓ Difficulty scaling feels appropriate (\(String(format: "%.1fx", dmgRatio)) damage ratio)")
+            }
+        }
+
+        // Check nightmare
+        if let nightmareResult = results.first(where: { $0.0 == .nightmare })?.1 {
+            if nightmareResult.victory && nightmareResult.playerDeaths == 0 {
+                log("  ⚠️ Nightmare might be too easy (no deaths)")
+            } else if !nightmareResult.victory {
+                log("  ✓ Nightmare is challenging (didn't survive)")
+            }
+        }
+    }
+
+    // MARK: - Boss Test: Phase Progression
+
+    /// Test if players see all boss phases
+    private static func testBossPhaseProgression() {
+        log("")
+        log("── Boss Phase Progression Testing ──")
+        log("Are all boss phases being reached?")
+        log("")
+
+        let bossTypes = ["cyberboss", "void_harbinger"]
+
+        for bossType in bossTypes {
+            let config = BossSimulationConfig(
+                seed: 42,
+                bossType: bossType,
+                difficulty: .normal,
+                bot: PhaseAwareBot(),
+                maxFightTime: 300,
+                playerWeaponDamage: 60,
+                playerHealth: 200,
+                arenaSize: 1500
+            )
+
+            let sim = BossSimulator(config: config)
+            let result = sim.run()
+
+            log("\(bossType.capitalized):")
+            log(String(format: "  Phase reached: %d", result.phaseReached))
+            log(String(format: "  Time per phase: P1=%.0fs, P2=%.0fs, P3=%.0fs, P4=%.0fs",
+                       result.timeInPhase[1] ?? 0,
+                       result.timeInPhase[2] ?? 0,
+                       result.timeInPhase[3] ?? 0,
+                       result.timeInPhase[4] ?? 0))
+            log(String(format: "  Victory: %@, Duration: %.0fs",
+                       result.victory ? "Yes" : "No", result.fightDuration))
+
+            if result.phaseReached < 4 && result.victory {
+                log("  ⚠️ Boss died before reaching Phase 4")
+            } else if !result.victory && result.phaseReached < 3 {
+                log("  ⚠️ Player died in early phases")
+            } else {
+                log("  ✓ Good phase progression")
+            }
+
+            // Check phase timing balance
+            if let p1 = result.timeInPhase[1], let p4 = result.timeInPhase[4] {
+                if p1 > 0 && p4 > 0 && p1 > p4 * 3 {
+                    log("  ⚠️ Phase 1 takes too long compared to Phase 4")
+                }
+            }
+
+            log("")
+        }
+    }
+
+    // MARK: - Boss Test: Bot Strategy Comparison
+
+    /// Compare different player strategies
+    private static func testBotStrategyComparison() {
+        log("")
+        log("── Bot Strategy Comparison ──")
+        log("Which playstyles are viable?")
+        log("")
+
+        let bots: [BossBot] = [
+            AggressiveBot(),
+            DefensiveBot(),
+            BalancedBot(),
+            PhaseAwareBot(),
+            StandingStillBot(),
+            RandomBot()
+        ]
+
+        log(String(format: "%-15@ %6@ %8@ %6@ %8@ %@",
+                   "Strategy", "Win?", "Duration", "Deaths", "DPS", "Verdict"))
+        log(String(repeating: "─", count: 65))
+
+        for bot in bots {
+            let config = BossSimulationConfig(
+                seed: 42,
+                bossType: "cyberboss",
+                difficulty: .normal,
+                bot: bot,
+                maxFightTime: 300,
+                playerWeaponDamage: 50,
+                playerHealth: 200,
+                arenaSize: 1500
+            )
+
+            let sim = BossSimulator(config: config)
+            let result = sim.run()
+
+            let verdict: String
+            if !result.victory {
+                verdict = "✗ Fail"
+            } else if result.playerDeaths >= 3 {
+                verdict = "~ Risky"
+            } else if result.playerDeaths == 0 {
+                verdict = "✓✓ Clean"
+            } else {
+                verdict = "✓ OK"
+            }
+
+            log(String(format: "%-15@ %6@ %7.0fs %6d %8.1f %@",
+                       bot.name,
+                       result.victory ? "Yes" : "No",
+                       result.fightDuration,
+                       result.playerDeaths,
+                       result.dps,
+                       verdict))
+        }
+
+        log("")
+        log("Expected: StandingStill should fail, Defensive/Balanced should succeed")
+    }
+
+    // MARK: - Boss Test: Boss Type Comparison
+
+    /// Compare Cyberboss vs Void Harbinger
+    private static func testBossTypeComparison() {
+        log("")
+        log("── Boss Type Comparison ──")
+        log("Are both bosses similarly difficult?")
+        log("")
+
+        let bossTypes = ["cyberboss", "void_harbinger"]
+        let bot = BalancedBot()
+
+        log(String(format: "%-16@ %6@ %8@ %6@ %8@ %8@ %@",
+                   "Boss", "Win?", "Duration", "Deaths", "DmgTkn", "DPS", "Verdict"))
+        log(String(repeating: "─", count: 75))
+
+        var results: [(String, BossSimulationResult)] = []
+
+        for bossType in bossTypes {
+            let config = BossSimulationConfig(
+                seed: 42,
+                bossType: bossType,
+                difficulty: .normal,
+                bot: bot,
+                maxFightTime: 300,
+                playerWeaponDamage: 50,
+                playerHealth: 200,
+                arenaSize: 1500
+            )
+
+            let sim = BossSimulator(config: config)
+            let result = sim.run()
+            results.append((bossType, result))
+
+            let verdict: String
+            if !result.victory {
+                verdict = "⚠️ Too hard?"
+            } else if result.playerDeaths == 0 && result.fightDuration < 120 {
+                verdict = "⚠️ Too easy?"
+            } else {
+                verdict = "✓ Balanced"
+            }
+
+            log(String(format: "%-16@ %6@ %7.0fs %6d %8.0f %8.1f %@",
+                       bossType,
+                       result.victory ? "Yes" : "No",
+                       result.fightDuration,
+                       result.playerDeaths,
+                       result.totalDamageTaken,
+                       result.dps,
+                       verdict))
+        }
+
+        log("")
+
+        // Compare
+        if results.count == 2 {
+            let durationDiff = abs(results[0].1.fightDuration - results[1].1.fightDuration)
+            let dmgDiff = abs(results[0].1.totalDamageTaken - results[1].1.totalDamageTaken)
+
+            if durationDiff > 60 {
+                log("  ⚠️ Fight duration differs by \(Int(durationDiff))s - consider rebalancing")
+            } else {
+                log("  ✓ Fight durations are similar")
+            }
+
+            if dmgDiff > 500 {
+                log("  ⚠️ Damage taken differs significantly - one boss may be harder")
+            } else {
+                log("  ✓ Difficulty feels comparable")
+            }
+        }
+    }
+
+    // MARK: - Hazard Analysis Tests
+
+    /// Detailed hazard avoidance analysis
+    static func testHazardAvoidance() {
+        log("")
+        log("── Hazard Avoidance Analysis ──")
+        log("Which hazards cause the most damage?")
+        log("")
+
+        let config = BossSimulationConfig(
+            seed: 42,
+            bossType: "cyberboss",
+            difficulty: .hard,
+            bot: BalancedBot(),
+            maxFightTime: 300,
+            playerWeaponDamage: 50,
+            playerHealth: 200,
+            arenaSize: 1500
+        )
+
+        let sim = BossSimulator(config: config)
+        let result = sim.run()
+
+        log("Hazard Hits (Cyberboss Hard):")
+        log(String(format: "  Puddles: %d hits", result.puddleHits))
+        log(String(format: "  Lasers: %d hits", result.laserHits))
+        log(String(format: "  Projectiles: %d hits", result.projectileHits))
+        log("")
+
+        // Void Harbinger
+        let configVH = BossSimulationConfig(
+            seed: 42,
+            bossType: "void_harbinger",
+            difficulty: .hard,
+            bot: BalancedBot(),
+            maxFightTime: 300,
+            playerWeaponDamage: 50,
+            playerHealth: 200,
+            arenaSize: 1500
+        )
+
+        let simVH = BossSimulator(config: configVH)
+        let resultVH = simVH.run()
+
+        log("Hazard Hits (Void Harbinger Hard):")
+        log(String(format: "  Void Zones: %d hits", resultVH.voidZoneHits))
+        log(String(format: "  Void Rifts: %d hits", resultVH.riftHits))
+        log(String(format: "  Projectiles: %d hits", resultVH.projectileHits))
+        log(String(format: "  Pylons destroyed: %d", resultVH.pylonsDestroyed))
+    }
 }
