@@ -559,40 +559,40 @@ struct BalanceConfig {
         static let bodyCollisionRadius: CGFloat = 18
 
         // Phase 1 - Packet Loss (Snake movement)
-        static let headSpeed: CGFloat = 190
-        static let turnSpeed: CGFloat = 2.5            // Radians per second
-        static let headContactDamage: CGFloat = 30
-        static let bodyContactDamage: CGFloat = 10
-        static let bodyKnockbackStrength: CGFloat = 100
+        static let headSpeed: CGFloat = 170            // Slightly slower for fairness
+        static let turnSpeed: CGFloat = 2.2            // Radians per second (less aggressive)
+        static let headContactDamage: CGFloat = 15     // Reduced from 30 (24 segments = lots of hits)
+        static let bodyContactDamage: CGFloat = 4      // Reduced from 10 (cumulative damage was too high)
+        static let bodyKnockbackStrength: CGFloat = 80 // Reduced to let player escape
         static let bodyDamageMitigation: CGFloat = 0.80
         static let boundsPadding: CGFloat = 30
 
         // Phase 2 - Firewall (Wall sweep)
-        static let wallSweepSpeed: CGFloat = 80
-        static let turretFireInterval: Double = 1.5
-        static let turretProjectileSpeed: CGFloat = 250
-        static let turretProjectileDamage: CGFloat = 20
+        static let wallSweepSpeed: CGFloat = 70        // Slightly slower sweep
+        static let turretFireInterval: Double = 1.8    // Slower fire rate
+        static let turretProjectileSpeed: CGFloat = 220
+        static let turretProjectileDamage: CGFloat = 12 // Reduced from 20
         static let turretProjectileRadius: CGFloat = 8
         static let turretProjectileLifetime: TimeInterval = 4.0
 
         // Phase 3 - Data Corruption (Sub-worms)
-        static let subWormCount: Int = 4
-        static let subWormBodyCount: Int = 5
-        static let subWormSpeed: CGFloat = 240
-        static let subWormTurnSpeed: CGFloat = 4.0
-        static let subWormHeadSize: CGFloat = 20
-        static let subWormBodySize: CGFloat = 12
+        static let subWormCount: Int = 3               // Reduced from 4
+        static let subWormBodyCount: Int = 4           // Reduced from 5
+        static let subWormSpeed: CGFloat = 180         // Reduced from 240 (less aggressive)
+        static let subWormTurnSpeed: CGFloat = 3.0     // Reduced from 4.0
+        static let subWormHeadSize: CGFloat = 18
+        static let subWormBodySize: CGFloat = 10
         static let subWormBodyMitigation: CGFloat = 0.80
 
         // Phase 4 - Format C: (Constricting ring)
         static let ringInitialRadius: CGFloat = 250
-        static let ringMinRadius: CGFloat = 120
-        static let ringShrinkRate: CGFloat = 5
-        static let ringRotationSpeed: CGFloat = 1.0    // Radians per second
-        static let aimDuration: Double = 1.0
-        static let lungeSpeed: CGFloat = 600
-        static let lungeHeadDamage: CGFloat = 60
-        static let recoverDuration: Double = 1.5
+        static let ringMinRadius: CGFloat = 130        // Slightly larger min (more escape room)
+        static let ringShrinkRate: CGFloat = 4         // Slower shrink
+        static let ringRotationSpeed: CGFloat = 0.8    // Radians per second (slower rotation)
+        static let aimDuration: Double = 1.2           // More warning time
+        static let lungeSpeed: CGFloat = 500           // Reduced from 600
+        static let lungeHeadDamage: CGFloat = 30       // Reduced from 60
+        static let recoverDuration: Double = 1.8       // Longer recovery = more punish window
     }
 
     // MARK: - Zero-Day System (TD Mode Boss)

@@ -892,9 +892,9 @@ class BossSimulator {
     }
 
     private func updateTrojanWyrmPhase1() {
-        let headSpeed: CGFloat = 190
-        let turnSpeed: CGFloat = 2.5
-        let segmentSpacing: CGFloat = 45
+        let headSpeed = BalanceConfig.TrojanWyrm.headSpeed
+        let turnSpeed = BalanceConfig.TrojanWyrm.turnSpeed
+        let segmentSpacing = BalanceConfig.TrojanWyrm.segmentSpacing
 
         // Turn towards player
         let targetAngle = atan2(playerY - bossY, playerX - bossX)
@@ -933,8 +933,8 @@ class BossSimulator {
     }
 
     private func updateTrojanWyrmPhase2() {
-        let wallSweepSpeed: CGFloat = 120
-        let segmentSpacing: CGFloat = 45
+        let wallSweepSpeed = BalanceConfig.TrojanWyrm.wallSweepSpeed
+        let segmentSpacing = BalanceConfig.TrojanWyrm.segmentSpacing
 
         // Move wall
         wyrmWallY += wallSweepSpeed * CGFloat(deltaTime) * wyrmWallDirection
@@ -964,7 +964,7 @@ class BossSimulator {
         }
 
         // Turret fire from even segments
-        let turretFireInterval: TimeInterval = 1.5
+        let turretFireInterval = BalanceConfig.TrojanWyrm.turretFireInterval
         if currentTime - lastTurretFireTime > turretFireInterval {
             lastTurretFireTime = currentTime
 
@@ -976,11 +976,11 @@ class BossSimulator {
                     x: seg.x,
                     y: seg.y,
                     velocityX: 0,
-                    velocityY: -250,  // Fire downward
-                    damage: 25,
-                    radius: 12,
+                    velocityY: -BalanceConfig.TrojanWyrm.turretProjectileSpeed,
+                    damage: BalanceConfig.TrojanWyrm.turretProjectileDamage,
+                    radius: BalanceConfig.TrojanWyrm.turretProjectileRadius,
                     lifetime: 0,
-                    maxLifetime: 3,
+                    maxLifetime: BalanceConfig.TrojanWyrm.turretProjectileLifetime,
                     isHoming: false
                 ))
             }
@@ -990,16 +990,20 @@ class BossSimulator {
     private func enterTrojanWyrmPhase3() {
         wyrmSubWorms = []
 
-        // Split into 4 sub-worms
-        let offsets: [CGFloat] = [0, .pi / 2, .pi, 3 * .pi / 2]
-        for (i, angle) in offsets.enumerated() {
+        // Split into sub-worms (count from BalanceConfig)
+        let subWormCount = BalanceConfig.TrojanWyrm.subWormCount
+        let bodyCount = BalanceConfig.TrojanWyrm.subWormBodyCount
+        let angleStep = (2 * CGFloat.pi) / CGFloat(subWormCount)
+
+        for i in 0..<subWormCount {
+            let angle = CGFloat(i) * angleStep
             let spawnDist: CGFloat = 200
             let pos = CGPoint(
                 x: arenaCenter.x + cos(angle) * spawnDist,
                 y: arenaCenter.y + sin(angle) * spawnDist
             )
             var body: [CGPoint] = []
-            for k in 1...6 {
+            for k in 1...bodyCount {
                 body.append(CGPoint(x: pos.x, y: pos.y - CGFloat(k * 20)))
             }
             wyrmSubWorms.append(SimSubWorm(
@@ -1013,8 +1017,10 @@ class BossSimulator {
     }
 
     private func updateTrojanWyrmPhase3() {
-        let subWormSpeed: CGFloat = 160
-        let subWormTurnSpeed: CGFloat = 3.0
+        let subWormSpeed = BalanceConfig.TrojanWyrm.subWormSpeed
+        let subWormTurnSpeed = BalanceConfig.TrojanWyrm.subWormTurnSpeed
+        let headDamage = BalanceConfig.TrojanWyrm.headContactDamage
+        let bodyDamage = BalanceConfig.TrojanWyrm.bodyContactDamage
 
         for i in 0..<wyrmSubWorms.count {
             var worm = wyrmSubWorms[i]
@@ -1048,14 +1054,14 @@ class BossSimulator {
 
             // Check sub-worm collision with player
             let headDist = hypot(playerX - worm.headX, playerY - worm.headY)
-            if headDist < 40 {
-                takeDamage(40, source: "wyrmHead")
+            if headDist < BalanceConfig.TrojanWyrm.subWormHeadSize * 2 {
+                takeDamage(headDamage, source: "wyrmHead")
                 playerInvulnerableUntil = currentTime + 0.5
             }
             for seg in worm.body {
                 let segDist = hypot(playerX - seg.x, playerY - seg.y)
-                if segDist < 30 {
-                    takeDamage(20, source: "wyrmBody")
+                if segDist < BalanceConfig.TrojanWyrm.subWormBodySize * 2.5 {
+                    takeDamage(bodyDamage, source: "wyrmBody")
                     playerInvulnerableUntil = currentTime + 0.3
                     break
                 }
@@ -1066,7 +1072,7 @@ class BossSimulator {
     private func enterTrojanWyrmPhase4() {
         wyrmSubWorms = []
         wyrmPhase4SubState = 0  // circling
-        wyrmRingRadius = 250
+        wyrmRingRadius = BalanceConfig.TrojanWyrm.ringInitialRadius
         wyrmRingAngle = 0
         wyrmAimTimer = 0
         wyrmLungeTimer = 0
@@ -1074,12 +1080,12 @@ class BossSimulator {
     }
 
     private func updateTrojanWyrmPhase4() {
-        let ringShrinkRate: CGFloat = 15
-        let ringMinRadius: CGFloat = 80
-        let ringRotationSpeed: CGFloat = 1.5
-        let aimDuration: TimeInterval = 1.0
-        let lungeSpeed: CGFloat = 600
-        let recoverDuration: TimeInterval = 1.5
+        let ringShrinkRate = BalanceConfig.TrojanWyrm.ringShrinkRate
+        let ringMinRadius = BalanceConfig.TrojanWyrm.ringMinRadius
+        let ringRotationSpeed = BalanceConfig.TrojanWyrm.ringRotationSpeed
+        let aimDuration = BalanceConfig.TrojanWyrm.aimDuration
+        let lungeSpeed = BalanceConfig.TrojanWyrm.lungeSpeed
+        let recoverDuration = BalanceConfig.TrojanWyrm.recoverDuration
 
         switch wyrmPhase4SubState {
         case 0:  // circling
@@ -1105,13 +1111,13 @@ class BossSimulator {
 
             // Check if player touches ring
             let distToHead = hypot(playerX - bossX, playerY - bossY)
-            if distToHead < 50 {
-                takeDamage(30 * CGFloat(deltaTime), source: "ring")
+            if distToHead < BalanceConfig.TrojanWyrm.headCollisionRadius * 1.8 {
+                takeDamage(BalanceConfig.TrojanWyrm.headContactDamage * CGFloat(deltaTime), source: "ring")
             }
             for seg in wyrmSegments {
                 let dist = hypot(playerX - seg.x, playerY - seg.y)
-                if dist < 40 {
-                    takeDamage(20 * CGFloat(deltaTime), source: "ring")
+                if dist < BalanceConfig.TrojanWyrm.bodyCollisionRadius * 2 {
+                    takeDamage(BalanceConfig.TrojanWyrm.bodyContactDamage * CGFloat(deltaTime), source: "ring")
                     break
                 }
             }
@@ -1146,7 +1152,7 @@ class BossSimulator {
             bossY += wyrmLungeVelocity.y * CGFloat(deltaTime)
 
             // Drag segments
-            updateWyrmSegments(spacing: 45)
+            updateWyrmSegments(spacing: BalanceConfig.TrojanWyrm.segmentSpacing)
 
             // Check bounds or timeout
             wyrmLungeTimer += deltaTime
@@ -1160,8 +1166,8 @@ class BossSimulator {
 
             // Lunge head does extra damage
             let distToHead = hypot(playerX - bossX, playerY - bossY)
-            if distToHead < 60 {
-                takeDamage(80, source: "lunge")
+            if distToHead < BalanceConfig.TrojanWyrm.headCollisionRadius * 2 {
+                takeDamage(BalanceConfig.TrojanWyrm.lungeHeadDamage, source: "lunge")
                 playerInvulnerableUntil = currentTime + 1.0
             }
 
@@ -1170,7 +1176,7 @@ class BossSimulator {
             if wyrmRecoverTimer > recoverDuration {
                 wyrmPhase4SubState = 0  // back to circling
                 wyrmAimTimer = 0
-                wyrmRingRadius = 250  // Reset ring
+                wyrmRingRadius = BalanceConfig.TrojanWyrm.ringInitialRadius  // Reset ring
             }
 
         default:
@@ -1202,8 +1208,8 @@ class BossSimulator {
 
         // Head collision
         let headDist = hypot(playerX - bossX, playerY - bossY)
-        if headDist < 50 {
-            takeDamage(40, source: "wyrmHead")
+        if headDist < BalanceConfig.TrojanWyrm.headCollisionRadius * 1.8 {
+            takeDamage(BalanceConfig.TrojanWyrm.headContactDamage, source: "wyrmHead")
             playerInvulnerableUntil = currentTime + 0.5
             return
         }
@@ -1214,8 +1220,8 @@ class BossSimulator {
             if bossPhase == 2 && i == wyrmGhostSegmentIndex { continue }
 
             let dist = hypot(playerX - seg.x, playerY - seg.y)
-            if dist < 35 {
-                takeDamage(20, source: "wyrmBody")
+            if dist < BalanceConfig.TrojanWyrm.bodyCollisionRadius * 2 {
+                takeDamage(BalanceConfig.TrojanWyrm.bodyContactDamage, source: "wyrmBody")
                 playerInvulnerableUntil = currentTime + 0.3
                 return
             }
