@@ -240,7 +240,7 @@ struct ProtocolLibrary {
         iconName: "dot.circle.and.hand.point.up.left.fill",
         color: "#00d4ff",
         firewallBaseStats: FirewallStats(
-            damage: 10,
+            damage: 8,             // Nerfed: 10 → 8 (Common should be weaker than Rare)
             range: 120,
             fireRate: 1.0,
             projectileCount: 1,
@@ -275,8 +275,8 @@ struct ProtocolLibrary {
         iconName: "burst.fill",
         color: "#f97316",
         firewallBaseStats: FirewallStats(
-            damage: 8,
-            range: 100,
+            damage: 10,       // Balanced: Common splash (8→12→10)
+            range: 140,       // Buffed: 100 → 140 (matches utility towers)
             fireRate: 0.8,
             projectileCount: 1,
             pierce: 1,
@@ -389,7 +389,7 @@ struct ProtocolLibrary {
             slow: 0,
             slowDuration: 0,
             special: nil,
-            powerDraw: 60  // Epic: 60W
+            powerDraw: 40  // Buffed: 60 → 40W (allows more Recursion towers)
         ),
         weaponBaseStats: WeaponStats(
             damage: 10,

@@ -310,6 +310,7 @@ class TDSimulator {
                             hashReward += BalanceConfig.GarbageCollector.hashBonus
                         }
                         state.addHash(hashReward)
+                        totalHashEarned += hashReward  // Track kill hash
 
                         // Cleanup status effects for dead enemy
                         enemyStatusEffects.removeValue(forKey: enemy.id)
@@ -455,7 +456,12 @@ class TDSimulator {
                     if updatedEnemy.health <= 0 {
                         updatedEnemy.isDead = true
                         totalKills += 1
-                        state.addHash(updatedEnemy.goldValue)
+                        var hashReward = updatedEnemy.goldValue
+                        if effects.isMarkedForDeletion {
+                            hashReward += BalanceConfig.GarbageCollector.hashBonus
+                        }
+                        state.addHash(hashReward)
+                        totalHashEarned += hashReward  // Track burn kill hash
                         enemyStatusEffects.removeValue(forKey: enemy.id)
                     }
                     state.enemies[enemyIndex] = updatedEnemy
@@ -490,7 +496,12 @@ class TDSimulator {
                 if enemy.health <= 0 {
                     enemy.isDead = true
                     totalKills += 1
-                    state.addHash(enemy.goldValue)
+                    var hashReward = enemy.goldValue
+                    if let effects = enemyStatusEffects[enemy.id], effects.isMarkedForDeletion {
+                        hashReward += BalanceConfig.GarbageCollector.hashBonus
+                    }
+                    state.addHash(hashReward)
+                    totalHashEarned += hashReward  // Track splash kill hash
                     enemyStatusEffects.removeValue(forKey: enemy.id)
                 }
 

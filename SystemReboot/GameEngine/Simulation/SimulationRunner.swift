@@ -35,6 +35,14 @@ struct SimulationResult {
     var finalTowerCount: Int = 0
     var peakHashPerSecond: CGFloat = 0
     var powerUsedPercent: CGFloat = 0
+
+    // Balance testing fields
+    var killsByTower: [String: Int] = [:]       // Kills per tower type
+    var hashFromMarks: Int = 0                   // Hash from GC marks
+    var powerWallHitTime: TimeInterval?          // When power blocked
+    var killsByLane: [String: Int] = [:]         // Kills per lane
+    var timeToFirstEnemy: TimeInterval?          // Time until first enemy spawns
+    var timeToFirstCoreLeak: TimeInterval?       // Time until first enemy reaches core
 }
 
 // MARK: - Simulation Runner
@@ -502,5 +510,640 @@ class SimulationRunner {
         log(String(repeating: "═", count: 80))
 
         writeLogFile()
+    }
+
+    // MARK: - Balance Test Suite
+
+    /// Comprehensive balance testing: 8 targeted tests for game balance validation
+    static func runBalanceTestSuite() {
+        logLines = []
+        let startTime = CFAbsoluteTimeGetCurrent()
+
+        log("")
+        log(String(repeating: "═", count: 80))
+        log("  BALANCE TEST SUITE - 8 TARGETED TESTS")
+        log(String(repeating: "═", count: 80))
+
+        testTowerBalance()              // Q1
+        testGarbageCollectorSupport()   // Q2
+        testUpgradeCostEfficiency()     // Q3
+        testPowerConstraints()          // Q4
+        testMultiLaneStrategy()         // Q5
+        testMultiLaneHashIncome()       // Q5b
+        testSpendingDecisionHierarchy() // Q6
+        testImmediateOverclock()        // Q6b
+        testProgressionHierarchy()      // Q7
+        testEarlyGamePacing()           // Q8
+
+        let elapsed = CFAbsoluteTimeGetCurrent() - startTime
+        log("")
+        log(String(repeating: "═", count: 80))
+        log(String(format: "Total balance test time: %.2fs", elapsed))
+        log(String(repeating: "═", count: 80))
+
+        writeLogFile()
+    }
+
+    // MARK: - Q1: Tower Balance Testing
+
+    /// Which towers are overpowered/underpowered? Are towers overall overtuned/undertuned?
+    private static func testTowerBalance() {
+        log("")
+        log("── Q1: Tower Balance Testing ──")
+        log("Running each tower type in isolation to compare raw effectiveness.")
+        log("")
+
+        let towerIds = ["kernel_pulse", "burst_protocol", "trace_route", "ice_shard", "fork_bomb", "null_pointer"]
+        let towerNames = ["Executor", "Fragmenter", "Pinger", "Throttler", "Recursion", "GarbageCollector"]
+        let rarities = ["Common", "Common", "Rare", "Rare", "Epic", "Legendary"]
+
+        log(String(format: "%-16@ %-10@ %6@ %6@ %6@ %@",
+                   "Tower", "Rarity", "Kills", "DPS", "Eff%", "Verdict"))
+        log(String(repeating: "─", count: 65))
+
+        var results: [(name: String, rarity: String, kills: Int, dps: CGFloat, efficiency: CGFloat)] = []
+
+        for (index, protocolId) in towerIds.enumerated() {
+            let config = SimulationConfig(
+                seed: 42,
+                bot: SingleTowerBot(protocolId: protocolId),
+                maxGameTime: 300,
+                compiledProtocols: [protocolId],
+                unlockedSectors: [SectorID.power.rawValue],
+                startingHash: 100,
+                startingEfficiency: 100
+            )
+            let result = run(config: config)
+            let dps = CGFloat(result.totalKills) / (result.gameDuration / 60.0)
+
+            results.append((towerNames[index], rarities[index], result.totalKills, dps, result.finalEfficiency))
+
+            let verdict: String
+            if result.didFreeze {
+                verdict = "⚠️ Froze"
+            } else if result.finalEfficiency < 50 {
+                verdict = "~Weak"
+            } else if dps > 15 {
+                verdict = "++Strong"
+            } else {
+                verdict = "✓ OK"
+            }
+
+            log(String(format: "%-16@ %-10@ %6d %6.1f %5.0f%% %@",
+                       towerNames[index], rarities[index], result.totalKills, dps, result.finalEfficiency, verdict))
+        }
+
+        // Summary
+        let avgKills = results.map { $0.kills }.reduce(0, +) / max(1, results.count)
+        let maxKills = results.max { $0.kills < $1.kills }
+        let minKills = results.min { $0.kills < $1.kills }
+
+        log("")
+        log("Summary:")
+        log("  Average kills: \(avgKills)")
+        if let best = maxKills {
+            log("  Best performer: \(best.name) (\(best.kills) kills)")
+        }
+        if let worst = minKills {
+            log("  Weakest: \(worst.name) (\(worst.kills) kills)")
+            if worst.kills < avgKills / 2 {
+                log("  ⚠️ \(worst.name) is significantly underperforming")
+            }
+        }
+    }
+
+    // MARK: - Q2: Garbage Collector Support Testing
+
+    /// GarbageCollector is a support tower for hash bonus. Test synergy with DPS towers.
+    private static func testGarbageCollectorSupport() {
+        log("")
+        log("── Q2: Garbage Collector Support Testing ──")
+        log("Does GC + DPS tower earn more hash than DPS alone?")
+        log("")
+
+        // Scenario A: null_pointer alone
+        let configA = SimulationConfig(
+            seed: 42,
+            bot: SingleTowerBot(protocolId: "null_pointer"),
+            maxGameTime: 300,
+            compiledProtocols: ["null_pointer"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultA = run(config: configA)
+
+        // Scenario B: 6 GC + 6 Executor (synergy test with equal tower count to C)
+        // Alternate placement so GC marks enemies that Executor then kills
+        let synergyComboPairs = ["null_pointer", "kernel_pulse", "null_pointer", "kernel_pulse",
+                                  "null_pointer", "kernel_pulse", "null_pointer", "kernel_pulse",
+                                  "null_pointer", "kernel_pulse", "null_pointer", "kernel_pulse"]
+        let configB = SimulationConfig(
+            seed: 42,
+            bot: SynergyBot(combo: synergyComboPairs),
+            maxGameTime: 300,
+            compiledProtocols: ["null_pointer", "kernel_pulse"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 500,  // More starting hash to afford placements
+            startingEfficiency: 100
+        )
+        let resultB = run(config: configB)
+
+        // Scenario C: 12 Executor alone (baseline - same tower count as B)
+        let configC = SimulationConfig(
+            seed: 42,
+            bot: SingleTowerBot(protocolId: "kernel_pulse"),
+            maxGameTime: 300,
+            compiledProtocols: ["kernel_pulse"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 500,  // Same starting hash as B
+            startingEfficiency: 100
+        )
+        let resultC = run(config: configC)
+
+        log(String(format: "%-20@ %6@ %8@ %8@ %6@ %@",
+                   "Scenario", "Kills", "Hash", "H/Kill", "Eff%", "Verdict"))
+        log(String(repeating: "─", count: 65))
+
+        let hpkA = resultA.totalKills > 0 ? Double(resultA.totalHashEarned) / Double(resultA.totalKills) : 0
+        log(String(format: "%-20@ %6d %8d %8.2f %5.0f%% %@",
+                   "GC alone", resultA.totalKills, resultA.totalHashEarned, hpkA, resultA.finalEfficiency,
+                   resultA.didFreeze ? "⚠️ Froze" : "✓ OK"))
+
+        let hpkB = resultB.totalKills > 0 ? Double(resultB.totalHashEarned) / Double(resultB.totalKills) : 0
+        log(String(format: "%-20@ %6d %8d %8.2f %5.0f%% %@",
+                   "GC + Executor (6+6)", resultB.totalKills, resultB.totalHashEarned, hpkB, resultB.finalEfficiency,
+                   resultB.didFreeze ? "⚠️ Froze" : "✓ OK"))
+
+        let hpkC = resultC.totalKills > 0 ? Double(resultC.totalHashEarned) / Double(resultC.totalKills) : 0
+        log(String(format: "%-20@ %6d %8d %8.2f %5.0f%% %@",
+                   "Executor x12", resultC.totalKills, resultC.totalHashEarned, hpkC, resultC.finalEfficiency,
+                   resultC.didFreeze ? "⚠️ Froze" : "✓ OK"))
+
+        log("")
+        log("Analysis:")
+        let synergySurplus = resultB.totalHashEarned - resultC.totalHashEarned
+        if synergySurplus > 100 {
+            log("  ✓ GC synergy provides +\(synergySurplus) hash (bonus working)")
+        } else if synergySurplus > 0 {
+            log("  ~ GC provides minor bonus (+\(synergySurplus) hash)")
+        } else {
+            log("  ⚠️ GC not providing hash bonus, may need tuning")
+        }
+
+        if resultA.didFreeze && !resultC.didFreeze {
+            log("  ✓ GC alone can't defend (intended - it's support)")
+        }
+    }
+
+    // MARK: - Q3: Upgrade Cost Efficiency
+
+    /// Is leveling towers too cheap for the extra damage?
+    private static func testUpgradeCostEfficiency() {
+        log("")
+        log("── Q3: Upgrade Cost Efficiency ──")
+        log("Comparing upgrade-focus vs spread-first strategies.")
+        log("")
+
+        let allTowers = ["kernel_pulse", "burst_protocol", "ice_shard"]
+
+        // UpgradeFocus: max one tower before placing another
+        let configUpgrade = SimulationConfig(
+            seed: 42,
+            bot: UpgradeFocusBot(),
+            maxGameTime: 300,
+            compiledProtocols: allTowers,
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultUpgrade = run(config: configUpgrade)
+
+        // SpreadFirst: fill slots before upgrading
+        let configSpread = SimulationConfig(
+            seed: 42,
+            bot: SpreadBot(),
+            maxGameTime: 300,
+            compiledProtocols: allTowers,
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultSpread = run(config: configSpread)
+
+        log(String(format: "%-15@ %8@ %6@ %6@ %8@ %@",
+                   "Strategy", "Hash", "Kills", "Towers", "AvgLvl", "Cost/Kill"))
+        log(String(repeating: "─", count: 60))
+
+        let costPerKillUpgrade = resultUpgrade.totalKills > 0
+            ? CGFloat(resultUpgrade.totalHashEarned) / CGFloat(resultUpgrade.totalKills)
+            : 0
+        let costPerKillSpread = resultSpread.totalKills > 0
+            ? CGFloat(resultSpread.totalHashEarned) / CGFloat(resultSpread.totalKills)
+            : 0
+
+        log(String(format: "%-15@ %8d %6d %6d %8.1f %8.1f",
+                   "UpgradeFocus", resultUpgrade.totalHashEarned, resultUpgrade.totalKills,
+                   resultUpgrade.towersPlaced, resultUpgrade.averageTowerLevel, costPerKillUpgrade))
+
+        log(String(format: "%-15@ %8d %6d %6d %8.1f %8.1f",
+                   "SpreadFirst", resultSpread.totalHashEarned, resultSpread.totalKills,
+                   resultSpread.towersPlaced, resultSpread.averageTowerLevel, costPerKillSpread))
+
+        log("")
+        log("Analysis:")
+        if resultUpgrade.totalKills > Int(Double(resultSpread.totalKills) * 1.2) {
+            log("  ⚠️ Upgrade-focus significantly outperforms spread (upgrades may be too cheap)")
+        } else if resultSpread.totalKills > Int(Double(resultUpgrade.totalKills) * 1.2) {
+            log("  ⚠️ Spread significantly outperforms upgrade-focus (consider lowering placement costs)")
+        } else {
+            log("  ✓ Both strategies are viable (balanced)")
+        }
+    }
+
+    // MARK: - Q4: Power Constraints
+
+    /// Epic towers need >300W PSU. Test power gating by rarity.
+    private static func testPowerConstraints() {
+        log("")
+        log("── Q4: Power Constraints Testing ──")
+        log("Can high-rarity towers be placed at low PSU levels?")
+        log("")
+
+        let testCases: [(String, String, [String])] = [
+            ("Common only", "Lv1 PSU", ["kernel_pulse", "burst_protocol"]),
+            ("Rare only", "Lv1 PSU", ["trace_route", "ice_shard"]),
+            ("Epic only", "Lv1 PSU", ["fork_bomb"]),
+            ("Legendary only", "Lv1 PSU", ["null_pointer"]),
+            ("Epic only", "Lv3 PSU", ["fork_bomb"]),
+            ("All rarities", "Lv5 PSU", ["kernel_pulse", "ice_shard", "fork_bomb", "null_pointer"])
+        ]
+
+        log(String(format: "%-18@ %-10@ %6@ %8@ %@",
+                   "Scenario", "PSU", "Towers", "PwrUsed%", "Verdict"))
+        log(String(repeating: "─", count: 55))
+
+        for (name, psuDesc, protocols) in testCases {
+            var levels = BalanceConfig.Simulation.earlyGame
+            if psuDesc.contains("3") {
+                levels.psuLevel = 3
+            } else if psuDesc.contains("5") {
+                levels.psuLevel = 5
+            }
+
+            let config = SimulationConfig(
+                seed: 42,
+                bot: SpreadBot(),
+                maxGameTime: 180,
+                compiledProtocols: protocols,
+                unlockedSectors: [SectorID.power.rawValue],
+                componentLevels: levels,
+                startingHash: 500,
+                startingEfficiency: 100
+            )
+            let result = run(config: config)
+
+            let verdict: String
+            if result.towersPlaced == 0 {
+                verdict = "✗ Blocked"
+            } else if result.powerUsedPercent > 90 {
+                verdict = "⚠️ At limit"
+            } else {
+                verdict = "✓ OK"
+            }
+
+            log(String(format: "%-18@ %-10@ %6d %7.0f%% %@",
+                       name, psuDesc, result.towersPlaced, result.powerUsedPercent, verdict))
+        }
+
+        log("")
+        log("Expected: Epic/Legendary should be blocked or limited at Lv1 PSU")
+    }
+
+    // MARK: - Q5: Multi-Lane Strategy
+
+    /// Why do more lanes make the game easier? Are bots placing towers in the middle?
+    private static func testMultiLaneStrategy() {
+        log("")
+        log("── Q5: Multi-Lane Strategy Testing ──")
+        log("How does the number of unlocked sectors affect difficulty?")
+        log("")
+
+        let sectorConfigs: [(String, Set<String>)] = [
+            ("1 Lane (PSU)", [SectorID.power.rawValue]),
+            ("3 Lanes", [SectorID.power.rawValue, SectorID.ram.rawValue, SectorID.gpu.rawValue]),
+            ("All Lanes", Set(SectorID.allCases.map { $0.rawValue }))
+        ]
+
+        log(String(format: "%-15@ %6@ %6@ %8@ %@",
+                   "Config", "Kills", "Towers", "Eff%", "Verdict"))
+        log(String(repeating: "─", count: 50))
+
+        let allTowers = ["kernel_pulse", "burst_protocol", "ice_shard", "fork_bomb"]
+
+        for (name, sectors) in sectorConfigs {
+            let config = SimulationConfig(
+                seed: 42,
+                bot: SpreadBot(),
+                maxGameTime: 300,
+                compiledProtocols: allTowers,
+                unlockedSectors: sectors,
+                startingHash: 100,
+                startingEfficiency: 100
+            )
+            let result = run(config: config)
+
+            let verdict = result.didFreeze ? "⚠️ Froze" : "✓ OK"
+
+            log(String(format: "%-15@ %6d %6d %7.0f%% %@",
+                       name, result.totalKills, result.towersPlaced, result.finalEfficiency, verdict))
+        }
+
+        log("")
+        log("Analysis: More lanes = more enemies but also more tower slots.")
+        log("CPU-adjacent slots can cover multiple lanes for efficiency.")
+    }
+
+    // MARK: - Q6: Spending Decision Hierarchy
+
+    /// When does it make sense to spend hash on what?
+    private static func testSpendingDecisionHierarchy() {
+        log("")
+        log("── Q6: Spending Decision Hierarchy ──")
+        log("Tracking economy flow over time with AdaptiveBot.")
+        log("")
+
+        let allTowers = ["kernel_pulse", "burst_protocol", "ice_shard", "trace_route"]
+
+        let config = SimulationConfig(
+            seed: 42,
+            bot: AdaptiveBot(),
+            maxGameTime: 600,  // 10 minutes for progression analysis
+            compiledProtocols: allTowers,
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let result = run(config: config)
+
+        log("10-Minute Session Results:")
+        log(String(format: "  Final Efficiency: %.0f%%", result.finalEfficiency))
+        log(String(format: "  Total Kills: %d", result.totalKills))
+        log(String(format: "  Total Hash Earned: %d", result.totalHashEarned))
+        log(String(format: "  Towers Placed: %d", result.towersPlaced))
+        log(String(format: "  Peak Tower Level: %d", result.peakTowerLevel))
+        log(String(format: "  Overclock Count: %d", result.overclockCount))
+        log("")
+
+        if result.didFreeze {
+            log("  ⚠️ Froze \(result.freezeCount) time(s)")
+            if let firstFreeze = result.timeToFirstFreeze {
+                log(String(format: "  Time to first freeze: %.0fs", firstFreeze))
+            }
+        } else {
+            log("  ✓ Maintained stability throughout")
+        }
+
+        log("")
+        log("Spending Priority (observed):")
+        log("  1. Towers first for defensive stability")
+        log("  2. Upgrades for cost-efficient damage boost")
+        log("  3. Overclock when efficiency is healthy (70%+)")
+    }
+
+    // MARK: - Q7: Progression Hierarchy Testing
+
+    /// Force towers first. CPU upgrades shouldn't be winning strategy before towers.
+    private static func testProgressionHierarchy() {
+        log("")
+        log("── Q7: Progression Hierarchy Testing ──")
+        log("Towers should be required. Component-only strategies should fail.")
+        log("")
+
+        let allTowers = ["kernel_pulse", "burst_protocol", "ice_shard"]
+
+        log(String(format: "%-15@ %6@ %6@ %8@ %6@ %@",
+                   "Strategy", "Towers", "Kills", "Eff%", "Frz", "Verdict"))
+        log(String(repeating: "─", count: 60))
+
+        // Scenario A: TowersFirst (intended path)
+        let configA = SimulationConfig(
+            seed: 42,
+            bot: TowersFirstBot(),
+            maxGameTime: 300,
+            compiledProtocols: allTowers,
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultA = run(config: configA)
+
+        let verdictA = resultA.didFreeze ? "⚠️ Fail" : "✓ Intended"
+        log(String(format: "%-15@ %6d %6d %7.0f%% %6d %@",
+                   "TowersFirst", resultA.towersPlaced, resultA.totalKills, resultA.finalEfficiency,
+                   resultA.freezeCount, verdictA))
+
+        // Scenario B: NoTowers (control - should definitely fail)
+        let configB = SimulationConfig(
+            seed: 42,
+            bot: NoTowersBot(),
+            maxGameTime: 300,
+            compiledProtocols: allTowers,
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultB = run(config: configB)
+
+        let verdictB = resultB.didFreeze ? "✓ Expected" : "⚠️ Should fail!"
+        log(String(format: "%-15@ %6d %6d %7.0f%% %6d %@",
+                   "NoTowers", resultB.towersPlaced, resultB.totalKills, resultB.finalEfficiency,
+                   resultB.freezeCount, verdictB))
+
+        // Scenario C: Passive (very minimal interaction)
+        let configC = SimulationConfig(
+            seed: 42,
+            bot: PassiveBot(),
+            maxGameTime: 300,
+            compiledProtocols: allTowers,
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultC = run(config: configC)
+
+        let verdictC = resultC.didFreeze ? "✓ Expected" : "⚠️ Should fail!"
+        log(String(format: "%-15@ %6d %6d %7.0f%% %6d %@",
+                   "Passive", resultC.towersPlaced, resultC.totalKills, resultC.finalEfficiency,
+                   resultC.freezeCount, verdictC))
+
+        log("")
+        log("Analysis:")
+        if resultA.didFreeze {
+            log("  ⚠️ TowersFirst strategy fails - may be too punishing early")
+        } else if !resultB.didFreeze {
+            log("  ⚠️ NoTowers survives - towers aren't required (balance issue)")
+        } else {
+            log("  ✓ Progression hierarchy correct: towers required for survival")
+        }
+    }
+
+    // MARK: - Q8: Early Game Pacing
+
+    /// Players should have time to look around. Low pressure, learn by playing.
+    private static func testEarlyGamePacing() {
+        log("")
+        log("── Q8: Early Game Pacing Testing ──")
+        log("How much time does a new player have before pressure builds?")
+        log("")
+
+        // Run a passive simulation to measure timing of first events
+        let config = SimulationConfig(
+            seed: 42,
+            bot: PassiveBot(),
+            maxGameTime: 180,  // 3 minutes
+            compiledProtocols: ["kernel_pulse"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let result = run(config: config)
+
+        log("Passive Play Timing (no tower placement):")
+        log(String(format: "  First freeze at: %.0fs", result.timeToFirstFreeze ?? result.gameDuration))
+        log(String(format: "  Final efficiency: %.0f%%", result.finalEfficiency))
+        log(String(format: "  Total freezes: %d", result.freezeCount))
+        log("")
+
+        // Analysis of pacing
+        let firstFreezeTime = result.timeToFirstFreeze ?? result.gameDuration
+        if firstFreezeTime < 30 {
+            log("  ⚠️ First freeze too fast (<30s) - player has no time to explore")
+        } else if firstFreezeTime < 60 {
+            log("  ~ First freeze at \(Int(firstFreezeTime))s - tight but learnable")
+        } else if firstFreezeTime < 120 {
+            log("  ✓ First freeze at \(Int(firstFreezeTime))s - good learning window")
+        } else {
+            log("  ⚠️ First freeze at \(Int(firstFreezeTime))s - may be too forgiving")
+        }
+
+        // Test recovery with single tower
+        log("")
+        log("Recovery Test (place 1 tower at start):")
+
+        let configRecovery = SimulationConfig(
+            seed: 42,
+            bot: TowersFirstBot(),
+            maxGameTime: 180,
+            compiledProtocols: ["kernel_pulse"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultRecovery = run(config: configRecovery)
+
+        if resultRecovery.didFreeze {
+            log(String(format: "  With 1 tower: froze at %.0fs", resultRecovery.timeToFirstFreeze ?? 0))
+            log("  ⚠️ Single tower not enough for recovery")
+        } else {
+            log(String(format: "  With towers: maintained %.0f%% efficiency", resultRecovery.finalEfficiency))
+            log("  ✓ Quick recovery possible with basic defense")
+        }
+    }
+
+    // MARK: - Bonus Tests
+
+    /// Q5 Follow-up: Does more lanes = more hash income?
+    static func testMultiLaneHashIncome() {
+        log("")
+        log("── Q5b: Multi-Lane Hash Income ──")
+        log("Does expanding to more sectors generate more hash?")
+        log("")
+
+        let sectorConfigs: [(String, Set<String>)] = [
+            ("1 Lane", [SectorID.power.rawValue]),
+            ("3 Lanes", [SectorID.power.rawValue, SectorID.ram.rawValue, SectorID.gpu.rawValue]),
+            ("All Lanes", Set(SectorID.allCases.map { $0.rawValue }))
+        ]
+
+        log(String(format: "%-12@ %8@ %6@ %8@ %@",
+                   "Config", "Hash", "Kills", "H/min", "Verdict"))
+        log(String(repeating: "─", count: 50))
+
+        for (name, sectors) in sectorConfigs {
+            let config = SimulationConfig(
+                seed: 42,
+                bot: SpreadBot(),
+                maxGameTime: 300,
+                compiledProtocols: ["kernel_pulse", "burst_protocol"],
+                unlockedSectors: sectors,
+                startingHash: 200,
+                startingEfficiency: 100
+            )
+            let result = run(config: config)
+            let hashPerMin = CGFloat(result.totalHashEarned) / (result.gameDuration / 60.0)
+
+            log(String(format: "%-12@ %8d %6d %8.1f %@",
+                       name, result.totalHashEarned, result.totalKills, hashPerMin,
+                       result.didFreeze ? "⚠️ Froze" : "✓ OK"))
+        }
+
+        log("")
+        log("Analysis: More lanes = more enemies = more kill hash (if you can defend).")
+    }
+
+    /// Q6 Follow-up: What if you overclock immediately?
+    static func testImmediateOverclock() {
+        log("")
+        log("── Q6b: Immediate Overclock Risk ──")
+        log("Is spamming overclock at start a winning strategy?")
+        log("")
+
+        // Normal play with AdaptiveBot
+        let configNormal = SimulationConfig(
+            seed: 42,
+            bot: AdaptiveBot(),
+            maxGameTime: 300,
+            compiledProtocols: ["kernel_pulse", "burst_protocol"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultNormal = run(config: configNormal)
+
+        // Aggressive overclock with RushOverclockBot
+        let configRush = SimulationConfig(
+            seed: 42,
+            bot: RushOverclockBot(),
+            maxGameTime: 300,
+            compiledProtocols: ["kernel_pulse", "burst_protocol"],
+            unlockedSectors: [SectorID.power.rawValue],
+            startingHash: 100,
+            startingEfficiency: 100
+        )
+        let resultRush = run(config: configRush)
+
+        log(String(format: "%-15@ %8@ %6@ %8@ %6@ %@",
+                   "Strategy", "Hash", "Kills", "OC#", "Eff%", "Verdict"))
+        log(String(repeating: "─", count: 60))
+
+        log(String(format: "%-15@ %8d %6d %8d %5.0f%% %@",
+                   "Adaptive", resultNormal.totalHashEarned, resultNormal.totalKills,
+                   resultNormal.overclockCount, resultNormal.finalEfficiency,
+                   resultNormal.didFreeze ? "⚠️ Froze" : "✓ OK"))
+
+        log(String(format: "%-15@ %8d %6d %8d %5.0f%% %@",
+                   "RushOverclock", resultRush.totalHashEarned, resultRush.totalKills,
+                   resultRush.overclockCount, resultRush.finalEfficiency,
+                   resultRush.didFreeze ? "⚠️ Froze" : "✓ OK"))
+
+        log("")
+        if resultRush.totalHashEarned > Int(Double(resultNormal.totalHashEarned) * 1.3) && !resultRush.didFreeze {
+            log("  ⚠️ Rush OC significantly outperforms normal play (may be exploitable)")
+        } else if resultRush.didFreeze && !resultNormal.didFreeze {
+            log("  ✓ Rush OC is risky - leads to freezes (balanced)")
+        } else {
+            log("  ✓ Both strategies are viable")
+        }
     }
 }

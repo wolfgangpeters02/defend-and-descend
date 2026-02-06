@@ -1,15 +1,15 @@
 # System: Reboot - Game Balancing Blueprint
 
 > **The Definitive Economy & Progression Guide**
-> Last Updated: 2026-01-30
+> Last Updated: 2026-02-05
 
 ---
 
 ## Table of Contents
 1. [Game Identity](#1-game-identity)
-2. [The Three Currencies](#2-the-three-currencies)
+2. [Currency & Economy](#2-currency--economy)
 3. [The Component Ecosystem](#3-the-component-ecosystem)
-4. [The Dual Game Modes](#4-the-dual-game-modes)
+4. [The Game Modes](#4-the-game-modes)
 5. [The Gameplay Loop](#5-the-gameplay-loop)
 6. [Progression & Unlocks](#6-progression--unlocks)
 7. [Loss Conditions & Recovery](#7-loss-conditions--recovery)
@@ -33,20 +33,21 @@ You are a **System Administrator** building and defending a computer system. You
 ### Two Modes, One Goal
 | Mode | Genre | Purpose |
 |------|-------|---------|
-| **Firewall Mode** (TD) | Tower Defense | Wave-based defense, earn Hash, test Protocols |
-| **Survival Mode** | Twin-Stick Shooter | Endurance runs, earn Data, discover Blueprints |
+| **Firewall Mode** (TD) | Idle Tower Defense | Continuous threat defense, earn Hash, upgrade components |
+| **Boss Encounters** | Auto-Shoot Action | Boss fights (auto-fire, move to dodge), earn Hash & Blueprints |
 
 ---
 
-## 2. The Three Currencies
+## 2. Currency & Economy
 
 ### Overview
 
 | Icon | Name | Role | Analogy |
 |------|------|------|---------|
 | ⚡ | **Power (Watts)** | The Ceiling | Electricity bill - limits what you can run |
-| Ħ | **Hash** | The Cash | Money - spend to buy things |
-| ◈ | **Data** | The Science | Research points - unlock new tech |
+| Ħ | **Hash** | The Cash | Money - spend to buy everything |
+
+> **Note:** Data (◈) was a former second currency but has been removed. Hash is now the universal currency for all purchases.
 
 ### 2.1 Power (Watts) ⚡
 
@@ -54,69 +55,60 @@ You are a **System Administrator** building and defending a computer system. You
 
 | Property | Value |
 |----------|-------|
-| Source | PSU (Power Supply Unit) |
-| Type | Hard Capacity Limit |
-| Spent On | Sustaining towers & components |
+| Source | PSU (Power Supply Unit) component |
+| Type | Hard Capacity Limit (NOT a currency) |
+| Governs | Tower placement capacity |
 | Regenerates? | No - it's a ceiling, not a pool |
 
 **Example:**
 ```
-PSU: 450W Capacity
-Currently Used: 380W
-Available: 70W
+PSU Lv1: 300W Capacity
+Currently Used: 250W
+Available: 50W
 
-Tower costs 50W to run → CAN BUILD
+Tower costs 30W to run → CAN BUILD
 Tower costs 100W to run → CANNOT BUILD (need PSU upgrade)
 ```
 
 **Key Design Rules:**
 - Power is NOT consumed - it's allocated
 - Selling/removing a tower frees up its Power
-- PSU upgrades are the ONLY way to increase capacity
+- PSU component upgrades increase capacity (Lv1: 300W → Lv10: 2300W)
 - Running at max Power is fine (no penalty)
+- Overclock doubles power demand temporarily
 
 ### 2.2 Hash (Ħ)
 
-**Role:** The MONEY. Earned passively and through gameplay.
+**Role:** The UNIVERSAL CURRENCY. Earned passively and through gameplay.
 
 | Property | Value |
 |----------|-------|
-| Source | Survival Mode (passive), Firewall waves (bonus) |
+| Source | Passive income (CPU level), Boss defeats, Offline generation |
 | Type | Soft Currency (farmable) |
-| Spent On | Compiling Protocols, placing towers, upgrades |
-| Storage Limit | Determined by sector unlocks |
+| Spent On | Compiling Protocols, placing towers, component upgrades, sector unlocks |
+| Storage Limit | Determined by Storage component level (Lv1: 25,000 Ħ) |
 
-**Earning Rates (Survival Mode):**
+**Passive Income (Firewall Mode):**
 ```
-Base Rate: 2.0 Ħ/sec
-Time Bonus: +0.5 Ħ/sec per minute survived
-Example at 5 minutes: 2.0 + (5 × 0.5) = 4.5 Ħ/sec
-```
-
-**Wave Bonuses (Firewall Mode):**
-```
-Wave Bonus = Wave Number × 10 Ħ
-Wave 5 = 50 Ħ bonus
-Wave 10 = 100 Ħ bonus
-Wave 20 = 200 Ħ bonus
+Base Rate: 1.0 Ħ/sec (CPU Lv1)
+CPU Level Scaling: 1.5× per level
+  Lv1: 1.0 Ħ/sec
+  Lv5: ~5 Ħ/sec
+  Lv10: ~38 Ħ/sec
+Efficiency scales income (0-100%, each leaked virus costs 5%)
 ```
 
-### 2.3 Data (◈)
+**Boss Rewards (by difficulty):**
+```
+Easy: 1,000 Ħ
+Normal: 3,000 Ħ
+Hard: 8,000 Ħ
+Nightmare: 20,000 Ħ
+```
 
-**Role:** The RESEARCH CURRENCY. Unlocks new Protocols.
-
-| Property | Value |
-|----------|-------|
-| Source | Survival Mode (time-based), Boss defeats |
-| Type | Premium/Skill Currency |
-| Spent On | Compiling Protocol Blueprints |
-| Storage Limit | None (hoardable) |
-
-**Key Design Rules:**
-- Data is ONLY earned through Survival Mode gameplay
-- Creates motivation to play challenging content
-- Blueprints are boss drops; Data is the "crafting material"
-- No Data loss on death (frustration protection)
+**Offline Earnings:**
+- 20% of active rate (upgradeable via Storage component)
+- Max 8 hours accumulation
 
 ---
 
@@ -124,80 +116,88 @@ Wave 20 = 200 Ħ bonus
 
 ### The Motherboard as a City
 
-Every component serves an **economic function**:
+Components are upgradeable (Lv 1-10) and unlock via district boss progression. Each serves a distinct role:
 
-| Component | City Analogy | Consumes ⚡ | Produces | Special Ability |
-|-----------|--------------|-------------|----------|-----------------|
-| **PSU** | Power Plant | 0W | Power Capacity | None - pure infrastructure |
-| **CPU** | Factory | 50-200W | Hash/sec | +% Tower Fire Rate |
-| **GPU** | Super Factory | 150-400W | Hash/sec (high) | Acts as AoE Tower + opens new spawn lane |
-| **RAM** | Efficiency Office | 20-50W | Nothing | Multiplies Hash income (+10-25% per stick) |
-| **HDD** | Bank Vault | 10-30W | Nothing | Increases max Hash storage |
-| **SSD** | Safe Deposit | 15-40W | Nothing | Enables save slots + faster load |
-| **Towers** | Defense Turrets | 10-100W | Nothing | Defends against viruses |
+| Component | Unlock Order | Role | Upgrade Effect |
+|-----------|-------------|------|----------------|
+| **PSU** | 0 (starter) | Power Capacity | 300W → 2300W ceiling |
+| **RAM** | 1 | Efficiency Recovery | 1.0× → 2.0× recovery speed |
+| **GPU** | 2 | Tower Damage | 1.0× → 1.5× global tower damage |
+| **Cache** | 3 | Attack Speed | 1.0× → 1.3× global attack speed |
+| **Storage** | 4 | Hash Storage + Offline | 25,000 Ħ cap, 20% → 60% offline rate |
+| **Expansion** | 5 | Extra Tower Slots | +0/+1/+2 slots per sector |
+| **Network** | 6 | Hash Multiplier | 1.0× → 1.5× all Hash income |
+| **I/O** | 7 | Pickup Radius | 1.0× → 2.5× pickup range |
+| **CPU** | 8 (final) | Hash Generation | 1.0 → ~38 Ħ/sec (exponential) |
+
+Component upgrade costs use exponential formula: `baseCost × 2^(level-1)`
 
 ### Tower Placement Costs by Rarity
 
-| Rarity | Hash Cost |
-|--------|-----------|
-| Common | 50 Ħ |
-| Rare | 100 Ħ |
-| Epic | 200 Ħ |
-| Legendary | 400 Ħ |
+| Rarity | Hash Cost | Power Draw |
+|--------|-----------|------------|
+| Common | 50 Ħ | 15-20W |
+| Rare | 100 Ħ | 30-35W |
+| Epic | 200 Ħ | 60-75W |
+| Legendary | 400 Ħ | 100-120W |
 
 **Selling Towers:** 50% refund of total investment (placement + upgrades)
 
 ---
 
-## 4. The Dual Game Modes
+## 4. The Game Modes
 
-### 4.1 Firewall Mode (Tower Defense)
+### 4.1 Firewall Mode (Idle Tower Defense)
 
-**Genre:** Wave-based Tower Defense
-
-**What You Do:**
-- Place Protocols (towers) on the motherboard
-- Defend against waves of viruses
-- Upgrade towers between waves
-- Manage Hash economy
-
-**What You Earn:**
-- Hash (wave completion bonuses)
-- Practice for Survival Mode
-
-**Wave Structure:**
-- Waves get progressively harder
-- Boss waves every 5 waves
-- 10-second cooldown between waves
-
-### 4.2 Survival Mode (Twin-Stick Shooter)
-
-**Genre:** Arena Survival / Roguelite
+**Genre:** Idle Tower Defense with Threat Scaling
 
 **What You Do:**
-- Survive as long as possible in the arena
-- Fight through virus swarms
-- React to survival events
-- Extract after 3 minutes for rewards
+- Place Protocols (towers) on the 8-lane motherboard
+- Defend against continuously spawning viruses (threat scales over time)
+- Manage efficiency (viruses reaching CPU reduce Hash income)
+- Unlock new sectors, upgrade components
+- Overclock CPU for risk/reward (2× Hash, 10× threat growth)
 
 **What You Earn:**
-- Data (◈) - passive accumulation
-- Hash (Ħ) - passive accumulation
-- Protocol Blueprints - boss drops
+- Hash (Ħ) - passive generation from CPU level, scaled by efficiency
+- Offline Hash accumulation when away
 
-**Extraction:**
-- Available after 180 seconds (3 minutes)
-- Keep all accumulated rewards
-- Death = lose run rewards
+**Threat System (replaces waves):**
+- Threat level increases continuously over time
+- Higher threat = stronger enemies, faster spawns, new enemy types
+- Boss "super viruses" spawn at threat milestones (every 6 threat levels)
+- District bosses are immune to towers - must enter boss fight to defeat
 
-### Mode Switching Motivation
+### 4.2 Boss Encounters (Auto-Shoot Action)
+
+**Genre:** Top-Down Action (Auto-Fire + Movement)
+
+**What You Do:**
+- Move to dodge boss attacks (virtual joystick)
+- Weapons fire automatically at nearest enemy
+- Navigate boss phases and raid-style mechanics
+- Choose difficulty for risk/reward
+
+**What You Earn:**
+- Hash (Ħ) - difficulty-scaled rewards (1,000 - 20,000 Ħ)
+- Protocol Blueprints - RNG drops from boss defeats
+
+**Boss Difficulty:**
+| Difficulty | Boss HP | Boss DMG | Player HP | Player DMG | Blueprint Chance |
+|------------|---------|----------|-----------|------------|-----------------|
+| Easy | 1.0× | 0.5× | 2.0× | 4.0× | 5% |
+| Normal | 1.0× | 1.0× | 1.0× | 1.5× | 15% |
+| Hard | 1.5× | 1.3× | 1.0× | 1.0× | 30% |
+| Nightmare | 2.5× | 1.8× | 1.0× | 1.0× | 50% |
+
+### Mode Interaction
 
 | Situation | Problem | Solution |
 |-----------|---------|----------|
-| "I need a new Protocol" | Missing Blueprint | Play Survival, defeat bosses |
-| "I can't compile the Protocol" | Not enough Data | Play Survival, earn Data |
-| "I need more Hash for towers" | Low Hash | Play Firewall waves OR Survival |
-| "I want to test my builds" | Want practice | Play Firewall Mode |
+| "I need a new Protocol" | Missing Blueprint | Defeat district bosses for drops |
+| "I can't compile the Protocol" | Not enough Hash | Earn Hash passively or from boss rewards |
+| "I need more Hash for towers" | Low Hash | Upgrade CPU, wait for passive income, defeat bosses |
+| "I want to unlock a new sector" | Need boss defeat + protocols + Hash | Defeat current district boss, compile required protocols, pay Hash |
 
 ---
 
@@ -207,29 +207,32 @@ Every component serves an **economic function**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  FIREWALL MODE (TD)                                         │
+│  FIREWALL MODE (Idle TD)                                    │
 │                                                             │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐              │
 │  │  PLACE   │───▶│  DEFEND  │───▶│  EARN    │              │
-│  │ (Build)  │    │ (Waves)  │    │ (Hash)   │              │
+│  │ (Build)  │    │ (Threat) │    │ (Hash)   │              │
 │  └──────────┘    └──────────┘    └──────────┘              │
 │       ▲                               │                     │
 │       └───────────────────────────────┘                     │
-└─────────────────────────────────────────────────────────────┘
-                          │
-                          │ Need Blueprints?
-                          ▼
+│                                                             │
+│   Threat Milestone → District Boss Spawns!                  │
+└─────────────────────┬───────────────────────────────────────┘
+                      │
+                      │ Tap boss to engage
+                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  SURVIVAL MODE                                              │
+│  BOSS ENCOUNTER (Auto-Shoot Action)                         │
 │                                                             │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐              │
-│  │  ENTER   │───▶│  SURVIVE │───▶│  EXTRACT │              │
-│  │ (Arena)  │    │ (Endure) │    │ (Loot)   │              │
+│  │  PICK    │───▶│  FIGHT   │───▶│  LOOT    │              │
+│  │(Diffi-   │    │ (Dodge & │    │ (Hash +  │              │
+│  │ culty)   │    │  Survive)│    │Blueprint?)│              │
 │  └──────────┘    └──────────┘    └──────────┘              │
 │                                       │                     │
-│                 Defeat Boss ──────────┤                     │
-│                     │                 │                     │
-│               Blueprint Drop?    Data + Hash                │
+│               Blueprint Drop ─────────┤                     │
+│                     │            Hash Reward                 │
+│              Compile Protocol    Sector Unlock               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -243,24 +246,30 @@ Protocols are your tower blueprints. Each Protocol defines a tower's behavior.
 
 **Protocol Acquisition:**
 1. **Starter Protocol** - Free (Kernel Pulse)
-2. **Blueprint Drop** - Defeat bosses in Survival Mode
-3. **Compile** - Spend Data to unlock usage
+2. **Blueprint Drop** - Defeat district bosses (RNG based on difficulty)
+3. **Compile** - Spend Hash (Ħ) to unlock for placement
 
-### Sector Gating
+### Sector Gating (Three-Layer System)
 
-Sectors (motherboard regions) unlock based on compiled Protocols:
+Sectors unlock through a three-gate system:
 
-| Sector | Required Protocols | Rationale |
-|--------|-------------------|-----------|
-| Power | (starter - free) | Starting zone |
-| RAM | Kernel Pulse | Basic access |
-| CPU | (Hash only) | Core goal |
-| GPU | Burst + Fork Bomb | Parallel = multi-shot |
-| Storage | Trace Route | Persistence = range |
-| Cache | Kernel + Ice Shard | Speed + control |
-| Expansion | Root Access | System privileges |
-| I/O | Fork Bomb + Trace Route | Multi-channel |
-| Network | Overflow + Null Pointer | Full mastery |
+1. **Visibility Gate** — Defeat the previous district's boss to see the next sector
+2. **Protocol Gate** — Compile the required Protocols (blueprints from boss drops)
+3. **Hash Gate** — Pay the unlock cost in Hash
+
+| Sector | Order | Required Protocols | Hash Cost | Rationale |
+|--------|-------|-------------------|-----------|-----------|
+| PSU | 0 | (none - starter) | 0 Ħ | Starting zone |
+| RAM | 1 | Fragmenter | 25,000 Ħ | Multi-target processing |
+| GPU | 2 | Fragmenter + Recursion | 50,000 Ħ | Parallel = multi-shot |
+| Cache | 3 | Kernel Pulse + Throttler | 75,000 Ħ | Speed + control |
+| Storage | 4 | Pinger | 100,000 Ħ | Persistence = range |
+| Expansion | 5 | Root Access | 150,000 Ħ | System privileges |
+| Network | 6 | Overflow + Garbage Collector | 200,000 Ħ | Full mastery |
+| I/O | 7 | Recursion + Pinger | 300,000 Ħ | Multi-channel |
+| CPU | 8 | (none) | 500,000 Ħ | Final goal (Hash only) |
+
+**Total unlock cost:** 1,400,000 Ħ across all sectors
 
 ---
 
@@ -271,20 +280,29 @@ Sectors (motherboard regions) unlock based on compiled Protocols:
 **NOT Game Over.** Instead:
 
 1. **Efficiency Drops**
-   - Each virus that reaches CPU: -5% Efficiency
-   - Efficiency affects Hash income
-   - At 0% Efficiency: You earn nothing (but don't lose stuff)
+   - Each virus that reaches CPU: -5% Efficiency (leak counter +1)
+   - Efficiency affects Hash income rate
+   - At 0% Efficiency: System Freeze — earn nothing (but don't lose stuff)
 
 2. **Recovery**
-   - Efficiency regenerates slowly over time
-   - RAM upgrades speed up recovery
+   - Leak counter decays over time (interval from `BalanceConfig.Efficiency.leakDecayInterval`)
+   - RAM component upgrades speed up recovery (1.0× to 2.0×)
+   - No permanent loss — efficiency always recoverable
+
+### Boss Encounter: Player Death
+
+- Fight ends, return to Firewall Mode
+- No Hash reward for that fight
+- No penalty to existing Hash or progress
+- Can retry immediately at any difficulty
 
 ### Survival Mode: Player Death
 
 - Run ends
-- Lose all accumulated rewards from that run
+- **Receive 50% of accumulated Hash** (extraction = 100%)
+- Extraction available after 180 seconds (3 minutes)
 - Blueprints are permanent once dropped
-- No penalty to existing Hash/Data
+- No penalty to existing Hash
 
 ---
 
@@ -321,7 +339,7 @@ Sectors (motherboard regions) unlock based on compiled Protocols:
 |---------|-------|
 | Bonus per Level | +5% |
 | Base XP Required | 100 XP |
-| XP per Level | +50 XP |
+| XP per Level | +75 XP |
 | Max Weapon Level | 10 |
 | Damage per Level | +1.0× (Level 10 = 10× damage) |
 
@@ -329,7 +347,9 @@ Sectors (motherboard regions) unlock based on compiled Protocols:
 
 ## 9. Wave & Threat Scaling
 
-### Wave Scaling (Firewall Mode)
+### Wave Scaling (Legacy/Fallback)
+
+> **Note:** The primary mode is now Idle TD with threat scaling (below). Wave-based scaling exists as a fallback for non-motherboard maps.
 
 | Parameter | Value | Effect |
 |-----------|-------|--------|
@@ -346,7 +366,7 @@ Sectors (motherboard regions) unlock based on compiled Protocols:
 - Min Delay: 0.3 sec
 - Reduction: -0.02 sec/wave
 
-### Threat Level Scaling (Idle TD Mode)
+### Threat Level Scaling (Primary Idle TD Mode)
 
 | Parameter | Value |
 |-----------|-------|
@@ -360,7 +380,9 @@ Sectors (motherboard regions) unlock based on compiled Protocols:
 |------------|--------------|----------|
 | Basic | 1.0 | Start |
 | Fast | 2.0 | ~20 sec |
+| Swarm | 4.0 | ~60 sec |
 | Tank | 5.0 | ~80 sec |
+| Elite | 8.0 | ~130 sec |
 | Boss | 10.0 | ~160 sec |
 
 ---
@@ -399,15 +421,26 @@ Events trigger periodically during Survival Mode to add variety and challenge.
 
 1. **Defeat Boss** → RNG roll for Blueprint drop
 2. **Get Blueprint** → Can now compile Protocol
-3. **Compile Protocol** → Spend Data, unlock for placement
+3. **Compile Protocol** → Spend Hash (Ħ), unlock for placement
 
-### Drop Rate Formula
+### Drop Rate System
+
+**TD Mode (district bosses):** Simple flat chance based on difficulty:
+
+| Difficulty | Drop Chance |
+|------------|-------------|
+| Easy | 5% |
+| Normal | 15% |
+| Hard | 30% |
+| Nightmare | 50% |
+
+**Boss Encounter Mode (Cathedral):** Uses full rarity-weighted system:
 
 ```
 effectiveRate = baseRate × difficultyMult × (1 / (1 + diminishingFactor × killCount))
 ```
 
-### Base Drop Rates
+### Base Drop Rates (by Rarity Tier)
 
 | Rarity | Base Rate |
 |--------|-----------|
@@ -416,7 +449,7 @@ effectiveRate = baseRate × difficultyMult × (1 / (1 + diminishingFactor × kil
 | Epic | 8% |
 | Legendary | 2% |
 
-### Difficulty Multipliers
+### Difficulty Multipliers (Boss Encounter Mode)
 
 | Difficulty | Multiplier | Legendary? |
 |------------|------------|------------|
@@ -427,19 +460,28 @@ effectiveRate = baseRate × difficultyMult × (1 / (1 + diminishingFactor × kil
 
 ### Special Rules
 
-- **First Kill Bonus:** Guaranteed drop on first boss kill
+- **First Kill Bonus:** Guaranteed drop on first kill of each boss
 - **Pity System:** Guaranteed drop every 10 kills without one
 - **Diminishing Returns:** Factor of 0.1 reduces rates over many kills
 - **No Duplicates:** Already-owned blueprints excluded from pool
 
-### Boss → Protocol Mapping
+### Active Boss Roster
+
+Bosses cycle through districts: PSU gets Cyberboss, RAM gets Void Harbinger, GPU gets Overclocker, etc.
+
+| Boss | ID | Drops | Theme |
+|------|----|-------|-------|
+| **Cyberboss** | `cyberboss` | Fragmenter (C), Pinger (R), Throttler (R) | Hacking/intrusion |
+| **Void Harbinger** | `void_harbinger` | Recursion (E), Root Access (E), Overflow (L) | Memory corruption |
+| **Overclocker** | `overclocker` | (cycles through same tables) | PSU/Cooling |
+| **Trojan Wyrm** | `trojan_wyrm` | (cycles through same tables) | Network worm |
+
+### Future Bosses (Loot Tables Defined)
 
 | Boss | Drops | Theme |
 |------|-------|-------|
-| **Cyberboss** | Burst Protocol (C), Trace Route (R), Ice Shard (R) | Hacking/intrusion |
-| **Void Harbinger** | Fork Bomb (E), Root Access (E), Overflow (L) | Memory corruption |
-| **Frost Titan** | Ice Shard (R), Null Pointer (L) | Cryogenic |
-| **Inferno Lord** | Root Access (E), Overflow (L), Null Pointer (L) | Destruction |
+| **Frost Titan** | Throttler (R), Garbage Collector (L) | Cryogenic |
+| **Inferno Lord** | Root Access (E), Overflow (L), Garbage Collector (L) | Destruction |
 
 ---
 
@@ -494,8 +536,9 @@ The `BalanceConfig.swift` has an `exportJSON()` function that outputs values mat
 
 ```
 ┌─────────────────────────────────────────────┐
-│ ⚡ 380/450W    Ħ 12,450    ◈ 2,340          │
-│ Efficiency: 95% ████████████░░ (+1%/10s)    │
+│ ⚡ 250/300W    Ħ 12,450 / 25,000            │
+│ Efficiency: 95% ████████████░░              │
+│ Threat: 4.2    Hash/sec: 0.95               │
 └─────────────────────────────────────────────┘
 ```
 
@@ -554,9 +597,9 @@ The `BalanceConfig.swift` has an `exportJSON()` function that outputs values mat
 
 | Wall | "I can't because..." | Solution |
 |------|---------------------|----------|
-| **Power Wall** | "Not enough Watts" | Upgrade PSU |
-| **Hash Wall** | "Can't afford it" | Play Survival / Firewall |
-| **Blueprint Wall** | "Don't have Protocol" | Defeat bosses in Survival |
+| **Power Wall** | "Not enough Watts" | Upgrade PSU component |
+| **Hash Wall** | "Can't afford it" | Upgrade CPU, earn passive Hash, defeat bosses |
+| **Blueprint Wall** | "Don't have Protocol" | Defeat district bosses for blueprint drops |
 
 This creates **meaningful choices** and **clear goals** at every stage of the game.
 
@@ -570,38 +613,89 @@ All balance values live in `SystemReboot/Core/Config/BalanceConfig.swift`.
 
 ```swift
 struct BalanceConfig {
-    struct Player { ... }        // Health, speed, regen, etc.
-    struct Waves { ... }         // TD mode scaling
-    struct ThreatLevel { ... }   // Idle TD scaling
-    struct Towers { ... }        // Costs, projectile settings
-    struct BossSurvivor { ... }  // Boss scaling in survival
-    struct SurvivalEvents { ... }// Event parameters
-    struct SurvivalEconomy { ... }// Hash/Data earning
-    struct Pickups { ... }       // Lifetime settings
-    struct Timing { ... }        // Upgrade intervals
-    struct Limits { ... }        // Performance caps
-    struct Visual { ... }        // Screen shake, trails
-    struct Leveling { ... }      // XP formulas
-    struct DropRates { ... }     // Blueprint RNG
+    // Core
+    struct Player { ... }           // Health, speed, regen, etc.
+    struct Waves { ... }            // Wave-based TD scaling (legacy)
+    struct ThreatLevel { ... }      // Idle TD scaling (primary)
+    struct Towers { ... }           // Costs, projectile settings
+    struct TowerUpgrades { ... }    // Per-level stat multipliers
+
+    // Boss Encounters
+    struct BossSurvivor { ... }     // Boss scaling
+    struct Cyberboss { ... }        // Cyberboss phase config
+    struct VoidHarbinger { ... }    // Void Harbinger phase config
+    struct Overclocker { ... }      // Overclocker phase config
+    struct TrojanWyrm { ... }       // Trojan Wyrm phase config
+    struct BossDifficultyConfig { ... } // Difficulty multipliers & rewards
+
+    // TD Systems
+    struct TDCore { ... }           // Guardian (CPU) stats & upgrades
+    struct TDBoss { ... }           // District boss integration
+    struct ZeroDay { ... }          // Zero-Day system breach boss
+    struct HashEconomy { ... }      // Hash generation & CPU scaling
+    struct Efficiency { ... }       // Leak decay, warning thresholds
+    struct Overclock { ... }        // Overclock risk/reward system
+    struct TDRendering { ... }      // TD visual timing
+
+    // Progression
+    struct SectorUnlock { ... }     // 9-sector unlock order & costs
+    struct Components { ... }       // Component upgrade system (PSU→CPU)
+    struct Leveling { ... }         // XP formulas
+    struct DropRates { ... }        // Blueprint RNG
+
+    // Protocol Status Effects
+    struct Throttler { ... }        // Stun chance & immunity
+    struct Pinger { ... }           // Tag damage bonus
+    struct GarbageCollector { ... } // Mark & bonus hash
+    struct Fragmenter { ... }       // DoT burn ticks
+    struct Recursion { ... }        // Child projectile splitting
+
+    // Economy & Events
+    struct SurvivalEvents { ... }   // Event parameters
+    struct SurvivalEconomy { ... }  // Hash earning
+    struct Pickups { ... }          // Lifetime settings
+    struct Potions { ... }          // Potion charges & effects
+
+    // Performance & Visual
+    struct Limits { ... }           // Performance caps
+    struct Visual { ... }           // Screen shake, trails
+    struct Particles { ... }        // Particle effect params
+    struct Timing { ... }           // Upgrade intervals
 }
 ```
 
 ### Helper Functions
 
 ```swift
+// Core formulas
+BalanceConfig.exponentialUpgradeCost(baseCost:currentLevel:)  // baseCost × 2^(level-1)
+BalanceConfig.levelStatMultiplier(level:)                      // level as multiplier (Lv5 = 5×)
+
+// Wave & Threat scaling
 BalanceConfig.waveHealthMultiplier(waveNumber:)
 BalanceConfig.waveSpeedMultiplier(waveNumber:)
 BalanceConfig.threatHealthMultiplier(threatLevel:)
 BalanceConfig.threatSpeedMultiplier(threatLevel:)
 BalanceConfig.threatDamageMultiplier(threatLevel:)
 BalanceConfig.spawnDelay(waveNumber:)
+
+// Leveling & Economy
 BalanceConfig.xpRequired(level:)
 BalanceConfig.levelMultiplier(level:)
 BalanceConfig.towerCost(rarity:)
+BalanceConfig.HashEconomy.hashPerSecond(at:)                   // CPU-level Hash rate
+
+// Components
+BalanceConfig.Components.upgradeCost(for:at:)                  // Component upgrade costs
+BalanceConfig.Components.psuCapacity(at:)                      // PSU Watt capacity
+BalanceConfig.Components.cpuHashPerSecond(at:)                 // CPU Hash generation
+BalanceConfig.SectorUnlock.unlockCost(for:)                    // Sector Hash costs
+
+// Tools
 BalanceConfig.exportJSON() // For simulator tools
 ```
 
 ---
 
-*Document Version: 2.0*
+*Document Version: 3.0*
 *Game: System: Reboot*

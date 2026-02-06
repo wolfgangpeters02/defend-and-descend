@@ -10,7 +10,7 @@ class IdleSpawnSystem {
     // MARK: - Main Update
 
     /// Update idle spawning - call this every frame
-    /// Returns spawned enemy if one was created, nil otherwise
+    /// Returns array of spawned enemies (scales with lane count)
     static func update(
         state: inout TDGameState,
         deltaTime: TimeInterval,
@@ -18,6 +18,10 @@ class IdleSpawnSystem {
         unlockedSectorIds: Set<String>
     ) -> TDEnemy? {
         guard state.idleSpawnEnabled else { return nil }
+
+        // Get available lanes for spawning
+        let lanes = getAvailableLanes(state: state, unlockedSectorIds: unlockedSectorIds)
+        guard !lanes.isEmpty else { return nil }
 
         // Don't spawn if at enemy cap
         let activeEnemies = state.enemies.filter { !$0.isDead && !$0.reachedCore }.count
@@ -31,16 +35,14 @@ class IdleSpawnSystem {
             state.idleThreatLevel + effectiveGrowthRate * CGFloat(deltaTime)
         )
 
-        // Update spawn timer
-        state.idleSpawnTimer += deltaTime
+        // Update spawn timer - scale by lane count so more lanes = proportionally more enemies
+        // Each lane contributes its share to the spawn timer
+        let laneCount = CGFloat(lanes.count)
+        state.idleSpawnTimer += deltaTime * laneCount
         guard state.idleSpawnTimer >= state.idleCurrentSpawnInterval else { return nil }
 
         // Reset timer and spawn enemy
         state.idleSpawnTimer = 0
-
-        // Get available lanes for spawning
-        let lanes = getAvailableLanes(state: state, unlockedSectorIds: unlockedSectorIds)
-        guard !lanes.isEmpty else { return nil }
 
         // Select random lane
         let selectedLane = lanes.randomElement()!
@@ -181,6 +183,11 @@ class IdleSpawnSystem {
         let speedMultiplier = BalanceConfig.threatSpeedMultiplier(threatLevel: threatLevel)
         let damageMultiplier = BalanceConfig.threatDamageMultiplier(threatLevel: threatLevel)
 
+        // Apply sector hash bonus - later sectors give more hash (risk/reward)
+        let baseGoldValue = enemyConfig?.coinValue ?? BalanceConfig.EnemyDefaults.coinValue
+        let sectorMultiplier = BalanceConfig.SectorHashBonus.multiplier(for: lane.sectorId)
+        let adjustedGoldValue = Int(CGFloat(baseGoldValue) * sectorMultiplier)
+
         return TDEnemy(
             id: RandomUtils.generateId(),
             type: type,
@@ -192,8 +199,8 @@ class IdleSpawnSystem {
             maxHealth: baseHealth * healthMultiplier,
             speed: baseSpeed * speedMultiplier,
             damage: baseDamage * damageMultiplier,
-            goldValue: enemyConfig?.coinValue ?? BalanceConfig.EnemyDefaults.coinValue,
-            xpValue: enemyConfig?.coinValue ?? BalanceConfig.EnemyDefaults.coinValue,
+            goldValue: adjustedGoldValue,
+            xpValue: adjustedGoldValue,  // XP also scales with sector
             size: CGFloat(enemyConfig?.size ?? BalanceConfig.EnemyDefaults.size),
             color: enemyConfig?.color ?? BalanceConfig.EnemyDefaults.color,
             shape: enemyConfig?.shape ?? BalanceConfig.EnemyDefaults.shape,

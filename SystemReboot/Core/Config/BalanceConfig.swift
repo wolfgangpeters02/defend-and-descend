@@ -1134,6 +1134,31 @@ struct BalanceConfig {
         }
     }
 
+    // MARK: - Sector Hash Bonus
+    // Enemies on later sectors give bonus hash - risk/reward for expanding
+    // PSU (starter) = 1.0x, later sectors progressively more rewarding
+
+    struct SectorHashBonus {
+        /// Hash multiplier by sector (later = more rewarding)
+        /// Makes expanding to new sectors worthwhile despite increased difficulty
+        static let multipliers: [String: CGFloat] = [
+            "psu": 1.0,        // Starter - baseline
+            "ram": 1.2,        // +20% - first expansion reward
+            "gpu": 1.4,        // +40%
+            "cache": 1.6,      // +60%
+            "storage": 1.8,    // +80%
+            "expansion": 2.0,  // +100% - double hash!
+            "network": 2.2,    // +120%
+            "io": 2.5,         // +150%
+            "cpu": 3.0         // +200% - triple hash for the final sector
+        ]
+
+        /// Get hash multiplier for a sector
+        static func multiplier(for sectorId: String) -> CGFloat {
+            return multipliers[sectorId] ?? 1.0
+        }
+    }
+
     // MARK: - Component Upgrades (District-based system)
     // Each district has a component that can be upgraded (Lv 1-10)
     // Component unlock order matches sector unlock order from SectorUnlock
@@ -1600,8 +1625,8 @@ extension BalanceConfig {
 
     /// Garbage Collector (null_pointer) - Marks enemies for hash bonus on death
     struct GarbageCollector {
-        /// Duration of the mark effect
-        static let markDuration: TimeInterval = 0.5
+        /// Duration of the mark effect (longer = more synergy window for ally kills)
+        static let markDuration: TimeInterval = 3.0
         /// Bonus hash when marked enemy dies
         static let hashBonus: Int = 5
     }

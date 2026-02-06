@@ -7,8 +7,8 @@ struct SystemRebootApp: App {
 
     init() {
         #if DEBUG
-        // Run simulation economy analysis on launch (background thread)
-        // Uncomment to run: DispatchQueue.global(qos: .background).async { SimulationRunner.runEconomyAnalysis() }
+        // Run balance test suite on launch (background thread)
+        DispatchQueue.global(qos: .background).async { SimulationRunner.runBalanceTestSuite() }
         #endif
     }
 

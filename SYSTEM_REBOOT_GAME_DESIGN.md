@@ -1,7 +1,7 @@
 # System: Reboot - Game Design Document
 
-> **Version:** 3.0 (System Architecture Update)
-> **Last Updated:** 2026-01-30
+> **Version:** 4.0 (Sector Grid & Component Expansion)
+> **Last Updated:** 2026-02-04
 > **Platform:** Native iOS (Swift/SpriteKit)
 > **Related:** [GAME_BALANCING_BLUEPRINT.md](./GAME_BALANCING_BLUEPRINT.md) for economy tables
 
@@ -124,17 +124,17 @@ The economy is centered on **Hash** as the universal currency, with **Power** as
 
 **Spending:**
 - Tower placement costs
-- Global upgrades (PSU, CPU, RAM, Cooling, HDD)
-- Sector/lane unlocks
-- Protocol compilation
+- Global upgrades (9 components: PSU, Storage, RAM, GPU, Cache, Expansion, I/O, Network, CPU)
+- Sector unlocks (25K-500K Ħ per sector)
+- Protocol compilation (100-800 Ħ by rarity)
 
-**Storage:** Capped by HDD level (25,000Ħ base → 12.8M at max level)
+**Storage:** Capped by Storage component level (50,000Ħ base → 5M at max level)
 
 ```
 Example:
-HDD Capacity: 200,000 Ħ
+Storage Capacity: 500,000 Ħ
 Current Hash: 185,000 Ħ
-CPU Income: 50 Ħ/sec (at 100% Efficiency)
+Base Income: Based on efficiency % and CPU level
 ```
 
 ### Power (Watts) ⚡
@@ -161,9 +161,8 @@ Tower costs 200W → CANNOT BUILD (need PSU upgrade)
 **Role:** CHARACTER PROGRESSION - permanent stat bonuses.
 
 - Earned from kills, survival time, and victories
-- Level requirements: 100 + (level-1) × 75 XP
 - Unified across all game modes
-- Higher levels unlock more Protocol slots
+- Higher levels unlock more Protocol slots and stat bonuses
 
 ---
 
@@ -181,11 +180,11 @@ Tower costs 200W → CANNOT BUILD (need PSU upgrade)
 - Earn passive Hash income
 
 **Key Features:**
-- 8-lane motherboard with PCB aesthetics
+- 3×3 sector grid (9 sectors) with PCB aesthetics
 - Drag-to-place tower system
 - Efficiency-based income (viruses leak = reduced income)
 - Idle spawning with threat level scaling
-- Zero-Day boss events (requires switching to Active)
+- Zero-Day boss events (periodic threat)
 
 **Idle Spawn System:**
 - Continuous enemy spawning based on threat level
@@ -214,15 +213,19 @@ Tower costs 200W → CANNOT BUILD (need PSU upgrade)
 - Survival events (Memory Surge, Buffer Overflow, Virus Swarm, etc.)
 - Extraction decision (leave early = safe, stay longer = more rewards)
 
-**Survival Events:**
-| Event | Effect |
-|-------|--------|
-| Memory Surge | Speed boost + increased spawns |
-| Buffer Overflow | Arena shrinks temporarily |
-| Cache Flush | Clears all enemies |
-| Thermal Throttle | Slow movement + damage boost |
-| Virus Swarm | 50 fast weak enemies |
-| System Restore | Healing zone spawns |
+**Survival Events (7 types, tiered by difficulty):**
+
+| Event | Tier | Duration | Effect |
+|-------|------|----------|--------|
+| Memory Surge | 1 | 8s | +50% speed, 2× spawn rate |
+| Buffer Overflow | 1 | 15s | Arena shrinks (25 DPS kill zone) |
+| Cache Flush | 2 | 3s | Clears all enemies on screen |
+| Thermal Throttle | 2 | 12s | -30% speed, +50% damage taken |
+| Data Corruption | 3 | 10s | Obstacles become hazards (15 DPS) |
+| Virus Swarm | 3 | 5s | 50 fast weak enemies (5 HP each) |
+| System Restore | 3 | 8s | Healing zone spawns (5 HP/sec) |
+
+**Event Timing:** First at 60s, then every 40-60s based on survival time.
 
 **When to Play:**
 - Active Hash farming
@@ -271,10 +274,11 @@ Tower costs 200W → CANNOT BUILD (need PSU upgrade)
 
 | Situation | Problem | Solution |
 |-----------|---------|----------|
-| "Can't build more towers" | Power limit | Upgrade PSU (costs Hash) |
+| "Can't build more towers" | Power limit | Upgrade PSU component (costs Hash) |
 | "Can't afford upgrades" | Not enough Hash | Play Survivor or wait for TD income |
 | "Need new Protocol" | Missing blueprint | Defeat bosses for blueprint drops |
-| "Zero-Day spawned in TD" | Boss in Motherboard | Switch to Active to defeat it |
+| "Want to unlock next sector" | Need boss kill | Beat boss to trigger sector visibility |
+| "Sector visible but locked" | Need Hash | Farm Hash then pay unlock cost |
 
 ---
 
@@ -304,16 +308,16 @@ Protocol {
 
 ### The 8 Core Protocols
 
-| Protocol | Rarity | Firewall Style | Weapon Style |
-|----------|--------|----------------|--------------|
-| Kernel Pulse | Common | Single-target | Pistol |
-| Burst Shot | Common | Multi-shot | Shotgun |
-| Ice Shard | Rare | Slow effect | Frost beam |
-| Chain Lightning | Rare | Chain attack | Arc weapon |
-| Flame Thrower | Epic | AoE burn | Flamethrower |
-| Sniper Protocol | Epic | Long range | Railgun |
-| Quantum Tunneler | Legendary | Teleport hit | Phase shots |
-| Null Pointer | Legendary | Instant kill | Delete beam |
+| Protocol | Rarity | Firewall Style | Weapon Style | Special Ability |
+|----------|--------|----------------|--------------|-----------------|
+| Kernel Pulse | Common | Single-target | Pistol | Homing |
+| Burst Protocol | Common | Multi-shot splash | Shotgun | Explosive |
+| Trace Route | Rare | Long-range sniper | Railgun | Pierce (3 targets) |
+| Ice Shard | Rare | Slow effect | Frost spray | Freeze (0.5× slow) |
+| Fork Bomb | Epic | Multi-projectile | Spread shot | 3 projectiles |
+| Root Access | Epic | High damage burst | Heavy striker | Critical hits |
+| Overflow | Legendary | Chain attack | Arc weapon | Chain to 3 enemies |
+| Null Pointer | Legendary | Execute (instakill) | Delete beam | Execute low HP |
 
 ### Protocol Flow
 
@@ -344,109 +348,156 @@ Protocol {
 
 ## 6. The Mega-Board
 
-The Motherboard is a **4200×4200 PCB** with **8 enemy lanes** that players unlock progressively.
+The Motherboard is a **3×3 sector grid** with **9 sectors** that players unlock progressively through boss defeats.
 
-### Lane Layout
+### Sector Grid Layout
 
 ```
-                    ┌─────────────┐
-                    │     CPU     │  (Core - enemies target this)
-                    │   (Center)  │
-                    └─────────────┘
-                          ▲
-    ┌─────────┬─────────┬─┴─┬─────────┬─────────┐
-    │   I/O   │ Storage │   │  Cache  │ Network │
-    │  Lane   │  Lane   │   │  Lane   │  Lane   │
-    └────┬────┴────┬────┘   └────┬────┴────┬────┘
-         │         │              │         │
-    ┌────┴────┬────┴────┐   ┌────┴────┬────┴────┐
-    │   GPU   │   PSU   │   │   RAM   │Expansion│
-    │  Lane   │ (Start) │   │  Lane   │  Lane   │
-    └─────────┴─────────┘   └─────────┴─────────┘
+┌─────────────┬─────────────┬─────────────┐
+│     I/O     │    Cache    │   Network   │  Row 2 (Top)
+│   (USB/LAN) │  (L2 Cache) │  (Ethernet) │
+├─────────────┼─────────────┼─────────────┤
+│     GPU     │     CPU     │     PSU     │  Row 1 (Middle) ← STARTER
+│  (Graphics) │   (Core)    │   (Power)   │
+├─────────────┼─────────────┼─────────────┤
+│   Storage   │     RAM     │  Expansion  │  Row 0 (Bottom)
+│  (SSD/HDD)  │  (Memory)   │   (Slots)   │
+└─────────────┴─────────────┴─────────────┘
 ```
 
-### Lane Details
+### Sector Details
 
-| Lane | Theme Color | Unlock Cost | Prerequisites |
-|------|-------------|-------------|---------------|
-| PSU | Yellow (#ffcc00) | FREE | Starter |
-| GPU | Red (#ff4444) | 5,000 Ħ | PSU |
-| RAM | Blue (#4488ff) | 3,000 Ħ | PSU |
-| Cache | Cyan (#00ccff) | 8,000 Ħ | RAM |
-| Expansion | Orange (#ff8800) | 10,000 Ħ | PSU |
-| Storage | Green (#44ff44) | 12,000 Ħ | GPU |
-| Network | Purple (#8844ff) | 18,000 Ħ | Cache + Expansion |
-| I/O | Pink (#ff44aa) | 25,000 Ħ | GPU + Storage |
+| Sector | Theme | Unlock Cost | Component Unlock |
+|--------|-------|-------------|------------------|
+| PSU | Power (Yellow) | FREE | Starter (PSU) |
+| RAM | Memory (Blue) | 25,000 Ħ | RAM Component |
+| GPU | Graphics (Red) | 50,000 Ħ | GPU Component |
+| Cache | Processing (Cyan) | 75,000 Ħ | Cache Component |
+| Storage | Storage (Green) | 100,000 Ħ | Storage Component |
+| Expansion | Expansion (Orange) | 150,000 Ħ | Expansion Component |
+| Network | Network (Purple) | 200,000 Ħ | Network Component |
+| I/O | Peripherals (Pink) | 300,000 Ħ | I/O Component |
+| CPU | Core (Gold) | 500,000 Ħ | CPU Component (Final) |
+
+**Total to unlock all sectors:** 1,475,000 Ħ
+
+### Sector Unlock Progression
+
+Sectors unlock in a specific order tied to boss encounters:
+
+```
+PSU (Free) → RAM → GPU → Cache → Storage → Expansion → Network → I/O → CPU
+```
+
+**How Unlocking Works:**
+1. **Boss Defeat** → Next sector becomes **visible** (ghost state)
+2. **Pay Hash Cost** → Sector becomes **active** and playable
+3. **Component Unlock** → Each sector unlocks its matching component upgrade
 
 ### PCB Aesthetics
 
-Each lane features:
+Each sector features:
 - Color-coded copper traces matching theme
 - Themed component graphics (capacitors, chips, traces)
 - Glow effects on active paths
-- Ghost/dimmed appearance when locked
-
-### Unlock Progression
-
-When a lane is unlocked:
-- Power surge animation along the data bus
-- Lane lights up with theme color
-- New tower slots become available
-- New enemy spawn point activates (more paths = more challenge)
+- Ghost/dimmed appearance when locked but visible
+- Hidden appearance when not yet discovered
 
 ---
 
 ## 7. Component Upgrades
 
-Global upgrades enhance the entire system.
+**9 Components**, each unlocked by its corresponding sector. All components have 10 upgrade levels.
+
+**Upgrade Cost Formula:** `baseCost × 2^(level-1)`
+
+### Component Overview
+
+| Component | Sector | Effect | Base Cost |
+|-----------|--------|--------|-----------|
+| **PSU** | PSU | Power capacity (300W → 2300W) | 500 Ħ |
+| **Storage** | Storage | Hash capacity + offline rate | 400 Ħ |
+| **RAM** | RAM | Efficiency regen (1× → 2×) + health | 400 Ħ |
+| **GPU** | GPU | Global tower damage (1× → 1.5×) | 600 Ħ |
+| **Cache** | Cache | Global attack speed (1× → 1.3×) | 550 Ħ |
+| **Expansion** | Expansion | Extra tower slots (+0 → +2) | 800 Ħ |
+| **I/O** | I/O | Pickup radius (1× → 2.5×) | 450 Ħ |
+| **Network** | Network | Global Hash multiplier (prestige) | 1000 Ħ |
+| **CPU** | CPU | Hash generation rate (exponential) | 750 Ħ |
 
 ### PSU (Power Capacity)
 
-| Tier | Name | Capacity | Hash Cost |
-|------|------|----------|-----------|
-| 1 | Basic PSU | 450W | Starting |
-| 2 | Bronze PSU | 650W | 25,000 Ħ |
-| 3 | Silver PSU | 850W | 75,000 Ħ |
-| 4 | Gold PSU | 1,200W | 200,000 Ħ |
-| 5 | Platinum PSU | 1,600W | 500,000 Ħ |
+| Level | Capacity | Cost |
+|-------|----------|------|
+| 1 | 300W | Starter |
+| 2 | 500W | 500 Ħ |
+| 3 | 700W | 1,000 Ħ |
+| 5 | 1,100W | 4,000 Ħ |
+| 10 | 2,300W | 128,000 Ħ |
 
 ### CPU (Hash Generation)
 
-| Tier | Name | Hash/sec | Fire Rate Bonus |
-|------|------|----------|-----------------|
-| 1 | i3 | 10 Ħ/s | +0% |
-| 2 | i5 | 25 Ħ/s | +5% |
-| 3 | i7 | 50 Ħ/s | +10% |
-| 4 | i9 | 100 Ħ/s | +15% |
-| 5 | Xeon | 200 Ħ/s | +25% |
+| Level | Hash/sec | Cost |
+|-------|----------|------|
+| 1 | 10 Ħ/s | Requires CPU sector |
+| 5 | 50 Ħ/s | 6,000 Ħ |
+| 10 | 200 Ħ/s | 192,000 Ħ |
 
 ### RAM (Efficiency & Health)
 
-| Tier | Effect |
-|------|--------|
-| 1 | +10% efficiency regen, 100 health |
-| 2 | +15% efficiency regen, 120 health |
-| 3 | +20% efficiency regen, 150 health |
-| 4 | +30% efficiency regen, 200 health |
+| Level | Efficiency Regen | Health Bonus |
+|-------|------------------|--------------|
+| 1 | 1.0× | +0 |
+| 5 | 1.5× | +50 |
+| 10 | 2.0× | +100 |
 
-### Cooling (Fire Rate)
+### GPU (Tower Damage)
 
-| Tier | Fire Rate Multiplier |
-|------|---------------------|
-| 1 | 1.0x |
-| 2 | 1.15x |
-| 3 | 1.30x |
-| 4 | 1.50x |
+| Level | Damage Multiplier |
+|-------|-------------------|
+| 1 | 1.0× |
+| 5 | 1.25× |
+| 10 | 1.5× |
 
-### HDD (Hash Storage)
+### Cache (Attack Speed)
 
-| Tier | Max Storage |
-|------|-------------|
-| 1 | 25,000 Ħ |
-| 2 | 75,000 Ħ |
-| 3 | 200,000 Ħ |
-| 4 | 500,000 Ħ |
-| 5 | 2,000,000 Ħ |
+| Level | Attack Speed Multiplier |
+|-------|------------------------|
+| 1 | 1.0× |
+| 5 | 1.15× |
+| 10 | 1.3× |
+
+### Storage (Hash Capacity)
+
+| Level | Max Storage |
+|-------|-------------|
+| 1 | 50,000 Ħ |
+| 5 | 500,000 Ħ |
+| 10 | 5,000,000 Ħ |
+
+### Network (Hash Multiplier)
+
+| Level | Global Hash Bonus |
+|-------|-------------------|
+| 1 | 1.0× |
+| 5 | 1.25× |
+| 10 | 1.5× |
+
+### Expansion (Tower Slots)
+
+| Level | Extra Slots |
+|-------|-------------|
+| 1-3 | +0 |
+| 4-6 | +1 |
+| 7-10 | +2 |
+
+### I/O (Pickup Radius)
+
+| Level | Pickup Radius |
+|-------|---------------|
+| 1 | 1.0× |
+| 5 | 1.75× |
+| 10 | 2.5× |
 
 ---
 
@@ -554,27 +605,29 @@ Periodic boss spawns in TD mode:
 
 ### Early Game (First Session)
 
-1. Start with PSU lane (starter) in TD mode
+1. Start with PSU sector (starter) in TD mode
 2. Place Kernel Pulse towers (starter Protocol)
-3. Earn Hash passively from CPU
-4. Unlock RAM and GPU lanes (3,000-5,000 Ħ)
-5. Try Survivor mode for faster Hash
+3. Earn Hash passively from efficiency
+4. Defeat first boss → Unlock RAM sector visibility
+5. Pay 25,000 Ħ to unlock RAM sector
+6. Try Survivor mode for faster Hash
 
 ### Mid Game (Hours 1-5)
 
-1. Unlock all 8 motherboard lanes
-2. Upgrade global components (PSU, CPU, RAM)
-3. Attempt boss fights for blueprints
-4. Compile new Protocols from blueprints
-5. Build specialized tower compositions
+1. Unlock sectors through boss defeats (RAM → GPU → Cache → Storage)
+2. Upgrade PSU to place more towers
+3. Farm bosses for Protocol blueprints
+4. Compile new Protocols (Burst Protocol, Trace Route, Ice Shard)
+5. Build specialized tower compositions per sector
 
 ### Late Game (Hours 5+)
 
-1. Max out global upgrades
-2. Farm Nightmare boss difficulty
-3. Complete Protocol collection
-4. Optimize tower layouts for efficiency
-5. Push high threat levels in idle TD
+1. Unlock all 9 sectors (total 1.475M Ħ)
+2. Max out all 9 component upgrades
+3. Farm Nightmare boss difficulty for legendary blueprints
+4. Complete Protocol collection (all 8 protocols at level 10)
+5. Optimize tower layouts for maximum Hash income
+6. Push high threat levels in idle TD
 
 ### The Core Loop
 
@@ -602,64 +655,82 @@ Periodic boss spawns in TD mode:
 
 ### Unlock Progression
 
-**Lane Unlock Order (TD Mode):**
+**Sector Unlock Order (Boss-Triggered):**
 ```
-PSU (Free) ──┬──▶ GPU (5K) ──┬──▶ Storage (12K) ──▶ I/O (25K)
-             │               │
-             ├──▶ RAM (3K) ──┴──▶ Cache (8K) ──┐
-             │                                  │
-             └──▶ Expansion (10K) ─────────────┴──▶ Network (18K)
+PSU (Free) → RAM (25K) → GPU (50K) → Cache (75K) → Storage (100K)
+                                                         ↓
+CPU (500K) ← I/O (300K) ← Network (200K) ← Expansion (150K)
 ```
 
+**How Sectors Unlock:**
+1. Defeat a boss → Next sector becomes **visible** (ghosted)
+2. Pay Hash cost → Sector becomes **active**
+3. Active sector → Component upgrade available
+
 **Protocol Unlock Order:**
-1. Kernel Pulse (starter, free)
-2. Boss drops unlock blueprints
-3. Compile blueprints with Hash
-4. Level up Protocols 1-10 with Hash
+1. Kernel Pulse (starter, free, compiled)
+2. Beat bosses → Blueprint drops based on loot tables
+3. Compile blueprints with Hash (100-800 Ħ by rarity)
+4. Level up Protocols 1-10 with Hash (base × 2^level)
 
 ---
 
 ## 10. UI Structure
 
-### Tab Navigation
+### Main Hub: System Tab
 
-| Tab | View | Purpose |
-|-----|------|---------|
-| **BOARD** | MotherboardView | Main TD gameplay |
-| **ARSENAL** | ArsenalView | Protocol collection |
-| **UPGRADES** | UpgradesView | Component upgrades |
-| **DEBUG** | DebugView | Active mode selector |
+The game uses a **single main view** (System Tab) with the motherboard as the central gameplay area. Additional features are accessed via **sheets and modals**.
+
+| Element | Type | Purpose |
+|---------|------|---------|
+| **Motherboard** | Main View | Primary TD gameplay |
+| **System Menu** | Sheet | Access Arsenal, Settings, Stats |
+| **Arsenal** | Sheet | Protocol collection & management |
+| **Sector Detail** | Modal | Component upgrades per sector |
+| **Boss Select** | Modal | Choose boss & difficulty |
+| **Upgrade Modal** | Modal | Protocol level-up confirmation |
 
 ### Motherboard HUD
 
 ```
 ┌─────────────────────────────────────────────────┐
-│ ⚡ 380/450W    Ħ 12,450    Efficiency: 95%      │
+│  [Menu]    ⚡ 380/650W    Ħ 12,450    95%       │
 ├─────────────────────────────────────────────────┤
 │                                                 │
-│            [GAME AREA]                          │
+│           [3×3 SECTOR GRID]                     │
+│                                                 │
+│    ┌─────┬─────┬─────┐                         │
+│    │ I/O │Cache│ Net │                         │
+│    ├─────┼─────┼─────┤                         │
+│    │ GPU │ CPU │ PSU │  ← Active Sector        │
+│    ├─────┼─────┼─────┤                         │
+│    │Store│ RAM │ Exp │                         │
+│    └─────┴─────┴─────┘                         │
 │                                                 │
 ├─────────────────────────────────────────────────┤
 │  Protocol Deck (drag to place)                  │
 │  ┌────┐ ┌────┐ ┌────┐ ┌────┐                   │
-│  │ 🛡️ │ │ ❄️ │ │ ⚡ │ │ 🔥 │                   │
-│  │50W │ │75W │ │100W│ │150W│                   │
+│  │ KP │ │ BP │ │ TR │ │ IS │                   │
+│  │50W │ │75W │ │100W│ │80W │                   │
 │  └────┘ └────┘ └────┘ └────┘                   │
 └─────────────────────────────────────────────────┘
 ```
 
-### Active Mode HUD
+### Active Mode HUD (Survival/Boss)
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  ❤️❤️❤️    SECTOR: RAM    Ħ 1,247    ⏱ 2:34    │
+│  ❤️❤️❤️    MODE: SURVIVAL    Ħ 1,247   ⏱ 2:34  │
 ├─────────────────────────────────────────────────┤
 │                                                 │
 │            [GAME AREA]                          │
 │                                                 │
+│        [Event Warning Banner]                   │
+│        "VIRUS SWARM INCOMING"                   │
+│                                                 │
 ├─────────────────────────────────────────────────┤
 │                                                 │
-│              [JOYSTICK]                         │
+│              [JOYSTICK]        [Extract]        │
 │                                                 │
 └─────────────────────────────────────────────────┘
 ```
@@ -692,36 +763,85 @@ PSU (Free) ──┬──▶ GPU (5K) ──┬──▶ Storage (12K) ──�
 | TD Game State | TDTypes.swift | Tower defense state model |
 | Active Game State | GameTypes.swift | Survivor/boss state model |
 | Protocols | Protocol.swift | Dual-purpose weapon/tower cards |
-| Mega-Board | MegaBoardTypes.swift | 8-lane motherboard system |
-| Global Upgrades | GlobalUpgrades.swift | PSU, CPU, RAM, Cooling, HDD |
-| Balance Config | BalanceConfig.swift | Centralized tuning values |
+| Mega-Board | MegaBoardTypes.swift | 3×3 sector grid system |
+| Global Upgrades | GlobalUpgrades.swift | 9 component upgrades |
+| Balance Config | BalanceConfig.swift | Centralized tuning (1600+ lines) |
+| Sector Unlock | SectorUnlockSystem.swift | Boss-triggered progression |
 | Idle Spawning | IdleSpawnSystem.swift | Threat-based enemy spawning |
 | Tower System | TowerSystem.swift | Tower targeting & attacks |
+| TD Boss System | TDBossSystem.swift | Zero-Day events in TD mode |
 | Boss AI | CyberbossAI.swift, VoidHarbingerAI.swift | 4-phase boss mechanics |
-| Survival Events | SurvivalArenaSystem.swift | Memory Surge, Virus Swarm, etc. |
+| Survival Events | SurvivalArenaSystem.swift | 7 event types |
 | Blueprint Drops | BlueprintDropSystem.swift | Boss loot tables |
+| Localization | L10n.swift | EN/DE string localization |
 | Storage | StorageService.swift | Persistence & offline earnings |
 
 ### File Structure
 
 ```
 SystemReboot/
+├── App/                          # SwiftUI app entry & state
+│   ├── AppState.swift
+│   ├── ContentView.swift
+│   └── SystemRebootApp.swift
 ├── Core/
-│   ├── Config/          # BalanceConfig, LootTables, SectorSchematics
-│   ├── Types/           # GameTypes, TDTypes, Protocol, etc.
-│   └── Systems/         # SectorUnlockSystem, BlueprintDropSystem
+│   ├── Config/                   # All balance & design values
+│   │   ├── BalanceConfig.swift   # Master config (1655 lines)
+│   │   ├── DesignSystem.swift    # UI constants
+│   │   ├── GameConfig.swift
+│   │   ├── LootTables.swift      # Boss loot tables
+│   │   └── SectorSchematics.swift
+│   ├── Localization/
+│   │   └── L10n.swift            # Multilingual strings (EN/DE)
+│   ├── Systems/                  # Game logic systems
+│   │   ├── SectorUnlockSystem.swift
+│   │   ├── MegaBoardSystem.swift
+│   │   ├── BlueprintDropSystem.swift
+│   │   └── [20+ more systems]
+│   ├── Types/                    # Data structures
+│   │   ├── Protocol.swift
+│   │   ├── GlobalUpgrades.swift
+│   │   ├── MegaBoardTypes.swift
+│   │   ├── GameTypes.swift
+│   │   ├── TDTypes.swift
+│   │   └── MotherboardTypes.swift
+│   └── Utils/                    # Utilities
+│       ├── SpatialGrid.swift
+│       ├── ObjectPool.swift
+│       └── [Math, Random, etc]
 ├── GameEngine/
-│   ├── Bosses/          # CyberbossAI, VoidHarbingerAI
-│   └── Systems/         # IdleSpawnSystem, TowerSystem, etc.
+│   ├── Bosses/
+│   │   ├── CyberbossAI.swift     # 4-phase melee/ranged boss
+│   │   └── VoidHarbingerAI.swift # 4-phase raid boss
+│   ├── Systems/
+│   │   ├── TDBossSystem.swift
+│   │   ├── SurvivalArenaSystem.swift
+│   │   └── [17+ more systems]
+│   └── GameState.swift
 ├── Rendering/
-│   ├── GameScene.swift       # Survivor rendering
-│   └── TDGameScene.swift     # TD rendering
+│   ├── TDGameScene.swift         # TD SpriteKit scene
+│   ├── GameScene.swift           # Survivor/boss scene
+│   ├── TowerVisualFactory.swift
+│   ├── MegaBoardRenderer.swift
+│   └── [8 more rendering files]
 ├── Services/
-│   └── StorageService.swift  # Persistence & offline
-└── UI/
-    ├── Components/      # Modals, shared UI
-    ├── Game/            # GameContainerView, TDGameContainerView
-    └── Tabs/            # SystemTabView
+│   └── StorageService.swift
+├── UI/
+│   ├── Tabs/
+│   │   └── SystemTabView.swift   # Main hub view
+│   ├── Game/
+│   │   ├── TDGameContainerView.swift
+│   │   ├── GameContainerView.swift
+│   │   └── UpgradeModalView.swift
+│   ├── Components/
+│   │   ├── IntroSequenceView.swift
+│   │   ├── BossLootModal.swift
+│   │   ├── BlueprintModals.swift
+│   │   └── [8 more components]
+│   └── Debug/
+│       └── TowerGalleryView.swift
+└── Resources/
+    └── Localizable.xcstrings     # Translations (EN/DE)
 ```
 
 ---
@@ -736,11 +856,11 @@ These principles prevent common design traps and ensure a fun, fair experience.
 
 **Our Solution: Global Upgrades**
 
-Economy buildings (PSU, CPU, RAM, HDD, Cooling) are **global upgrades purchased through the UI**, not placeable items. Tower slots are used **exclusively** for Firewalls (Protocol towers).
+Economy buildings (all 9 components: PSU, Storage, RAM, GPU, Cache, Expansion, I/O, Network, CPU) are **global upgrades purchased through the UI**, not placeable items. Tower slots are used **exclusively** for Firewalls (Protocol towers).
 
 ```
 Tower Slots → Defense only (Firewalls/Protocols)
-Global Upgrades → Economy (PSU, CPU, RAM, HDD, Cooling)
+Global Upgrades → Economy (9 components per sector)
 ```
 
 This means players never sacrifice defense capability for economy. They build their hardware through the Upgrades tab, then deploy software (Protocols) as Firewalls on the board.
@@ -864,25 +984,27 @@ Efficiency hits 0%
 
 ### 🛠️ Technical: Sector-Based Rendering
 
-**The Trap:** A single 4000x4000 texture will choke SpriteKit.
+**The Trap:** A single large texture will choke SpriteKit.
 
-**Our Solution: Sector Chunks**
+**Our Solution: 3×3 Sector Grid**
 
 ```swift
-// Each sector is a separate SKNode (~1400x1400)
-func renderGhostSector(_ sector: MegaBoardSector, in parentNode: SKNode) {
-    let ghostNode = SKNode()
-    ghostNode.name = "ghost_\(sector.id)"
-    // Only added when visible/adjacent
-    parentNode.addChild(ghostNode)
+// Each sector is a separate SKNode
+// 9 sectors in a 3×3 grid layout
+func renderSector(_ sector: MegaBoardSector, in parentNode: SKNode) {
+    let sectorNode = SKNode()
+    sectorNode.name = "sector_\(sector.id)"
+    // Visibility states: hidden, ghost, active
+    parentNode.addChild(sectorNode)
 }
 ```
 
 **Rules:**
 - Each sector is its own SKNode
-- Only render visible + adjacent sectors
-- Ghost sectors (locked) are lightweight
-- Decrypt animation transitions between states
+- Hidden sectors: Not yet discovered (invisible)
+- Ghost sectors: Discovered but locked (dimmed, can pay to unlock)
+- Active sectors: Unlocked and playable (full rendering)
+- Smooth transitions between states
 
 ---
 
@@ -892,11 +1014,12 @@ func renderGhostSector(_ sector: MegaBoardSector, in parentNode: SKNode) {
 
 1. **Unified Currency** - Hash is earned from all modes, Power limits tower capacity
 2. **Three Modes** - TD (passive income), Survivor (active farming), Boss (blueprints)
-3. **Protocol System** - Cards work as Firewalls (TD) AND Weapons (Active) with unified upgrades
-4. **Mega-Board** - 8-lane motherboard with progressive unlocks
-5. **Blueprint System** - Boss kills drop blueprints to unlock new Protocols
-6. **Threat Scaling** - Idle TD difficulty increases over time with new enemy types
-7. **Raid Bosses** - 4-phase boss fights with WoW-style mechanics
+3. **Protocol System** - 8 protocols work as Firewalls (TD) AND Weapons (Active) with unified upgrades
+4. **Mega-Board** - 3×3 sector grid (9 sectors) with boss-triggered progressive unlocks
+5. **9 Components** - Each sector unlocks a unique component upgrade (PSU, Storage, RAM, GPU, Cache, Expansion, I/O, Network, CPU)
+6. **Blueprint System** - Boss kills drop blueprints to unlock new Protocols (2 bosses, 4 difficulties)
+7. **Threat Scaling** - Idle TD difficulty increases over time with new enemy types
+8. **Raid Bosses** - 4-phase boss fights with mechanics (Cyberboss, Void Harbinger)
 
 ### Design Safeguards
 

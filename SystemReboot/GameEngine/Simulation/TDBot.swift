@@ -334,3 +334,222 @@ struct AdaptiveBot: TDBot {
         return .idle
     }
 }
+
+// MARK: - Single Tower Bot
+// Places only one specific tower type. Used to compare tower effectiveness in isolation.
+
+struct SingleTowerBot: TDBot {
+    let protocolId: String
+    var name: String { "Single(\(protocolId))" }
+
+    func decide(state: TDGameState, profile: PlayerProfile) -> TDBotAction {
+        // Handle boss
+        if state.bossActive && !state.bossEngaged {
+            return .engageBoss(difficulty: .normal)
+        }
+
+        let emptySlots = state.towerSlots.filter { !$0.occupied }
+
+        // Only place our specific tower type
+        if !emptySlots.isEmpty {
+            guard let proto = ProtocolLibrary.get(protocolId) else { return .idle }
+            let cost = BalanceConfig.Towers.placementCosts[proto.rarity] ?? 50
+            if state.hash >= cost && state.powerAvailable >= proto.firewallStats.powerDraw {
+                if let slot = emptySlots.first {
+                    return .placeTower(protocolId: protocolId, slotId: slot.id)
+                }
+            }
+        }
+
+        // Upgrade our towers
+        let upgradeable = state.towers
+            .filter { $0.canUpgrade && $0.weaponType == protocolId }
+            .sorted { $0.level < $1.level }
+
+        if let tower = upgradeable.first, state.hash >= tower.upgradeCost {
+            return .upgradeTower(towerId: tower.id)
+        }
+
+        return .idle
+    }
+}
+
+// MARK: - Upgrade Focus Bot
+// Maxes one tower to Lv10 before placing another. Tests upgrade cost efficiency.
+
+struct UpgradeFocusBot: TDBot {
+    let name = "UpgradeFocus"
+
+    func decide(state: TDGameState, profile: PlayerProfile) -> TDBotAction {
+        // Handle boss
+        if state.bossActive && !state.bossEngaged {
+            return .engageBoss(difficulty: .normal)
+        }
+
+        let emptySlots = state.towerSlots.filter { !$0.occupied }
+        let compiled = profile.compiledProtocols
+
+        // If we have towers, upgrade the first one to max before placing more
+        if let firstTower = state.towers.first {
+            if firstTower.canUpgrade && state.hash >= firstTower.upgradeCost {
+                return .upgradeTower(towerId: firstTower.id)
+            }
+            // Only place more if first tower is maxed
+            if firstTower.level < 10 {
+                return .idle
+            }
+        }
+
+        // Place a tower if we have none or first is maxed
+        if !emptySlots.isEmpty && !compiled.isEmpty {
+            let cheapest = compiled
+                .compactMap { id -> (String, Int)? in
+                    guard let proto = ProtocolLibrary.get(id) else { return nil }
+                    let cost = BalanceConfig.Towers.placementCosts[proto.rarity] ?? 50
+                    return (id, cost)
+                }
+                .sorted { $0.1 < $1.1 }
+
+            for (protoId, cost) in cheapest {
+                guard let proto = ProtocolLibrary.get(protoId) else { continue }
+                if state.hash >= cost && state.powerAvailable >= proto.firewallStats.powerDraw {
+                    if let slot = emptySlots.first {
+                        return .placeTower(protocolId: protoId, slotId: slot.id)
+                    }
+                }
+            }
+        }
+
+        return .idle
+    }
+}
+
+// MARK: - Towers First Bot
+// Places 2 towers before considering any upgrades. Tests early game tower priority.
+
+struct TowersFirstBot: TDBot {
+    let name = "TowersFirst"
+    let minTowersBeforeUpgrade = 2
+
+    func decide(state: TDGameState, profile: PlayerProfile) -> TDBotAction {
+        // Handle boss
+        if state.bossActive && !state.bossEngaged {
+            return .engageBoss(difficulty: .normal)
+        }
+
+        let emptySlots = state.towerSlots.filter { !$0.occupied }
+        let compiled = profile.compiledProtocols
+
+        // Phase 1: Place minimum towers first
+        if state.towers.count < minTowersBeforeUpgrade && !emptySlots.isEmpty {
+            let priorityOrder = ["burst_protocol", "ice_shard", "kernel_pulse", "trace_route"]
+            for protoId in priorityOrder {
+                guard compiled.contains(protoId),
+                      let proto = ProtocolLibrary.get(protoId) else { continue }
+                let cost = BalanceConfig.Towers.placementCosts[proto.rarity] ?? 50
+                if state.hash >= cost && state.powerAvailable >= proto.firewallStats.powerDraw {
+                    if let slot = emptySlots.first {
+                        return .placeTower(protocolId: protoId, slotId: slot.id)
+                    }
+                }
+            }
+        }
+
+        // Phase 2: Upgrade lowest-level tower
+        let upgradeable = state.towers
+            .filter { $0.canUpgrade }
+            .sorted { $0.level < $1.level }
+
+        if let tower = upgradeable.first, state.hash >= tower.upgradeCost {
+            return .upgradeTower(towerId: tower.id)
+        }
+
+        // Phase 3: Place more towers if slots available
+        if !emptySlots.isEmpty && !compiled.isEmpty {
+            let cheapest = compiled
+                .compactMap { id -> (String, Int)? in
+                    guard let proto = ProtocolLibrary.get(id) else { return nil }
+                    let cost = BalanceConfig.Towers.placementCosts[proto.rarity] ?? 50
+                    return (id, cost)
+                }
+                .sorted { $0.1 < $1.1 }
+
+            for (protoId, cost) in cheapest {
+                guard let proto = ProtocolLibrary.get(protoId) else { continue }
+                if state.hash >= cost && state.powerAvailable >= proto.firewallStats.powerDraw {
+                    if let slot = emptySlots.first {
+                        return .placeTower(protocolId: protoId, slotId: slot.id)
+                    }
+                }
+            }
+        }
+
+        return .idle
+    }
+}
+
+// MARK: - No Towers Bot
+// Never places towers. Control group for testing if component upgrades alone can defend.
+
+struct NoTowersBot: TDBot {
+    let name = "NoTowers"
+
+    func decide(state: TDGameState, profile: PlayerProfile) -> TDBotAction {
+        // Only engage bosses to avoid infinite wait
+        if state.bossActive && !state.bossEngaged {
+            return .engageBoss(difficulty: .easy)
+        }
+        // Never place or upgrade towers - testing if components alone can defend
+        return .idle
+    }
+}
+
+// MARK: - Synergy Bot
+// Places specific tower combinations to test synergies (e.g., GC + DPS tower for hash bonus)
+
+struct SynergyBot: TDBot {
+    let name = "Synergy"
+    let combo: [String]  // Tower types to place in order
+
+    init(combo: [String] = ["null_pointer", "kernel_pulse"]) {
+        self.combo = combo
+    }
+
+    func decide(state: TDGameState, profile: PlayerProfile) -> TDBotAction {
+        // Handle boss
+        if state.bossActive && !state.bossEngaged {
+            return .engageBoss(difficulty: .normal)
+        }
+
+        let emptySlots = state.towerSlots.filter { !$0.occupied }
+
+        // Place towers from combo in order
+        for protoId in combo {
+            let existingCount = state.towers.filter { $0.weaponType == protoId }.count
+            let targetCount = combo.filter { $0 == protoId }.count
+
+            if existingCount < targetCount && !emptySlots.isEmpty {
+                guard let proto = ProtocolLibrary.get(protoId) else { continue }
+                let cost = BalanceConfig.Towers.placementCosts[proto.rarity] ?? 50
+                if state.hash >= cost && state.powerAvailable >= proto.firewallStats.powerDraw {
+                    if let slot = emptySlots.first {
+                        return .placeTower(protocolId: protoId, slotId: slot.id)
+                    }
+                }
+            }
+        }
+
+        // Upgrade towers in combo priority order
+        for protoId in combo {
+            let upgradeable = state.towers
+                .filter { $0.canUpgrade && $0.weaponType == protoId }
+                .sorted { $0.level < $1.level }
+
+            if let tower = upgradeable.first, state.hash >= tower.upgradeCost {
+                return .upgradeTower(towerId: tower.id)
+            }
+        }
+
+        return .idle
+    }
+}
