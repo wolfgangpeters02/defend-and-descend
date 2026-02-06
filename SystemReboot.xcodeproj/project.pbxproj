@@ -91,6 +91,9 @@
 		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
 		TWRGALBLD /* TowerGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERGAL1 /* TowerGalleryView.swift */; };
 		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
+		F1A2B3C4D5E60718293F4A5B /* TDSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */; };
+		B2C3D4E5F6A70819293B4C5E /* TDBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F70819293A4B5D /* TDBot.swift */; };
+		D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -180,6 +183,9 @@
 		TOWERGAL1 /* TowerGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerGalleryView.swift; sourceTree = "<group>"; };
 		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
 		TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TutorialHintOverlay.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSimulator.swift; sourceTree = "<group>"; };
+		A2B3C4D5E6F70819293A4B5D /* TDBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBot.swift; sourceTree = "<group>"; };
+		C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimulationRunner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -253,6 +259,7 @@
 				AA100008 /* GameState.swift */,
 				AA400014 /* Systems */,
 				AA400015 /* Bosses */,
+				AA400016 /* Simulation */,
 			);
 			path = GameEngine;
 			sourceTree = "<group>";
@@ -383,6 +390,16 @@
 				AA100040 /* VoidHarbingerAI.swift */,
 			);
 			path = Bosses;
+			sourceTree = "<group>";
+		};
+		AA400016 /* Simulation */ = {
+			isa = PBXGroup;
+			children = (
+				E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */,
+				A2B3C4D5E6F70819293A4B5D /* TDBot.swift */,
+				C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */,
+			);
+			path = Simulation;
 			sourceTree = "<group>";
 		};
 		AA400017 /* Components */ = {
@@ -606,6 +623,9 @@
 				L10NSWBLD /* L10n.swift in Sources */,
 				8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */,
 				E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */,
+				F1A2B3C4D5E60718293F4A5B /* TDSimulator.swift in Sources */,
+				B2C3D4E5F6A70819293B4C5E /* TDBot.swift in Sources */,
+				D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

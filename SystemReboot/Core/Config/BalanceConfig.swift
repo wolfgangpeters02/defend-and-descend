@@ -1572,6 +1572,132 @@ extension BalanceConfig {
     static func towerCost(rarity: Rarity) -> Int {
         return Towers.placementCosts[rarity] ?? 50
     }
+
+    // MARK: - Tower Special Effects (Protocol Mechanics)
+    // These constants define the status effects applied by each tower type
+
+    /// Throttler (ice_shard) - Slow + stun chance
+    struct Throttler {
+        /// Slow amount (0.5 = 50% speed reduction)
+        static let slowAmount: CGFloat = 0.5
+        /// Slow duration in seconds
+        static let slowDuration: TimeInterval = 2.0
+        /// Chance to stun on hit (0.1 = 10%)
+        static let stunChance: Double = 0.1
+        /// Stun duration in seconds
+        static let stunDuration: TimeInterval = 0.5
+        /// Immunity window after stun expires (prevents permastun)
+        static let stunImmunityDuration: TimeInterval = 1.0
+    }
+
+    /// Pinger (trace_route) - Tags enemies for bonus damage from all sources
+    struct Pinger {
+        /// Bonus damage multiplier when tagged (0.2 = +20%)
+        static let tagDamageBonus: CGFloat = 0.2
+        /// Tag duration in seconds
+        static let tagDuration: TimeInterval = 3.0
+    }
+
+    /// Garbage Collector (null_pointer) - Marks enemies for hash bonus on death
+    struct GarbageCollector {
+        /// Duration of the mark effect
+        static let markDuration: TimeInterval = 0.5
+        /// Bonus hash when marked enemy dies
+        static let hashBonus: Int = 5
+    }
+
+    /// Fragmenter (burst_protocol) - DoT burn effect
+    struct Fragmenter {
+        /// Burn damage as percent of impact damage (0.5 = 50%)
+        static let burnDamagePercent: CGFloat = 0.5
+        /// Total burn duration
+        static let burnDuration: TimeInterval = 1.5
+        /// Time between burn ticks
+        static let burnTickInterval: TimeInterval = 0.5
+    }
+
+    /// Recursion (fork_bomb) - Splits into child projectiles on impact
+    struct Recursion {
+        /// Number of child projectiles spawned
+        static let childCount: Int = 3
+        /// Child damage as percent of parent (0.5 = 50%)
+        static let childDamagePercent: CGFloat = 0.5
+    }
+
+    // MARK: - Simulation
+
+    struct Simulation {
+        /// Physics tick rate for headless simulation (60 FPS equivalent)
+        static let defaultTickRate: TimeInterval = 1.0 / 60.0
+
+        /// How often bots make decisions (seconds)
+        static let botDecisionInterval: TimeInterval = 0.5
+
+        /// Default max game time for simulations (5 minutes)
+        static let defaultMaxGameTime: TimeInterval = 300
+
+        /// How often to sample efficiency for graphs
+        static let efficiencySampleInterval: TimeInterval = 5.0
+
+        /// Power usage threshold that triggers "wall" detection
+        static let powerWallThreshold: CGFloat = 0.95
+
+        /// Storage usage threshold that triggers "wall" detection
+        static let storageWallThreshold: CGFloat = 0.90
+
+        // MARK: - Adaptive Bot Thresholds
+
+        /// Efficiency below this triggers "panic mode" — prioritize defense over economy
+        /// Lower threshold (40%) gives bot more time to establish defenses before panic kicks in
+        static let botPanicEfficiencyThreshold: CGFloat = 40.0
+
+        /// Power usage above this fraction → stop placing new towers, focus upgrades
+        static let botPowerCeilingThreshold: CGFloat = 0.85
+
+        /// Efficiency above this allows overclock (RushOC uses 70, Adaptive is more conservative)
+        static let botSafeOverclockThreshold: CGFloat = 80.0
+
+        /// How many seconds of hash income to keep in reserve
+        static let botHashReserveSeconds: CGFloat = 10.0
+
+        // MARK: - Component Level Presets
+
+        /// Early game: all components at level 1
+        static let earlyGame = GlobalUpgrades(
+            psuLevel: 1,
+            cpuLevel: 1,
+            ramLevel: 1,
+            coolingLevel: 1,
+            hddLevel: 1
+        )
+
+        /// Mid game: some upgrades done
+        static let midGame = GlobalUpgrades(
+            psuLevel: 3,
+            cpuLevel: 3,
+            ramLevel: 2,
+            coolingLevel: 2,
+            hddLevel: 2
+        )
+
+        /// Late game: significant upgrades
+        static let lateGame = GlobalUpgrades(
+            psuLevel: 5,
+            cpuLevel: 5,
+            ramLevel: 4,
+            coolingLevel: 4,
+            hddLevel: 4
+        )
+
+        /// End game: near max components
+        static let endGame = GlobalUpgrades(
+            psuLevel: 8,
+            cpuLevel: 8,
+            ramLevel: 6,
+            coolingLevel: 6,
+            hddLevel: 6
+        )
+    }
 }
 
 // MARK: - JSON Export (for Balance Simulator sync)
