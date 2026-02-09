@@ -51,8 +51,8 @@ enum SimulatedWeaponType: String, CaseIterable {
         case .fragmenter: return 20          // Lower upfront, +50% as DoT
         case .pinger: return 15              // Tags for team damage bonus
         case .throttler: return 18           // Utility-focused
-        case .recursion: return 30           // Split into children
-        case .garbageCollector: return 12    // Support weapon
+        case .recursion: return 28           // Split into children (nerfed from 30)
+        case .garbageCollector: return 20    // Support weapon (buffed from 12)
         }
     }
 
@@ -85,9 +85,9 @@ struct SimulatedWeapon {
     let type: SimulatedWeaponType
     let level: Int
 
-    /// Damage scaled by level (linear: Lv1=1x, Lv5=5x, Lv10=10x)
+    /// Damage scaled by level (diminishing returns: Lv1=1x, Lv5=3x, Lv10=5.5x)
     var damage: CGFloat {
-        type.baseDamage * CGFloat(level)
+        type.baseDamage * (1.0 + CGFloat(level - 1) * 0.5)
     }
 
     var attackInterval: TimeInterval { type.attackInterval }
@@ -102,9 +102,9 @@ struct SimulatedWeapon {
         case .pinger:
             return baseDPS * 1.2  // +20% damage bonus while tagged
         case .recursion:
-            return baseDPS * 2.5  // 3 children at 50% each = +150%
+            return baseDPS * 1.7  // 2 children at 35% each = +70% (nerfed from 2.5)
         case .garbageCollector:
-            return baseDPS * 0.8  // Support weapon, lower raw DPS
+            return baseDPS * 1.15 // Support weapon + 15% self-mark bonus (buffed from 0.8)
         default:
             return baseDPS
         }
@@ -266,6 +266,7 @@ class BossSimulator {
     var bossTaggedUntil: TimeInterval = 0       // Pinger tag expiry
     var bossSlowedUntil: TimeInterval = 0       // Throttler slow expiry
     var bossStunnedUntil: TimeInterval = 0      // Throttler stun expiry
+    var bossMarkedUntil: TimeInterval = 0       // Garbage Collector mark expiry
     var dotDamageRemaining: CGFloat = 0         // Fragmenter DoT damage pool
     var dotTickTimer: TimeInterval = 0          // Fragmenter DoT tick timer
     var pendingChildProjectiles: Int = 0        // Recursion children to apply
@@ -1435,6 +1436,13 @@ class BossSimulator {
             result.bonusDamageDealt += bonusDamage
         }
 
+        // Apply mark bonus if boss is marked (Garbage Collector self-buff)
+        if currentTime < bossMarkedUntil {
+            let bonusDamage = damage * 0.15
+            damage += bonusDamage
+            result.bonusDamageDealt += bonusDamage
+        }
+
         // Priority 1: Attack pylons if boss is invulnerable
         let activePylons = pylons.filter { !$0.destroyed }
         if bossInvulnerable && !activePylons.isEmpty {
@@ -1518,24 +1526,24 @@ class BossSimulator {
             dotDamageRemaining += dotDamage
 
         case .pinger:
-            // Tag boss for 3 seconds (+20% damage from all sources)
-            bossTaggedUntil = currentTime + 3.0
+            // Tag boss for 4 seconds (+20% damage from all sources) - buffed from 3s
+            bossTaggedUntil = currentTime + 4.0
 
         case .throttler:
             // Slow boss for 2 seconds
             bossSlowedUntil = currentTime + 2.0
-            // 10% chance to stun for 0.5s
-            if rng.nextDouble() < 0.10 {
+            // 15% chance to stun for 0.5s (buffed from 10%)
+            if rng.nextDouble() < 0.15 {
                 bossStunnedUntil = currentTime + 0.5
             }
 
         case .recursion:
-            // Queue 3 child projectiles (50% damage each, applied next frame)
-            pendingChildProjectiles += 3
+            // Queue 2 child projectiles (35% damage each, applied next frame) - nerfed from 3 children at 50%
+            pendingChildProjectiles += 2
 
         case .garbageCollector:
-            // Mark boss - no combat effect in simulation, just tracks as support
-            break
+            // Mark boss for 15% self-damage bonus for 2 seconds
+            bossMarkedUntil = currentTime + 2.0
 
         case .kernelPulse:
             // No special effect - baseline weapon
@@ -1566,8 +1574,8 @@ class BossSimulator {
     private func processChildProjectiles() {
         guard pendingChildProjectiles > 0, !bossInvulnerable else { return }
 
-        // Apply child damage instantly (50% of base per child)
-        let childDamage = (playerDamage * CGFloat(playerAttackInterval)) * 0.5
+        // Apply child damage instantly (35% of base per child - nerfed from 50%)
+        let childDamage = (playerDamage * CGFloat(playerAttackInterval)) * 0.35
         let totalChildDamage = childDamage * CGFloat(pendingChildProjectiles)
 
         bossHealth -= totalChildDamage

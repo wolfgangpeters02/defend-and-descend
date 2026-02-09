@@ -1,0 +1,731 @@
+[EmbeddedTDGameController] Restored saved session with 9 towers
+[TDGameScene] loadState - Restored session with 9 towers, starting soon
+[TDGameScene] loadState - map: 4200.0x4200.0
+[TDGameScene] loadState - paths: 1, spawnPoints: [(4200.0, 2100.0)]
+[TDGameScene] loadState - waves: 20, towerSlots: 488
+[MegaBoardSystem] Loaded default config with 9 sectors
+[TDGameScene] Mega-board system initialized
+[TDGameScene] Mega-board visuals: 3 ghost sectors, 0 gates
+_TtC18_SpriteKit_SwiftUIP33_4A29C38A751B2448A1E2FA85CDDEAA5324SpriteKitViewCoordinator implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+[TDGameScene] didMove - view: (390.0, 730.3333333333333), scene size: (4200.0, 4200.0), anchorPoint: (0.0, 0.0)
+[TD-Idle] Threat: High (5.8) | Enemies: 0 | Towers: 9 | Hash: 4028 | Efficiency: 100%
+[TDGameScene] Idle spawn enabled - starting continuous enemy spawning
+GameConfig loaded successfully
+[TDGameScene] Created enemy node - pos: (4191.6982421875, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.8) | Enemies: 1 | Towers: 9 | Hash: 4044 | Efficiency: 100%
+[TD-Idle] Threat: High (5.8) | Enemies: 1 | Towers: 9 | Hash: 4051 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4191.87158203125, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.8) | Enemies: 2 | Towers: 9 | Hash: 4057 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4193.39599609375, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.8) | Enemies: 3 | Towers: 9 | Hash: 4070 | Efficiency: 100%
+[TD-Idle] Threat: High (5.8) | Enemies: 2 | Towers: 9 | Hash: 4076 | Efficiency: 100%
+[TD-Threat] Level: 5.8 | Next boss at: 6 | Boss active: false | Overclock: false
+[TDGameScene] Created enemy node - pos: (4196.1513671875, 2100.0), size: 20.0, type: tank, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.8) | Enemies: 3 | Towers: 9 | Hash: 4087 | Efficiency: 100%
+[TD-Idle] Threat: High (5.8) | Enemies: 2 | Towers: 9 | Hash: 4095 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4192.99169921875, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.8) | Enemies: 3 | Towers: 9 | Hash: 4102 | Efficiency: 100%
+[TD-Idle] Threat: High (5.8) | Enemies: 2 | Towers: 9 | Hash: 4107 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4196.6650390625, 2100.0), size: 20.0, type: tank, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.9) | Enemies: 3 | Towers: 9 | Hash: 4116 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4192.87060546875, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Threat] Level: 5.9 | Next boss at: 6 | Boss active: false | Overclock: false
+[TD-Idle] Spawned basic | Total: 321 | Threat: High (5.9)
+[TDGameScene] Created enemy node - pos: (4192.83447265625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.9) | Enemies: 4 | Towers: 9 | Hash: 4144 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4192.84765625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.9) | Enemies: 5 | Towers: 9 | Hash: 4157 | Efficiency: 100%
+[TD-Idle] Threat: High (5.9) | Enemies: 5 | Towers: 9 | Hash: 4158 | Efficiency: 100%
+[TD-Idle] Threat: High (5.9) | Enemies: 4 | Towers: 9 | Hash: 4168 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4192.71533203125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.9) | Enemies: 5 | Towers: 9 | Hash: 4175 | Efficiency: 100%
+[TD-Idle] Threat: High (5.9) | Enemies: 4 | Towers: 9 | Hash: 4181 | Efficiency: 100%
+[TD-Idle] Threat: High (5.9) | Enemies: 3 | Towers: 9 | Hash: 4188 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4192.265625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.9) | Enemies: 4 | Towers: 9 | Hash: 4190 | Efficiency: 100%
+[TD-Threat] Level: 5.9 | Next boss at: 6 | Boss active: false | Overclock: false
+[TDGameScene] Created enemy node - pos: (4185.5791015625, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (5.9) | Enemies: 5 | Towers: 9 | Hash: 4203 | Efficiency: 100%
+[TD-Idle] Threat: High (5.9) | Enemies: 4 | Towers: 9 | Hash: 4209 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4184.4287109375, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 5 | Towers: 9 | Hash: 4217 | Efficiency: 100%
+[TD-Idle] Threat: High (6.0) | Enemies: 4 | Towers: 9 | Hash: 4225 | Efficiency: 100%
+[TD-Idle] Threat: High (6.0) | Enemies: 3 | Towers: 9 | Hash: 4231 | Efficiency: 100%
+[TD-Idle] Threat: High (6.0) | Enemies: 2 | Towers: 9 | Hash: 4236 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4191.02490234375, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 3 | Towers: 9 | Hash: 4237 | Efficiency: 100%
+[TD-Idle] Threat: High (6.0) | Enemies: 2 | Towers: 9 | Hash: 4242 | Efficiency: 100%
+[TD-Idle] Threat: High (6.0) | Enemies: 1 | Towers: 9 | Hash: 4253 | Efficiency: 100%
+[TDGameScene] Created enemy node - pos: (4183.35009765625, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 2 | Towers: 9 | Hash: 4254 | Efficiency: 100%
+[TD-Threat] Level: 6.0 | Next boss at: 6 | Boss active: false | Overclock: false
+[TDGameScene] Created enemy node - pos: (4191.8955078125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 1 | Towers: 9 | Hash: 4273 | Efficiency: 100%
+[TDBossSystem] Spawned cyberboss at threat 6.000128927083315
+[TDGameScene] Created enemy node - pos: (4195.7685546875, 2100.0), size: 80.0, type: cyberboss, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 2 | Towers: 9 | Hash: 4280 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.515625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 3 | Towers: 9 | Hash: 4282 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Spawned fast | Total: 331 | Threat: High (6.0)
+[TDGameScene] Created enemy node - pos: (4185.65234375, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.0 | Next boss at: 6 | Boss active: true | Overclock: false
+[TDGameScene] Created enemy node - pos: (4192.49169921875, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 4 | Towers: 9 | Hash: 4309 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.0) | Enemies: 3 | Towers: 9 | Hash: 4317 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.0) | Enemies: 2 | Towers: 9 | Hash: 4321 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4192.50048828125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.0) | Enemies: 3 | Towers: 9 | Hash: 4325 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4185.34423828125, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 4 | Towers: 9 | Hash: 4338 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4343 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4192.27001953125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 4 | Towers: 9 | Hash: 4352 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[GameContainerView] onAppear - geometry: (390.0, 763.0), gameScene: nil
+[GameContainerView] setupGame - screenSize: (390.0, 763.0)
+[GameContainerView] Created game state - arena: 1200.0x900.0, player at: (600.0, 450.0)
+[GameScene] Boss mode - using arena size: 1200.0x900.0, screen: (390.0, 763.0)
+[GameScene] setupScene - screenSize: (390.0, 763.0), arena: 1200.0x900.0, scene size: (1200.0, 900.0)
+[Boss] Initializing boss: cyberboss
+[Boss] Boss spawned: Cyber Overlord at (162.40346835904617, 850.0)
+_TtC18_SpriteKit_SwiftUIP33_4A29C38A751B2448A1E2FA85CDDEAA5324SpriteKitViewCoordinator implements focusItemsInRect: - caching for linear focus movement is limited as long as this view is on screen.
+[GameScene] didMove - view: (390.0, 844.0), scene size: (1200.0, 900.0), anchorPoint: (0.0, 0.0)
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4361 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.1) | Enemies: 2 | Towers: 9 | Hash: 4365 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.1 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4191.66259765625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4369 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4191.01513671875, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4389 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4184.564453125, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 4 | Towers: 9 | Hash: 4396 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4401 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4184.01220703125, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 4 | Towers: 9 | Hash: 4409 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4418 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.1 | Next boss at: 6 | Boss active: true | Overclock: false
+[TD-Idle] Threat: High (6.1) | Enemies: 2 | Towers: 9 | Hash: 4421 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4184.31494140625, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4425 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.1) | Enemies: 2 | Towers: 9 | Hash: 4436 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Spawned basic | Total: 341 | Threat: High (6.1)
+[TDGameScene] Created enemy node - pos: (4191.4345703125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.1) | Enemies: 3 | Towers: 9 | Hash: 4439 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 2 | Towers: 9 | Hash: 4447 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4184.59228515625, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 3 | Towers: 9 | Hash: 4454 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4191.27197265625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 4 | Towers: 9 | Hash: 4467 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 3 | Towers: 9 | Hash: 4473 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 2 | Towers: 9 | Hash: 4477 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.2 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4183.662109375, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 3 | Towers: 9 | Hash: 4483 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4195.75, 2100.0), size: 20.0, type: tank, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 4 | Towers: 9 | Hash: 4495 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 3 | Towers: 9 | Hash: 4501 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 3 | Towers: 9 | Hash: 4502 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 2 | Towers: 9 | Hash: 4505 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4189.2158203125, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 3 | Towers: 9 | Hash: 4511 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4189.111328125, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 4 | Towers: 9 | Hash: 4524 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.2 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4191.1826171875, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 5 | Towers: 9 | Hash: 4537 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.2) | Enemies: 4 | Towers: 9 | Hash: 4543 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4183.560546875, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.2) | Enemies: 5 | Towers: 9 | Hash: 4553 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 4 | Towers: 9 | Hash: 4561 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4183.4599609375, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 5 | Towers: 9 | Hash: 4569 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 4 | Towers: 9 | Hash: 4580 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Spawned basic | Total: 351 | Threat: High (6.3)
+[TDGameScene] Created enemy node - pos: (4190.70751953125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 5 | Towers: 9 | Hash: 4584 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 4 | Towers: 9 | Hash: 4589 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.3 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 2 | Towers: 9 | Hash: 4602 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.71240234375, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4604 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4183.06591796875, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 4 | Towers: 9 | Hash: 4617 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4619 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4621 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4182.32421875, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 4 | Towers: 9 | Hash: 4631 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4637 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 2 | Towers: 9 | Hash: 4641 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4182.6708984375, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4646 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 2 | Towers: 9 | Hash: 4652 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.3 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.88232421875, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4661 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.3) | Enemies: 2 | Towers: 9 | Hash: 4674 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4195.20556640625, 2100.0), size: 20.0, type: tank, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.3) | Enemies: 3 | Towers: 9 | Hash: 4675 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4187.697265625, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 4 | Towers: 9 | Hash: 4688 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 3 | Towers: 9 | Hash: 4690 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4195.32177734375, 2100.0), size: 20.0, type: tank, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 4 | Towers: 9 | Hash: 4702 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.4 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.70703125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 5 | Towers: 9 | Hash: 4715 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 4 | Towers: 9 | Hash: 4721 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Spawned basic | Total: 361 | Threat: High (6.4)
+[TDGameScene] Created enemy node - pos: (4190.27978515625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 5 | Towers: 9 | Hash: 4731 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 5 | Towers: 9 | Hash: 4732 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4182.3427734375, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 6 | Towers: 9 | Hash: 4744 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 5 | Towers: 9 | Hash: 4759 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.42822265625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 6 | Towers: 9 | Hash: 4762 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.4 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 5 | Towers: 9 | Hash: 4766 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 4 | Towers: 9 | Hash: 4771 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4195.06298828125, 2100.0), size: 20.0, type: tank, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.4) | Enemies: 5 | Towers: 9 | Hash: 4777 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.4) | Enemies: 4 | Towers: 9 | Hash: 4784 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.0390625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 5 | Towers: 9 | Hash: 4790 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4181.6884765625, 2100.0), size: 8.0, type: fast, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 6 | Towers: 9 | Hash: 4803 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.5) | Enemies: 5 | Towers: 9 | Hash: 4814 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.5) | Enemies: 4 | Towers: 9 | Hash: 4816 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4189.50927734375, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 5 | Towers: 9 | Hash: 4822 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Threat] Level: 6.5 | Next boss at: 6 | Boss active: true | Overclock: false
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.5) | Enemies: 4 | Towers: 9 | Hash: 4830 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.5) | Enemies: 3 | Towers: 9 | Hash: 4835 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4187.81005859375, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 4 | Towers: 9 | Hash: 4837 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.81884765625, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 5 | Towers: 9 | Hash: 4849 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TDGameScene] Created enemy node - pos: (4190.703125, 2100.0), size: 12.0, type: basic, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 6 | Towers: 9 | Hash: 4862 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Threat: High (6.5) | Enemies: 5 | Towers: 9 | Hash: 4874 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
+[TD-Idle] Spawned voidminion | Total: 371 | Threat: High (6.5)
+[TDGameScene] Created enemy node - pos: (4187.0400390625, 2100.0), size: 14.0, type: voidminion, enemyLayer.alpha: 1.0, enemyLayer.zPosition: 5.0
+[TD-Idle] Threat: High (6.5) | Enemies: 6 | Towers: 9 | Hash: 4880 | Efficiency: 100%
+🟢 [TDGameScene] Calling delegate - type=Optional<TDGameSceneDelegate>
