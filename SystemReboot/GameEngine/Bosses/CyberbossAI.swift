@@ -6,60 +6,7 @@ import CoreGraphics
 /// 4-Phase Heist Boss with mode switching, minions, damage puddles, and laser beams
 class CyberbossAI {
 
-    // MARK: - State
-
-    struct CyberbossState {
-        var phase: Int = 1
-        var mode: CyberbossMode = .melee
-        var modeTimer: Double = 0
-        var modeSwitchInterval: Double = BalanceConfig.Cyberboss.modeSwitchInterval
-
-        var lastMinionSpawnTime: Double = 0
-        var minionSpawnInterval: Double = BalanceConfig.Cyberboss.minionSpawnIntervalPhase1
-
-        var lastPuddleSpawnTime: Double = 0
-        var puddleSpawnInterval: Double = BalanceConfig.Cyberboss.puddleSpawnIntervalPhase3
-
-        var lastRangedAttackTime: Double = 0
-        var rangedAttackCooldown: Double = BalanceConfig.Cyberboss.rangedAttackCooldown
-
-        var laserBeams: [LaserBeam] = []
-        var laserRotationSpeed: CGFloat = BalanceConfig.Cyberboss.laserRotationSpeed
-
-        var damagePuddles: [DamagePuddle] = []
-
-        var isInvulnerable: Bool = false
-    }
-
-    enum CyberbossMode {
-        case melee
-        case ranged
-    }
-
-    struct LaserBeam {
-        let id: String
-        var angle: CGFloat
-        let length: CGFloat
-        let damage: CGFloat
-        var lifetime: Double = 0           // How long this beam has existed
-        let warningDuration: Double = BalanceConfig.Cyberboss.puddleWarningDuration  // Warning before active
-        var isActive: Bool { lifetime >= warningDuration }
-    }
-
-    struct DamagePuddle {
-        let id: String
-        var x: CGFloat
-        var y: CGFloat
-        let radius: CGFloat
-        let damage: CGFloat         // DPS while active
-        let popDamage: CGFloat      // Burst damage when puddle pops
-        let damageInterval: Double
-        var lastDamageTime: Double
-        var lifetime: Double
-        let maxLifetime: Double     // Total duration (4 seconds)
-        let warningDuration: Double // Warning phase (1 second, no damage)
-        var hasPopped: Bool = false // Track if pop damage was already dealt
-    }
+    // State types defined in BossStates.swift
 
     // MARK: - Initialization
 

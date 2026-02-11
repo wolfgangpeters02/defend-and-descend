@@ -6,46 +6,7 @@ import CoreGraphics
 /// PSU/Cooling-themed Boss with 4 phases: Wind + Blades, Lava Grid, Steam Trail, Vacuum Suction
 class OverclockerAI {
 
-    // MARK: - State
-
-    struct OverclockerState {
-        var phase: Int = 1
-        var arenaCenter: CGPoint = .zero
-        var arenaRect: CGRect = .zero
-
-        // Phase 1 - Turbine (Wind + Rotating Blades)
-        var bladeAngle: CGFloat = 0
-
-        // Phase 2 - Heat Sink (4x4 Lava Grid)
-        var tileStates: [TileState] = Array(repeating: .normal, count: 16)
-        var lastTileChangeTime: Double = 0
-        var bossTargetTileIndex: Int? = nil
-
-        // Phase 3 - Overheat (Chase + Steam Trail)
-        var steamTrail: [SteamSegment] = []
-        var lastSteamDropTime: Double = 0
-
-        // Phase 4 - Suction (Vacuum + Shredder)
-        var isSuctionActive: Bool = false
-        var suctionTimer: Double = 0
-
-        // Shared
-        var lastContactDamageTime: Double = 0
-    }
-
-    enum TileState: Int {
-        case normal = 0   // Dark/Inactive
-        case warning = 1  // Orange/Flashing (0 damage)
-        case lava = 2     // Red/Glowing (Dealing damage)
-        case safe = 3     // Blue/Cool (Safe zone)
-    }
-
-    struct SteamSegment {
-        let id: String
-        var x: CGFloat
-        var y: CGFloat
-        var createdAt: Double
-    }
+    // State types defined in BossStates.swift
 
     // MARK: - Initialization
 

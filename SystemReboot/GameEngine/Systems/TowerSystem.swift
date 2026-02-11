@@ -334,7 +334,7 @@ class TowerSystem {
 
         // Get direction from current position toward next waypoint
         let currentProgress = enemy.pathProgress
-        let lookAheadProgress = min(1.0, currentProgress + 0.05)  // Look slightly ahead
+        let lookAheadProgress = min(1.0, currentProgress + BalanceConfig.Towers.leadTargetingLookAhead)  // Look slightly ahead
 
         let currentPos = path.positionAt(progress: currentProgress)
         let aheadPos = path.positionAt(progress: lookAheadProgress)

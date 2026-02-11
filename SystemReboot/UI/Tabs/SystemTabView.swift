@@ -2,45 +2,6 @@ import SwiftUI
 import SpriteKit
 import Combine
 
-// MARK: - Currency Info Types
-
-enum CurrencyInfoType: String, Identifiable {
-    case hash
-    case power
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .hash: return L10n.Currency.hashTitle
-        case .power: return L10n.Currency.powerTitle
-        }
-    }
-
-    var description: String {
-        switch self {
-        case .hash:
-            return L10n.Currency.hashDescription
-        case .power:
-            return L10n.Currency.powerDescription
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .hash: return "number.circle.fill"
-        case .power: return "bolt.fill"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .hash: return .cyan
-        case .power: return .yellow
-        }
-    }
-}
-
 // MARK: - System Tab View
 // Main game hub - motherboard game with HUD, Arsenal accessible via SYS button
 
@@ -179,8 +140,8 @@ struct MotherboardView: View {
                     SystemFreezeOverlay(
                         currentHash: embeddedGameController.gameState?.hash ?? 0,
                         onFlushMemory: {
-                            // Deduct 10% Hash and recover
-                            let hashCost = max(1, (embeddedGameController.gameState?.hash ?? 0) / 10)
+                            // Deduct Hash based on BalanceConfig percentage and recover
+                            let hashCost = max(1, (embeddedGameController.gameState?.hash ?? 0) / BalanceConfig.Freeze.recoveryHashDivisor)
                             appState.updatePlayer { profile in
                                 profile.hash = max(0, profile.hash - hashCost)
                             }
@@ -1076,7 +1037,7 @@ class EmbeddedTDGameController: ObservableObject {
             savedSession.apply(to: &state)
         }
 
-        let waves = WaveSystem.generateWaves(totalWaves: 20)
+        let waves = WaveSystem.generateWaves(totalWaves: BalanceConfig.TDSession.totalWaves)
 
         let handler = EmbeddedTDDelegateHandler()
         handler.onGameStateUpdated = { [weak self] newState in
@@ -1103,7 +1064,7 @@ class EmbeddedTDGameController: ObservableObject {
                 // Sync hash to player profile (throttled to once per second to avoid excessive UserDefaults writes)
                 if newState.hash != AppState.shared.currentPlayer.hash {
                     let now = Date()
-                    if now.timeIntervalSince(self?.lastHashSyncTime ?? .distantPast) >= 1.0 {
+                    if now.timeIntervalSince(self?.lastHashSyncTime ?? .distantPast) >= BalanceConfig.TDSession.hashSyncInterval {
                         self?.lastHashSyncTime = now
                         AppState.shared.updatePlayer { profile in
                             profile.hash = newState.hash
@@ -1310,18 +1271,18 @@ class EmbeddedTDGameController: ObservableObject {
 
     // MARK: - System Freeze Recovery
 
-    /// Flush Memory: Pay 10% of current Hash to restore efficiency
+    /// Flush Memory: Pay Hash percentage to restore efficiency
     func flushMemory() {
         guard isSystemFrozen else { return }
         isSystemFrozen = false
-        scene?.recoverFromFreeze(restoreToEfficiency: 50)
+        scene?.recoverFromFreeze(restoreToEfficiency: BalanceConfig.Freeze.recoveryTargetEfficiency)
     }
 
     /// Manual Override complete: Restore efficiency without cost
     func manualOverrideSuccess() {
         guard isSystemFrozen else { return }
         isSystemFrozen = false
-        scene?.recoverFromFreeze(restoreToEfficiency: 50)
+        scene?.recoverFromFreeze(restoreToEfficiency: BalanceConfig.Freeze.recoveryTargetEfficiency)
     }
 
     /// Unlock a sector (decrypt it)
@@ -2847,67 +2808,6 @@ struct UpgradeCard: View {
             profile.globalUpgrades.upgrade(upgradeType)
         }
     }
-}
-
-// MARK: - Boss Encounter Model
-
-struct BossEncounter: Identifiable {
-    let id: String
-    let name: String
-    let subtitle: String
-    let description: String
-    let iconName: String
-    let color: String
-    let bossId: String  // Maps to boss AI type
-    let rewards: [String]  // Protocol IDs that can drop
-    let unlockCost: Int
-
-    static let all: [BossEncounter] = [
-        BossEncounter(
-            id: "rogue_process",
-            name: "ROGUE PROCESS",
-            subtitle: "Cyberboss",
-            description: "A corrupted system process. Spawns minions and fires laser beams.",
-            iconName: "bolt.shield.fill",
-            color: "#ff4444",
-            bossId: "cyberboss",
-            rewards: ["burst_protocol", "trace_route"],
-            unlockCost: 0
-        ),
-        BossEncounter(
-            id: "memory_leak",
-            name: "MEMORY LEAK",
-            subtitle: "Void Harbinger",
-            description: "A void entity consuming memory. Creates gravity wells and shrinking arenas.",
-            iconName: "tornado",
-            color: "#a855f7",
-            bossId: "void_harbinger",
-            rewards: ["fork_bomb", "overflow"],
-            unlockCost: 200
-        ),
-        BossEncounter(
-            id: "thermal_runaway",
-            name: "THERMAL RUNAWAY",
-            subtitle: "Overclocker",
-            description: "An overheated PSU gone rogue. Rotating blades, lava floors, and deadly vacuum.",
-            iconName: "flame.fill",
-            color: "#ff6600",
-            bossId: "overclocker",
-            rewards: ["ice_shard", "null_pointer"],
-            unlockCost: 400
-        ),
-        BossEncounter(
-            id: "packet_worm",
-            name: "PACKET WORM",
-            subtitle: "Trojan Wyrm",
-            description: "A network worm burrowing through the system. Sweeps as a firewall, splits into sub-worms, and constricts with deadly force.",
-            iconName: "link.circle.fill",
-            color: "#00ff44",
-            bossId: "trojan_wyrm",
-            rewards: ["root_access"],
-            unlockCost: 600
-        )
-    ]
 }
 
 // MARK: - Boss Encounters View

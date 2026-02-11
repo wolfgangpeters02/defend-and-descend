@@ -257,131 +257,6 @@ struct TDGameState {
     }
 }
 
-// MARK: - TD Session State (Lightweight Persistence)
-// Persists towers and slots across app restarts
-
-struct TDSessionState: Codable {
-    var towers: [Tower]
-    var towerSlots: [TowerSlot]
-    var hash: Int
-    var wavesCompleted: Int
-    var efficiency: CGFloat
-    var leakCounter: Int
-    var lastSaveTime: TimeInterval
-
-    // Idle TD state
-    var idleThreatLevel: CGFloat?        // Current threat level (enemy scaling)
-    var idleEnemiesSpawned: Int?         // Total enemies spawned
-
-    // Sector pause state
-    var pausedSectorIds: Set<String>?    // IDs of sectors currently paused
-
-    // Boss progression state
-    var lastBossThreatMilestone: Int?    // Last threat milestone that triggered a boss
-    var defeatedDistrictBosses: Set<String>?  // Districts where boss was defeated
-
-    /// Create session state from current game state
-    static func from(gameState: TDGameState) -> TDSessionState {
-        return TDSessionState(
-            towers: gameState.towers,
-            towerSlots: gameState.towerSlots,
-            hash: gameState.hash,
-            wavesCompleted: gameState.wavesCompleted,
-            efficiency: gameState.efficiency,
-            leakCounter: gameState.leakCounter,
-            lastSaveTime: Date().timeIntervalSince1970,
-            idleThreatLevel: gameState.idleThreatLevel,
-            idleEnemiesSpawned: gameState.idleEnemiesSpawned,
-            pausedSectorIds: gameState.pausedSectorIds.isEmpty ? nil : gameState.pausedSectorIds,
-            lastBossThreatMilestone: gameState.lastBossThreatMilestone > 0 ? gameState.lastBossThreatMilestone : nil,
-            defeatedDistrictBosses: gameState.defeatedDistrictBosses.isEmpty ? nil : gameState.defeatedDistrictBosses
-        )
-    }
-
-    /// Apply session state to game state
-    /// Note: Does NOT overwrite towerSlots - those are generated fresh from lane config.
-    /// Instead, we restore tower placements and mark slots as occupied.
-    func apply(to state: inout TDGameState) {
-        // Restore towers
-        state.towers = towers
-
-        // Instead of overwriting slots, mark existing slots as occupied based on restored towers
-        // This ensures fresh slot generation is preserved while tower placements are restored
-        for i in 0..<state.towerSlots.count {
-            let slot = state.towerSlots[i]
-            // Check if any restored tower is at this slot
-            if let tower = towers.first(where: { $0.slotId == slot.id }) {
-                state.towerSlots[i].occupied = true
-                state.towerSlots[i].towerId = tower.id
-            } else {
-                state.towerSlots[i].occupied = false
-                state.towerSlots[i].towerId = nil
-            }
-        }
-
-        // Handle towers that reference slots that no longer exist (slot IDs changed)
-        // Re-assign them to the nearest available slot
-        for tower in towers {
-            let slotExists = state.towerSlots.contains { $0.id == tower.slotId }
-            if !slotExists {
-                // Find nearest unoccupied slot to this tower's position
-                var nearestSlot: TowerSlot?
-                var nearestDistance: CGFloat = .infinity
-
-                for slot in state.towerSlots where !slot.occupied {
-                    let dx = slot.x - tower.x
-                    let dy = slot.y - tower.y
-                    let dist = sqrt(dx*dx + dy*dy)
-                    if dist < nearestDistance {
-                        nearestDistance = dist
-                        nearestSlot = slot
-                    }
-                }
-
-                // If we found a nearby slot, update the tower and slot
-                if let slot = nearestSlot, nearestDistance < 200 {
-                    if let towerIndex = state.towers.firstIndex(where: { $0.id == tower.id }),
-                       let slotIndex = state.towerSlots.firstIndex(where: { $0.id == slot.id }) {
-                        state.towers[towerIndex].slotId = slot.id
-                        state.towers[towerIndex].x = slot.x
-                        state.towers[towerIndex].y = slot.y
-                        state.towerSlots[slotIndex].occupied = true
-                        state.towerSlots[slotIndex].towerId = tower.id
-                    }
-                } else {
-                    // No valid slot found - remove this orphaned tower
-                    state.towers.removeAll { $0.id == tower.id }
-                }
-            }
-        }
-
-        state.hash = hash
-        state.wavesCompleted = wavesCompleted
-        state.leakCounter = leakCounter
-
-        // Restore idle spawn state if present
-        if let threatLevel = idleThreatLevel {
-            state.idleThreatLevel = threatLevel
-        }
-        if let enemiesSpawned = idleEnemiesSpawned {
-            state.idleEnemiesSpawned = enemiesSpawned
-        }
-
-        // Restore paused sectors if present
-        if let paused = pausedSectorIds {
-            state.pausedSectorIds = paused
-        }
-
-        // Restore boss progression state
-        if let milestone = lastBossThreatMilestone {
-            state.lastBossThreatMilestone = milestone
-        }
-        if let defeated = defeatedDistrictBosses {
-            state.defeatedDistrictBosses = defeated
-        }
-    }
-}
-
 // MARK: - Tower Drag State
 
 struct TowerDragState {
@@ -435,18 +310,6 @@ struct BlockerSlot: Identifiable, Codable {
     }
 }
 
-// MARK: - TD Session Stats
-
-struct TDSessionStats {
-    var enemiesKilled: Int = 0
-    var towersPlaced: Int = 0
-    var towersUpgraded: Int = 0
-    var hashEarned: Int = 0
-    var hashSpent: Int = 0
-    var damageDealt: CGFloat = 0
-    var wavesCompleted: Int = 0
-}
-
 // MARK: - Sector Lane System (8-Lane Motherboard Map)
 // Each peripheral sector has a lane that leads to the CPU in the center
 // PSU sector starts unlocked, others unlock progressively
@@ -467,10 +330,10 @@ struct SectorLane: Identifiable, Codable {
 
 /// Configuration for the 8-lane motherboard map
 struct MotherboardLaneConfig {
-    static let canvasSize: CGFloat = 4200       // 3 sectors × 1400
-    static let sectorSize: CGFloat = 1400
+    static let canvasSize: CGFloat = BalanceConfig.Motherboard.canvasSize
+    static let sectorSize: CGFloat = BalanceConfig.Motherboard.sectorSize
     static let cpuCenter = CGPoint(x: 2100, y: 2100)  // Center of center sector (1,1)
-    static let cpuSize: CGFloat = 300
+    static let cpuSize: CGFloat = BalanceConfig.Motherboard.cpuSize
 
     /// All 8 lanes (one per non-CPU sector)
     static func createAllLanes() -> [SectorLane] {
@@ -732,7 +595,7 @@ struct Tower: Identifiable, Codable {
     var powerDraw: Int = BalanceConfig.TowerPower.defaultPowerDraw  // Watts consumed while this tower is placed
 
     // Upgrade cost base (from Protocol's baseUpgradeCost, scales by rarity)
-    var baseUpgradeCost: Int = 50
+    var baseUpgradeCost: Int = BalanceConfig.Towers.placementCosts[.common] ?? 50
 
     var position: CGPoint {
         CGPoint(x: x, y: y)
@@ -916,51 +779,6 @@ struct TDEnemy: Identifiable {
             slowAmount = 0
         }
     }
-}
-
-// MARK: - Wave Definition
-
-struct TDWave {
-    var waveNumber: Int
-    var enemies: [WaveEnemy]
-    var delayBetweenSpawns: TimeInterval = 0.5
-    var bonusGold: Int = 0
-
-    /// Total enemies in wave
-    var totalEnemies: Int {
-        enemies.reduce(0) { $0 + $1.count }
-    }
-}
-
-struct WaveEnemy {
-    var type: String
-    var count: Int
-    var healthMultiplier: CGFloat = 1.0
-    var speedMultiplier: CGFloat = 1.0
-    var pathIndex: Int = 0  // Which path to use (for multi-path maps)
-}
-
-// MARK: - TD Wave Configuration
-
-struct TDWaveConfig: Codable {
-    var waves: [TDWaveDefinition]
-    var bossWaveInterval: Int = 10  // Boss every N waves
-    var infiniteMode: Bool = false  // Endless waves after config runs out
-}
-
-struct TDWaveDefinition: Codable {
-    var waveNumber: Int
-    var enemies: [TDWaveEnemyDef]
-    var spawnDelay: Double
-    var bonusGold: Int?
-}
-
-struct TDWaveEnemyDef: Codable {
-    var type: String
-    var count: Int
-    var healthMultiplier: Double?
-    var speedMultiplier: Double?
-    var pathIndex: Int?
 }
 
 // MARK: - TD Action Types (for player input)
@@ -1518,153 +1336,5 @@ class TDGameStateFactory {
         let px = point.x - projX
         let py = point.y - projY
         return sqrt(px * px + py * py)
-    }
-}
-
-// MARK: - Boss Loot Reward System
-// Displayed after boss fights in the loot modal
-
-struct BossLootReward {
-    /// Individual reward item in the loot screen
-    struct RewardItem: Identifiable {
-        let id = UUID()
-
-        enum ItemType {
-            case hash(amount: Int)
-            case protocolBlueprint(protocolId: String, rarity: Rarity)
-            case sectorAccess(sectorId: String, displayName: String, themeColor: String)
-        }
-
-        let type: ItemType
-
-        // MARK: - Display Helpers
-
-        var iconName: String {
-            switch type {
-            case .hash:
-                return "number.circle.fill"
-            case .protocolBlueprint(let protocolId, _):
-                return ProtocolLibrary.get(protocolId)?.iconName ?? "cpu"
-            case .sectorAccess:
-                return "lock.open.fill"
-            }
-        }
-
-        var displayColor: String {
-            switch type {
-            case .hash:
-                return "#00d4ff"  // Cyan
-            case .protocolBlueprint(let protocolId, let rarity):
-                // Use protocol color if available, fallback to rarity color
-                if let proto = ProtocolLibrary.get(protocolId) {
-                    return proto.color
-                }
-                // Fallback to rarity hex color
-                switch rarity {
-                case .common: return "#9ca3af"
-                case .rare: return "#3b82f6"
-                case .epic: return "#a855f7"
-                case .legendary: return "#f59e0b"
-                }
-            case .sectorAccess(_, _, let themeColor):
-                return themeColor
-            }
-        }
-
-        var encryptedTitle: String {
-            return "▓▓▓▓▓▓▓▓"
-        }
-
-        var decryptedTitle: String {
-            switch type {
-            case .hash(let amount):
-                return "+\(amount) Ħ"
-            case .protocolBlueprint(let protocolId, _):
-                return ProtocolLibrary.get(protocolId)?.name ?? "UNKNOWN"
-            case .sectorAccess(_, let displayName, _):
-                return displayName
-            }
-        }
-
-        var decryptedSubtitle: String {
-            switch type {
-            case .hash:
-                return L10n.BossLoot.hashReward
-            case .protocolBlueprint(_, let rarity):
-                return L10n.BossLoot.protocolAcquired + " • " + rarity.rawValue.uppercased()
-            case .sectorAccess:
-                return L10n.BossLoot.sectorAccessGranted
-            }
-        }
-    }
-
-    let difficulty: BossDifficulty
-    let items: [RewardItem]
-    let isFirstKill: Bool
-
-    // MARK: - Computed Properties
-
-    var totalHashReward: Int {
-        for item in items {
-            if case .hash(let amount) = item.type {
-                return amount
-            }
-        }
-        return 0
-    }
-
-    var droppedProtocolId: String? {
-        for item in items {
-            if case .protocolBlueprint(let protocolId, _) = item.type {
-                return protocolId
-            }
-        }
-        return nil
-    }
-
-    var unlockedSectorId: String? {
-        for item in items {
-            if case .sectorAccess(let sectorId, _, _) = item.type {
-                return sectorId
-            }
-        }
-        return nil
-    }
-
-    // MARK: - Factory
-
-    /// Create a BossLootReward from fight results
-    static func create(
-        difficulty: BossDifficulty,
-        hashReward: Int,
-        protocolId: String?,
-        protocolRarity: Rarity?,
-        unlockedSector: (id: String, name: String, themeColor: String)?,
-        isFirstKill: Bool
-    ) -> BossLootReward {
-        var items: [RewardItem] = []
-
-        // Hash is always first and guaranteed
-        items.append(RewardItem(type: .hash(amount: hashReward)))
-
-        // Protocol blueprint (if dropped)
-        if let protocolId = protocolId, let rarity = protocolRarity {
-            items.append(RewardItem(type: .protocolBlueprint(protocolId: protocolId, rarity: rarity)))
-        }
-
-        // Sector access (first kill only)
-        if let sector = unlockedSector {
-            items.append(RewardItem(type: .sectorAccess(
-                sectorId: sector.id,
-                displayName: sector.name,
-                themeColor: sector.themeColor
-            )))
-        }
-
-        return BossLootReward(
-            difficulty: difficulty,
-            items: items,
-            isFirstKill: isFirstKill
-        )
     }
 }

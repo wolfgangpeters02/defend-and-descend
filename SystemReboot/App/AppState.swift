@@ -75,8 +75,8 @@ class AppState: ObservableObject {
         NotificationService.shared.onPlayerReturned()
 
         if let earnings = StorageService.shared.calculateOfflineEarnings() {
-            // Only show if meaningful earnings (at least 10 Hash)
-            if earnings.hashEarned >= 10 {
+            // Only show if meaningful earnings
+            if earnings.hashEarned >= BalanceConfig.OfflineEarnings.minimumDisplayThreshold {
                 pendingOfflineEarnings = earnings
                 showWelcomeBack = true
             }
@@ -223,7 +223,7 @@ class AppState: ObservableObject {
 
     /// Maps that support TD mode
     private var tdSupportedMaps: [String] {
-        ["grasslands", "volcano", "ice_cave", "castle", "space", "temple"]
+        BalanceConfig.TDMaps.supportedMaps
     }
 
     /// Get unlocked towers (same as weapons)

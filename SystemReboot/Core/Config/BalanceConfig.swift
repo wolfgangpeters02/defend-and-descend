@@ -301,6 +301,9 @@ struct BalanceConfig {
 
         /// Lead targeting prediction cap (seconds)
         static let maxPredictionTime: CGFloat = 0.8
+
+        /// Lead targeting look-ahead (path progress increment for direction estimation)
+        static let leadTargetingLookAhead: CGFloat = 0.05
     }
 
     // MARK: - Boss Scaling (Survivor Mode)
@@ -929,6 +932,12 @@ struct BalanceConfig {
 
         /// Virus kills required to generate 1 Data (soft-lock prevention)
         static let virusKillsPerData: Int = 1000
+
+        /// Total waves in a wave-based TD session
+        static let totalWaves: Int = 20
+
+        /// Hash sync throttle interval (seconds between profile saves)
+        static let hashSyncInterval: TimeInterval = 1.0
     }
 
     // MARK: - TD Rewards
@@ -1969,6 +1978,43 @@ extension BalanceConfig {
             coolingLevel: 6,
             hddLevel: 6
         )
+    }
+
+    // MARK: - Motherboard Layout
+
+    struct Motherboard {
+        /// Total canvas size (3 sectors × 1400)
+        static let canvasSize: CGFloat = 4200
+
+        /// Size of each sector
+        static let sectorSize: CGFloat = 1400
+
+        /// CPU core visual size
+        static let cpuSize: CGFloat = 300
+    }
+
+    // MARK: - System Freeze
+
+    struct Freeze {
+        /// Divisor for flush memory cost (hash / this = cost, i.e. 10% of current hash)
+        static let recoveryHashDivisor: Int = 10
+
+        /// Target efficiency after recovery (percentage points)
+        static let recoveryTargetEfficiency: CGFloat = 50
+    }
+
+    // MARK: - Offline Earnings
+
+    struct OfflineEarnings {
+        /// Minimum hash earned to show the welcome-back modal
+        static let minimumDisplayThreshold: Int = 10
+    }
+
+    // MARK: - TD Maps
+
+    struct TDMaps {
+        /// Maps that support tower defense mode
+        static let supportedMaps: [String] = ["grasslands", "volcano", "ice_cave", "castle", "space", "temple"]
     }
 }
 

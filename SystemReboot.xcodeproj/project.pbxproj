@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BSSENCRBL0 /* BossEncounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSENCRRF0 /* BossEncounter.swift */; };
+		CRINFTYBL0 /* CurrencyInfoType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRINFTYRF0 /* CurrencyInfoType.swift */; };
+		BSSSTTSBL0 /* BossStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSSTTSRF0 /* BossStates.swift */; };
+		TDSESSTBL0 /* TDSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSESSTRF0 /* TDSessionState.swift */; };
+		WAVTYPBL01 /* WaveTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAVTYPRF01 /* WaveTypes.swift */; };
+		BSSLTRWBL0 /* BossLootReward.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSLTRWRF0 /* BossLootReward.swift */; };
+		MBCFGDTBL0 /* MotherboardConfigData.swift in Sources */ = {isa = PBXBuildFile; fileRef = MBCFGDTRF0 /* MotherboardConfigData.swift */; };
 		01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */; };
 		04461EF9164A14B078C039DF /* BlueprintDiscoveryModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */; };
 		05461EF9164A14B078C039E0 /* BlueprintRevealModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */; };
@@ -102,9 +109,24 @@
 		TWRDCKBLD0 /* TowerDeckCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRDCK001 /* TowerDeckCards.swift */; };
 		APSTUTBLD0 /* AppState+Tutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = APSTUT001 /* AppState+Tutorial.swift */; };
 		TDPARTFBLD /* TDParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDPARTF01 /* TDParticleFactory.swift */; };
+		UICLRBLD0001 /* UIColor+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = UICLRUTL0001 /* UIColor+Utilities.swift */; };
+		TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNBG00001 /* TDGameScene+Background.swift */; };
+		TDSCNSRB0001 /* TDGameScene+SectorRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSR00001 /* TDGameScene+SectorRendering.swift */; };
+		TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPT00001 /* TDGameScene+Paths.swift */; };
+		TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEF00001 /* TDGameScene+Effects.swift */; };
+		TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */; };
+		TDSCNINB0001 /* TDGameScene+Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNIN00001 /* TDGameScene+Input.swift */; };
+		TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNAC00001 /* TDGameScene+Actions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BSSENCRRF0 /* BossEncounter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossEncounter.swift; sourceTree = "<group>"; };
+		CRINFTYRF0 /* CurrencyInfoType.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurrencyInfoType.swift; sourceTree = "<group>"; };
+		BSSSTTSRF0 /* BossStates.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossStates.swift; sourceTree = "<group>"; };
+		TDSESSTRF0 /* TDSessionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSessionState.swift; sourceTree = "<group>"; };
+		WAVTYPRF01 /* WaveTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveTypes.swift; sourceTree = "<group>"; };
+		BSSLTRWRF0 /* BossLootReward.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootReward.swift; sourceTree = "<group>"; };
+		MBCFGDTRF0 /* MotherboardConfigData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardConfigData.swift; sourceTree = "<group>"; };
 		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardSystem.swift; sourceTree = "<group>"; };
 		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		COMPTYPREF /* ComponentTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComponentTypes.swift; sourceTree = "<group>"; };
@@ -202,6 +224,14 @@
 		TWRDCK001 /* TowerDeckCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerDeckCards.swift; sourceTree = "<group>"; };
 		APSTUT001 /* AppState+Tutorial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AppState+Tutorial.swift"; sourceTree = "<group>"; };
 		TDPARTF01 /* TDParticleFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDParticleFactory.swift; sourceTree = "<group>"; };
+		UICLRUTL0001 /* UIColor+Utilities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UIColor+Utilities.swift"; sourceTree = "<group>"; };
+		TDSCNBG00001 /* TDGameScene+Background.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Background.swift"; sourceTree = "<group>"; };
+		TDSCNSR00001 /* TDGameScene+SectorRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorRendering.swift"; sourceTree = "<group>"; };
+		TDSCNPT00001 /* TDGameScene+Paths.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Paths.swift"; sourceTree = "<group>"; };
+		TDSCNEF00001 /* TDGameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Effects.swift"; sourceTree = "<group>"; };
+		TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EntityVisuals.swift"; sourceTree = "<group>"; };
+		TDSCNIN00001 /* TDGameScene+Input.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Input.swift"; sourceTree = "<group>"; };
+		TDSCNAC00001 /* TDGameScene+Actions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Actions.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -290,6 +320,13 @@
 				AA100023 /* VisualEffects.swift */,
 				AA100024 /* ArenaRenderer.swift */,
 				529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */,
+				TDSCNBG00001 /* TDGameScene+Background.swift */,
+				TDSCNSR00001 /* TDGameScene+SectorRendering.swift */,
+				TDSCNPT00001 /* TDGameScene+Paths.swift */,
+				TDSCNEF00001 /* TDGameScene+Effects.swift */,
+				TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */,
+				TDSCNIN00001 /* TDGameScene+Input.swift */,
+				TDSCNAC00001 /* TDGameScene+Actions.swift */,
 				F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */,
 				NODEPOOL1 /* NodePool.swift */,
 				SCROLLCT1 /* ScrollingCombatText.swift */,
@@ -345,6 +382,12 @@
 				MBRDFILE01 /* MotherboardTypes.swift */,
 				642FC35778370BD58869415C /* MegaBoardTypes.swift */,
 				FRMCTX001 /* FrameContext.swift */,
+				BSSENCRRF0 /* BossEncounter.swift */,
+				CRINFTYRF0 /* CurrencyInfoType.swift */,
+				BSSSTTSRF0 /* BossStates.swift */,
+				TDSESSTRF0 /* TDSessionState.swift */,
+				WAVTYPRF01 /* WaveTypes.swift */,
+				BSSLTRWRF0 /* BossLootReward.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -357,6 +400,7 @@
 				E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */,
 				D0730EB976BE58FD41672919 /* SectorSchematics.swift */,
 				EF752985D9BB05F3C19C6308 /* LootTables.swift */,
+				MBCFGDTRF0 /* MotherboardConfigData.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -365,6 +409,7 @@
 			isa = PBXGroup;
 			children = (
 				AA100006 /* MathUtils.swift */,
+				UICLRUTL0001 /* UIColor+Utilities.swift */,
 				AA100007 /* RandomUtils.swift */,
 				OBJPOOL01 /* ObjectPool.swift */,
 				SPTGRID01 /* SpatialGrid.swift */,
@@ -658,6 +703,21 @@
 				TWRDCKBLD0 /* TowerDeckCards.swift in Sources */,
 				APSTUTBLD0 /* AppState+Tutorial.swift in Sources */,
 				TDPARTFBLD /* TDParticleFactory.swift in Sources */,
+				UICLRBLD0001 /* UIColor+Utilities.swift in Sources */,
+				TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */,
+				TDSCNSRB0001 /* TDGameScene+SectorRendering.swift in Sources */,
+				TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */,
+				TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */,
+				TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */,
+				TDSCNINB0001 /* TDGameScene+Input.swift in Sources */,
+				TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */,
+				BSSENCRBL0 /* BossEncounter.swift in Sources */,
+				CRINFTYBL0 /* CurrencyInfoType.swift in Sources */,
+				BSSSTTSBL0 /* BossStates.swift in Sources */,
+				TDSESSTBL0 /* TDSessionState.swift in Sources */,
+				WAVTYPBL01 /* WaveTypes.swift in Sources */,
+				BSSLTRWBL0 /* BossLootReward.swift in Sources */,
+				MBCFGDTBL0 /* MotherboardConfigData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
