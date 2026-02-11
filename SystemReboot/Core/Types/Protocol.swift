@@ -66,7 +66,7 @@ struct Protocol: Identifiable, Codable, Equatable {
 
     /// Whether this protocol can be upgraded further
     var canUpgrade: Bool {
-        return level < 10 && isCompiled
+        return level < BalanceConfig.maxUpgradeLevel && isCompiled
     }
 
     /// Whether this protocol is at max level

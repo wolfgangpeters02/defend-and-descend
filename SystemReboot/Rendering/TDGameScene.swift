@@ -5805,7 +5805,7 @@ class TDGameScene: SKScene {
                     if enemy.health <= 0 {
                         enemy.isDead = true
                         let actualGold = state.addHash(enemy.goldValue)
-                        state.stats.goldEarned += actualGold
+                        state.stats.hashEarned += actualGold
                         state.stats.enemiesKilled += 1
                         state.virusesKilledTotal += 1  // For passive Data generation
                         state.waveEnemiesRemaining -= 1
@@ -5911,7 +5911,7 @@ class TDGameScene: SKScene {
                 if enemy.health <= 0 {
                     enemy.isDead = true
                     let actualGold = state.addHash(enemy.goldValue)
-                    state.stats.goldEarned += actualGold
+                    state.stats.hashEarned += actualGold
                     state.stats.enemiesKilled += 1
                     state.virusesKilledTotal += 1  // For passive Data generation
                     state.waveEnemiesRemaining -= 1
@@ -7603,10 +7603,10 @@ class TDGameScene: SKScene {
     /// Restore efficiency by setting the leak counter
     /// - Parameter leakCount: The new leak count (0 = 100%, 10 = 50%, 20 = 0%)
     func restoreEfficiency(to leakCount: Int) {
-        state?.leakCounter = leakCount
-        if let state = state {
-            gameStateDelegate?.gameStateUpdated(state)
-        }
+        guard var state = state else { return }
+        state.leakCounter = leakCount
+        self.state = state
+        gameStateDelegate?.gameStateUpdated(state)
     }
 
     /// Recover from System Freeze (0% efficiency state)

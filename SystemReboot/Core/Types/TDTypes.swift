@@ -79,11 +79,11 @@ struct TDGameState {
     }
 
     // Resources (System: Reboot currencies)
-    var hash: Int = 100  // Hash (Ħ) - soft currency for purchases
+    var hash: Int = BalanceConfig.TDSession.startingHash  // Hash (Ħ) - soft currency for purchases
 
     // Power System (System: Reboot - PSU Capacity)
     // Power is a CEILING, not consumed. Towers allocate power while placed.
-    var powerCapacity: Int = 300    // PSU capacity (upgradeable) - 300W creates early energy pressure
+    var powerCapacity: Int = BalanceConfig.TDSession.startingPowerCapacity    // PSU capacity (upgradeable)
     var powerUsed: Int {
         // Sum of all placed towers' power draw
         return towers.reduce(0) { $0 + $1.powerDraw }
@@ -93,7 +93,7 @@ struct TDGameState {
     }
 
     // Hash Storage Cap (System: Reboot)
-    var hashStorageCapacity: Int = 25000  // Set from player's HDD level
+    var hashStorageCapacity: Int = BalanceConfig.TDSession.defaultHashStorageCapacity  // Set from player's HDD level
 
     /// Add hash with storage cap enforcement
     /// Returns the actual amount added
@@ -112,7 +112,7 @@ struct TDGameState {
     var efficiency: CGFloat {
         // efficiency = max(0, 100 - leakCounter * 5)
         // Each leaked virus reduces efficiency by 5%
-        return max(0, min(100, 100 - CGFloat(leakCounter) * 5))
+        return max(0, min(100, 100 - CGFloat(leakCounter) * BalanceConfig.TDSession.efficiencyLossPerLeak))
     }
     var baseHashPerSecond: CGFloat = 1.0  // Base income rate at 100% efficiency (set from CPU level)
     var cpuMultiplier: CGFloat = 1.0      // CPU tier multiplier (1x, 2x, 4x, 8x, 16x)
@@ -127,7 +127,7 @@ struct TDGameState {
     // Passive Data generation (soft-lock prevention)
     var virusesKilledTotal: Int = 0    // Total viruses killed by firewalls
     var dataFromKills: Int {
-        return virusesKilledTotal / 1000  // 1 Data per 1000 kills
+        return virusesKilledTotal / BalanceConfig.TDSession.virusKillsPerData
     }
 
     // Stats
@@ -154,7 +154,7 @@ struct TDGameState {
     // Player can place blockers to reroute viruses
     var blockerNodes: [BlockerNode] = []
     var blockerSlots: [BlockerSlot] = []
-    var maxBlockerSlots: Int = 3  // Start with 3, upgradeable
+    var maxBlockerSlots: Int = BalanceConfig.TDSession.startingBlockerSlots  // Start with default, upgradeable
 
     // Base paths (original paths without blockers)
     var basePaths: [EnemyPath] = []
@@ -441,8 +441,8 @@ struct TDSessionStats {
     var enemiesKilled: Int = 0
     var towersPlaced: Int = 0
     var towersUpgraded: Int = 0
-    var goldEarned: Int = 0
-    var goldSpent: Int = 0
+    var hashEarned: Int = 0
+    var hashSpent: Int = 0
     var damageDealt: CGFloat = 0
     var wavesCompleted: Int = 0
 }
@@ -729,7 +729,7 @@ struct Tower: Identifiable, Codable {
     var towerName: String
 
     // Power consumption (System: Reboot)
-    var powerDraw: Int = 20  // Watts consumed while this tower is placed
+    var powerDraw: Int = BalanceConfig.TowerPower.defaultPowerDraw  // Watts consumed while this tower is placed
 
     // Upgrade cost base (from Protocol's baseUpgradeCost, scales by rarity)
     var baseUpgradeCost: Int = 50
@@ -993,27 +993,27 @@ struct TDGameResult {
     var victory: Bool
     var wavesCompleted: Int
     var enemiesKilled: Int
-    var goldEarned: Int
+    var hashEarned: Int
     var towersPlaced: Int
     var timePlayed: TimeInterval
 
     /// Calculate XP reward
     var xpReward: Int {
-        var xp = wavesCompleted * 10
+        var xp = wavesCompleted * BalanceConfig.TDRewards.xpPerWave
         xp += enemiesKilled
         if victory {
-            xp += 50  // Victory bonus
+            xp += BalanceConfig.TDRewards.victoryXPBonus
         }
         return xp
     }
 
-    /// Calculate gold reward
-    var goldReward: Int {
-        var gold = goldEarned / 10  // 10% of earned gold
+    /// Calculate hash reward
+    var hashReward: Int {
+        var reward = hashEarned / BalanceConfig.TDRewards.hashRewardDivisor
         if victory {
-            gold += wavesCompleted * 5
+            reward += wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave
         }
-        return gold
+        return reward
     }
 }
 

@@ -23,13 +23,16 @@ class StorageService {
         // Try to load existing player
         if let data = userDefaults.data(forKey: Keys.playerProfile) {
             // First try to decode with current schema
-            if let profile = try? JSONDecoder().decode(PlayerProfile.self, from: data) {
+            do {
+                let profile = try JSONDecoder().decode(PlayerProfile.self, from: data)
                 // Apply migrations (unlocks all arenas for testing)
                 let migratedProfile = PlayerProfile.migrate(profile)
                 if migratedProfile.unlocks.arenas.count != profile.unlocks.arenas.count {
                     savePlayer(migratedProfile)
                 }
                 return migratedProfile
+            } catch {
+                print("[StorageService] WARNING: Failed to decode PlayerProfile, attempting legacy migration: \(error)")
             }
 
             // If that fails, try to migrate from legacy format
@@ -38,6 +41,8 @@ class StorageService {
                 savePlayer(migratedProfile)
                 return migratedProfile
             }
+
+            print("[StorageService] ERROR: Failed to load or migrate player profile, creating default")
         }
 
         // Create default player
@@ -130,8 +135,11 @@ class StorageService {
 
     /// Save player profile
     func savePlayer(_ profile: PlayerProfile) {
-        if let data = try? JSONEncoder().encode(profile) {
+        do {
+            let data = try JSONEncoder().encode(profile)
             userDefaults.set(data, forKey: Keys.playerProfile)
+        } catch {
+            print("[StorageService] ERROR: Failed to encode PlayerProfile: \(error)")
         }
     }
 
@@ -166,8 +174,11 @@ class StorageService {
 
     /// Save all players
     private func savePlayers(_ players: [PlayerProfile]) {
-        if let data = try? JSONEncoder().encode(players) {
+        do {
+            let data = try JSONEncoder().encode(players)
             userDefaults.set(data, forKey: Keys.allPlayers)
+        } catch {
+            print("[StorageService] ERROR: Failed to encode player list: \(error)")
         }
     }
 
@@ -224,12 +235,12 @@ class StorageService {
             profile.survivorStats.longestSurvival = time
         }
 
-        // Award XP and gold
-        let xpReward = kills + Int(time / 10) + (victory ? 25 : 0)
-        let goldReward = coinsCollected / 10
+        // Award XP and hash
+        let xpReward = kills + Int(time / BalanceConfig.SurvivorRewards.xpPerTimePeriod) + (victory ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
+        let hashReward = coinsCollected / BalanceConfig.SurvivorRewards.hashRewardDivisor
 
         profile.xp += xpReward
-        profile.addHash(goldReward)
+        profile.addHash(hashReward)
 
         // Check level up
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -241,7 +252,7 @@ class StorageService {
     }
 
     /// Save TD game result
-    func saveTDResult(wavesCompleted: Int, enemiesKilled: Int, goldEarned: Int, towersPlaced: Int, victory: Bool) {
+    func saveTDResult(wavesCompleted: Int, enemiesKilled: Int, hashEarned: Int, towersPlaced: Int, victory: Bool) {
         var profile = getOrCreateDefaultPlayer()
 
         // Update TD-specific stats
@@ -257,12 +268,12 @@ class StorageService {
         // Update global stats (TD kills count toward total)
         profile.totalKills += enemiesKilled
 
-        // Award XP and gold
-        let xpReward = wavesCompleted * 10 + enemiesKilled + (victory ? 50 : 0)
-        let goldReward = goldEarned / 10 + (victory ? wavesCompleted * 5 : 0)
+        // Award XP and hash
+        let xpReward = wavesCompleted * BalanceConfig.TDRewards.xpPerWave + enemiesKilled + (victory ? BalanceConfig.TDRewards.victoryXPBonus : 0)
+        let hashReward = hashEarned / BalanceConfig.TDRewards.hashRewardDivisor + (victory ? wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave : 0)
 
         profile.xp += xpReward
-        profile.addHash(goldReward)
+        profile.addHash(hashReward)
 
         // Check level up
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -468,8 +479,8 @@ class StorageService {
         // 5. Calculate new efficiency
         let startLeakCounter = profile.tdStats.lastLeakCounter
         let newLeakCounter = startLeakCounter + totalLeaks
-        let startEfficiency = max(0, min(100, 100 - CGFloat(startLeakCounter) * 5))
-        let newEfficiency = max(0, min(100, 100 - CGFloat(newLeakCounter) * 5))
+        let startEfficiency = max(0, min(100, 100 - CGFloat(startLeakCounter) * BalanceConfig.TDSession.efficiencyLossPerLeak))
+        let newEfficiency = max(0, min(100, 100 - CGFloat(newLeakCounter) * BalanceConfig.TDSession.efficiencyLossPerLeak))
 
         // 6. Calculate average efficiency during offline period
         let avgEfficiency = (startEfficiency + newEfficiency) / 2
@@ -573,17 +584,23 @@ class StorageService {
 
     /// Save TD session state (towers, slots, resources)
     func saveTDSession(_ state: TDSessionState) {
-        if let data = try? JSONEncoder().encode(state) {
+        do {
+            let data = try JSONEncoder().encode(state)
             userDefaults.set(data, forKey: Keys.tdSessionState)
+        } catch {
+            print("[StorageService] ERROR: Failed to encode TDSessionState: \(error)")
         }
     }
 
     /// Load TD session state
     func loadTDSession() -> TDSessionState? {
-        guard let data = userDefaults.data(forKey: Keys.tdSessionState),
-              let state = try? JSONDecoder().decode(TDSessionState.self, from: data)
-        else { return nil }
-        return state
+        guard let data = userDefaults.data(forKey: Keys.tdSessionState) else { return nil }
+        do {
+            return try JSONDecoder().decode(TDSessionState.self, from: data)
+        } catch {
+            print("[StorageService] ERROR: Failed to decode TDSessionState: \(error)")
+            return nil
+        }
     }
 
     /// Clear TD session state (on game reset or new game)

@@ -622,6 +622,9 @@ struct BalanceConfig {
         /// Maximum leak counter (100% efficiency loss)
         static let maxLeakCounter: Int = 20
 
+        /// Leak counter increase when player loses Zero-Day boss fight
+        static let defeatLeakPenalty: Int = 5
+
         /// Zero-Day base health
         static let baseHealth: CGFloat = 9999
 
@@ -879,6 +882,78 @@ struct BalanceConfig {
         static let health: CGFloat = 99999
     }
 
+    // MARK: - TD Session Defaults
+
+    struct TDSession {
+        /// Starting hash for new TD sessions
+        static let startingHash: Int = 100
+
+        /// Starting PSU power capacity (watts)
+        static let startingPowerCapacity: Int = 300
+
+        /// Default hash storage cap
+        static let defaultHashStorageCapacity: Int = 25000
+
+        /// Efficiency loss per leaked virus (percentage points)
+        static let efficiencyLossPerLeak: CGFloat = 5
+
+        /// Starting blocker slots
+        static let startingBlockerSlots: Int = 3
+
+        /// Base snap-to-slot distance in screen points (scaled by camera zoom)
+        static let baseSnapScreenDistance: CGFloat = 60
+
+        /// Snap-to-slot distance for large maps (width > 2000)
+        static let largeMapSnapScreenDistance: CGFloat = 100
+
+        /// Virus kills required to generate 1 Data (soft-lock prevention)
+        static let virusKillsPerData: Int = 1000
+    }
+
+    // MARK: - TD Rewards
+
+    struct TDRewards {
+        /// XP per wave completed
+        static let xpPerWave: Int = 10
+
+        /// Bonus XP for victory
+        static let victoryXPBonus: Int = 50
+
+        /// Hash reward divisor (earn 10% of session hash)
+        static let hashRewardDivisor: Int = 10
+
+        /// Victory hash bonus per wave
+        static let victoryHashPerWave: Int = 5
+
+        /// Death penalty: fraction of hash kept (0.5 = 50%)
+        static let deathHashPenalty: CGFloat = 0.5
+    }
+
+    // MARK: - Survivor Mode Rewards
+
+    struct SurvivorRewards {
+        /// XP granted per N seconds survived (1 XP per this many seconds)
+        static let xpPerTimePeriod: TimeInterval = 10
+
+        /// Bonus XP for winning / extracting
+        static let victoryXPBonus: Int = 25
+
+        /// Hash reward divisor (earn 1/N of collected coins)
+        static let hashRewardDivisor: Int = 10
+
+        /// Fraction of session hash kept on death (0.5 = 50%)
+        static let deathHashPenalty: CGFloat = 0.5
+
+        /// Legacy fallback: hash per N kills
+        static let legacyHashPerKills: Int = 20
+
+        /// Legacy fallback: hash per N seconds
+        static let legacyHashPerSeconds: Int = 30
+
+        /// Legacy fallback: victory hash bonus
+        static let legacyVictoryHashBonus: Int = 10
+    }
+
     // MARK: - Boss Difficulty Scaling
     // Multipliers and rewards per difficulty level
 
@@ -949,6 +1024,52 @@ struct BalanceConfig {
         static let chainTargets: Int = 3
     }
 
+    // MARK: - CPU Tier Upgrades
+
+    struct CPU {
+        /// Multiplier for each CPU tier (1x, 2x, 4x, 8x, 16x)
+        static let tierMultipliers: [CGFloat] = [1.0, 2.0, 4.0, 8.0, 16.0]
+
+        /// Cost in Hash to upgrade to next tier (tier 1→2, 2→3, 3→4, 4→5)
+        static let upgradeCosts: [Int] = [1000, 5000, 25000, 100000]
+
+        /// Maximum CPU tier
+        static let maxTier: Int = 5
+
+        /// Get multiplier for a given tier (1-indexed)
+        static func multiplier(tier: Int) -> CGFloat {
+            let index = max(0, min(tier - 1, tierMultipliers.count - 1))
+            return tierMultipliers[index]
+        }
+
+        /// Get upgrade cost for current tier, nil if already at max
+        static func upgradeCost(currentTier: Int) -> Int? {
+            let index = currentTier - 1
+            guard index >= 0 && index < upgradeCosts.count else { return nil }
+            return upgradeCosts[index]
+        }
+    }
+
+    // MARK: - Tower Power Draw
+
+    struct TowerPower {
+        /// Default power draw per tower (Watts)
+        static let defaultPowerDraw: Int = 20
+
+        /// Power draw by rarity
+        static let powerDrawByRarity: [Rarity: Int] = [
+            .common: 15,
+            .rare: 20,
+            .epic: 30,
+            .legendary: 40
+        ]
+
+        /// Get power draw for a given rarity
+        static func powerDraw(for rarity: Rarity) -> Int {
+            return powerDrawByRarity[rarity] ?? defaultPowerDraw
+        }
+    }
+
     // MARK: - Overclock System
     // Player can overclock CPU for risk/reward gameplay
 
@@ -968,6 +1089,16 @@ struct BalanceConfig {
 
     // MARK: - Boss Loot Modal
     // Settings for the post-boss loot reveal experience
+
+    struct BossRewards {
+        /// Difficulty-based Hash bonus for defeating a boss
+        static let difficultyHashBonus: [BossDifficulty: Int] = [
+            .easy: 250,
+            .normal: 500,
+            .hard: 1500,
+            .nightmare: 3000
+        ]
+    }
 
     struct BossLoot {
         /// Number of taps required to decrypt each item
@@ -1563,6 +1694,12 @@ struct BalanceConfig {
 
         /// Spawn offset from player edge
         static let spawnOffset: CGFloat = 10
+
+        /// Chain lightning damage multiplier per bounce (70% of previous hit)
+        static let chainDamageMultiplier: CGFloat = 0.7
+
+        /// Chain lightning search range for next target
+        static let chainSearchRange: CGFloat = 120
     }
 
     // MARK: - Overclock Duplicate Values (TD State)

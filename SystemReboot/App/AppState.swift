@@ -108,53 +108,8 @@ class AppState: ObservableObject {
         checkOfflineEarnings()
     }
 
-    // MARK: - FTUE (First Time User Experience)
-
-    /// Called when player completes the intro sequence
-    func completeIntroSequence() {
-        updatePlayer { profile in
-            profile.hasCompletedIntro = true
-        }
-        showIntroSequence = false
-
-        // Activate initial tutorial hints
-        TutorialHintManager.shared.activateHint(.deckCard)
-        TutorialHintManager.shared.activateHint(.towerSlot)
-    }
-
-    /// Called when player places their first tower
-    func recordFirstTowerPlacement() {
-        guard !currentPlayer.firstTowerPlaced else { return }
-
-        updatePlayer { profile in
-            profile.firstTowerPlaced = true
-        }
-
-        // Dismiss the deck card and tower slot hints
-        markHintSeen(.deckCard)
-        markHintSeen(.towerSlot)
-    }
-
-    /// Mark a tutorial hint as seen (permanently dismissed)
-    func markHintSeen(_ hint: TutorialHintType) {
-        TutorialHintManager.shared.markHintSeen(hint)
-
-        updatePlayer { profile in
-            if !profile.tutorialHintsSeen.contains(hint.rawValue) {
-                profile.tutorialHintsSeen.append(hint.rawValue)
-            }
-        }
-    }
-
-    /// Check milestone and potentially show hints
-    func checkMilestone(hashEarned: Int) {
-        // Milestone: First 500 Hash earned - show PSU upgrade hint
-        if hashEarned >= 500 && !currentPlayer.tutorialHintsSeen.contains(TutorialHintType.psuUpgrade.rawValue) {
-            TutorialHintManager.shared.activateHint(.psuUpgrade)
-        }
-    }
-
     // MARK: - Player Management
+    // Note: FTUE methods moved to AppState+Tutorial.swift
 
     func refreshPlayer() {
         currentPlayer = StorageService.shared.getOrCreateDefaultPlayer()
@@ -225,22 +180,22 @@ class AppState: ObservableObject {
         let protocols = compiledProtocolIds
         guard !protocols.isEmpty else { return }
         guard let currentIndex = protocols.firstIndex(of: currentPlayer.equippedProtocolId) else {
-            currentPlayer.equippedProtocolId = protocols[0]
+            updatePlayer { $0.equippedProtocolId = protocols[0] }
             return
         }
         let nextIndex = (currentIndex + 1) % protocols.count
-        currentPlayer.equippedProtocolId = protocols[nextIndex]
+        updatePlayer { $0.equippedProtocolId = protocols[nextIndex] }
     }
 
     func selectPreviousProtocol() {
         let protocols = compiledProtocolIds
         guard !protocols.isEmpty else { return }
         guard let currentIndex = protocols.firstIndex(of: currentPlayer.equippedProtocolId) else {
-            currentPlayer.equippedProtocolId = protocols[0]
+            updatePlayer { $0.equippedProtocolId = protocols[0] }
             return
         }
         let prevIndex = (currentIndex - 1 + protocols.count) % protocols.count
-        currentPlayer.equippedProtocolId = protocols[prevIndex]
+        updatePlayer { $0.equippedProtocolId = protocols[prevIndex] }
     }
 
     /// Legacy support
@@ -289,7 +244,7 @@ class AppState: ObservableObject {
     }
 
     /// Record TD game result
-    func recordTDResult(wavesCompleted: Int, enemiesKilled: Int, goldEarned: Int, victory: Bool) {
+    func recordTDResult(wavesCompleted: Int, enemiesKilled: Int, hashEarned: Int, victory: Bool) {
         updatePlayer { profile in
             profile.tdStats.gamesPlayed += 1
             if victory {
@@ -299,12 +254,12 @@ class AppState: ObservableObject {
             profile.tdStats.highestWave = max(profile.tdStats.highestWave, wavesCompleted)
             profile.tdStats.totalTDKills += enemiesKilled
 
-            // Award XP and gold
-            let xpReward = wavesCompleted * 10 + enemiesKilled + (victory ? 50 : 0)
-            let goldReward = goldEarned / 10 + (victory ? wavesCompleted * 5 : 0)
+            // Award XP and hash
+            let xpReward = wavesCompleted * BalanceConfig.TDRewards.xpPerWave + enemiesKilled + (victory ? BalanceConfig.TDRewards.victoryXPBonus : 0)
+            let hashReward = hashEarned / BalanceConfig.TDRewards.hashRewardDivisor + (victory ? wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave : 0)
 
             profile.xp += xpReward
-            profile.addHash(goldReward)
+            profile.addHash(hashReward)
 
             // Check level up
             while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
@@ -351,7 +306,7 @@ class AppState: ObservableObject {
             }
 
             // Award XP
-            let xpReward = kills + Int(time / 10) + (victory || extracted ? 25 : 0)
+            let xpReward = kills + Int(time / BalanceConfig.SurvivorRewards.xpPerTimePeriod) + (victory || extracted ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
             profile.xp += xpReward
 
             // System: Reboot - Award HASH
@@ -359,12 +314,12 @@ class AppState: ObservableObject {
             let hashReward: Int
             if hashEarned > 0 {
                 // New system: Use actual session Hash with extraction bonus
-                hashReward = extracted ? hashEarned : hashEarned / 2
+                hashReward = extracted ? hashEarned : Int(CGFloat(hashEarned) * BalanceConfig.SurvivorRewards.deathHashPenalty)
             } else {
                 // Legacy fallback for old calls
-                let hashFromKills = kills / 20
-                let hashFromTime = Int(time / 30)
-                let hashVictoryBonus = victory ? 10 : 0
+                let hashFromKills = kills / BalanceConfig.SurvivorRewards.legacyHashPerKills
+                let hashFromTime = Int(time / TimeInterval(BalanceConfig.SurvivorRewards.legacyHashPerSeconds))
+                let hashVictoryBonus = victory ? BalanceConfig.SurvivorRewards.legacyVictoryHashBonus : 0
                 hashReward = max(1, hashFromKills + hashFromTime + hashVictoryBonus)
             }
 
@@ -380,13 +335,10 @@ class AppState: ObservableObject {
 
     // MARK: - Boss Rewards
 
-    /// Difficulty-based Hash bonus
-    static let difficultyHashBonus: [BossDifficulty: Int] = [
-        .easy: 250,
-        .normal: 500,
-        .hard: 1500,
-        .nightmare: 3000
-    ]
+    /// Difficulty-based Hash bonus (from BalanceConfig)
+    static var difficultyHashBonus: [BossDifficulty: Int] {
+        BalanceConfig.BossRewards.difficultyHashBonus
+    }
 
     /// Record boss defeat and award blueprint using RNG loot system
     /// - Returns: BlueprintDropSystem.DropResult containing the awarded protocol (nil if no drop)

@@ -121,7 +121,7 @@ class PathSystem {
         if wholeHash > 0 {
             let actualAdded = state.addHash(wholeHash)
             state.hashAccumulator -= CGFloat(wholeHash)
-            state.stats.goldEarned += actualAdded
+            state.stats.hashEarned += actualAdded
         }
     }
 

@@ -172,18 +172,21 @@ struct BossLootModal: View {
     }
 
     private var scanLineOverlay: some View {
-        GeometryReader { geo in
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [.clear, DesignColors.primary.opacity(0.08), .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
+        TimelineView(.animation) { timeline in
+            GeometryReader { geo in
+                let height = max(geo.size.height, 1)
+                let offset = CGFloat(Int(timeline.date.timeIntervalSince1970 * 50) % Int(height))
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.clear, DesignColors.primary.opacity(0.08), .clear],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
-                .frame(height: 80)
-                .offset(y: CGFloat(Int(Date().timeIntervalSince1970 * 50) % Int(geo.size.height)))
-                .animation(.linear(duration: 2.0).repeatForever(autoreverses: false), value: Date())
+                    .frame(height: 80)
+                    .offset(y: offset)
+            }
         }
         .allowsHitTesting(false)
     }

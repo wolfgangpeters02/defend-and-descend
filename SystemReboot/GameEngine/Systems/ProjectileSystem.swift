@@ -256,6 +256,43 @@ class ProjectileSystem {
             EnemySystem.slowEnemy(state: &state, enemyIndex: enemyIndex, slowAmount: slow, duration: slowDuration)
         }
 
+        // Chain lightning
+        if let chainCount = proj.chain, chainCount > 0 {
+            let chainRange = BalanceConfig.ProjectileSystem.chainSearchRange
+            let chainDamageMultiplier = BalanceConfig.ProjectileSystem.chainDamageMultiplier
+            var chainDamage = damage * chainDamageMultiplier
+            var lastX = enemy.x
+            var lastY = enemy.y
+            var hitIds: Set<String> = [enemy.id]
+            var chainsRemaining = chainCount
+
+            for k in 0..<state.enemies.count where chainsRemaining > 0 {
+                if state.enemies[k].isDead || hitIds.contains(state.enemies[k].id) { continue }
+
+                let dx = state.enemies[k].x - lastX
+                let dy = state.enemies[k].y - lastY
+                let dist = sqrt(dx * dx + dy * dy)
+
+                if dist <= chainRange {
+                    EnemySystem.damageEnemy(state: &state, enemyIndex: k, damage: chainDamage)
+
+                    let chainEvent = DamageEvent(
+                        type: .chain,
+                        amount: Int(chainDamage),
+                        position: CGPoint(x: state.enemies[k].x, y: state.enemies[k].y),
+                        timestamp: state.startTime + state.timeElapsed
+                    )
+                    state.damageEvents.append(chainEvent)
+
+                    hitIds.insert(state.enemies[k].id)
+                    lastX = state.enemies[k].x
+                    lastY = state.enemies[k].y
+                    chainDamage *= chainDamageMultiplier
+                    chainsRemaining -= 1
+                }
+            }
+        }
+
         // Splash damage
         if let splash = proj.splash {
             for k in 0..<state.enemies.count {

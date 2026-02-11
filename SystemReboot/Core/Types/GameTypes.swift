@@ -563,6 +563,7 @@ struct Projectile: Identifiable {
     var splash: CGFloat?
     var slow: CGFloat?
     var slowDuration: TimeInterval?
+    var chain: Int?
 
     var size: CGFloat?
     var trail: Bool?
@@ -922,7 +923,10 @@ struct PlayerProfile: Codable {
         case unlockedExpansions, motherboardEfficiency
         case unlockedSectors, sectorBestTimes, tdSectorUnlockProgress, unlockedTDSectors
         case defeatedDistrictBosses
-        case lastActiveTimestamp, offlineEfficiencySnapshot
+        // lastActiveTimestamp and offlineEfficiencySnapshot removed from CodingKeys:
+        // Source of truth is tdStats.lastActiveTimestamp / tdStats.averageEfficiency.
+        // Old saves may contain a Date-formatted lastActiveTimestamp which would fail
+        // to decode as TimeInterval, so we exclude it and use defaults.
         case unlocks, weaponLevels
         case survivorStats, tdStats
         case totalRuns, bestTime, totalKills, legendariesUnlocked
@@ -985,12 +989,14 @@ struct PlayerProfile: Codable {
     /// Defeating a district boss unlocks visibility of the next district
     var defeatedDistrictBosses: [String] = []
 
-    // MARK: - Offline State (New)
+    // MARK: - Offline State (Legacy - actual state lives in tdStats)
 
     /// Last time the app was active (for offline calculation)
-    var lastActiveTimestamp: Date = Date()
+    /// NOTE: Source of truth is tdStats.lastActiveTimestamp (TimeInterval)
+    var lastActiveTimestamp: TimeInterval = 0
 
     /// Efficiency snapshot for offline calculation
+    /// NOTE: Source of truth is tdStats.averageEfficiency
     var offlineEfficiencySnapshot: CGFloat = 1.0
 
     // MARK: - Legacy Fields (Preserved for migration)
@@ -1200,25 +1206,12 @@ struct TDModeStats: Codable {
 
     /// CPU tier multiplier for Hash income
     var cpuMultiplier: CGFloat {
-        switch cpuTier {
-        case 1: return 1.0
-        case 2: return 2.0
-        case 3: return 4.0
-        case 4: return 8.0
-        case 5: return 16.0
-        default: return 1.0
-        }
+        BalanceConfig.CPU.multiplier(tier: cpuTier)
     }
 
     /// Cost in Hash to upgrade to next CPU tier
     var nextCpuUpgradeCost: Int? {
-        switch cpuTier {
-        case 1: return 1000   // 1.0 -> 2.0
-        case 2: return 5000   // 2.0 -> 3.0
-        case 3: return 25000  // 3.0 -> 4.0
-        case 4: return 100000 // 4.0 -> 5.0
-        default: return nil   // Max tier
-        }
+        BalanceConfig.CPU.upgradeCost(currentTier: cpuTier)
     }
 
     /// Display name for current CPU tier
@@ -1266,7 +1259,7 @@ extension PlayerProfile {
             motherboardEfficiency: 1.0,
             unlockedSectors: [defaultSectorId, "cathedral"],  // RAM + Cathedral unlocked by default
             sectorBestTimes: [:],
-            lastActiveTimestamp: Date(),
+            lastActiveTimestamp: 0,
             offlineEfficiencySnapshot: 1.0,
             unlocks: PlayerUnlocks(
                 arenas: ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"],  // All arenas unlocked for testing

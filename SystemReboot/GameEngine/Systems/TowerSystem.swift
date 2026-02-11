@@ -57,7 +57,7 @@ class TowerSystem {
         state.towerSlots[slotIndex].towerId = tower.id
         state.hash -= placementCost
         state.stats.towersPlaced += 1
-        state.stats.goldSpent += placementCost
+        state.stats.hashSpent += placementCost
 
         return .success(tower: tower)
     }
@@ -128,7 +128,7 @@ class TowerSystem {
         state.towerSlots[slotIndex].towerId = tower.id
         state.hash -= placementCost
         state.stats.towersPlaced += 1
-        state.stats.goldSpent += placementCost
+        state.stats.hashSpent += placementCost
 
         return .success(tower: tower)
     }
@@ -176,7 +176,7 @@ class TowerSystem {
         // Deduct cost (only once, regardless of how many towers)
         state.hash -= cost
         state.stats.towersUpgraded += upgradeCount
-        state.stats.goldSpent += cost
+        state.stats.hashSpent += cost
 
         return TowerUpgradeResult(
             success: true,
@@ -409,7 +409,8 @@ class TowerSystem {
             pierceRemaining: tower.pierce,
             splash: tower.splash > 0 ? tower.splash : nil,
             slow: tower.slow,
-            slowDuration: tower.slowDuration
+            slowDuration: tower.slowDuration,
+            chain: tower.chain
         )
     }
 

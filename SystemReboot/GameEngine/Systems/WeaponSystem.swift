@@ -118,8 +118,9 @@ class WeaponSystem {
                 pierceRemaining: weapon.pierce,
                 sourceType: weapon.type,
                 splash: weapon.splash,
-                slow: nil,
-                slowDuration: nil,
+                slow: weapon.slow,
+                slowDuration: weapon.slowDuration,
+                chain: weapon.chain,
                 size: BalanceConfig.ProjectileSystem.playerProjectileRadius,
                 trail: true
             ))

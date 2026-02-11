@@ -19,6 +19,10 @@ struct SystemRebootApp: App {
         }
         .onChange(of: scenePhase) { newPhase in
             switch newPhase {
+            case .inactive:
+                // Save state when becoming inactive (e.g. notification center, control center)
+                // so data is preserved if the system kills the app before reaching .background
+                AppState.shared.onAppBackground()
             case .background:
                 // Save timestamp when going to background
                 AppState.shared.onAppBackground()
@@ -27,7 +31,7 @@ struct SystemRebootApp: App {
                 if previousScenePhase == .background {
                     AppState.shared.onAppForeground()
                 }
-            default:
+            @unknown default:
                 break
             }
             previousScenePhase = newPhase

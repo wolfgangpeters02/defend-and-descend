@@ -452,9 +452,7 @@ struct GameContainerView: View {
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {
-        let minutes = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return String(format: "%d:%02d", minutes, secs)
+        DesignHelpers.formatTime(seconds)
     }
 
     /// Trigger the glitch visual effect when taking damage
@@ -638,9 +636,7 @@ struct GameOverOverlay: View {
     }
 
     private func formatTime(_ seconds: TimeInterval) -> String {
-        let minutes = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return String(format: "%d:%02d", minutes, secs)
+        DesignHelpers.formatTime(seconds)
     }
 
     private func formatNumber(_ number: Int) -> String {

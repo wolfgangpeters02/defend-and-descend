@@ -254,7 +254,7 @@ class WaveSystem {
 
         // Award wave completion bonus (subject to Hash storage cap)
         let actualBonus = state.addHash(wave.bonusGold)
-        state.stats.goldEarned += actualBonus
+        state.stats.hashEarned += actualBonus
 
         // Countdown to next wave
         state.nextWaveCountdown = BalanceConfig.Waves.waveCooldown

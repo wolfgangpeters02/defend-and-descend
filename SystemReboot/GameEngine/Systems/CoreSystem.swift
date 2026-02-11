@@ -121,7 +121,7 @@ class CoreSystem {
         guard state.hash >= cost else { return false }
 
         state.hash -= cost
-        state.stats.goldSpent += cost
+        state.stats.hashSpent += cost
 
         switch stat {
         case .health:

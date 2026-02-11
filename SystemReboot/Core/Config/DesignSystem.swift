@@ -627,6 +627,89 @@ enum TowerEffects {
     }
 }
 
+// MARK: - Shared UI Helpers
+
+enum DesignHelpers {
+    /// Format seconds as "M:SS" time string
+    static func formatTime(_ seconds: TimeInterval) -> String {
+        let minutes = Int(seconds) / 60
+        let secs = Int(seconds) % 60
+        return String(format: "%d:%02d", minutes, secs)
+    }
+
+    /// Color for boss difficulty level
+    static func difficultyColor(_ difficulty: BossDifficulty) -> Color {
+        switch difficulty {
+        case .easy: return .green
+        case .normal: return .blue
+        case .hard: return .orange
+        case .nightmare: return .red
+        }
+    }
+
+    /// SF Symbol name for a weapon/protocol type
+    static func iconForWeapon(_ weaponType: String) -> String {
+        switch weaponType.lowercased() {
+        case "bow", "crossbow":
+            return "scope"
+        case "trace_route":
+            return "scope"
+        case "kernel_pulse":
+            return "dot.circle.and.hand.point.up.left.fill"
+        case "wand", "staff":
+            return "wand.and.stars"
+        case "cannon":
+            return "cylinder.split.1x2.fill"
+        case "bomb":
+            return "burst.fill"
+        case "burst_protocol":
+            return "burst.fill"
+        case "ice_shard", "snowflake":
+            return "snowflake"
+        case "laser":
+            return "rays"
+        case "root_access":
+            return "terminal.fill"
+        case "lightning", "overflow":
+            return "bolt.horizontal.fill"
+        case "flamethrower":
+            return "flame.fill"
+        case "excalibur", "sword", "katana":
+            return "sparkle"
+        case "fork_bomb":
+            return "arrow.triangle.branch"
+        case "null_pointer":
+            return "exclamationmark.triangle.fill"
+        default:
+            return "square.fill"
+        }
+    }
+
+    /// Color for weapon/protocol archetype
+    static func archetypeColor(for id: String) -> Color {
+        switch id.lowercased() {
+        case "bow", "crossbow", "trace_route", "kernel_pulse":
+            return Color(hex: "00d4ff") ?? .cyan
+        case "cannon", "bomb", "burst_protocol", "flamethrower":
+            return Color(hex: "f97316") ?? .orange
+        case "ice_shard", "snowflake":
+            return Color(hex: "06b6d4") ?? .cyan
+        case "staff", "wand":
+            return Color(hex: "a855f7") ?? .purple
+        case "laser", "root_access", "null_pointer":
+            return Color(hex: "ef4444") ?? .red
+        case "lightning", "overflow":
+            return Color(hex: "22d3ee") ?? .cyan
+        case "excalibur", "sword", "katana":
+            return Color(hex: "f59e0b") ?? .orange
+        case "fork_bomb":
+            return Color(hex: "8b5cf6") ?? .purple
+        default:
+            return .cyan
+        }
+    }
+}
+
 // MARK: - SKShapeNode Extension
 
 import SpriteKit

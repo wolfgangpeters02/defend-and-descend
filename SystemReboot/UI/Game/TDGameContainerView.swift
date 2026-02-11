@@ -175,8 +175,9 @@ struct TDGameContainerView: View {
                 bossFightNotificationObserver = nil
             }
         }
-        .onChange(of: gameState?.bossActive) { _ in }
-        .onChange(of: gameState?.overclockActive) { _ in }
+        // Force view refresh when boss or overclock state changes
+        .onChange(of: gameState?.bossActive) { _ in isPaused = isPaused }
+        .onChange(of: gameState?.overclockActive) { _ in isPaused = isPaused }
         .navigationBarHidden(true)
         .fullScreenCover(isPresented: $showZeroDayBossFight) {
             ZeroDayBossFightView(
@@ -414,7 +415,7 @@ struct TDGameContainerView: View {
         case .defeat:
             // Zero-Day remains active, efficiency penalty
             if var state = gameState {
-                state.leakCounter = min(20, state.leakCounter + 5)  // -25% efficiency penalty
+                state.leakCounter = min(BalanceConfig.ZeroDay.maxLeakCounter, state.leakCounter + BalanceConfig.ZeroDay.defeatLeakPenalty)
                 gameState = state
             }
             HapticsService.shared.play(.defeat)
@@ -439,7 +440,7 @@ struct TDGameContainerView: View {
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.orange)
 
-                    Text("SUPER VIRUS DETECTED")
+                    Text(L10n.Boss.superVirusDetected)
                         .font(.system(size: 18, weight: .black, design: .monospaced))
                         .foregroundColor(.orange)
 
@@ -449,16 +450,16 @@ struct TDGameContainerView: View {
                 }
 
                 if let bossType = gameState?.activeBossType {
-                    Text(bossType == "cyberboss" ? "CYBERBOSS" : "VOID HARBINGER")
+                    Text(bossType == "cyberboss" ? L10n.Boss.cyberboss : L10n.Boss.voidHarbinger)
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                 }
 
-                Text("Immune to Firewalls - Manual engagement required")
+                Text(L10n.Boss.immuneToFirewalls)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.gray)
 
-                Text("Will reach CPU and drain 20% efficiency if ignored")
+                Text(L10n.Boss.ignoreHint)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.red.opacity(0.8))
 
@@ -469,7 +470,7 @@ struct TDGameContainerView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "person.fill.viewfinder")
                             .font(.system(size: 18, weight: .bold))
-                        Text("ENGAGE")
+                        Text(L10n.Boss.engageTarget)
                             .font(.system(size: 16, weight: .black, design: .monospaced))
                     }
                     .foregroundColor(.black)
@@ -510,12 +511,12 @@ struct TDGameContainerView: View {
 
             // Modal
             VStack(spacing: 16) {
-                Text("SELECT DIFFICULTY")
+                Text(L10n.Boss.selectDifficulty)
                     .font(.system(size: 20, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
 
                 if let bossType = gameState?.activeBossType {
-                    Text(bossType == "cyberboss" ? "CYBERBOSS" : "VOID HARBINGER")
+                    Text(bossType == "cyberboss" ? L10n.Boss.cyberboss : L10n.Boss.voidHarbinger)
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.orange)
                 }
@@ -529,7 +530,7 @@ struct TDGameContainerView: View {
                 Button(action: {
                     showBossDifficultySelector = false
                 }) {
-                    Text("CANCEL")
+                    Text(L10n.Common.cancel)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundColor(.gray)
                         .padding(.vertical, 8)
@@ -586,12 +587,7 @@ struct TDGameContainerView: View {
     }
 
     private func difficultyColor(_ difficulty: BossDifficulty) -> Color {
-        switch difficulty {
-        case .easy: return .green
-        case .normal: return .blue
-        case .hard: return .orange
-        case .nightmare: return .red
-        }
+        DesignHelpers.difficultyColor(difficulty)
     }
 
     private func startBossFight(difficulty: BossDifficulty) {
@@ -634,7 +630,7 @@ struct TDGameContainerView: View {
                             .font(.system(size: 32))
                             .foregroundColor(buttonColor)
 
-                        Text("OVERCLOCK")
+                        Text(L10n.TD.overclock)
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .foregroundColor(buttonColor)
 
@@ -670,7 +666,7 @@ struct TDGameContainerView: View {
                         .font(.system(size: 24))
                         .foregroundColor(.orange)
 
-                    Text("OVERCLOCKED")
+                    Text(L10n.TD.overclocking)
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundColor(.orange)
 
@@ -722,12 +718,13 @@ struct TDGameContainerView: View {
             Color.black.opacity(0.95)
                 .ignoresSafeArea()
 
-            // Glitch-style lines
+            // Glitch-style lines (pre-computed to avoid non-deterministic rendering)
             VStack(spacing: 4) {
-                ForEach(0..<50, id: \.self) { _ in
+                ForEach(0..<50, id: \.self) { i in
+                    let seed = Double(i)
                     Rectangle()
-                        .fill(Color.red.opacity(Double.random(in: 0.05...0.15)))
-                        .frame(height: CGFloat.random(in: 1...3))
+                        .fill(Color.red.opacity(0.05 + (seed.truncatingRemainder(dividingBy: 3)) * 0.05))
+                        .frame(height: CGFloat(1 + Int(seed) % 3))
                 }
             }
             .ignoresSafeArea()
@@ -1176,7 +1173,7 @@ struct TDGameContainerView: View {
             // Use camera scale if available, otherwise compute from view/scene ratio
             let cameraScale = scene?.cameraScale ?? 1.0
             // Snap distance in game units: larger when zoomed out, smaller when zoomed in
-            let snapDistanceInGameUnits: CGFloat = 60 * cameraScale
+            let snapDistanceInGameUnits: CGFloat = BalanceConfig.TDSession.baseSnapScreenDistance * cameraScale
 
             var minDistance: CGFloat = snapDistanceInGameUnits
 
@@ -1644,7 +1641,7 @@ struct TDGameContainerView: View {
                     VStack(spacing: 16) {
                         GameEndStatRow(label: L10n.TD.waves, value: "\(state.wavesCompleted)/20", icon: "waveform.path", color: .purple)
                         GameEndStatRow(label: L10n.TD.viruses, value: "\(state.stats.enemiesKilled)", icon: "ladybug.fill", color: .red)
-                        GameEndStatRow(label: L10n.Common.hash, value: "Ħ\(state.stats.goldEarned)", icon: "number.circle.fill", color: .cyan)
+                        GameEndStatRow(label: L10n.Common.hash, value: "Ħ\(state.stats.hashEarned)", icon: "number.circle.fill", color: .cyan)
                     }
                     .padding(24)
                     .background(Color.white.opacity(0.05))
@@ -2223,8 +2220,8 @@ struct TDGameContainerView: View {
         profile.tdStats.totalTDKills += state.stats.enemiesKilled
 
         // Award XP and Hash (System: Reboot)
-        let xpReward = state.wavesCompleted * 10 + state.stats.enemiesKilled + (state.victory ? 50 : 0)
-        let hashReward = state.stats.goldEarned / 10 + (state.victory ? state.wavesCompleted * 5 : 0)
+        let xpReward = state.wavesCompleted * BalanceConfig.TDRewards.xpPerWave + state.stats.enemiesKilled + (state.victory ? BalanceConfig.TDRewards.victoryXPBonus : 0)
+        let hashReward = state.stats.hashEarned / BalanceConfig.TDRewards.hashRewardDivisor + (state.victory ? state.wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave : 0)
 
         profile.xp += xpReward         // XP for leveling
         profile.addHash(hashReward)    // Hash currency
@@ -2316,908 +2313,10 @@ private class TDGameSceneDelegateHandler: TDGameSceneDelegate {
     }
 }
 
-// MARK: - Tower Deck Card (Large Touch-Friendly)
-
-struct TowerDeckCard: View {
-    let weapon: WeaponConfig
-    let gold: Int
-    let onDragStart: () -> Void
-    let onDragChanged: (DragGesture.Value) -> Void
-    let onDragEnded: () -> Void
-
-    @State private var isDragging = false
-    @State private var pulseAnimation = false
-
-    private var cost: Int {
-        TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common)
-    }
-
-    private var canAfford: Bool {
-        gold >= cost
-    }
-
-    private var rarityColor: Color {
-        RarityColors.color(for: weapon.rarity)
-    }
-
-    private var archetypeColor: Color {
-        // Match the tower archetype colors
-        switch weapon.id.lowercased() {
-        case "bow", "crossbow", "trace_route", "kernel_pulse":
-            return Color(hex: "00d4ff") ?? .cyan
-        case "cannon", "bomb", "burst_protocol":
-            return Color(hex: "f97316") ?? .orange
-        case "ice_shard", "snowflake":
-            return Color(hex: "06b6d4") ?? .cyan
-        case "staff", "wand":
-            return Color(hex: "a855f7") ?? .purple
-        case "laser", "root_access":
-            return Color(hex: "ef4444") ?? .red
-        case "lightning", "overflow":
-            return Color(hex: "22d3ee") ?? .cyan
-        case "flamethrower":
-            return Color(hex: "f97316") ?? .orange
-        case "excalibur", "sword", "katana":
-            return Color(hex: "f59e0b") ?? .orange
-        case "fork_bomb":
-            return Color(hex: "8b5cf6") ?? .purple
-        case "null_pointer":
-            return Color(hex: "ef4444") ?? .red
-        default:
-            return .cyan
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 4) {
-            // Enhanced tower icon with archetype styling
-            ZStack {
-                // Outer glow layer (for epic/legendary)
-                if weapon.rarity.lowercased() == "legendary" || weapon.rarity.lowercased() == "epic" {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(rarityColor.opacity(0.2))
-                        .frame(width: 64, height: 64)
-                        .blur(radius: 4)
-                        .scaleEffect(pulseAnimation ? 1.1 : 1.0)
-                }
-
-                // Main card background
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                archetypeColor.opacity(canAfford ? 0.4 : 0.15),
-                                rarityColor.opacity(canAfford ? 0.3 : 0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 60, height: 60)
-
-                // Circuit pattern overlay
-                TowerCardCircuitPattern()
-                    .stroke(archetypeColor.opacity(0.2), lineWidth: 0.5)
-                    .frame(width: 56, height: 56)
-                    .clipped()
-
-                // Weapon type icon with archetype styling
-                ZStack {
-                    // Icon glow
-                    Image(systemName: iconForWeapon(weapon.id))
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(archetypeColor.opacity(0.5))
-                        .blur(radius: 4)
-
-                    // Main icon
-                    Image(systemName: iconForWeapon(weapon.id))
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(canAfford ? .white : .gray)
-                }
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                rarityColor.opacity(canAfford ? 1 : 0.4),
-                                archetypeColor.opacity(canAfford ? 0.7 : 0.3)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 2
-                    )
-            )
-            .overlay(
-                // Rarity indicator corners
-                RarityCorners(rarity: weapon.rarity, color: rarityColor)
-                    .opacity(canAfford ? 1 : 0.4)
-            )
-            .scaleEffect(isDragging ? 0.85 : 1.0)
-            .shadow(color: canAfford ? archetypeColor.opacity(0.4) : .clear, radius: 6)
-
-            // Cost label with enhanced styling
-            HStack(spacing: 3) {
-                Image(systemName: "bitcoinsign.circle.fill")
-                    .font(.system(size: 11))
-                Text("\(cost)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-            }
-            .foregroundColor(canAfford ? .yellow : .red)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(Color.black.opacity(0.5))
-            .cornerRadius(4)
-        }
-        .opacity(canAfford ? 1.0 : 0.5)
-        .animation(.easeOut(duration: 0.15), value: isDragging)
-        .onAppear {
-            if weapon.rarity.lowercased() == "legendary" {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    pulseAnimation = true
-                }
-            }
-        }
-        .gesture(
-            DragGesture(minimumDistance: 5, coordinateSpace: .named("gameArea"))
-                .onChanged { value in
-                    if canAfford {
-                        if !isDragging {
-                            isDragging = true
-                            onDragStart()
-                        }
-                        onDragChanged(value)
-                    }
-                }
-                .onEnded { _ in
-                    isDragging = false
-                    onDragEnded()
-                }
-        )
-    }
-
-    private func iconForWeapon(_ weaponType: String) -> String {
-        // Enhanced icon selection matching tower archetypes
-        switch weaponType.lowercased() {
-        case "bow", "crossbow":
-            return "scope"  // Targeting reticle
-        case "trace_route":
-            return "scope"  // Sniper scope
-        case "kernel_pulse":
-            return "dot.circle.and.hand.point.up.left.fill"  // Targeting
-        case "wand", "staff":
-            return "wand.and.stars"  // Arcane magic
-        case "cannon":
-            return "cylinder.split.1x2.fill"  // Artillery barrel
-        case "bomb":
-            return "burst.fill"  // Explosion
-        case "burst_protocol":
-            return "burst.fill"  // Shotgun burst
-        case "ice_shard", "snowflake":
-            return "snowflake"  // Ice crystal
-        case "laser":
-            return "rays"  // Beam emitter
-        case "root_access":
-            return "terminal.fill"  // Railgun/terminal
-        case "lightning", "overflow":
-            return "bolt.horizontal.fill"  // Tesla/chain
-        case "flamethrower":
-            return "flame.fill"  // Fire
-        case "excalibur", "sword", "katana":
-            return "sparkle"  // Divine/legendary (fallback from shield)
-        case "fork_bomb":
-            return "arrow.triangle.branch"  // Multi-shot branching
-        case "null_pointer":
-            return "exclamationmark.triangle.fill"  // Error/execute
-        default:
-            return "square.fill"
-        }
-    }
-}
-
-// MARK: - Tower Card Circuit Pattern
-
-struct TowerCardCircuitPattern: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let step: CGFloat = 12
-
-        // Horizontal traces
-        for y in stride(from: step, to: rect.height, by: step * 2) {
-            path.move(to: CGPoint(x: 0, y: y))
-            path.addLine(to: CGPoint(x: rect.width * 0.3, y: y))
-
-            path.move(to: CGPoint(x: rect.width * 0.7, y: y))
-            path.addLine(to: CGPoint(x: rect.width, y: y))
-        }
-
-        // Vertical traces
-        for x in stride(from: step, to: rect.width, by: step * 2) {
-            path.move(to: CGPoint(x: x, y: 0))
-            path.addLine(to: CGPoint(x: x, y: rect.height * 0.25))
-
-            path.move(to: CGPoint(x: x, y: rect.height * 0.75))
-            path.addLine(to: CGPoint(x: x, y: rect.height))
-        }
-
-        return path
-    }
-}
-
-// MARK: - Rarity Corner Indicators
-
-struct RarityCorners: View {
-    let rarity: String
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            let cornerSize: CGFloat = rarity.lowercased() == "legendary" ? 8 : 6
-
-            // Top-left corner
-            Path { path in
-                path.move(to: CGPoint(x: 2, y: cornerSize + 2))
-                path.addLine(to: CGPoint(x: 2, y: 2))
-                path.addLine(to: CGPoint(x: cornerSize + 2, y: 2))
-            }
-            .stroke(color, lineWidth: 2)
-
-            // Top-right corner
-            Path { path in
-                path.move(to: CGPoint(x: geo.size.width - cornerSize - 2, y: 2))
-                path.addLine(to: CGPoint(x: geo.size.width - 2, y: 2))
-                path.addLine(to: CGPoint(x: geo.size.width - 2, y: cornerSize + 2))
-            }
-            .stroke(color, lineWidth: 2)
-
-            // Bottom-left corner
-            Path { path in
-                path.move(to: CGPoint(x: 2, y: geo.size.height - cornerSize - 2))
-                path.addLine(to: CGPoint(x: 2, y: geo.size.height - 2))
-                path.addLine(to: CGPoint(x: cornerSize + 2, y: geo.size.height - 2))
-            }
-            .stroke(color, lineWidth: 2)
-
-            // Bottom-right corner
-            Path { path in
-                path.move(to: CGPoint(x: geo.size.width - cornerSize - 2, y: geo.size.height - 2))
-                path.addLine(to: CGPoint(x: geo.size.width - 2, y: geo.size.height - 2))
-                path.addLine(to: CGPoint(x: geo.size.width - 2, y: geo.size.height - cornerSize - 2))
-            }
-            .stroke(color, lineWidth: 2)
-        }
-    }
-}
-
-// MARK: - Protocol Deck Card (System: Reboot - Firewall selection)
-
-struct ProtocolDeckCard: View {
-    let `protocol`: Protocol
-    let hash: Int
-    let onDragStart: () -> Void
-    let onDragChanged: (DragGesture.Value) -> Void
-    let onDragEnded: () -> Void
-
-    @State private var isDragging = false
-    @State private var pulseAnimation = false
-    @State private var glitchOffset: CGFloat = 0
-
-    private var cost: Int {
-        TowerSystem.towerPlacementCost(rarity: `protocol`.rarity)
-    }
-
-    private var canAfford: Bool {
-        hash >= cost
-    }
-
-    private var rarityColor: Color {
-        RarityColors.color(for: `protocol`.rarity)
-    }
-
-    private var archetypeColor: Color {
-        // Match protocol to tower archetype colors
-        switch `protocol`.id.lowercased() {
-        case "kernel_pulse":
-            return Color(hex: "00d4ff") ?? .cyan
-        case "burst_protocol":
-            return Color(hex: "f97316") ?? .orange
-        case "trace_route":
-            return Color(hex: "00d4ff") ?? .cyan
-        case "ice_shard":
-            return Color(hex: "06b6d4") ?? .cyan
-        case "fork_bomb":
-            return Color(hex: "8b5cf6") ?? .purple
-        case "root_access":
-            return Color(hex: "ef4444") ?? .red
-        case "overflow":
-            return Color(hex: "22d3ee") ?? .cyan
-        case "null_pointer":
-            return Color(hex: "ef4444") ?? .red
-        default:
-            return .cyan
-        }
-    }
-
-    private var enhancedIcon: String {
-        // Enhanced icons for protocols
-        switch `protocol`.id.lowercased() {
-        case "kernel_pulse":
-            return "dot.circle.and.hand.point.up.left.fill"
-        case "burst_protocol":
-            return "burst.fill"
-        case "trace_route":
-            return "scope"
-        case "ice_shard":
-            return "snowflake"
-        case "fork_bomb":
-            return "arrow.triangle.branch"
-        case "root_access":
-            return "terminal.fill"
-        case "overflow":
-            return "bolt.horizontal.fill"
-        case "null_pointer":
-            return "exclamationmark.triangle.fill"
-        default:
-            return `protocol`.iconName
-        }
-    }
-
-    var body: some View {
-        VStack(spacing: 4) {
-            // Enhanced firewall icon with protocol styling
-            ZStack {
-                // Outer glow for epic/legendary
-                if `protocol`.rarity == .legendary || `protocol`.rarity == .epic {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(rarityColor.opacity(0.2))
-                        .frame(width: 64, height: 64)
-                        .blur(radius: 4)
-                        .scaleEffect(pulseAnimation ? 1.1 : 1.0)
-                }
-
-                // Main card with gradient
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                archetypeColor.opacity(canAfford ? 0.4 : 0.15),
-                                rarityColor.opacity(canAfford ? 0.3 : 0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 60, height: 60)
-
-                // Circuit pattern
-                TowerCardCircuitPattern()
-                    .stroke(archetypeColor.opacity(0.2), lineWidth: 0.5)
-                    .frame(width: 56, height: 56)
-                    .clipped()
-
-                // Glitch effect for null_pointer
-                if `protocol`.id.lowercased() == "null_pointer" {
-                    Image(systemName: enhancedIcon)
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(.red.opacity(0.5))
-                        .offset(x: glitchOffset, y: 0)
-                }
-
-                // Protocol icon with glow
-                ZStack {
-                    Image(systemName: enhancedIcon)
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(archetypeColor.opacity(0.5))
-                        .blur(radius: 4)
-
-                    Image(systemName: enhancedIcon)
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(canAfford ? .white : .gray)
-                }
-
-                // Level badge (enhanced)
-                if `protocol`.level > 1 {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.up")
-                            .font(.system(size: 7, weight: .bold))
-                        Text("\(`protocol`.level)")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [archetypeColor.opacity(0.8), rarityColor.opacity(0.8)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(4)
-                    .offset(x: 18, y: -22)
-                }
-
-                // Compiled indicator
-                if `protocol`.isCompiled {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white, lineWidth: 1)
-                        )
-                        .offset(x: -22, y: -22)
-                }
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                rarityColor.opacity(canAfford ? 1 : 0.4),
-                                archetypeColor.opacity(canAfford ? 0.7 : 0.3)
-                            ]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ),
-                        lineWidth: 2
-                    )
-            )
-            .overlay(
-                RarityCorners(rarity: rarityString, color: rarityColor)
-                    .opacity(canAfford ? 1 : 0.4)
-            )
-            .scaleEffect(isDragging ? 0.85 : 1.0)
-            .shadow(color: canAfford ? archetypeColor.opacity(0.4) : .clear, radius: 6)
-
-            // Cost label (Hash)
-            HStack(spacing: 3) {
-                Text("Ħ")
-                    .font(.system(size: 11, weight: .bold))
-                Text("\(cost)")
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-            }
-            .foregroundColor(canAfford ? DesignColors.primary : .red)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(Color.black.opacity(0.5))
-            .cornerRadius(4)
-        }
-        .opacity(canAfford ? 1.0 : 0.5)
-        .animation(.easeOut(duration: 0.15), value: isDragging)
-        .onAppear {
-            if `protocol`.rarity == .legendary {
-                withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
-                    pulseAnimation = true
-                }
-            }
-            if `protocol`.id.lowercased() == "null_pointer" {
-                startGlitchAnimation()
-            }
-        }
-        .gesture(
-            DragGesture(minimumDistance: 5, coordinateSpace: .named("gameArea"))
-                .onChanged { value in
-                    if canAfford {
-                        if !isDragging {
-                            isDragging = true
-                            onDragStart()
-                        }
-                        onDragChanged(value)
-                    }
-                }
-                .onEnded { _ in
-                    isDragging = false
-                    onDragEnded()
-                }
-        )
-    }
-
-    private var rarityString: String {
-        switch `protocol`.rarity {
-        case .common: return "common"
-        case .rare: return "rare"
-        case .epic: return "epic"
-        case .legendary: return "legendary"
-        }
-    }
-
-    private func startGlitchAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-            if Bool.random() {
-                withAnimation(.linear(duration: 0.05)) {
-                    glitchOffset = CGFloat.random(in: -2...2)
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    withAnimation(.linear(duration: 0.05)) {
-                        glitchOffset = 0
-                    }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - TD Stat Row
-
-struct TDStatRow: View {
-    let icon: String
-    let label: String
-    let value: String
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(DesignTypography.caption(10))
-            Text("\(label):")
-                .foregroundColor(.gray)
-            Text(value)
-                .foregroundColor(.white)
-                .fontWeight(.medium)
-        }
-    }
-}
-
-// MARK: - Resource Indicator
-
-struct ResourceIndicator: View {
-    let icon: String
-    let value: Int
-    let color: Color
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: icon)
-                .foregroundColor(color)
-                .font(DesignTypography.caption(12))
-            Text("\(value)")
-                .foregroundColor(.white)
-                .fontWeight(.bold)
-                .font(DesignTypography.body(14))
-        }
-    }
-}
-
-// MARK: - Wave Progress Bar
-
-struct WaveProgressBar: View {
-    let current: Int
-    let total: Int
-
-    private var progress: CGFloat {
-        guard total > 0 else { return 1.0 }
-        return CGFloat(total - current) / CGFloat(total)
-    }
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .leading) {
-                // Background
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.gray.opacity(0.3))
-
-                // Progress fill
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [.green, .yellow]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: geometry.size.width * progress)
-            }
-        }
-        .frame(height: 4)
-    }
-}
-
-// MARK: - Countdown Bar
-
-struct CountdownBar: View {
-    let seconds: TimeInterval
-    let maxSeconds: TimeInterval
-
-    private var progress: CGFloat {
-        CGFloat(seconds / maxSeconds)
-    }
-
-    var body: some View {
-        VStack(spacing: 2) {
-            GeometryReader { geometry in
-                ZStack(alignment: .leading) {
-                    // Background
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.gray.opacity(0.3))
-
-                    // Progress fill
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.yellow)
-                        .frame(width: geometry.size.width * progress)
-                }
-            }
-            .frame(height: 4)
-
-            Text(L10n.Stats.nextSeconds(Int(seconds)))
-                .font(DesignTypography.caption(10))
-                .foregroundColor(.yellow)
-        }
-    }
-}
-
-// MARK: - Game End Stat Row
-
-private struct GameEndStatRow: View {
-    let label: String
-    let value: String
-    let icon: String
-    let color: Color
-
-    var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .font(DesignTypography.headline(22))
-                .foregroundColor(color)
-                .frame(width: 32)
-            Text(label)
-                .font(.system(size: 18))
-                .foregroundColor(.gray)
-            Spacer()
-            Text(value)
-                .font(.system(size: 24, weight: .bold))
-                .foregroundColor(.white)
-        }
-    }
-}
-
-// MARK: - Boss Loot Modal Wrapper
-// Wrapper to handle optional reward gracefully in fullScreenCover
-
-struct BossLootModalWrapper: View {
-    let reward: BossLootReward?
-    let onCollect: () -> Void
-
-    var body: some View {
-        if let reward = reward {
-            BossLootModal(reward: reward, onCollect: onCollect)
-        } else {
-            // Fallback - should never happen but prevents empty content issues
-            Color.black.ignoresSafeArea()
-                .onAppear {
-                    onCollect()  // Dismiss immediately
-                }
-        }
-    }
-}
-
-// MARK: - Zero-Day Boss Fight
-
-enum ZeroDayBossFightResult {
-    case victory(hashBonus: Int)
-    case defeat
-    case fled
-}
-
-struct ZeroDayBossFightView: View {
-    let onComplete: (ZeroDayBossFightResult) -> Void
-
-    @ObservedObject var appState = AppState.shared
-    @State private var gameState: GameState?
-    @State private var gameScene: GameScene?
-    @State private var showResult = false
-    @State private var didWin = false
-    @State private var timeRemaining: TimeInterval = BalanceConfig.ManualOverride.duration
-    @State private var timer: Timer?
-
-    private let survivalDuration: TimeInterval = BalanceConfig.ManualOverride.duration
-
-    var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                // Game scene
-                if let scene = gameScene {
-                    SpriteView(scene: scene)
-                        .ignoresSafeArea()
-                } else {
-                    Color.black.ignoresSafeArea()
-                    ProgressView()
-                        .tint(.red)
-                }
-
-                // HUD
-                VStack {
-                    // Top bar
-                    HStack {
-                        // Flee button
-                        Button {
-                            timer?.invalidate()
-                            onComplete(.fled)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "xmark")
-                                Text(L10n.Common.flee)
-                            }
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(8)
-                        }
-
-                        Spacer()
-
-                        // Title
-                        Text(L10n.ZeroDay.overrideTitle)
-                            .font(.system(size: 16, weight: .black, design: .monospaced))
-                            .foregroundColor(.red)
-
-                        Spacer()
-
-                        // Timer
-                        Text(String(format: "%.1f", timeRemaining))
-                            .font(.system(size: 24, weight: .black, design: .monospaced))
-                            .foregroundColor(timeRemaining > BalanceConfig.ZeroDayFight.timerWarningThreshold ? .green : .red)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(8)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-
-                    Spacer()
-
-                    // Health bar
-                    if let state = gameState {
-                        HStack {
-                            Image(systemName: "heart.fill")
-                                .foregroundColor(.red)
-                            GeometryReader { geo in
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.gray.opacity(0.3))
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.red)
-                                        .frame(width: geo.size.width * CGFloat(state.player.health / state.player.maxHealth))
-                                }
-                            }
-                            .frame(height: 12)
-                            Text("\(Int(state.player.health))")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(.white)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 100)
-                    }
-                }
-
-                // Result overlay
-                if showResult {
-                    resultOverlay
-                }
-            }
-            .onChange(of: geometry.size) { newSize in
-                if gameScene == nil && newSize.width > 0 && newSize.height > 0 {
-                    setupBossFight(screenSize: newSize)
-                }
-            }
-            .onAppear {
-                if geometry.size.width > 0 && geometry.size.height > 0 {
-                    setupBossFight(screenSize: geometry.size)
-                }
-            }
-            .onDisappear {
-                timer?.invalidate()
-            }
-        }
-    }
-
-    private var resultOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.9).ignoresSafeArea()
-
-            VStack(spacing: 24) {
-                if didWin {
-                    Image(systemName: "checkmark.shield.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.green)
-
-                    Text(L10n.ZeroDay.neutralized)
-                        .font(.system(size: 28, weight: .black, design: .monospaced))
-                        .foregroundColor(.green)
-
-                    VStack(spacing: 8) {
-                        HStack {
-                            Image(systemName: "memorychip")
-                                .foregroundColor(.green)
-                            Text(L10n.ZeroDay.dataReward)
-                                .foregroundColor(.green)
-                        }
-                        HStack {
-                            Image(systemName: "bolt.fill")
-                                .foregroundColor(.cyan)
-                            Text(L10n.ZeroDay.wattsReward)
-                                .foregroundColor(.cyan)
-                        }
-                    }
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
-                } else {
-                    Image(systemName: "xmark.shield.fill")
-                        .font(.system(size: 60))
-                        .foregroundColor(.red)
-
-                    Text(L10n.ZeroDay.overrideFailed)
-                        .font(.system(size: 28, weight: .black, design: .monospaced))
-                        .foregroundColor(.red)
-
-                    Text(L10n.ZeroDay.efficiencyPenalty)
-                        .font(.system(size: 16, design: .monospaced))
-                        .foregroundColor(.orange)
-                }
-
-                Button {
-                    if didWin {
-                        onComplete(.victory(hashBonus: 550))
-                    } else {
-                        onComplete(.defeat)
-                    }
-                } label: {
-                    Text(L10n.Common.continueAction)
-                        .font(.system(size: 18, weight: .black, design: .monospaced))
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 14)
-                        .background(didWin ? Color.green : Color.orange)
-                        .cornerRadius(12)
-                }
-            }
-        }
-    }
-
-    private func setupBossFight(screenSize: CGSize) {
-        // Create a boss game state for the mini-game using Protocol
-        let protocolId = appState.currentPlayer.equippedProtocolId ?? "kernel_pulse"
-        let gameProtocol = ProtocolLibrary.all.first { $0.id == protocolId } ?? ProtocolLibrary.kernelPulse
-        let state = GameStateFactory.shared.createBossGameState(
-            gameProtocol: gameProtocol,
-            bossType: "cyberboss",
-            difficulty: .easy,
-            playerProfile: appState.currentPlayer
-        )
-        gameState = state
-
-        // Create and configure scene
-        let scene = GameScene()
-        scene.configure(gameState: state, screenSize: screenSize)
-        scene.onGameOver = { finalState in
-            timer?.invalidate()
-            gameState = finalState
-            didWin = false
-            showResult = true
-            HapticsService.shared.play(.defeat)
-        }
-        scene.onStateUpdate = { updatedState in
-            gameState = updatedState
-        }
-
-        gameScene = scene
-
-        // Start countdown timer
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            timeRemaining -= 0.1
-            if timeRemaining <= 0 {
-                timer?.invalidate()
-                didWin = true
-                showResult = true
-                HapticsService.shared.play(.success)
-            }
-        }
-    }
-}
+// MARK: - Extracted Views
+// TowerDeckCard, ProtocolDeckCard → TowerDeckCards.swift
+// TDStatRow, ResourceIndicator, WaveProgressBar, CountdownBar → TDHelperViews.swift
+// ZeroDayBossFightView, BossLootModalWrapper → TDHelperViews.swift
 
 // MARK: - Preview
 
@@ -3227,3 +2326,18 @@ struct TDGameContainerView_Previews: PreviewProvider {
             .environmentObject(AppState.shared)
     }
 }
+
+// NOTE: The following types were extracted to separate files:
+// - TowerDeckCard (TowerDeckCards.swift)
+// - TowerCardCircuitPattern (TowerDeckCards.swift)
+// - RarityCorners (TowerDeckCards.swift)
+// - ProtocolDeckCard (TowerDeckCards.swift)
+// - TDStatRow (TDHelperViews.swift)
+// - ResourceIndicator (TDHelperViews.swift)
+// - WaveProgressBar (TDHelperViews.swift)
+// - CountdownBar (TDHelperViews.swift)
+// - GameEndStatRow (TDHelperViews.swift)
+// - BossLootModalWrapper (TDHelperViews.swift)
+// - ZeroDayBossFightResult (TDHelperViews.swift)
+// - ZeroDayBossFightView (TDHelperViews.swift)
+

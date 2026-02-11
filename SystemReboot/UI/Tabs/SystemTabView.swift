@@ -906,12 +906,7 @@ struct MotherboardView: View {
 
     /// Color for each difficulty
     private func difficultyColor(_ difficulty: BossDifficulty) -> Color {
-        switch difficulty {
-        case .easy: return .green
-        case .normal: return .blue
-        case .hard: return .orange
-        case .nightmare: return .red
-        }
+        DesignHelpers.difficultyColor(difficulty)
     }
 
     /// Overclock button (visible when not overclocking)
@@ -1016,6 +1011,7 @@ class EmbeddedTDGameController: ObservableObject {
 
     private var delegateHandler: EmbeddedTDDelegateHandler?
     private var cancellables = Set<AnyCancellable>()
+    private var lastHashSyncTime: Date = .distantPast
 
     init() {
         // Observe reset requests from AppState (triggered by account reset)
@@ -1104,10 +1100,14 @@ class EmbeddedTDGameController: ObservableObject {
                 // Track overclock state
                 self?.overclockActive = newState.overclockActive
                 self?.overclockTimeRemaining = newState.overclockTimeRemaining
-                // Sync hash to player profile so other tabs see updated balance
+                // Sync hash to player profile (throttled to once per second to avoid excessive UserDefaults writes)
                 if newState.hash != AppState.shared.currentPlayer.hash {
-                    AppState.shared.updatePlayer { profile in
-                        profile.hash = newState.hash
+                    let now = Date()
+                    if now.timeIntervalSince(self?.lastHashSyncTime ?? .distantPast) >= 1.0 {
+                        self?.lastHashSyncTime = now
+                        AppState.shared.updatePlayer { profile in
+                            profile.hash = newState.hash
+                        }
                     }
                 }
             }
@@ -1213,7 +1213,7 @@ class EmbeddedTDGameController: ObservableObject {
         // because game units appear smaller on screen
         let cameraScale = scene?.cameraScale ?? 1.0
         // Reduced snap distance to prevent confusing placement (was 200 for large maps)
-        let baseSnapDistance: CGFloat = state.map.width > 2000 ? 100 : 60
+        let baseSnapDistance: CGFloat = state.map.width > 2000 ? BalanceConfig.TDSession.largeMapSnapScreenDistance : BalanceConfig.TDSession.baseSnapScreenDistance
         // Divide by scale so zoomed out = larger snap area
         let snapDistanceInGameUnits: CGFloat = baseSnapDistance / min(cameraScale, 1.0) * max(cameraScale, 1.0)
 

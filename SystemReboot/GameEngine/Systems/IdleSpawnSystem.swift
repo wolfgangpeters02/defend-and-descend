@@ -35,10 +35,10 @@ class IdleSpawnSystem {
             state.idleThreatLevel + effectiveGrowthRate * CGFloat(deltaTime)
         )
 
-        // Update spawn timer - scale by lane count so more lanes = proportionally more enemies
-        // Each lane contributes its share to the spawn timer
-        let laneCount = CGFloat(lanes.count)
-        state.idleSpawnTimer += deltaTime * laneCount
+        // Update spawn timer - use sqrt scaling so more lanes = moderate increase, not linear
+        // 1 lane: 1.0x, 2 lanes: 1.41x, 4 lanes: 2.0x, 8 lanes: 2.83x
+        let laneScaling = sqrt(CGFloat(lanes.count))
+        state.idleSpawnTimer += deltaTime * laneScaling
         guard state.idleSpawnTimer >= state.idleCurrentSpawnInterval else { return nil }
 
         // Reset timer and spawn enemy
