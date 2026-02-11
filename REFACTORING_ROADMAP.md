@@ -392,7 +392,7 @@ The survival-mode scene mixes boss rendering, entity rendering, game loop, and e
 
 ---
 
-### 3.3 Split `TDGameContainerView.swift` (2,343 lines → 5 files)
+### [x] 3.3 Split `TDGameContainerView.swift` (2,343 lines → 5 files)
 
 | New File | Content | Source Lines | Est. Lines |
 |----------|---------|-------------|------------|

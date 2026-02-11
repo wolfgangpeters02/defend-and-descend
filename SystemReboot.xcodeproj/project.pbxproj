@@ -134,6 +134,10 @@
 		GMRWDSVCBL /* GameRewardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GMRWDSVCRF /* GameRewardService.swift */; };
 		TWRPLCSVCBL /* TowerPlacementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRPLCSVCRF /* TowerPlacementService.swift */; };
 		BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSFGHTCDRF /* BossFightCoordinator.swift */; };
+		TDGCVOVBL01 /* TDGameContainerView+Overlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */; };
+		TDGCVHDBL01 /* TDGameContainerView+HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVHDRF01 /* TDGameContainerView+HUD.swift */; };
+		TDGCVTWBL01 /* TDGameContainerView+Towers.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVTWRF01 /* TDGameContainerView+Towers.swift */; };
+		TDGCVPNBL01 /* TDGameContainerView+Panels.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVPNRF01 /* TDGameContainerView+Panels.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -214,6 +218,10 @@
 		BALCFGREF /* BalanceConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BalanceConfig.swift; sourceTree = "<group>"; };
 		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
 		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
+		TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Overlays.swift"; sourceTree = "<group>"; };
+		TDGCVHDRF01 /* TDGameContainerView+HUD.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+HUD.swift"; sourceTree = "<group>"; };
+		TDGCVTWRF01 /* TDGameContainerView+Towers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Towers.swift"; sourceTree = "<group>"; };
+		TDGCVPNRF01 /* TDGameContainerView+Panels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Panels.swift"; sourceTree = "<group>"; };
 		CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZeroDaySystem.swift; sourceTree = "<group>"; };
 		D0730EB976BE58FD41672919 /* SectorSchematics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorSchematics.swift; sourceTree = "<group>"; };
 		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
@@ -534,6 +542,10 @@
 				AA100013 /* VirtualJoystick.swift */,
 				AA100030 /* UpgradeModalView.swift */,
 				CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */,
+				TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */,
+				TDGCVHDRF01 /* TDGameContainerView+HUD.swift */,
+				TDGCVTWRF01 /* TDGameContainerView+Towers.swift */,
+				TDGCVPNRF01 /* TDGameContainerView+Panels.swift */,
 				524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */,
 				TDHLPVW01 /* TDHelperViews.swift */,
 				TWRDCK001 /* TowerDeckCards.swift */,
@@ -711,6 +723,10 @@
 				8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */,
 				6FAF2498EB10A21AABF8C5D8 /* TDGameScene.swift in Sources */,
 				6F5EB8BB58745318945A09FD /* TDGameContainerView.swift in Sources */,
+				TDGCVOVBL01 /* TDGameContainerView+Overlays.swift in Sources */,
+				TDGCVHDBL01 /* TDGameContainerView+HUD.swift in Sources */,
+				TDGCVTWBL01 /* TDGameContainerView+Towers.swift in Sources */,
+				TDGCVPNBL01 /* TDGameContainerView+Panels.swift in Sources */,
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
