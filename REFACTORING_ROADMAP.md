@@ -640,7 +640,7 @@ struct TDFrameResult {
 
 ---
 
-### 4.6 Extract `CollisionSystem` from TDGameScene
+### [x] 4.6 Extract `CollisionSystem` from TDGameScene
 
 **Source:** `TDGameScene.swift` lines 1099–1276
 

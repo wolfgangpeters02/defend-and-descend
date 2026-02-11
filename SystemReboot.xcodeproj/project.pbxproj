@@ -37,6 +37,7 @@
 		8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC456BE2F341A8C1006B747 /* CoreSystem.swift */; };
 		85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */; };
 		8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */; };
+		TDCOLSYBL01 /* TDCollisionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDCOLSYRF01 /* TDCollisionSystem.swift */; };
 		8F2433B0984EE3015CE09545 /* MegaBoardSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */; };
 		991A0F5ED7D6C9F7F159B95D /* LootTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF752985D9BB05F3C19C6308 /* LootTables.swift */; };
 		9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE64BB27463A150B6F32451C /* TDTypes.swift */; };
@@ -237,6 +238,7 @@
 		AA100044 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		AA200001 /* SystemReboot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SystemReboot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBossSystem.swift; sourceTree = "<group>"; };
+		TDCOLSYRF01 /* TDCollisionSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDCollisionSystem.swift; sourceTree = "<group>"; };
 		B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PillarSystem.swift; sourceTree = "<group>"; };
 		BALCFGREF /* BalanceConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BalanceConfig.swift; sourceTree = "<group>"; };
 		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
@@ -550,6 +552,7 @@
 				B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */,
 				F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */,
 				AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */,
+				TDCOLSYRF01 /* TDCollisionSystem.swift */,
 				651BD9A10095829CA07C1FDB /* OverclockSystem.swift */,
 				OFLNSMREF0 /* OfflineSimulator.swift */,
 				FRZRCVREF0 /* FreezeRecoveryService.swift */,
@@ -837,6 +840,7 @@
 				TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */,
 				L10NSWBLD /* L10n.swift in Sources */,
 				8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */,
+				TDCOLSYBL01 /* TDCollisionSystem.swift in Sources */,
 				E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */,
 				F1A2B3C4D5E60718293F4A5B /* TDSimulator.swift in Sources */,
 				B2C3D4E5F6A70819293B4C5E /* TDBot.swift in Sources */,

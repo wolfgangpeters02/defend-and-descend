@@ -857,184 +857,27 @@ class TDGameScene: SKScene {
         }
     }
 
-    // MARK: - Collision Processing
+    // MARK: - Collision Processing (delegates to TDCollisionSystem)
 
-    /// Swept collision detection to prevent projectile tunneling through fast-moving objects
     private func processCollisions(state: inout TDGameState) {
-        for projIndex in (0..<state.projectiles.count).reversed() {
-            var proj = state.projectiles[projIndex]
+        let events = TDCollisionSystem.processCollisions(
+            state: &state,
+            prevPositions: projectilePrevPositions
+        )
 
-            // Skip enemy projectiles
-            if proj.isEnemyProjectile { continue }
-
-            // Get previous position for swept collision (fallback to current if first frame)
-            let prevPos = projectilePrevPositions[proj.id] ?? CGPoint(x: proj.x, y: proj.y)
-            let currPos = CGPoint(x: proj.x, y: proj.y)
-
-            for enemyIndex in 0..<state.enemies.count {
-                var enemy = state.enemies[enemyIndex]
-                if enemy.isDead || enemy.reachedCore { continue }
-
-                // Swept collision: check if projectile path intersects enemy circle
-                let hitRadius = proj.radius + (enemy.size / 2)
-                let enemyCenter = CGPoint(x: enemy.x, y: enemy.y)
-
-                // Use swept sphere collision (line segment vs circle)
-                let collision = lineIntersectsCircle(
-                    lineStart: prevPos,
-                    lineEnd: currPos,
-                    circleCenter: enemyCenter,
-                    circleRadius: hitRadius
-                )
-
-                if collision && !proj.hitEnemies.contains(enemy.id) {
-                    // Apply damage
-                    enemy.health -= proj.damage
-                    state.stats.damageDealt += proj.damage
-
-                    // Emit scrolling combat text event
-                    let damageEvent = DamageEvent(
-                        type: .damage,
-                        amount: Int(proj.damage),
-                        position: CGPoint(x: enemy.x, y: enemy.y),
-                        timestamp: state.gameTime
-                    )
-                    state.damageEvents.append(damageEvent)
-
-                    // Apply slow
-                    if let slow = proj.slow, let duration = proj.slowDuration {
-                        enemy.applySlow(amount: slow, duration: duration, currentTime: state.gameTime)
-                    }
-
-                    // Mark as hit
-                    proj.hitEnemies.append(enemy.id)
-
-                    // Spawn impact sparks
-                    let impactPos = convertToScene(CGPoint(x: enemy.x, y: enemy.y))
-                    spawnImpactSparks(at: impactPos, color: UIColor(hex: proj.color) ?? .yellow)
-
-                    // Splash damage
-                    if let splash = proj.splash, splash > 0 {
-                        applySplashDamage(state: &state, center: CGPoint(x: enemy.x, y: enemy.y), radius: splash, damage: proj.damage * 0.5, slow: proj.slow, slowDuration: proj.slowDuration)
-                    }
-
-                    // Check enemy death
-                    if enemy.health <= 0 {
-                        enemy.isDead = true
-                        let actualGold = state.addHash(enemy.goldValue)
-                        state.stats.hashEarned += actualGold
-                        state.stats.enemiesKilled += 1
-                        state.virusesKilledTotal += 1  // For passive Data generation
-                        state.waveEnemiesRemaining -= 1
-
-                        // Spawn death particles and gold floaties
-                        let deathPos = convertToScene(CGPoint(x: enemy.x, y: enemy.y))
-                        let enemyWorldPos = CGPoint(x: enemy.x, y: enemy.y)
-                        let enemyColor = UIColor(hex: enemy.color) ?? .red
-                        spawnDeathParticles(at: deathPos, color: enemyColor, isBoss: enemy.isBoss)
-                        spawnGoldFloaties(at: deathPos, goldValue: enemy.goldValue)
-
-                        // Boss death: trigger special effects
-                        if enemy.isBoss {
-                            triggerBossDeathEffect(at: enemyWorldPos, bossColor: enemyColor)
-                        }
-                    }
-
-                    state.enemies[enemyIndex] = enemy
-
-                    // Handle pierce
-                    if proj.piercing > 0 {
-                        proj.piercing -= 1
-                    } else {
-                        state.projectiles.remove(at: projIndex)
-                        break
-                    }
+        // Render visual effects from collision events
+        for event in events {
+            let scenePos = convertToScene(event.position)
+            switch event.kind {
+            case .impact(let color):
+                spawnImpactSparks(at: scenePos, color: UIColor(hex: color) ?? .yellow)
+            case .kill(let color, let goldValue, let isBoss):
+                let enemyColor = UIColor(hex: color) ?? .red
+                spawnDeathParticles(at: scenePos, color: enemyColor, isBoss: isBoss)
+                spawnGoldFloaties(at: scenePos, goldValue: goldValue)
+                if isBoss {
+                    triggerBossDeathEffect(at: event.position, bossColor: enemyColor)
                 }
-            }
-
-            if projIndex < state.projectiles.count {
-                state.projectiles[projIndex] = proj
-            }
-        }
-    }
-
-    /// Check if a line segment intersects a circle (for swept collision detection)
-    /// This catches fast-moving projectiles that would otherwise tunnel through enemies
-    private func lineIntersectsCircle(lineStart: CGPoint, lineEnd: CGPoint, circleCenter: CGPoint, circleRadius: CGFloat) -> Bool {
-        // Vector from line start to circle center
-        let d = CGPoint(x: lineEnd.x - lineStart.x, y: lineEnd.y - lineStart.y)
-        let f = CGPoint(x: lineStart.x - circleCenter.x, y: lineStart.y - circleCenter.y)
-
-        let a = d.x * d.x + d.y * d.y
-        let b = 2 * (f.x * d.x + f.y * d.y)
-        let c = f.x * f.x + f.y * f.y - circleRadius * circleRadius
-
-        var discriminant = b * b - 4 * a * c
-
-        // No intersection at all
-        if discriminant < 0 {
-            return false
-        }
-
-        discriminant = sqrt(discriminant)
-
-        // Check if intersection is within the line segment (t between 0 and 1)
-        let t1 = (-b - discriminant) / (2 * a)
-        let t2 = (-b + discriminant) / (2 * a)
-
-        // Either intersection point is on the segment, or segment is inside the circle
-        if t1 >= 0 && t1 <= 1 {
-            return true
-        }
-        if t2 >= 0 && t2 <= 1 {
-            return true
-        }
-
-        // Also check if either endpoint is inside the circle (segment fully inside)
-        let startDist = sqrt(f.x * f.x + f.y * f.y)
-        let endDx = lineEnd.x - circleCenter.x
-        let endDy = lineEnd.y - circleCenter.y
-        let endDist = sqrt(endDx * endDx + endDy * endDy)
-
-        return startDist <= circleRadius || endDist <= circleRadius
-    }
-
-    private func applySplashDamage(state: inout TDGameState, center: CGPoint, radius: CGFloat, damage: CGFloat, slow: CGFloat?, slowDuration: TimeInterval?) {
-        for i in 0..<state.enemies.count {
-            var enemy = state.enemies[i]
-            if enemy.isDead || enemy.reachedCore { continue }
-
-            let dx = enemy.x - center.x
-            let dy = enemy.y - center.y
-            let distance = sqrt(dx*dx + dy*dy)
-
-            if distance < radius {
-                enemy.health -= damage
-                state.stats.damageDealt += damage
-
-                // Emit splash damage event
-                let splashEvent = DamageEvent(
-                    type: .damage,
-                    amount: Int(damage),
-                    position: CGPoint(x: enemy.x, y: enemy.y),
-                    timestamp: state.gameTime
-                )
-                state.damageEvents.append(splashEvent)
-
-                if let slow = slow, let duration = slowDuration {
-                    enemy.applySlow(amount: slow, duration: duration, currentTime: state.gameTime)
-                }
-
-                if enemy.health <= 0 {
-                    enemy.isDead = true
-                    let actualGold = state.addHash(enemy.goldValue)
-                    state.stats.hashEarned += actualGold
-                    state.stats.enemiesKilled += 1
-                    state.virusesKilledTotal += 1  // For passive Data generation
-                    state.waveEnemiesRemaining -= 1
-                }
-
-                state.enemies[i] = enemy
             }
         }
     }
