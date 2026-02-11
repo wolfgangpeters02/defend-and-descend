@@ -118,6 +118,7 @@
 		TDPARTFBLD /* TDParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDPARTF01 /* TDParticleFactory.swift */; };
 		CAMCTRLBLD /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMCTRL01 /* CameraController.swift */; };
 		PARTFXSVBLD /* ParticleEffectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = PARTFXSV01 /* ParticleEffectService.swift */; };
+		BSSRM0BLD1 /* BossRenderingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRM00001 /* BossRenderingManager.swift */; };
 		UICLRBLD0001 /* UIColor+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = UICLRUTL0001 /* UIColor+Utilities.swift */; };
 		TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNBG00001 /* TDGameScene+Background.swift */; };
 		TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */; };
@@ -281,6 +282,7 @@
 		TDPARTF01 /* TDParticleFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDParticleFactory.swift; sourceTree = "<group>"; };
 		CAMCTRL01 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
 		PARTFXSV01 /* ParticleEffectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleEffectService.swift; sourceTree = "<group>"; };
+		BSSRM00001 /* BossRenderingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossRenderingManager.swift; sourceTree = "<group>"; };
 		UICLRUTL0001 /* UIColor+Utilities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UIColor+Utilities.swift"; sourceTree = "<group>"; };
 		TDSCNBG00001 /* TDGameScene+Background.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Background.swift"; sourceTree = "<group>"; };
 		TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorAmbient.swift"; sourceTree = "<group>"; };
@@ -395,6 +397,7 @@
 				AA100010 /* GameScene.swift */,
 				GSCNEF00001 /* GameScene+Effects.swift */,
 				GSCNBR00001 /* GameScene+BossRendering.swift */,
+				BSSRM00001 /* BossRenderingManager.swift */,
 				GSCNER00001 /* GameScene+EntityRendering.swift */,
 				GSCNSE00001 /* GameScene+SurvivalEvents.swift */,
 				AA100011 /* EntityRenderer.swift */,
@@ -837,6 +840,7 @@
 				TDPARTFBLD /* TDParticleFactory.swift in Sources */,
 				CAMCTRLBLD /* CameraController.swift in Sources */,
 				PARTFXSVBLD /* ParticleEffectService.swift in Sources */,
+				BSSRM0BLD1 /* BossRenderingManager.swift in Sources */,
 				UICLRBLD0001 /* UIColor+Utilities.swift in Sources */,
 				TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */,
 				TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */,

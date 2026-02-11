@@ -82,66 +82,8 @@ class GameScene: SKScene {
     // Screen size for dynamic scaling
     var screenSize: CGSize = .zero
 
-    // Boss mechanics rendering
-    var bossMechanicNodes: [String: SKNode] = [:]
-
-    // Cached SKActions for boss mechanics (avoid recreating every frame)
-    lazy var laserFlickerAction: SKAction = {
-        SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.8, duration: 0.08),
-            SKAction.fadeAlpha(to: 1.0, duration: 0.08)
-        ])
-    }()
-
-    lazy var puddlePulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.15, duration: 0.3),
-            SKAction.scale(to: 1.0, duration: 0.3)
-        ])
-    }()
-
-    lazy var voidZonePulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.4),
-            SKAction.scale(to: 1.0, duration: 0.4)
-        ])
-    }()
-
-    lazy var pylonCrystalPulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.2, duration: 0.5),
-            SKAction.scale(to: 1.0, duration: 0.5)
-        ])
-    }()
-
-    lazy var gravityWellRotateAction: SKAction = {
-        SKAction.rotate(byAngle: .pi * 2, duration: 3)
-    }()
-
-    lazy var arenaBoundaryPulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.5, duration: 0.5),
-            SKAction.fadeAlpha(to: 1.0, duration: 0.5)
-        ])
-    }()
-
-    lazy var chainsawRotateAction: SKAction = {
-        SKAction.rotate(byAngle: .pi * 2, duration: 0.8)
-    }()
-
-    lazy var chainsawDangerPulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.2),
-            SKAction.scale(to: 1.0, duration: 0.2)
-        ])
-    }()
-
-    // Frame counter for visual update throttling
-    var bossMechanicFrameCounter: Int = 0
-
-    // State caching for puddles/zones to avoid redundant color updates
-    var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
-    var zonePhaseCache: [String: Bool] = [:]       // id -> isActive
+    // Boss mechanics rendering (Step 4.1: delegated to BossRenderingManager)
+    var bossRenderingManager = BossRenderingManager()
 
     // MARK: - Setup
 
@@ -213,6 +155,9 @@ class GameScene: SKScene {
 
         // Initialize node pool (Phase 5)
         nodePool = NodePool(maxPerType: 100)
+
+        // Configure boss rendering manager (Step 4.1)
+        bossRenderingManager.configure(scene: self, nodePool: nodePool)
 
         // Setup camera for screen shake
         setupCamera()
@@ -573,11 +518,9 @@ class GameScene: SKScene {
         pickupNodes.removeAll()
         particleNodes.removeAll()
         pillarHealthBars.removeAll()
-        bossMechanicNodes.removeAll()
 
-        // Clear phase caches
-        puddlePhaseCache.removeAll()
-        zonePhaseCache.removeAll()
+        // Clear boss rendering (Step 4.1)
+        bossRenderingManager.cleanup()
 
         // Clear node pool (Phase 5)
         nodePool?.clear()

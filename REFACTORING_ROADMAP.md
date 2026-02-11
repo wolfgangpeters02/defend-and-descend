@@ -479,7 +479,7 @@ This extension is already separate from TDGameScene.swift but is itself a God Ob
 
 ---
 
-### 4.1 Extract `BossRenderingManager` from GameScene
+### [x] 4.1 Extract `BossRenderingManager` from GameScene
 
 **Source:** `GameScene.swift` lines 849–2392
 
