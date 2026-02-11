@@ -118,7 +118,13 @@
 		TDPARTFBLD /* TDParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDPARTF01 /* TDParticleFactory.swift */; };
 		UICLRBLD0001 /* UIColor+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = UICLRUTL0001 /* UIColor+Utilities.swift */; };
 		TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNBG00001 /* TDGameScene+Background.swift */; };
-		TDSCNSRB0001 /* TDGameScene+SectorRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSR00001 /* TDGameScene+SectorRendering.swift */; };
+		TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */; };
+		TDSCNDFB0001 /* TDGameScene+DistrictFoundation.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNDF00001 /* TDGameScene+DistrictFoundation.swift */; };
+		TDSCNPCB0001 /* TDGameScene+PSUComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPC00001 /* TDGameScene+PSUComponents.swift */; };
+		TDSCNSCB0001 /* TDGameScene+SectorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSC00001 /* TDGameScene+SectorComponents.swift */; };
+		CMBTTYPB0001 /* CombatTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CMBTTYP00001 /* CombatTypes.swift */; };
+		BSSTYPB00001 /* BossTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSTYP000001 /* BossTypes.swift */; };
+		PLYRPRFB0001 /* PlayerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRF00001 /* PlayerProfile.swift */; };
 		TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPT00001 /* TDGameScene+Paths.swift */; };
 		TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEF00001 /* TDGameScene+Effects.swift */; };
 		TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */; };
@@ -270,7 +276,13 @@
 		TDPARTF01 /* TDParticleFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDParticleFactory.swift; sourceTree = "<group>"; };
 		UICLRUTL0001 /* UIColor+Utilities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UIColor+Utilities.swift"; sourceTree = "<group>"; };
 		TDSCNBG00001 /* TDGameScene+Background.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Background.swift"; sourceTree = "<group>"; };
-		TDSCNSR00001 /* TDGameScene+SectorRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorRendering.swift"; sourceTree = "<group>"; };
+		TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorAmbient.swift"; sourceTree = "<group>"; };
+		TDSCNDF00001 /* TDGameScene+DistrictFoundation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+DistrictFoundation.swift"; sourceTree = "<group>"; };
+		TDSCNPC00001 /* TDGameScene+PSUComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+PSUComponents.swift"; sourceTree = "<group>"; };
+		TDSCNSC00001 /* TDGameScene+SectorComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorComponents.swift"; sourceTree = "<group>"; };
+		CMBTTYP00001 /* CombatTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CombatTypes.swift; sourceTree = "<group>"; };
+		BSSTYP000001 /* BossTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossTypes.swift; sourceTree = "<group>"; };
+		PLYRPRF00001 /* PlayerProfile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerProfile.swift; sourceTree = "<group>"; };
 		TDSCNPT00001 /* TDGameScene+Paths.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Paths.swift"; sourceTree = "<group>"; };
 		TDSCNEF00001 /* TDGameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Effects.swift"; sourceTree = "<group>"; };
 		TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EntityVisuals.swift"; sourceTree = "<group>"; };
@@ -381,7 +393,10 @@
 				AA100024 /* ArenaRenderer.swift */,
 				529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */,
 				TDSCNBG00001 /* TDGameScene+Background.swift */,
-				TDSCNSR00001 /* TDGameScene+SectorRendering.swift */,
+				TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */,
+				TDSCNDF00001 /* TDGameScene+DistrictFoundation.swift */,
+				TDSCNPC00001 /* TDGameScene+PSUComponents.swift */,
+				TDSCNSC00001 /* TDGameScene+SectorComponents.swift */,
 				TDSCNPT00001 /* TDGameScene+Paths.swift */,
 				TDSCNEF00001 /* TDGameScene+Effects.swift */,
 				TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */,
@@ -455,6 +470,9 @@
 				TDSESSTRF0 /* TDSessionState.swift */,
 				WAVTYPRF01 /* WaveTypes.swift */,
 				BSSLTRWRF0 /* BossLootReward.swift */,
+				CMBTTYP00001 /* CombatTypes.swift */,
+				BSSTYP000001 /* BossTypes.swift */,
+				PLYRPRF00001 /* PlayerProfile.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -804,7 +822,13 @@
 				TDPARTFBLD /* TDParticleFactory.swift in Sources */,
 				UICLRBLD0001 /* UIColor+Utilities.swift in Sources */,
 				TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */,
-				TDSCNSRB0001 /* TDGameScene+SectorRendering.swift in Sources */,
+				TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */,
+				TDSCNDFB0001 /* TDGameScene+DistrictFoundation.swift in Sources */,
+				TDSCNPCB0001 /* TDGameScene+PSUComponents.swift in Sources */,
+				TDSCNSCB0001 /* TDGameScene+SectorComponents.swift in Sources */,
+				CMBTTYPB0001 /* CombatTypes.swift in Sources */,
+				BSSTYPB00001 /* BossTypes.swift in Sources */,
+				PLYRPRFB0001 /* PlayerProfile.swift in Sources */,
 				TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */,
 				TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */,
 				TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */,

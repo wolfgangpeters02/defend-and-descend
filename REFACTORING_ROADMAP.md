@@ -430,7 +430,7 @@ The survival-mode scene mixes boss rendering, entity rendering, game loop, and e
 
 ---
 
-### 3.6 Consolidate `TDGameScene+SectorRendering.swift` (2,492 lines → 4 files)
+### [x] 3.6 Consolidate `TDGameScene+SectorRendering.swift` (2,492 lines → 4 files)
 
 This extension is already separate from TDGameScene.swift but is itself a God Object.
 
@@ -443,7 +443,7 @@ This extension is already separate from TDGameScene.swift but is itself a God Ob
 
 ---
 
-### 3.7 Split `GameTypes.swift` (1,319 lines → 3 files)
+### [x] 3.7 Split `GameTypes.swift` (1,319 lines → 3 files)
 
 | New File | Content | Source Lines | Est. Lines |
 |----------|---------|-------------|------------|
