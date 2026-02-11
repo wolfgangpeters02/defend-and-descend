@@ -117,6 +117,14 @@
 		TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */; };
 		TDSCNINB0001 /* TDGameScene+Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNIN00001 /* TDGameScene+Input.swift */; };
 		TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNAC00001 /* TDGameScene+Actions.swift */; };
+		MTHRBRDVBL0 /* MotherboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTHRBRDVRF0 /* MotherboardView.swift */; };
+		EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCTRF0 /* EmbeddedTDGameController.swift */; };
+		EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDGVRF0 /* EmbeddedTDGameView.swift */; };
+		SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SYSFRZOVRF0 /* SystemFreezeOverlay.swift */; };
+		ARSNLVWBL0 /* ArsenalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ARSNLVWRF0 /* ArsenalView.swift */; };
+		UPGRDVWBL0 /* UpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPGRDVWRF0 /* UpgradesView.swift */; };
+		BSSENCVWBL0 /* BossEncountersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSENCVWRF0 /* BossEncountersView.swift */; };
+		DBGGMVWBL0 /* DebugGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBGGMVWRF0 /* DebugGameView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -232,6 +240,14 @@
 		TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EntityVisuals.swift"; sourceTree = "<group>"; };
 		TDSCNIN00001 /* TDGameScene+Input.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Input.swift"; sourceTree = "<group>"; };
 		TDSCNAC00001 /* TDGameScene+Actions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Actions.swift"; sourceTree = "<group>"; };
+		MTHRBRDVRF0 /* MotherboardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardView.swift; sourceTree = "<group>"; };
+		EMBTDCTRF0 /* EmbeddedTDGameController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameController.swift; sourceTree = "<group>"; };
+		EMBTDGVRF0 /* EmbeddedTDGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameView.swift; sourceTree = "<group>"; };
+		SYSFRZOVRF0 /* SystemFreezeOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemFreezeOverlay.swift; sourceTree = "<group>"; };
+		ARSNLVWRF0 /* ArsenalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArsenalView.swift; sourceTree = "<group>"; };
+		UPGRDVWRF0 /* UpgradesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UpgradesView.swift; sourceTree = "<group>"; };
+		BSSENCVWRF0 /* BossEncountersView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossEncountersView.swift; sourceTree = "<group>"; };
+		DBGGMVWRF0 /* DebugGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugGameView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -509,6 +525,14 @@
 			isa = PBXGroup;
 			children = (
 				A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */,
+				MTHRBRDVRF0 /* MotherboardView.swift */,
+				EMBTDCTRF0 /* EmbeddedTDGameController.swift */,
+				EMBTDGVRF0 /* EmbeddedTDGameView.swift */,
+				SYSFRZOVRF0 /* SystemFreezeOverlay.swift */,
+				ARSNLVWRF0 /* ArsenalView.swift */,
+				UPGRDVWRF0 /* UpgradesView.swift */,
+				BSSENCVWRF0 /* BossEncountersView.swift */,
+				DBGGMVWRF0 /* DebugGameView.swift */,
 			);
 			path = Tabs;
 			sourceTree = "<group>";
@@ -718,6 +742,14 @@
 				WAVTYPBL01 /* WaveTypes.swift in Sources */,
 				BSSLTRWBL0 /* BossLootReward.swift in Sources */,
 				MBCFGDTBL0 /* MotherboardConfigData.swift in Sources */,
+				MTHRBRDVBL0 /* MotherboardView.swift in Sources */,
+				EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */,
+				EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */,
+				SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */,
+				ARSNLVWBL0 /* ArsenalView.swift in Sources */,
+				UPGRDVWBL0 /* UpgradesView.swift in Sources */,
+				BSSENCVWBL0 /* BossEncountersView.swift in Sources */,
+				DBGGMVWBL0 /* DebugGameView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

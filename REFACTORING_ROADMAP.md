@@ -358,7 +358,7 @@ class BossFightCoordinator: ObservableObject {
 
 ---
 
-### 3.1 Split `SystemTabView.swift` (3,905 lines → 8 files)
+### [x] 3.1 Split `SystemTabView.swift` (3,905 lines → 8 files)
 
 This is the highest-impact split. The file contains 18 types that should live in their own files.
 
