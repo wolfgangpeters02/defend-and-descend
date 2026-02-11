@@ -69,6 +69,9 @@ class TDGameScene: SKScene {
     // Camera controller (zoom, pan, inertia — extracted in Step 4.2)
     let cameraController = CameraController()
 
+    // Particle effect service (particles, arcs, shake, boss effects — extracted in Step 4.3)
+    let particleEffectService = ParticleEffectService()
+
     // Forwarding properties so extensions keep compiling unchanged
     var cameraNode: SKCameraNode! { cameraController.cameraNode }
     var currentScale: CGFloat { cameraController.currentScale }
@@ -102,16 +105,7 @@ class TDGameScene: SKScene {
     var lastCapacitorDischargeTime: TimeInterval = 0  // Cooldown between discharge effects
 
     // MARK: - Power Flow Particles (PSU Power Theme)
-    // Constant subtle particles flowing from PSU toward CPU along traces
-    var powerFlowEmitterRunning: Bool = false
     var lastPowerFlowSpawnTime: TimeInterval = 0
-
-    // MARK: - Screen Shake System (Context-Aware)
-    // Only shakes when zoomed in, with cooldown to prevent shake fatigue
-    var lastShakeTime: TimeInterval = 0
-    var screenShakeCooldown: TimeInterval = BalanceConfig.TDRendering.screenShakeCooldown
-    var originalCameraPosition: CGPoint = .zero
-    var isShaking: Bool = false
 
     // MARK: - Efficiency Tracking (for damage flash)
     var previousEfficiency: CGFloat = 100
@@ -173,6 +167,27 @@ class TDGameScene: SKScene {
         let starterCenter = isMotherboardMap ? MegaBoardSystem.shared.starterSector?.center : nil
         cameraController.setup(in: self, starterSectorCenter: starterCenter)
         cameraController.setupGestureRecognizers(view: view)
+
+        // Configure particle effect service (delegated in Step 4.3)
+        particleEffectService.configure(
+            scene: self,
+            particleLayer: particleLayer,
+            pathLayer: pathLayer,
+            cameraNode: cameraController.cameraNode
+        )
+        particleEffectService.isMotherboardMap = isMotherboardMap
+        particleEffectService.getCurrentScale = { [weak self] in
+            self?.currentScale ?? 1.0
+        }
+        particleEffectService.getLastUpdateTime = { [weak self] in
+            self?.lastUpdateTime ?? 0
+        }
+        particleEffectService.getEnemyCount = { [weak self] in
+            self?.state?.enemies.count ?? 0
+        }
+        particleEffectService.getUnlockedSectorIds = { [weak self] in
+            self?.gameStateDelegate?.getUnlockedSectorIds() ?? Set([SectorID.power.rawValue])
+        }
     }
 
     /// Reset camera to default view
@@ -228,6 +243,12 @@ class TDGameScene: SKScene {
         uiLayer = SKNode()
         uiLayer.zPosition = 10
         addChild(uiLayer)
+
+        // Wire layer references early so effects work even if loadState runs before didMove
+        particleEffectService.scene = self
+        particleEffectService.particleLayer = particleLayer
+        particleEffectService.pathLayer = pathLayer
+        particleEffectService.isMotherboardMap = (state?.map.theme == "motherboard")
     }
 
     // MARK: - State Management
@@ -272,6 +293,9 @@ class TDGameScene: SKScene {
         if backgroundLayer == nil {
             setupLayers()
         }
+
+        // Sync particle service map flag (state may have changed since setupLayers)
+        particleEffectService.isMotherboardMap = isMotherboardMap
 
         // Setup visuals
         setupBackground()

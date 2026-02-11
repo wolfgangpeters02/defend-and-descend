@@ -547,7 +547,7 @@ class CameraController {
 
 ---
 
-### 4.3 Extract `ParticleEffectService` from TDGameScene+Effects
+### [x] 4.3 Extract `ParticleEffectService` from TDGameScene+Effects
 
 **Source:** `TDGameScene+Effects.swift` lines 99–510 + 625–967
 
