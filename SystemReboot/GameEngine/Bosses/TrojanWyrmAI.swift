@@ -79,6 +79,7 @@ class TrojanWyrmAI {
 
         // Shared
         var lastContactDamageTime: Double = 0
+        var originalBossSize: CGFloat?
     }
 
     // MARK: - Initialization
@@ -160,7 +161,8 @@ class TrojanWyrmAI {
             bossState.wallInitialized = true
             bossState.wallY = arenaRect.maxY - 100
             bossState.wallDirection = -1 // Move down
-            bossState.ghostSegmentIndex = Int.random(in: 3..<bossState.segments.count - 3)
+            let maxGhostIndex = bossState.segments.count - 3
+            bossState.ghostSegmentIndex = maxGhostIndex > 3 ? Int.random(in: 3..<maxGhostIndex) : 0
 
         case 3:
             // Setup Sub-worms
@@ -169,7 +171,7 @@ class TrojanWyrmAI {
 
             let offsets: [CGFloat] = [0, .pi / 2, .pi, 3 * .pi / 2]
             for (i, angle) in offsets.enumerated() {
-                let spawnDist: CGFloat = 200
+                let spawnDist = BalanceConfig.TrojanWyrm.subWormSpawnDistance
                 let pos = CGPoint(
                     x: arenaRect.midX + cos(angle) * spawnDist,
                     y: arenaRect.midY + sin(angle) * spawnDist
@@ -177,7 +179,7 @@ class TrojanWyrmAI {
 
                 var miniSegs: [Segment] = []
                 for k in 1...BalanceConfig.TrojanWyrm.subWormBodyCount {
-                    miniSegs.append(Segment(x: pos.x, y: pos.y - CGFloat(k * 20)))
+                    miniSegs.append(Segment(x: pos.x, y: pos.y - CGFloat(k) * BalanceConfig.TrojanWyrm.subWormSegmentSpacing))
                 }
 
                 bossState.subWorms.append(SubWorm(
@@ -264,14 +266,15 @@ class TrojanWyrmAI {
         bossState.wallY += config.wallSweepSpeed * CGFloat(deltaTime) * bossState.wallDirection
 
         // Bounce at edges and re-randomize ghost gap
+        let maxGhostIdx = bossState.segments.count - 3
         if bossState.wallY < arenaRect.minY + 100 {
             bossState.wallDirection = 1
             bossState.wallY = arenaRect.minY + 100
-            bossState.ghostSegmentIndex = Int.random(in: 3..<bossState.segments.count - 3)
+            bossState.ghostSegmentIndex = maxGhostIdx > 3 ? Int.random(in: 3..<maxGhostIdx) : 0
         } else if bossState.wallY > arenaRect.maxY - 100 {
             bossState.wallDirection = -1
             bossState.wallY = arenaRect.maxY - 100
-            bossState.ghostSegmentIndex = Int.random(in: 3..<bossState.segments.count - 3)
+            bossState.ghostSegmentIndex = maxGhostIdx > 3 ? Int.random(in: 3..<maxGhostIdx) : 0
         }
 
         // Rigid grid positioning (no drag)
@@ -331,6 +334,9 @@ class TrojanWyrmAI {
         let config = BalanceConfig.TrojanWyrm.self
 
         // Hide main boss (we use sub-worms instead)
+        if bossState.originalBossSize == nil {
+            bossState.originalBossSize = boss.size
+        }
         boss.size = 1 // Tiny hitbox
 
         for i in 0..<bossState.subWorms.count {
@@ -347,7 +353,7 @@ class TrojanWyrmAI {
             worm.head.y += sin(worm.angle) * speed * CGFloat(deltaTime)
 
             // Drag Body
-            updateSegments(head: worm.head.cgPoint, segments: &worm.body, spacing: 25)
+            updateSegments(head: worm.head.cgPoint, segments: &worm.body, spacing: BalanceConfig.TrojanWyrm.subWormBodySpacing)
 
             bossState.subWorms[i] = worm
         }
@@ -363,6 +369,12 @@ class TrojanWyrmAI {
         arenaRect: CGRect
     ) {
         let config = BalanceConfig.TrojanWyrm.self
+
+        // Restore boss size after Phase 3 shrink
+        if let originalSize = bossState.originalBossSize {
+            boss.size = originalSize
+            bossState.originalBossSize = nil
+        }
 
         switch bossState.phase4SubState {
         case .circling:
@@ -542,7 +554,7 @@ class TrojanWyrmAI {
         currentTime: Double
     ) {
         let config = BalanceConfig.TrojanWyrm.self
-        let contactCooldown: Double = 0.5
+        let contactCooldown = BalanceConfig.TrojanWyrm.contactCooldown
 
         guard currentTime - bossState.lastContactDamageTime > contactCooldown else { return }
 
@@ -608,7 +620,7 @@ class TrojanWyrmAI {
         }
 
         if contactMade {
-            gameState.player.health -= damageAmount
+            PlayerSystem.damagePlayer(state: &gameState, rawDamage: damageAmount)
             bossState.lastContactDamageTime = currentTime
 
             // Knockback

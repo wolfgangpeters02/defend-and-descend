@@ -291,7 +291,7 @@ struct TDBossSystem {
         }
 
         // Add hash reward
-        state.addHash(hashReward)
+        let _ = state.addHash(hashReward)
 
         // Reset threat level - defeating the boss clears the board pressure
         // This is the reward for engaging with bosses and prevents runaway difficulty

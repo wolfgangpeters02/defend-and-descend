@@ -1448,7 +1448,7 @@ class GameScene: SKScene {
             // Show hint text
             let hintKey = "voidharbinger_pylon_hint"
             if bossMechanicNodes[hintKey] == nil {
-                let hintLabel = SKLabelNode(text: "DESTROY THE PYLONS!")
+                let hintLabel = SKLabelNode(text: L10n.Boss.destroyPylons)
                 hintLabel.fontName = "Menlo-Bold"
                 hintLabel.fontSize = 20
                 hintLabel.fontColor = DesignColors.warningUI

@@ -1496,7 +1496,7 @@ final class TowerVisualFactory {
         container.addChild(dpsBg)
 
         // DPS label
-        let dpsLabel = SKLabelNode(text: String(format: "%.0f DPS", dps))
+        let dpsLabel = SKLabelNode(text: L10n.Stats.dpsValue(dps))
         dpsLabel.fontSize = 10
         dpsLabel.fontName = "Menlo-Bold"
         dpsLabel.fontColor = .white

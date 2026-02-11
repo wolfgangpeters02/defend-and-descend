@@ -98,6 +98,10 @@
 		D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */; };
 		BOSSSIM01BLD /* BossSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSSIM01REF /* BossSimulator.swift */; };
 		BOSSBOT01BLD /* BossBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSBOT01REF /* BossBot.swift */; };
+		TDHLPVWBLD /* TDHelperViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDHLPVW01 /* TDHelperViews.swift */; };
+		TWRDCKBLD0 /* TowerDeckCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRDCK001 /* TowerDeckCards.swift */; };
+		APSTUTBLD0 /* AppState+Tutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = APSTUT001 /* AppState+Tutorial.swift */; };
+		TDPARTFBLD /* TDParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDPARTF01 /* TDParticleFactory.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -194,6 +198,10 @@
 		C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimulationRunner.swift; sourceTree = "<group>"; };
 		BOSSSIM01REF /* BossSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossSimulator.swift; sourceTree = "<group>"; };
 		BOSSBOT01REF /* BossBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossBot.swift; sourceTree = "<group>"; };
+		TDHLPVW01 /* TDHelperViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDHelperViews.swift; sourceTree = "<group>"; };
+		TWRDCK001 /* TowerDeckCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerDeckCards.swift; sourceTree = "<group>"; };
+		APSTUT001 /* AppState+Tutorial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AppState+Tutorial.swift"; sourceTree = "<group>"; };
+		TDPARTF01 /* TDParticleFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDParticleFactory.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -245,6 +253,7 @@
 				AA100001 /* SystemRebootApp.swift */,
 				AA100002 /* ContentView.swift */,
 				AA100031 /* AppState.swift */,
+				APSTUT001 /* AppState+Tutorial.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -286,6 +295,7 @@
 				SCROLLCT1 /* ScrollingCombatText.swift */,
 				TOWERANIM /* TowerAnimations.swift */,
 				TOWERVF01 /* TowerVisualFactory.swift */,
+				TDPARTF01 /* TDParticleFactory.swift */,
 			);
 			path = Rendering;
 			sourceTree = "<group>";
@@ -437,6 +447,8 @@
 				AA100030 /* UpgradeModalView.swift */,
 				CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */,
 				524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */,
+				TDHLPVW01 /* TDHelperViews.swift */,
+				TWRDCK001 /* TowerDeckCards.swift */,
 			);
 			path = Game;
 			sourceTree = "<group>";
@@ -642,6 +654,10 @@
 				D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */,
 				BOSSSIM01BLD /* BossSimulator.swift in Sources */,
 				BOSSBOT01BLD /* BossBot.swift in Sources */,
+				TDHLPVWBLD /* TDHelperViews.swift in Sources */,
+				TWRDCKBLD0 /* TowerDeckCards.swift in Sources */,
+				APSTUTBLD0 /* AppState+Tutorial.swift in Sources */,
+				TDPARTFBLD /* TDParticleFactory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

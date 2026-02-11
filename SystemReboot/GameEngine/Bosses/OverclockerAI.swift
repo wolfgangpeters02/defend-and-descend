@@ -154,7 +154,7 @@ class OverclockerAI {
         // Boss moves towards center
         let center = bossState.arenaCenter
         let bossPos = CGPoint(x: boss.x, y: boss.y)
-        let newPos = moveTowards(current: bossPos, target: center, speed: 100 * CGFloat(deltaTime))
+        let newPos = moveTowards(current: bossPos, target: center, speed: BalanceConfig.Overclocker.phase1CenterSpeed * CGFloat(deltaTime))
         boss.x = newPos.x
         boss.y = newPos.y
     }
@@ -279,7 +279,7 @@ class OverclockerAI {
         // Move towards center slowly
         let center = bossState.arenaCenter
         let bossPos = CGPoint(x: boss.x, y: boss.y)
-        let newPos = moveTowards(current: bossPos, target: center, speed: 50 * CGFloat(deltaTime))
+        let newPos = moveTowards(current: bossPos, target: center, speed: BalanceConfig.Overclocker.phase4CenterSpeed * CGFloat(deltaTime))
         boss.x = newPos.x
         boss.y = newPos.y
 
@@ -324,7 +324,7 @@ class OverclockerAI {
         let dx = playerPos.x - bossPos.x
         let dy = playerPos.y - bossPos.y
         let dist = sqrt(dx * dx + dy * dy)
-        let maxDist: CGFloat = 600.0
+        let maxDist: CGFloat = BalanceConfig.Overclocker.windMaxDistance
 
         if dist > maxDist || dist < 1 { return .zero }
 
@@ -424,21 +424,21 @@ class OverclockerAI {
         currentTime: Double,
         deltaTime: TimeInterval
     ) {
-        let contactCooldown: Double = 0.5
+        let contactCooldown = BalanceConfig.Overclocker.contactCooldown
         guard currentTime - bossState.lastContactDamageTime > contactCooldown else { return }
 
         let playerPos = CGPoint(x: gameState.player.x, y: gameState.player.y)
-        let contactRadius: CGFloat = 60
+        let contactRadius = BalanceConfig.Overclocker.contactRadius
 
         let dist = hypot(playerPos.x - bossPos.x, playerPos.y - bossPos.y)
         if dist < contactRadius {
-            let contactDamage: CGFloat = 25
-            gameState.player.health -= contactDamage
+            let contactDamage = BalanceConfig.Overclocker.contactDamage
+            PlayerSystem.damagePlayer(state: &gameState, rawDamage: contactDamage)
             bossState.lastContactDamageTime = currentTime
 
             // Knockback
             let angle = atan2(playerPos.y - bossPos.y, playerPos.x - bossPos.x)
-            let knockback: CGFloat = 100
+            let knockback = BalanceConfig.Overclocker.contactKnockback
             gameState.player.x += cos(angle) * knockback
             gameState.player.y += sin(angle) * knockback
         }

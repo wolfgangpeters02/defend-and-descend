@@ -593,23 +593,7 @@ class CyberbossAI {
                 let playerRadius = BalanceConfig.Player.size
 
                 if distance < mutablePuddle.radius + playerRadius {
-                    gameState.player.health -= mutablePuddle.popDamage
-
-                    // Check for death
-                    if gameState.player.health <= 0 {
-                        gameState.player.health = 0
-                        gameState.isGameOver = true
-                        gameState.victory = false
-                    }
-
-                    // Visual feedback - pop damage
-                    let damageEvent = DamageEvent(
-                        type: .playerDamage,
-                        amount: Int(mutablePuddle.popDamage),
-                        position: CGPoint(x: gameState.player.x, y: gameState.player.y),
-                        timestamp: gameState.startTime + gameState.timeElapsed
-                    )
-                    gameState.damageEvents.append(damageEvent)
+                    PlayerSystem.damagePlayer(state: &gameState, rawDamage: mutablePuddle.popDamage)
                 }
             }
 
@@ -632,24 +616,8 @@ class CyberbossAI {
             if distance < mutablePuddle.radius + playerRadius &&
                gameState.gameTime - mutablePuddle.lastDamageTime >= mutablePuddle.damageInterval {
                 mutablePuddle.lastDamageTime = gameState.gameTime
-                let tickDamage = mutablePuddle.damage * CGFloat(mutablePuddle.damageInterval) // 10 DPS * 0.5s = 5 damage per tick
-                gameState.player.health -= tickDamage
-
-                // Check for death
-                if gameState.player.health <= 0 {
-                    gameState.player.health = 0
-                    gameState.isGameOver = true
-                    gameState.victory = false
-                }
-
-                // Visual feedback - damage event for scrolling combat text
-                let damageEvent = DamageEvent(
-                    type: .playerDamage,
-                    amount: Int(tickDamage),
-                    position: CGPoint(x: gameState.player.x, y: gameState.player.y),
-                    timestamp: gameState.startTime + gameState.timeElapsed
-                )
-                gameState.damageEvents.append(damageEvent)
+                let tickDamage = mutablePuddle.damage * CGFloat(mutablePuddle.damageInterval)
+                PlayerSystem.damagePlayer(state: &gameState, rawDamage: tickDamage)
             }
 
             return mutablePuddle
@@ -687,24 +655,8 @@ class CyberbossAI {
                     playerX: gameState.player.x, playerY: gameState.player.y
                 )
                 if hit {
-                    gameState.player.health -= beam.damage
+                    PlayerSystem.damagePlayer(state: &gameState, rawDamage: beam.damage)
                     gameState.player.invulnerableUntil = gameState.currentFrameTime + BalanceConfig.Cyberboss.laserHitInvulnerability
-
-                    // Check for death
-                    if gameState.player.health <= 0 {
-                        gameState.player.health = 0
-                        gameState.isGameOver = true
-                        gameState.victory = false
-                    }
-
-                    // Visual feedback
-                    let damageEvent = DamageEvent(
-                        type: .playerDamage,
-                        amount: Int(beam.damage),
-                        position: CGPoint(x: gameState.player.x, y: gameState.player.y),
-                        timestamp: gameState.startTime + gameState.timeElapsed
-                    )
-                    gameState.damageEvents.append(damageEvent)
                     break
                 }
             }

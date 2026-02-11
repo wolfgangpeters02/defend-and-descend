@@ -316,7 +316,7 @@ class PlayerSystem {
                         lifetime: BalanceConfig.Particles.phoenixParticleLifetime,
                         createdAt: frameTime,
                         color: "#ff6600",
-                        size: 8,
+                        size: BalanceConfig.Particles.phoenixParticleSize,
                         velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed)
                     ))
                 }

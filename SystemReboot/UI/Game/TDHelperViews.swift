@@ -324,7 +324,7 @@ struct ZeroDayBossFightView: View {
 
                 Button {
                     if didWin {
-                        onComplete(.victory(hashBonus: 550))
+                        onComplete(.victory(hashBonus: BalanceConfig.ZeroDay.defeatHashBonus))
                     } else {
                         onComplete(.defeat)
                     }

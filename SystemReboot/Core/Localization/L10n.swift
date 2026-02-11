@@ -172,6 +172,9 @@ enum L10n {
         static func perSecond(_ value: Int) -> String {
             String(format: String(localized: "stats.perSecond"), value)
         }
+        static func dpsValue(_ value: CGFloat) -> String {
+            String(format: String(localized: "stats.dpsFormat"), value)
+        }
         static let damage = String(localized: "stats.damage")
         static let range = String(localized: "stats.range")
         static let fireRate = String(localized: "stats.fireRate")
@@ -277,6 +280,7 @@ enum L10n {
         static let ignoreHint = String(localized: "boss.ignoreHint")
         static let selectDifficulty = String(localized: "boss.selectDifficulty")
         static let blueprintDrop = String(localized: "boss.blueprintDrop")
+        static let destroyPylons = String(localized: "boss.destroyPylons")
     }
 
     // MARK: - System Upgrades
@@ -311,6 +315,12 @@ enum L10n {
         // Overclock system
         static let overclock = String(localized: "td.overclock")
         static let overclocking = String(localized: "td.overclocking")
+        // Locked towers
+        static let tapToUnlock = String(localized: "td.tapToUnlock")
+        // Overclock labels
+        static let hashMultiplier = String(localized: "td.hashMultiplier")
+        static let threatMultiplier = String(localized: "td.threatMultiplier")
+        static let bossActive = String(localized: "td.bossActive")
     }
 
     // MARK: - CPU

@@ -64,7 +64,7 @@ struct UpgradeCardView: View {
         Button(action: onTap) {
             VStack(spacing: 12) {
                 // Rarity indicator
-                Text(choice.rarity.rawValue.uppercased())
+                Text(L10n.RarityStrings.localized(for: choice.rarity))
                     .font(.system(size: 10, weight: .bold))
                     .foregroundColor(rarityColor)
                     .padding(.horizontal, 8)

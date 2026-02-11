@@ -635,7 +635,7 @@ struct TDGameContainerView: View {
                             .foregroundColor(buttonColor)
 
                         if !canOverclock, gameState?.bossActive == true {
-                            Text("(BOSS)")
+                            Text(L10n.TD.bossActive)
                                 .font(.system(size: 8, design: .monospaced))
                                 .foregroundColor(.red.opacity(0.7))
                         }
@@ -676,11 +676,11 @@ struct TDGameContainerView: View {
                             .foregroundColor(.white)
                     }
 
-                    Text("2x HASH")
+                    Text(L10n.TD.hashMultiplier)
                         .font(.system(size: 9, design: .monospaced))
                         .foregroundColor(.green)
 
-                    Text("10x THREAT")
+                    Text(L10n.TD.threatMultiplier)
                         .font(.system(size: 9, design: .monospaced))
                         .foregroundColor(.red)
                 }
@@ -1367,15 +1367,15 @@ struct TDGameContainerView: View {
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    TDStatRow(icon: "flame.fill", label: "DMG", value: String(format: "%.1f", tower.damage), color: .orange)
-                    TDStatRow(icon: "scope", label: "RNG", value: String(format: "%.0f", tower.range), color: .blue)
+                    TDStatRow(icon: "flame.fill", label: L10n.Stats.dmg, value: String(format: "%.1f", tower.damage), color: .orange)
+                    TDStatRow(icon: "scope", label: L10n.Stats.rng, value: String(format: "%.0f", tower.range), color: .blue)
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    TDStatRow(icon: "bolt.fill", label: "SPD", value: String(format: "%.2f/s", tower.attackSpeed), color: .yellow)
-                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: "DPS", value: String(format: "%.1f", tower.damage * tower.attackSpeed), color: .green)
+                    TDStatRow(icon: "bolt.fill", label: L10n.Stats.spd, value: String(format: "%.2f/s", tower.attackSpeed), color: .yellow)
+                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: L10n.Stats.dps, value: String(format: "%.1f", tower.damage * tower.attackSpeed), color: .green)
                 }
             }
             .font(DesignTypography.caption(12))

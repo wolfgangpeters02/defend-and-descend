@@ -260,9 +260,15 @@ final class TowerAnimations {
         // Crystal body shimmer
         if let body = node.childNode(withName: "body") as? SKShapeNode {
             let shimmer = SKAction.repeatForever(SKAction.sequence([
-                SKAction.run { body.glowWidth = 8 },
+                SKAction.run { [weak body] in
+                    guard let body = body else { return }
+                    body.glowWidth = 8
+                },
                 SKAction.wait(forDuration: 0.5),
-                SKAction.run { body.glowWidth = 6 },
+                SKAction.run { [weak body] in
+                    guard let body = body else { return }
+                    body.glowWidth = 6
+                },
                 SKAction.wait(forDuration: 0.5)
             ]))
             body.run(shimmer)
@@ -459,8 +465,8 @@ final class TowerAnimations {
 
     private static func startElectricArcAnimation(node: SKNode, body: SKShapeNode, color: UIColor) {
         // Create random arcs between discharge nodes
-        let createArc = SKAction.run { [weak node, weak body] in
-            guard let node = node, let body = body else { return }
+        let createArc = SKAction.run { [weak body] in
+            guard let body = body else { return }
 
             // Pick two random nodes
             let node1 = Int.random(in: 0..<4)

@@ -550,14 +550,7 @@ class VoidHarbingerAI {
 
                 if distance < mutableZone.radius &&
                    gameState.player.invulnerableUntil < gameState.currentFrameTime {
-                    gameState.player.health -= mutableZone.damage * CGFloat(deltaTime)
-
-                    // Check for death
-                    if gameState.player.health <= 0 {
-                        gameState.player.health = 0
-                        gameState.isGameOver = true
-                        gameState.victory = false
-                    }
+                    PlayerSystem.damagePlayer(state: &gameState, rawDamage: mutableZone.damage * CGFloat(deltaTime))
                 }
             }
 
@@ -667,14 +660,7 @@ class VoidHarbingerAI {
 
             if distance < rift.width / 2 + BalanceConfig.Player.size &&
                gameState.player.invulnerableUntil < gameState.currentFrameTime {
-                gameState.player.health -= rift.damage * CGFloat(deltaTime)
-
-                // Check for death
-                if gameState.player.health <= 0 {
-                    gameState.player.health = 0
-                    gameState.isGameOver = true
-                    gameState.victory = false
-                }
+                PlayerSystem.damagePlayer(state: &gameState, rawDamage: rift.damage * CGFloat(deltaTime))
             }
         }
     }
@@ -744,14 +730,7 @@ class VoidHarbingerAI {
 
         if distanceFromCenter > bossState.arenaRadius {
             // Damage per second outside
-            gameState.player.health -= BalanceConfig.VoidHarbinger.outsideArenaDPS * CGFloat(deltaTime)
-
-            // Check for death
-            if gameState.player.health <= 0 {
-                gameState.player.health = 0
-                gameState.isGameOver = true
-                gameState.victory = false
-            }
+            PlayerSystem.damagePlayer(state: &gameState, rawDamage: BalanceConfig.VoidHarbinger.outsideArenaDPS * CGFloat(deltaTime))
 
             // Push player back towards center
             if distanceFromCenter > 0 {

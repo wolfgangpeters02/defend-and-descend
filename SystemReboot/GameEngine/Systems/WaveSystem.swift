@@ -54,42 +54,48 @@ class WaveSystem {
                 speedMultiplier: speedMult
             ))
         } else if number <= BalanceConfig.Waves.midWaveMax {
-            // Mid: basic + fast + tank
+            // Mid: basic + fast + tank (remainder goes to tank)
+            let basicCount = baseCount / 3
+            let fastCount = baseCount / 3
+            let tankCount = baseCount - basicCount - fastCount
             enemies.append(WaveEnemy(
                 type: "basic",
-                count: baseCount / 3,
+                count: basicCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
                 type: "fast",
-                count: baseCount / 3,
+                count: fastCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
                 type: "tank",
-                count: baseCount / 4,
+                count: tankCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
         } else {
-            // Late: all types with bosses
+            // Late: all types with bosses (remainder goes to fast)
+            let basicCount = baseCount / 4
+            let tankCount = baseCount / 4
+            let fastCount = baseCount - basicCount - tankCount
             enemies.append(WaveEnemy(
                 type: "basic",
-                count: baseCount / 4,
+                count: basicCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
                 type: "fast",
-                count: baseCount / 3,
+                count: fastCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
                 type: "tank",
-                count: baseCount / 4,
+                count: tankCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))

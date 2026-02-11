@@ -542,6 +542,19 @@ struct BalanceConfig {
         static let suctionPauseDuration: Double = 1.5
         static let shredderRadius: CGFloat = 140
         static let shredderDPS: CGFloat = 100          // High damage when too close
+
+        // Movement speeds
+        static let phase1CenterSpeed: CGFloat = 100    // Phase 1 boss move speed toward center
+        static let phase4CenterSpeed: CGFloat = 50     // Phase 4 boss move speed toward center
+
+        // Wind mechanic
+        static let windMaxDistance: CGFloat = 600       // Wind force max distance
+
+        // Contact damage
+        static let contactCooldown: Double = 0.5       // Contact damage cooldown
+        static let contactRadius: CGFloat = 60         // Contact damage radius
+        static let contactDamage: CGFloat = 25         // Contact damage amount
+        static let contactKnockback: CGFloat = 100     // Contact knockback force
     }
 
     // MARK: - Trojan Wyrm Boss
@@ -593,6 +606,14 @@ struct BalanceConfig {
         static let lungeSpeed: CGFloat = 500           // Reduced from 600
         static let lungeHeadDamage: CGFloat = 30       // Reduced from 60
         static let recoverDuration: Double = 1.8       // Longer recovery = more punish window
+
+        // Sub-worm geometry (Phase 3)
+        static let subWormSpawnDistance: CGFloat = 200  // Sub-worm spawn distance from center
+        static let subWormSegmentSpacing: CGFloat = 20  // Sub-worm initial segment spacing
+        static let subWormBodySpacing: CGFloat = 25     // Sub-worm body drag spacing
+
+        // Contact damage
+        static let contactCooldown: Double = 0.5       // Contact damage cooldown
     }
 
     // MARK: - Zero-Day System (TD Mode Boss)
@@ -1162,6 +1183,7 @@ struct BalanceConfig {
         static let phoenixParticleBaseSpeed: CGFloat = 100
         static let phoenixParticleSpeedVariation: CGFloat = 100
         static let phoenixParticleLifetime: TimeInterval = 1.0
+        static let phoenixParticleSize: CGFloat = 8
 
         /// Heal particles (potion)
         static let healParticleCount: Int = 20

@@ -229,6 +229,8 @@ struct PotionCharges {
 
 struct ActivePotionEffects {
     var shieldUntil: TimeInterval?
+    var magnetUntil: TimeInterval?
+    var originalPickupRange: CGFloat?
 }
 
 // MARK: - Player

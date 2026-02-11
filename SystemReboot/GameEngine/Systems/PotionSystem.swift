@@ -190,10 +190,9 @@ class PotionSystem {
         let originalRange = state.player.pickupRange
         state.player.pickupRange = BalanceConfig.Potions.magnetPickupRange
 
-        // Will reset on next frame via normal pickup logic
-        DispatchQueue.main.asyncAfter(deadline: .now() + BalanceConfig.Potions.magnetDuration) {
-            // This is a simplification - in practice you'd track this state
-        }
+        // Track magnet effect expiration so updatePotionEffects can reset it
+        state.activePotionEffects.magnetUntil = state.currentFrameTime + BalanceConfig.Potions.magnetDuration
+        state.activePotionEffects.originalPickupRange = originalRange
 
         HapticsService.shared.play(.light)
         return true
@@ -242,6 +241,17 @@ class PotionSystem {
             if now >= shieldUntil {
                 state.activePotionEffects.shieldUntil = nil
                 // Invulnerability is managed by PlayerSystem
+            }
+        }
+
+        // Check magnet expiration - restore original pickup range
+        if let magnetUntil = state.activePotionEffects.magnetUntil {
+            if now >= magnetUntil {
+                if let originalRange = state.activePotionEffects.originalPickupRange {
+                    state.player.pickupRange = originalRange
+                }
+                state.activePotionEffects.magnetUntil = nil
+                state.activePotionEffects.originalPickupRange = nil
             }
         }
     }

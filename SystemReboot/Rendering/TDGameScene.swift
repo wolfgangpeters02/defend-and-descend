@@ -4597,7 +4597,7 @@ class TDGameScene: SKScene {
             container.addChild(lockIcon)
 
             // "TAP TO UNLOCK" hint
-            let hintLabel = SKLabelNode(text: "TAP TO UNLOCK")
+            let hintLabel = SKLabelNode(text: L10n.TD.tapToUnlock)
             hintLabel.fontName = "Menlo-Bold"
             hintLabel.fontSize = 10
             hintLabel.fontColor = themeColor
