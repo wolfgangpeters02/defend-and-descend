@@ -52,17 +52,6 @@ extension TDGameScene {
         state.damageEvents.removeAll { state.gameTime - $0.timestamp > 2.0 }
     }
 
-    // MARK: - Cleanup
-
-    func cleanupDeadEntities(state: inout TDGameState) {
-        // Remove dead enemies
-        state.enemies.removeAll { $0.isDead || $0.reachedCore }
-
-        // Clean up previous positions for removed projectiles
-        let activeProjectileIds = Set(state.projectiles.map { $0.id })
-        projectilePrevPositions = projectilePrevPositions.filter { activeProjectileIds.contains($0.key) }
-    }
-
     // MARK: - Visual Updates
 
     func updateTowerVisuals(state: TDGameState) {

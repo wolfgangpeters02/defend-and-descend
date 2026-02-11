@@ -15,8 +15,9 @@ class TDGameScene: SKScene {
     var spawnTimer: TimeInterval = 0
     var currentWaveIndex: Int = 0
     var waves: [TDWave] = []
-    var gameStartDelay: TimeInterval = BalanceConfig.TDRendering.gameStartDelay
-    var hasStartedFirstWave: Bool = false
+
+    // Game loop context (frame-to-frame tracking state, extracted in Step 4.5)
+    var frameContext = TDGameLoop.FrameContext()
 
     // Logging state (to avoid spam)
     var lastLoggedEnemyCount: Int = -1
@@ -87,9 +88,6 @@ class TDGameScene: SKScene {
     var projectileTrails: [String: [CGPoint]] = [:]
     let maxTrailLength: Int = 8
 
-    // Projectile previous positions for swept collision detection
-    var projectilePrevPositions: [String: CGPoint] = [:]
-
     // Tower attack tracking for firing animations
     var towerLastAttackTimes: [String: TimeInterval] = [:]
 
@@ -107,8 +105,7 @@ class TDGameScene: SKScene {
     // MARK: - Power Flow Particles (PSU Power Theme)
     var lastPowerFlowSpawnTime: TimeInterval = 0
 
-    // MARK: - Efficiency Tracking (for damage flash)
-    var previousEfficiency: CGFloat = 100
+    // previousEfficiency is now in frameContext (TDGameLoop.FrameContext)
 
     // MARK: - Smooth Barrel Rotation
     // Interpolated barrel rotation for polished aiming feel
@@ -261,8 +258,8 @@ class TDGameScene: SKScene {
         // If waves were completed in a previous session, resume from that point
         if newState.wavesCompleted > 0 && newState.wavesCompleted < waves.count {
             currentWaveIndex = newState.wavesCompleted
-            hasStartedFirstWave = true
-            gameStartDelay = 0  // No delay for restored sessions with progress
+            frameContext.hasStartedFirstWave = true
+            frameContext.gameStartDelay = 0  // No delay for restored sessions with progress
             // Reset wave-in-progress state to start fresh at next wave
             self.state?.waveInProgress = false
             self.state?.waveEnemiesSpawned = 0
@@ -270,8 +267,8 @@ class TDGameScene: SKScene {
         } else if !newState.towers.isEmpty {
             // Session has towers but no completed waves - player built defenses, start quickly
             currentWaveIndex = 0
-            hasStartedFirstWave = false
-            gameStartDelay = 0.5  // Brief delay then start
+            frameContext.hasStartedFirstWave = false
+            frameContext.gameStartDelay = 0.5  // Brief delay then start
             // Reset wave state to ensure clean start
             self.state?.waveInProgress = false
             self.state?.waveEnemiesSpawned = 0
@@ -279,8 +276,8 @@ class TDGameScene: SKScene {
         } else {
             // Fresh start - short delay to let player see the board
             currentWaveIndex = 0
-            hasStartedFirstWave = false
-            gameStartDelay = 1.0  // Reduced from 2.0
+            frameContext.hasStartedFirstWave = false
+            frameContext.gameStartDelay = 1.0  // Reduced from 2.0
         }
 
         // Initialize mega-board system for motherboard maps
@@ -653,125 +650,100 @@ class TDGameScene: SKScene {
         let deltaTime = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
         lastUpdateTime = currentTime
 
-        // Check for System Freeze (0% efficiency)
-        // When frozen, pause all game updates and notify delegate
+        // When frozen, only update core visual (pulsing red), no game logic
         if state.isSystemFrozen {
-            // Only update core visual (pulsing red), no game logic
             updateCoreVisual(state: state, currentTime: currentTime)
             return
         }
 
-        // Update game time
-        state.gameTime += deltaTime
+        // MARK: - Game Logic (delegated to TDGameLoop — Step 4.5)
+        let unlockedSectorIds = gameStateDelegate?.getUnlockedSectorIds() ?? Set([SectorID.power.rawValue])
+        let result = TDGameLoop.update(
+            state: &state,
+            deltaTime: deltaTime,
+            currentTime: currentTime,
+            context: &frameContext,
+            unlockedSectorIds: unlockedSectorIds
+        )
 
-        // MARK: - Idle TD Continuous Spawning
-        // Replace wave-based spawning with continuous idle spawning
-        if state.idleSpawnEnabled {
-            // Initial delay before spawning starts
-            if !hasStartedFirstWave {
-                gameStartDelay -= deltaTime
-                if gameStartDelay <= 0 {
-                    hasStartedFirstWave = true
-                }
+        // MARK: - Process Visual Events from Game Loop
+
+        // Spawn visuals (portal animations + boss entrance effects)
+        for spawn in result.spawnVisuals {
+            if spawn.needsPortal {
+                spawnPortalAnimation(at: convertToScene(spawn.position))
             }
-
-            if hasStartedFirstWave {
-                let unlockedSectorIds = gameStateDelegate?.getUnlockedSectorIds() ?? Set([SectorID.power.rawValue])
-                if let enemy = IdleSpawnSystem.update(
-                    state: &state,
-                    deltaTime: deltaTime,
-                    currentTime: currentTime,
-                    unlockedSectorIds: unlockedSectorIds
-                ) {
-                    state.enemies.append(enemy)
-                    let spawnPosition = convertToScene(enemy.position)
-                    spawnPortalAnimation(at: spawnPosition)
-
-                    // Boss entrance: trigger special effects
-                    if enemy.isBoss {
-                        let bossColor = UIColor(hex: enemy.color) ?? .red
-                        triggerBossEntranceEffect(at: enemy.position, bossColor: bossColor)
-                    }
-
-                }
+            if spawn.isBoss {
+                let bossColor = UIColor(hex: spawn.color) ?? .red
+                triggerBossEntranceEffect(at: spawn.position, bossColor: bossColor)
             }
         }
 
-        // Update Overclock system (timer, power allocation)
-        OverclockSystem.update(state: &state, deltaTime: deltaTime)
-
-        // Update Boss system (spawning at threat milestones, movement)
-        let bossResult = TDBossSystem.update(state: &state, deltaTime: deltaTime)
-        if bossResult.bossSpawned {
-            // Trigger boss entrance effects
-            if let bossId = state.activeBossId,
-               let boss = state.enemies.first(where: { $0.id == bossId }) {
-                let bossColor = UIColor(hex: boss.color) ?? .orange
-                triggerBossEntranceEffect(at: boss.position, bossColor: bossColor)
-            }
-            gameStateDelegate?.bossSpawned(type: bossResult.spawnedBossType ?? "unknown")
+        // Boss delegate callbacks
+        if let bossType = result.bossSpawnedType {
+            gameStateDelegate?.bossSpawned(type: bossType)
         }
-        if bossResult.bossReachedCPU {
+        if result.bossReachedCPU {
             gameStateDelegate?.bossReachedCPU()
         }
 
-        // Update systems
-        PathSystem.updateEnemyPositions(state: &state, deltaTime: deltaTime, currentTime: currentTime)
-        TowerSystem.updateTargets(state: &state)
-        TowerSystem.processTowerAttacks(state: &state, currentTime: currentTime, deltaTime: deltaTime)
-        CoreSystem.processCoreAttack(state: &state, currentTime: currentTime)
-        updateProjectiles(state: &state, deltaTime: deltaTime, currentTime: currentTime)
-        PathSystem.processReachedCore(state: &state)
-        processCollisions(state: &state)
-        cleanupDeadEntities(state: &state)
+        // Collision visuals (impact sparks, death particles, boss death effects)
+        for event in result.collisionVisuals {
+            let scenePos = convertToScene(event.position)
+            switch event.kind {
+            case .impact(let color):
+                spawnImpactSparks(at: scenePos, color: UIColor(hex: color) ?? .yellow)
+            case .kill(let color, let goldValue, let isBoss):
+                let enemyColor = UIColor(hex: color) ?? .red
+                spawnDeathParticles(at: scenePos, color: enemyColor, isBoss: isBoss)
+                spawnGoldFloaties(at: scenePos, goldValue: goldValue)
+                if isBoss {
+                    triggerBossDeathEffect(at: event.position, bossColor: enemyColor)
+                }
+            }
+        }
 
-        // Check for efficiency drop (enemy leaked) and trigger damage flash
-        if state.efficiency < previousEfficiency {
+        // Efficiency drop feedback
+        if result.efficiencyDropped {
             triggerDamageFlash()
         }
-        previousEfficiency = state.efficiency
 
-        // Check if system just froze (efficiency hit 0%)
-        if state.isSystemFrozen {
+        // System freeze — notify delegate and stop
+        if result.systemJustFroze {
             self.state = state
             gameStateDelegate?.gameStateUpdated(state)
             gameStateDelegate?.systemFrozen()
             return
         }
 
-        // Efficiency System (System: Reboot)
-        PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
-        PathSystem.updateHashIncome(state: &state, deltaTime: deltaTime)
+        // MARK: - Rendering Updates
 
-        // Zero-Day System (System Breach events)
-        _ = ZeroDaySystem.update(state: &state, deltaTime: deltaTime)
-
-        // Update camera physics (inertia scrolling)
+        // Camera physics (inertia scrolling)
         cameraController.updatePhysics(deltaTime: deltaTime)
 
-        // Update parallax background
+        // Parallax background
         updateParallaxLayers()
 
-        // Update visuals
+        // Entity visuals
         updateTowerVisuals(state: state)
         updateEnemyVisuals(state: state)
         updateProjectileVisuals(state: state)
         updateCoreVisual(state: state, currentTime: currentTime)
 
-        // Update path LEDs for visual feedback (motherboard theme)
+        // Motherboard theme: path LEDs
         if isMotherboardMap {
             updatePathLEDs(enemies: state.enemies)
         }
 
-        // Update Level of Detail based on zoom
+        // Tower Level of Detail based on zoom
         updateTowerLOD()
 
-        // Update sector visibility and pause/resume ambient effects (motherboard theme)
+        // Motherboard theme: sector visibility
         if isMotherboardMap {
             updateSectorVisibility(currentTime: currentTime)
         }
 
-        // Render scrolling combat text
+        // Scrolling combat text
         renderDamageEvents(state: &state)
 
         // Save state and notify delegate
@@ -804,80 +776,6 @@ class TDGameScene: SKScene {
                     triggerBossEntranceEffect(at: enemy.position, bossColor: bossColor)
                 }
 
-            }
-        }
-    }
-
-    // MARK: - Projectile Updates
-
-    private func updateProjectiles(state: inout TDGameState, deltaTime: TimeInterval, currentTime: TimeInterval) {
-        for i in (0..<state.projectiles.count).reversed() {
-            var proj = state.projectiles[i]
-
-            // Store previous position for swept collision detection
-            projectilePrevPositions[proj.id] = CGPoint(x: proj.x, y: proj.y)
-
-            // Move projectile
-            proj.x += proj.velocityX * CGFloat(deltaTime)
-            proj.y += proj.velocityY * CGFloat(deltaTime)
-
-            // Homing behavior
-            if proj.isHoming, let targetId = proj.targetId,
-               let target = state.enemies.first(where: { $0.id == targetId && !$0.isDead }) {
-                let dx = target.x - proj.x
-                let dy = target.y - proj.y
-                let distance = sqrt(dx*dx + dy*dy)
-                if distance > 0 {
-                    let currentAngle = atan2(proj.velocityY, proj.velocityX)
-                    let targetAngle = atan2(dy, dx)
-                    var angleDiff = targetAngle - currentAngle
-                    while angleDiff > .pi { angleDiff -= 2 * .pi }
-                    while angleDiff < -.pi { angleDiff += 2 * .pi }
-
-                    let turnSpeed = proj.homingStrength * CGFloat(deltaTime)
-                    let newAngle = currentAngle + max(-turnSpeed, min(turnSpeed, angleDiff))
-                    let speed = proj.speed ?? 400
-                    proj.velocityX = cos(newAngle) * speed
-                    proj.velocityY = sin(newAngle) * speed
-                }
-            }
-
-            // Update lifetime
-            proj.lifetime -= deltaTime
-
-            // Check bounds and lifetime
-            if proj.lifetime <= 0 ||
-               proj.x < -50 || proj.x > state.map.width + 50 ||
-               proj.y < -50 || proj.y > state.map.height + 50 {
-                state.projectiles.remove(at: i)
-                continue
-            }
-
-            state.projectiles[i] = proj
-        }
-    }
-
-    // MARK: - Collision Processing (delegates to TDCollisionSystem)
-
-    private func processCollisions(state: inout TDGameState) {
-        let events = TDCollisionSystem.processCollisions(
-            state: &state,
-            prevPositions: projectilePrevPositions
-        )
-
-        // Render visual effects from collision events
-        for event in events {
-            let scenePos = convertToScene(event.position)
-            switch event.kind {
-            case .impact(let color):
-                spawnImpactSparks(at: scenePos, color: UIColor(hex: color) ?? .yellow)
-            case .kill(let color, let goldValue, let isBoss):
-                let enemyColor = UIColor(hex: color) ?? .red
-                spawnDeathParticles(at: scenePos, color: enemyColor, isBoss: isBoss)
-                spawnGoldFloaties(at: scenePos, goldValue: goldValue)
-                if isBoss {
-                    triggerBossDeathEffect(at: event.position, bossColor: enemyColor)
-                }
             }
         }
     }

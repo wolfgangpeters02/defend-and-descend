@@ -609,7 +609,7 @@ class ParticleEffectService {
 
 ---
 
-### 4.5 Extract `TDGameLoop` from TDGameScene
+### [x] 4.5 Extract `TDGameLoop` from TDGameScene
 
 **Source:** `TDGameScene.swift` lines 885–1016 (`update()` method)
 
