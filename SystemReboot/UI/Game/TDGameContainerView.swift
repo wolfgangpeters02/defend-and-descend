@@ -756,8 +756,8 @@ struct TDGameContainerView: View {
                         .foregroundColor(.gray)
 
                     // Option 1: Flush Memory (Pay Hash)
-                    let flushCost = max(100, appState.currentPlayer.hash / 10)  // 10% of banked Hash
-                    let canAffordFlush = appState.currentPlayer.hash >= flushCost
+                    let flushCost = FreezeRecoveryService.flushCost(currentHash: appState.currentPlayer.hash)
+                    let canAffordFlush = FreezeRecoveryService.canAffordFlush(currentHash: appState.currentPlayer.hash)
 
                     Button(action: {
                         performFlushMemory(cost: flushCost)
@@ -823,10 +823,9 @@ struct TDGameContainerView: View {
             profile.hash -= cost
         }
 
-        // Restore efficiency to 50%
-        // Note: We update the scene's state indirectly - the scene will pick up changes
-        // through the game loop. For immediate effect, we need to update the scene's internal state.
-        scene?.restoreEfficiency(to: 10)  // 50% efficiency = 10 leaks (100 - 10*5 = 50)
+        // Restore efficiency to target via FreezeRecoveryService
+        let targetLeakCount = FreezeRecoveryService.leakCountForEfficiency(BalanceConfig.Freeze.recoveryTargetEfficiency)
+        scene?.restoreEfficiency(to: targetLeakCount)
 
         withAnimation {
             showSystemFreeze = false
@@ -2185,14 +2184,9 @@ struct TDGameContainerView: View {
     private func unlockSelectedSector() {
         guard let sectorId = selectedSectorForUnlock else { return }
 
-        var profile = appState.currentPlayer
-        let result = SectorUnlockSystem.shared.unlockSector(sectorId, profile: &profile)
+        let result = SectorUnlockSystem.shared.performUnlockTransaction(sectorId, appState: appState)
 
         if result.success {
-            // Update and save profile
-            appState.currentPlayer = profile
-            StorageService.shared.savePlayer(profile)
-
             // Play celebration
             HapticsService.shared.play(.legendary)
 

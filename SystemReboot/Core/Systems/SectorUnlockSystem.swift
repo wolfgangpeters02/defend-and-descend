@@ -192,6 +192,29 @@ final class SectorUnlockSystem {
         return (unlocked, total, percentage)
     }
 
+    // MARK: - Full Unlock Transaction (Sector Management Service)
+    // Extracted from TDGameContainerView + EmbeddedTDGameController (Phase 2.6)
+    // Performs the complete unlock→save→refresh flow as a single transaction.
+
+    /// Perform a complete sector unlock transaction: validate, deduct cost, save profile.
+    /// - Parameters:
+    ///   - sectorId: The sector to unlock
+    ///   - appState: The AppState to update (profile mutation + persistence)
+    /// - Returns: The unlock result indicating success or failure
+    @discardableResult
+    func performUnlockTransaction(_ sectorId: String, appState: AppState) -> UnlockResult {
+        var profile = appState.currentPlayer
+        let result = unlockSector(sectorId, profile: &profile)
+
+        if result.success {
+            // Update and save profile
+            appState.currentPlayer = profile
+            StorageService.shared.savePlayer(profile)
+        }
+
+        return result
+    }
+
     // MARK: - Partial Unlock (Future Feature)
 
     /// Add partial payment toward a sector unlock

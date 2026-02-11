@@ -179,7 +179,7 @@
 
 ---
 
-### 2.1 Extract `OfflineSimulator` from StorageService
+### [x] 2.1 Extract `OfflineSimulator` from StorageService
 
 **Source:** `StorageService.swift` lines 414–546
 **Target:** `SystemReboot/GameEngine/Systems/OfflineSimulator.swift`
@@ -267,7 +267,7 @@ struct GameRewardService {
 
 ---
 
-### 2.4 Extract `FreezeRecoveryService` from UI layer
+### [x] 2.4 Extract `FreezeRecoveryService` from UI layer
 
 **Source:**
 - `SystemTabView.swift` lines 183–206 (flush memory + manual override handlers)
@@ -320,7 +320,7 @@ class BossFightCoordinator: ObservableObject {
 
 ---
 
-### 2.6 Extract `SectorManagementService`
+### [x] 2.6 Extract `SectorManagementService`
 
 **Source:**
 - `SystemTabView.swift` lines 1328–1357 (unlockSector)

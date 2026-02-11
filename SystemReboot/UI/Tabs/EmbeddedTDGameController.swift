@@ -347,14 +347,9 @@ class EmbeddedTDGameController: ObservableObject {
 
     /// Unlock a sector (decrypt it)
     func unlockSector(_ sectorId: String, appState: AppState) -> Bool {
-        var profile = appState.currentPlayer
-        let result = SectorUnlockSystem.shared.unlockSector(sectorId, profile: &profile)
+        let result = SectorUnlockSystem.shared.performUnlockTransaction(sectorId, appState: appState)
 
         if result.success {
-            // Update and save profile
-            appState.currentPlayer = profile
-            StorageService.shared.savePlayer(profile)
-
             // Play celebration
             HapticsService.shared.play(.legendary)
 

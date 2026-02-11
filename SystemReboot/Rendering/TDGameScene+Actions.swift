@@ -21,7 +21,7 @@ extension TDGameScene {
     /// - Parameter leakCount: The new leak count (0 = 100%, 10 = 50%, 20 = 0%)
     func restoreEfficiency(to leakCount: Int) {
         guard var state = state else { return }
-        state.leakCounter = leakCount
+        FreezeRecoveryService.restoreEfficiency(state: &state, toLeakCount: leakCount)
         self.state = state
         gameStateDelegate?.gameStateUpdated(state)
     }
@@ -30,20 +30,10 @@ extension TDGameScene {
     /// Called when player chooses "Flush Memory" or completes "Manual Override"
     /// - Parameter restoreToEfficiency: Target efficiency (50 = 50%, i.e., leakCounter = 10)
     func recoverFromFreeze(restoreToEfficiency: CGFloat = BalanceConfig.Freeze.recoveryTargetEfficiency) {
-        guard var state = state, state.isSystemFrozen else { return }
+        guard var state = state else { return }
 
-        // Clear freeze state
-        state.isSystemFrozen = false
-
-        // Restore efficiency (50% = leakCounter of 10)
-        // efficiency = 100 - leakCounter * 5
-        // leakCounter = (100 - targetEfficiency) / 5
-        let targetLeakCount = Int((100 - restoreToEfficiency) / 5)
-        state.leakCounter = max(0, targetLeakCount)
-
-        // Clear all enemies that were on the field (system "rebooted")
-        for i in 0..<state.enemies.count {
-            state.enemies[i].isDead = true
+        guard FreezeRecoveryService.recoverFromFreeze(state: &state, targetEfficiency: restoreToEfficiency) else {
+            return
         }
 
         self.state = state

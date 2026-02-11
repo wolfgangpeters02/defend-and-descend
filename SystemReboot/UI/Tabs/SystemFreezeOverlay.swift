@@ -11,11 +11,11 @@ struct SystemFreezeOverlay: View {
     @State private var scanLineOffset: CGFloat = 0
 
     private var flushCost: Int {
-        max(1, currentHash / 10)  // 10% of current Hash
+        FreezeRecoveryService.flushCost(currentHash: currentHash)
     }
 
     private var canAffordFlush: Bool {
-        currentHash >= flushCost
+        FreezeRecoveryService.canAffordFlush(currentHash: currentHash)
     }
 
     var body: some View {
