@@ -405,7 +405,7 @@ The survival-mode scene mixes boss rendering, entity rendering, game loop, and e
 
 ---
 
-### 3.4 Split `TowerVisualFactory.swift` (1,644 lines → 4 files)
+### [x] 3.4 Split `TowerVisualFactory.swift` (1,644 lines → 4 files)
 
 | New File | Content | Source Lines | Est. Lines |
 |----------|---------|-------------|------------|
@@ -418,7 +418,7 @@ The survival-mode scene mixes boss rendering, entity rendering, game loop, and e
 
 ---
 
-### 3.5 Split `TowerAnimations.swift` (1,431 lines → 3 files)
+### [x] 3.5 Split `TowerAnimations.swift` (1,431 lines → 3 files)
 
 | New File | Content | Source Lines | Est. Lines |
 |----------|---------|-------------|------------|

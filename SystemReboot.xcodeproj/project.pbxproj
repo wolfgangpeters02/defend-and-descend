@@ -100,6 +100,13 @@
 		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
 		TWRGALBLD /* TowerGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERGAL1 /* TowerGalleryView.swift */; };
 		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
+		AAC10001 /* TowerVisualFactory+Bodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00001 /* TowerVisualFactory+Bodies.swift */; };
+		AAC10002 /* TowerVisualFactory+Platforms.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00002 /* TowerVisualFactory+Platforms.swift */; };
+		AAC10003 /* TowerVisualFactory+Details.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00003 /* TowerVisualFactory+Details.swift */; };
+		AAC10004 /* TowerVisualFactory+Indicators.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00004 /* TowerVisualFactory+Indicators.swift */; };
+		AAC10005 /* TowerAnimations+Idle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00005 /* TowerAnimations+Idle.swift */; };
+		AAC10006 /* TowerAnimations+Combat.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00006 /* TowerAnimations+Combat.swift */; };
+		AAC10007 /* TowerAnimations+Special.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00007 /* TowerAnimations+Special.swift */; };
 		F1A2B3C4D5E60718293F4A5B /* TDSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */; };
 		B2C3D4E5F6A70819293B4C5E /* TDBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F70819293A4B5D /* TDBot.swift */; };
 		D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */; };
@@ -244,6 +251,13 @@
 		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
 		TOWERGAL1 /* TowerGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerGalleryView.swift; sourceTree = "<group>"; };
 		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
+		AAC00001 /* TowerVisualFactory+Bodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Bodies.swift"; sourceTree = "<group>"; };
+		AAC00002 /* TowerVisualFactory+Platforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Platforms.swift"; sourceTree = "<group>"; };
+		AAC00003 /* TowerVisualFactory+Details.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Details.swift"; sourceTree = "<group>"; };
+		AAC00004 /* TowerVisualFactory+Indicators.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Indicators.swift"; sourceTree = "<group>"; };
+		AAC00005 /* TowerAnimations+Idle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerAnimations+Idle.swift"; sourceTree = "<group>"; };
+		AAC00006 /* TowerAnimations+Combat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerAnimations+Combat.swift"; sourceTree = "<group>"; };
+		AAC00007 /* TowerAnimations+Special.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerAnimations+Special.swift"; sourceTree = "<group>"; };
 		TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TutorialHintOverlay.swift; sourceTree = "<group>"; };
 		E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSimulator.swift; sourceTree = "<group>"; };
 		A2B3C4D5E6F70819293A4B5D /* TDBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBot.swift; sourceTree = "<group>"; };
@@ -377,7 +391,14 @@
 				NODEPOOL1 /* NodePool.swift */,
 				SCROLLCT1 /* ScrollingCombatText.swift */,
 				TOWERANIM /* TowerAnimations.swift */,
+				AAC00005 /* TowerAnimations+Idle.swift */,
+				AAC00006 /* TowerAnimations+Combat.swift */,
+				AAC00007 /* TowerAnimations+Special.swift */,
 				TOWERVF01 /* TowerVisualFactory.swift */,
+				AAC00001 /* TowerVisualFactory+Bodies.swift */,
+				AAC00002 /* TowerVisualFactory+Platforms.swift */,
+				AAC00003 /* TowerVisualFactory+Details.swift */,
+				AAC00004 /* TowerVisualFactory+Indicators.swift */,
 				TDPARTF01 /* TDParticleFactory.swift */,
 			);
 			path = Rendering;
@@ -749,7 +770,14 @@
 				NODEPLBLD /* NodePool.swift in Sources */,
 				SCRLCTBLD /* ScrollingCombatText.swift in Sources */,
 				TWRANMBLD /* TowerAnimations.swift in Sources */,
+				AAC10005 /* TowerAnimations+Idle.swift in Sources */,
+				AAC10006 /* TowerAnimations+Combat.swift in Sources */,
+				AAC10007 /* TowerAnimations+Special.swift in Sources */,
 				TWRVFABLD /* TowerVisualFactory.swift in Sources */,
+				AAC10001 /* TowerVisualFactory+Bodies.swift in Sources */,
+				AAC10002 /* TowerVisualFactory+Platforms.swift in Sources */,
+				AAC10003 /* TowerVisualFactory+Details.swift in Sources */,
+				AAC10004 /* TowerVisualFactory+Indicators.swift in Sources */,
 				TWRGALBLD /* TowerGalleryView.swift in Sources */,
 				01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */,
 				21C537CEC27D011FCFC30E1B /* IdleSpawnSystem.swift in Sources */,
