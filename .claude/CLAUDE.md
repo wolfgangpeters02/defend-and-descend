@@ -157,3 +157,34 @@ BalanceConfig.levelStatMultiplier(level: Int) -> CGFloat
 - `tools/balance-simulator.html` - Interactive web simulator
 - `tools/BalanceSimulator/` - Swift CLI for Monte Carlo testing
 - `BalanceConfig.exportJSON()` - Syncs Swift values to web tools
+
+---
+
+## Architecture Rules
+
+**IMPORTANT**: The codebase was refactored from God Objects into focused files. Follow these rules to keep it that way.
+
+### File Size & Separation of Concerns
+
+1. **No file should exceed ~800 lines** — if it does, split by concern using Swift extensions in separate files
+2. **No domain logic in UI files** — views call services, they don't calculate rewards, validate placement, or simulate physics
+3. **No duplicated logic across files** — if two views need the same operation, extract a service to `GameEngine/Systems/`
+4. **New types get their own file** — don't add structs/enums to an existing file unless they're small (<30 lines) and tightly coupled
+
+### Where Code Lives
+
+| Code Type | Location | Example |
+|-----------|----------|---------|
+| Pure data types & enums | `Core/Types/` | BossStates, WaveTypes |
+| Game logic & services | `GameEngine/Systems/` | TDGameLoop, GameRewardService |
+| SpriteKit rendering | `Rendering/` | TowerVisualFactory, ParticleEffectService |
+| SwiftUI views | `UI/Tabs/` or `UI/Game/` | ArsenalView, TDGameContainerView |
+| Config & constants | `Core/Config/` | BalanceConfig, DesignSystem |
+
+### Anti-Patterns to Avoid
+
+- Adding game calculations (XP, costs, damage) directly in a SwiftUI view — use a service in `GameEngine/Systems/`
+- Growing a file past 800 lines — split into focused `+Extension` files
+- Using NotificationCenter for control flow between views — use callbacks or coordinators
+- Putting a new boss's rendering code in GameScene.swift — add to BossRenderingManager
+- Duplicating freeze/reward/placement logic across views — call the existing service
