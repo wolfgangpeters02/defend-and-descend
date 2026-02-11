@@ -153,6 +153,7 @@
 		GMRWDSVCBL /* GameRewardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GMRWDSVCRF /* GameRewardService.swift */; };
 		TWRPLCSVCBL /* TowerPlacementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRPLCSVCRF /* TowerPlacementService.swift */; };
 		BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSFGHTCDRF /* BossFightCoordinator.swift */; };
+		MNLOVRSYSBL /* ManualOverrideSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = MNLOVRSYSRF /* ManualOverrideSystem.swift */; };
 		TDGCVOVBL01 /* TDGameContainerView+Overlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */; };
 		TDGCVHDBL01 /* TDGameContainerView+HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVHDRF01 /* TDGameContainerView+HUD.swift */; };
 		TDGCVTWBL01 /* TDGameContainerView+Towers.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVTWRF01 /* TDGameContainerView+Towers.swift */; };
@@ -227,6 +228,7 @@
 		GMRWDSVCRF /* GameRewardService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameRewardService.swift; sourceTree = "<group>"; };
 		TWRPLCSVCRF /* TowerPlacementService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerPlacementService.swift; sourceTree = "<group>"; };
 		BSSFGHTCDRF /* BossFightCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossFightCoordinator.swift; sourceTree = "<group>"; };
+		MNLOVRSYSRF /* ManualOverrideSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideSystem.swift; sourceTree = "<group>"; };
 		AA100041 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
 		AA100042 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		AA100043 /* NotificationSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsSheet.swift; sourceTree = "<group>"; };
@@ -550,6 +552,7 @@
 				GMRWDSVCRF /* GameRewardService.swift */,
 				TWRPLCSVCRF /* TowerPlacementService.swift */,
 				BSSFGHTCDRF /* BossFightCoordinator.swift */,
+				MNLOVRSYSRF /* ManualOverrideSystem.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -878,6 +881,7 @@
 				GMRWDSVCBL /* GameRewardService.swift in Sources */,
 				TWRPLCSVCBL /* TowerPlacementService.swift in Sources */,
 				BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */,
+				MNLOVRSYSBL /* ManualOverrideSystem.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

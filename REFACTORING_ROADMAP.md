@@ -688,7 +688,7 @@ struct TDCollisionSystem {
 
 ---
 
-### 4.8 Extract ManualOverride game simulation from UI
+### [x] 4.8 Extract ManualOverride game simulation from UI
 
 **Source:** `ManualOverrideView.swift` lines 241–708
 

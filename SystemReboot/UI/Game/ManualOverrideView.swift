@@ -238,7 +238,7 @@ class ManualOverrideController: ObservableObject {
     }
 }
 
-// MARK: - Manual Override Scene (SpriteKit)
+// MARK: - Manual Override Scene (Thin Renderer)
 
 class ManualOverrideScene: SKScene {
     // Callbacks
@@ -246,48 +246,50 @@ class ManualOverrideScene: SKScene {
     var onHealthUpdate: ((Int) -> Void)?
     var onWin: (() -> Void)?
 
-    // Game state
-    private var timeRemaining: TimeInterval = BalanceConfig.ManualOverride.duration
-    private var health: Int = BalanceConfig.ManualOverride.maxHealth
-    private var isGameOver = false
+    // Simulation state (domain logic lives in ManualOverrideSystem)
+    private var simState: ManualOverrideSystem.State!
     private var lastUpdateTime: TimeInterval = 0
+    private var previousHealth: Int = 0
 
-    // Player
+    // Render nodes
     private var playerNode: SKShapeNode!
-    private var playerVelocity: CGPoint = .zero
-    private let playerSpeed: CGFloat = BalanceConfig.ManualOverride.playerSpeed
+    private var hazardNodes: [UUID: SKNode] = [:]
 
-    // Hazards
-    private var hazards: [SKNode] = []
-    private var hazardSpawnTimer: TimeInterval = 0
-    private var hazardSpawnInterval: TimeInterval = BalanceConfig.ManualOverride.initialHazardSpawnInterval
-    private var difficultyTimer: TimeInterval = 0
-
-    // Invincibility after hit
-    private var invincibilityTimer: TimeInterval = 0
-    private let invincibilityDuration: TimeInterval = BalanceConfig.ManualOverride.invincibilityDuration
+    // Pending expanding hazards waiting for warning animation to finish
+    private var pendingExpandingHazards: [ManualOverrideSystem.Hazard] = []
 
     override func didMove(to view: SKView) {
         backgroundColor = UIColor(hex: "0a0a0f") ?? .black
 
+        simState = ManualOverrideSystem.makeInitialState(sceneSize: size)
+        previousHealth = simState.health
+
+        setupCamera()
         setupPlayer()
         setupBoundary()
         setupBackground()
     }
 
+    // MARK: - Setup
+
+    private func setupCamera() {
+        let cam = SKCameraNode()
+        cam.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        addChild(cam)
+        self.camera = cam
+    }
+
     private func setupPlayer() {
-        // Create player node - glowing orb
         playerNode = SKShapeNode(circleOfRadius: 20)
         playerNode.fillColor = DesignColors.primaryUI
         playerNode.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.8)
         playerNode.lineWidth = 3
         playerNode.glowWidth = 10
-        playerNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        playerNode.position = simState.playerPosition
         playerNode.zPosition = 10
         playerNode.name = "player"
         addChild(playerNode)
 
-        // Add pulsing animation
         let pulse = SKAction.sequence([
             SKAction.scale(to: 1.1, duration: 0.5),
             SKAction.scale(to: 1.0, duration: 0.5)
@@ -296,7 +298,6 @@ class ManualOverrideScene: SKScene {
     }
 
     private func setupBoundary() {
-        // Create boundary indicator
         let border = SKShapeNode(rect: CGRect(x: 20, y: 100, width: size.width - 40, height: size.height - 200), cornerRadius: 10)
         border.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.3)
         border.fillColor = .clear
@@ -307,7 +308,6 @@ class ManualOverrideScene: SKScene {
     }
 
     private func setupBackground() {
-        // Grid pattern
         for x in stride(from: CGFloat(0), to: size.width, by: 40) {
             let line = SKShapeNode(rect: CGRect(x: x, y: 0, width: 1, height: size.height))
             line.fillColor = UIColor.white.withAlphaComponent(0.03)
@@ -324,148 +324,130 @@ class ManualOverrideScene: SKScene {
         }
     }
 
+    // MARK: - Input
+
     func movePlayer(angle: CGFloat, distance: CGFloat) {
-        let speed = playerSpeed * distance
-        playerVelocity = CGPoint(
-            x: cos(angle) * speed,
-            y: -sin(angle) * speed  // Invert Y for screen coordinates
-        )
+        ManualOverrideSystem.applyJoystickInput(state: &simState, angle: angle, distance: distance)
     }
 
     func stopPlayer() {
-        playerVelocity = .zero
+        ManualOverrideSystem.stopPlayer(state: &simState)
     }
 
+    // MARK: - Game Loop
+
     override func update(_ currentTime: TimeInterval) {
-        guard !isGameOver else { return }
+        guard simState != nil, !simState.isGameOver else { return }
 
         let deltaTime = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
         lastUpdateTime = currentTime
 
-        // Update timer
-        timeRemaining -= deltaTime
-        onTimeUpdate?(timeRemaining)
+        // Tick simulation
+        let events = ManualOverrideSystem.update(state: &simState, deltaTime: deltaTime, sceneSize: size)
 
-        if timeRemaining <= 0 {
-            // Player wins!
-            isGameOver = true
+        // Report state to UI
+        onTimeUpdate?(simState.timeRemaining)
+
+        if events.gameWon {
             onWin?()
             return
         }
 
-        // Update invincibility
-        if invincibilityTimer > 0 {
-            invincibilityTimer -= deltaTime
-            // Flash effect
+        // Render player
+        playerNode.position = simState.playerPosition
+        if simState.invincibilityTimer > 0 {
             playerNode.alpha = sin(currentTime * 20) > 0 ? 1.0 : 0.3
         } else {
             playerNode.alpha = 1.0
         }
 
-        // Update difficulty (spawn faster over time)
-        difficultyTimer += deltaTime
-        if difficultyTimer >= 5 {
-            difficultyTimer = 0
-            hazardSpawnInterval = max(0.5, hazardSpawnInterval - 0.2)
+        // Handle spawned hazards
+        for hazard in events.spawnedHazards {
+            createHazardNode(for: hazard)
         }
 
-        // Spawn hazards
-        hazardSpawnTimer += deltaTime
-        if hazardSpawnTimer >= hazardSpawnInterval {
-            hazardSpawnTimer = 0
-            spawnHazard()
+        // Commit any pending expanding hazards whose warnings have finished
+        commitPendingExpandingHazards()
+
+        // Update hazard node positions/shapes from simulation state
+        renderHazards()
+
+        // Handle removed hazards
+        for id in events.removedHazardIDs {
+            removeHazardNode(id: id)
         }
 
-        // Update player position
-        updatePlayer(deltaTime: deltaTime)
+        // Handle damage
+        if events.damageDealt {
+            onHealthUpdate?(simState.health)
+            playDamageEffects()
 
-        // Update hazards
-        updateHazards(deltaTime: deltaTime)
-
-        // Check collisions
-        checkCollisions()
-    }
-
-    private func updatePlayer(deltaTime: TimeInterval) {
-        var newX = playerNode.position.x + playerVelocity.x * CGFloat(deltaTime)
-        var newY = playerNode.position.y + playerVelocity.y * CGFloat(deltaTime)
-
-        // Clamp to bounds
-        let padding: CGFloat = 30
-        newX = max(padding, min(size.width - padding, newX))
-        newY = max(120, min(size.height - 120, newY))
-
-        playerNode.position = CGPoint(x: newX, y: newY)
-    }
-
-    private func spawnHazard() {
-        let hazardType = Int.random(in: 0...2)
-
-        switch hazardType {
-        case 0:
-            spawnProjectileHazard()
-        case 1:
-            spawnExpandingHazard()
-        default:
-            spawnSweepHazard()
+            if events.gameLost {
+                onHealthUpdate?(simState.health)
+            }
         }
     }
 
-    private func spawnProjectileHazard() {
-        // Fast moving projectile from edge
-        let hazard = SKShapeNode(circleOfRadius: 15)
-        hazard.fillColor = DesignColors.dangerUI
-        hazard.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
-        hazard.lineWidth = 2
-        hazard.glowWidth = 8
-        hazard.name = "hazard"
-        hazard.zPosition = 5
+    // MARK: - Hazard Rendering
 
-        // Random edge spawn
-        let edge = Int.random(in: 0...3)
-        var startPos: CGPoint
-        var velocity: CGPoint
-        let speed = CGFloat.random(in: BalanceConfig.ManualOverride.hazardSpeedMin...BalanceConfig.ManualOverride.hazardSpeedMax)
-        let variance = BalanceConfig.ManualOverride.hazardVelocityVariance
+    private func createHazardNode(for hazard: ManualOverrideSystem.Hazard) {
+        switch hazard.kind {
+        case .projectile:
+            let node = SKShapeNode(circleOfRadius: 15)
+            node.fillColor = DesignColors.dangerUI
+            node.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
+            node.lineWidth = 2
+            node.glowWidth = 8
+            node.name = "hazard"
+            node.zPosition = 5
+            node.position = hazard.position
+            addChild(node)
+            hazardNodes[hazard.id] = node
 
-        switch edge {
-        case 0: // Top
-            startPos = CGPoint(x: CGFloat.random(in: 50...(size.width - 50)), y: size.height - 100)
-            velocity = CGPoint(x: CGFloat.random(in: -variance...variance), y: -speed)
-        case 1: // Bottom
-            startPos = CGPoint(x: CGFloat.random(in: 50...(size.width - 50)), y: 120)
-            velocity = CGPoint(x: CGFloat.random(in: -variance...variance), y: speed)
-        case 2: // Left
-            startPos = CGPoint(x: 30, y: CGFloat.random(in: 150...(size.height - 150)))
-            velocity = CGPoint(x: speed, y: CGFloat.random(in: -variance...variance))
-        default: // Right
-            startPos = CGPoint(x: size.width - 30, y: CGFloat.random(in: 150...(size.height - 150)))
-            velocity = CGPoint(x: -speed, y: CGFloat.random(in: -variance...variance))
+        case .expanding:
+            // Show warning animation first; the actual hazard node is created after
+            showExpandingWarning(for: hazard)
+
+        case .sweep(_, let isHorizontal, let gapStart, let gapEnd):
+            let node = SKShapeNode()
+            node.name = "hazard"
+            node.zPosition = 5
+            node.strokeColor = DesignColors.dangerUI
+            node.lineWidth = 8
+            node.glowWidth = 15
+            node.position = hazard.position
+
+            let path = CGMutablePath()
+            if isHorizontal {
+                path.move(to: CGPoint(x: 0, y: 0))
+                path.addLine(to: CGPoint(x: gapStart, y: 0))
+                path.move(to: CGPoint(x: gapEnd, y: 0))
+                path.addLine(to: CGPoint(x: size.width, y: 0))
+            } else {
+                let playAreaBottom: CGFloat = 120
+                let playAreaTop = size.height - 120
+                path.move(to: CGPoint(x: 0, y: playAreaBottom))
+                path.addLine(to: CGPoint(x: 0, y: gapStart))
+                path.move(to: CGPoint(x: 0, y: gapEnd))
+                path.addLine(to: CGPoint(x: 0, y: playAreaTop))
+            }
+            node.path = path
+            addChild(node)
+            hazardNodes[hazard.id] = node
         }
-
-        hazard.position = startPos
-        hazard.userData = ["velocity": NSValue(cgPoint: velocity)]
-        addChild(hazard)
-        hazards.append(hazard)
     }
 
-    private func spawnExpandingHazard() {
-        // Warning indicator, then expanding danger zone
-        let warningPos = CGPoint(
-            x: CGFloat.random(in: 60...(size.width - 60)),
-            y: CGFloat.random(in: 160...(size.height - 160))
-        )
-
-        // Warning circle
+    private func showExpandingWarning(for hazard: ManualOverrideSystem.Hazard) {
         let warning = SKShapeNode(circleOfRadius: 30)
         warning.strokeColor = DesignColors.warningUI
         warning.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
         warning.lineWidth = 2
-        warning.position = warningPos
+        warning.position = hazard.position
         warning.zPosition = 4
         addChild(warning)
 
-        // Pulse warning
+        pendingExpandingHazards.append(hazard)
+
         let pulse = SKAction.sequence([
             SKAction.scale(to: 1.2, duration: 0.2),
             SKAction.scale(to: 1.0, duration: 0.2)
@@ -473,200 +455,64 @@ class ManualOverrideScene: SKScene {
         warning.run(SKAction.repeat(pulse, count: 3)) { [weak self] in
             warning.removeFromParent()
 
-            // Spawn actual hazard
-            let hazard = SKShapeNode(circleOfRadius: 5)
-            hazard.fillColor = DesignColors.dangerUI
-            hazard.strokeColor = DesignColors.dangerUI
-            hazard.glowWidth = 10
-            hazard.position = warningPos
-            hazard.name = "hazard"
-            hazard.zPosition = 5
-            hazard.userData = ["expanding": true, "maxRadius": 60.0, "currentRadius": 5.0]
-            self?.addChild(hazard)
-            self?.hazards.append(hazard)
+            guard let self else { return }
+
+            // Create the actual expanding hazard node
+            let node = SKShapeNode(circleOfRadius: 5)
+            node.fillColor = DesignColors.dangerUI
+            node.strokeColor = DesignColors.dangerUI
+            node.glowWidth = 10
+            node.position = hazard.position
+            node.name = "hazard"
+            node.zPosition = 5
+            self.addChild(node)
+            self.hazardNodes[hazard.id] = node
+            self.pendingExpandingHazards.removeAll { $0.id == hazard.id }
         }
     }
 
-    private func spawnSweepHazard() {
-        // Horizontal or vertical sweeping laser with a gap for the player to escape
-        let isHorizontal = Bool.random()
-        let gapSize: CGFloat = 70  // Gap wide enough for player (radius 15) to pass through
+    private func commitPendingExpandingHazards() {
+        // Clean up pending hazards that were already removed from simulation
+        // (e.g., if the system removed them before the warning animation finished)
+        pendingExpandingHazards.removeAll { pending in
+            !simState.hazards.contains { $0.id == pending.id }
+        }
+    }
 
-        let hazard = SKShapeNode()
-        hazard.name = "hazard"
-        hazard.zPosition = 5
+    private func renderHazards() {
+        for hazard in simState.hazards {
+            guard let node = hazardNodes[hazard.id] else { continue }
 
-        if isHorizontal {
-            let startY = CGFloat.random(in: 150...(size.height - 150))
-            // Random gap position along the width
-            let gapStart = CGFloat.random(in: 40...(size.width - 40 - gapSize))
+            node.position = hazard.position
 
-            let path = CGMutablePath()
-            // First segment: from left edge to gap
-            path.move(to: CGPoint(x: 0, y: 0))
-            path.addLine(to: CGPoint(x: gapStart, y: 0))
-            // Second segment: from gap end to right edge
-            path.move(to: CGPoint(x: gapStart + gapSize, y: 0))
-            path.addLine(to: CGPoint(x: size.width, y: 0))
+            // Update expanding hazard shape
+            if case .expanding(let currentRadius, _) = hazard.kind,
+               let shapeNode = node as? SKShapeNode {
+                shapeNode.path = CGPath(
+                    ellipseIn: CGRect(x: -currentRadius, y: -currentRadius,
+                                      width: currentRadius * 2, height: currentRadius * 2),
+                    transform: nil
+                )
+            }
+        }
+    }
 
-            hazard.path = path
-            hazard.position = CGPoint(x: 0, y: startY)
-            hazard.strokeColor = DesignColors.dangerUI
-            hazard.lineWidth = 8
-            hazard.glowWidth = 15
-
-            let direction: CGFloat = Bool.random() ? 1 : -1
-            hazard.userData = ["sweepVelocity": 80.0 * direction, "isHorizontal": true, "gapStart": gapStart, "gapEnd": gapStart + gapSize]
+    private func removeHazardNode(id: UUID) {
+        guard let node = hazardNodes.removeValue(forKey: id) else { return }
+        // Expanding hazards get a shrink animation
+        if node.userData == nil {
+            // Check if this was an expanding type by seeing if it has a circle path
+            let shrink = SKAction.scale(to: 0, duration: 0.2)
+            let remove = SKAction.removeFromParent()
+            node.run(SKAction.sequence([shrink, remove]))
         } else {
-            let startX = CGFloat.random(in: 50...(size.width - 50))
-            // Random gap position along the height
-            let playAreaTop = size.height - 120
-            let playAreaBottom: CGFloat = 120
-            let gapStart = CGFloat.random(in: (playAreaBottom + 20)...(playAreaTop - 20 - gapSize))
-
-            let path = CGMutablePath()
-            // First segment: from bottom to gap
-            path.move(to: CGPoint(x: 0, y: playAreaBottom))
-            path.addLine(to: CGPoint(x: 0, y: gapStart))
-            // Second segment: from gap end to top
-            path.move(to: CGPoint(x: 0, y: gapStart + gapSize))
-            path.addLine(to: CGPoint(x: 0, y: playAreaTop))
-
-            hazard.path = path
-            hazard.position = CGPoint(x: startX, y: 0)
-            hazard.strokeColor = DesignColors.dangerUI
-            hazard.lineWidth = 8
-            hazard.glowWidth = 15
-
-            let direction: CGFloat = Bool.random() ? 1 : -1
-            hazard.userData = ["sweepVelocity": 80.0 * direction, "isHorizontal": false, "gapStart": gapStart, "gapEnd": gapStart + gapSize]
-        }
-
-        addChild(hazard)
-        hazards.append(hazard)
-    }
-
-    private func updateHazards(deltaTime: TimeInterval) {
-        for hazard in hazards {
-            guard let userData = hazard.userData else { continue }
-
-            // Projectile movement
-            if let velocityValue = userData["velocity"] as? NSValue {
-                let velocity = velocityValue.cgPointValue
-                hazard.position.x += velocity.x * CGFloat(deltaTime)
-                hazard.position.y += velocity.y * CGFloat(deltaTime)
-
-                // Remove if off screen
-                if hazard.position.x < -50 || hazard.position.x > size.width + 50 ||
-                   hazard.position.y < 50 || hazard.position.y > size.height + 50 {
-                    hazard.removeFromParent()
-                    hazards.removeAll { $0 === hazard }
-                }
-            }
-
-            // Expanding hazard
-            if userData["expanding"] as? Bool == true {
-                var currentRadius = userData["currentRadius"] as? CGFloat ?? 5
-                let maxRadius = userData["maxRadius"] as? CGFloat ?? 60
-
-                currentRadius += 80 * CGFloat(deltaTime)
-
-                if currentRadius >= maxRadius {
-                    // Shrink and remove
-                    let shrink = SKAction.scale(to: 0, duration: 0.2)
-                    let remove = SKAction.removeFromParent()
-                    hazard.run(SKAction.sequence([shrink, remove]))
-                    hazards.removeAll { $0 === hazard }
-                } else {
-                    if let shapeNode = hazard as? SKShapeNode {
-                        shapeNode.path = CGPath(ellipseIn: CGRect(x: -currentRadius, y: -currentRadius, width: currentRadius * 2, height: currentRadius * 2), transform: nil)
-                        hazard.userData?["currentRadius"] = currentRadius
-                    }
-                }
-            }
-
-            // Sweep hazard
-            if let sweepVelocity = userData["sweepVelocity"] as? CGFloat {
-                let isHorizontal = userData["isHorizontal"] as? Bool ?? true
-
-                if isHorizontal {
-                    hazard.position.y += sweepVelocity * CGFloat(deltaTime)
-                    if hazard.position.y < 100 || hazard.position.y > size.height - 100 {
-                        hazard.removeFromParent()
-                        hazards.removeAll { $0 === hazard }
-                    }
-                } else {
-                    hazard.position.x += sweepVelocity * CGFloat(deltaTime)
-                    if hazard.position.x < 20 || hazard.position.x > size.width - 20 {
-                        hazard.removeFromParent()
-                        hazards.removeAll { $0 === hazard }
-                    }
-                }
-            }
+            node.removeFromParent()
         }
     }
 
-    private func checkCollisions() {
-        guard invincibilityTimer <= 0 else { return }
+    // MARK: - Damage Effects
 
-        let playerRadius: CGFloat = 15
-
-        for hazard in hazards {
-            guard let userData = hazard.userData else { continue }
-
-            var collided = false
-
-            // Check projectile/expanding collision (circle)
-            if userData["velocity"] != nil || userData["expanding"] != nil {
-                let hazardRadius = userData["currentRadius"] as? CGFloat ?? 15
-                let distance = hypot(playerNode.position.x - hazard.position.x,
-                                    playerNode.position.y - hazard.position.y)
-                if distance < playerRadius + hazardRadius {
-                    collided = true
-                }
-            }
-
-            // Check sweep collision (line with gap)
-            if userData["sweepVelocity"] != nil {
-                let isHorizontal = userData["isHorizontal"] as? Bool ?? true
-                let gapStart = userData["gapStart"] as? CGFloat ?? 0
-                let gapEnd = userData["gapEnd"] as? CGFloat ?? 0
-
-                if isHorizontal {
-                    // Check if player is at the same Y level as the sweep line
-                    if abs(playerNode.position.y - hazard.position.y) < playerRadius + 4 {
-                        // Check if player is NOT in the gap (gap is in X coordinates)
-                        let playerX = playerNode.position.x
-                        let inGap = playerX > gapStart && playerX < gapEnd
-                        if !inGap {
-                            collided = true
-                        }
-                    }
-                } else {
-                    // Check if player is at the same X level as the sweep line
-                    if abs(playerNode.position.x - hazard.position.x) < playerRadius + 4 {
-                        // Check if player is NOT in the gap (gap is in Y coordinates)
-                        let playerY = playerNode.position.y
-                        let inGap = playerY > gapStart && playerY < gapEnd
-                        if !inGap {
-                            collided = true
-                        }
-                    }
-                }
-            }
-
-            if collided {
-                takeDamage()
-                break
-            }
-        }
-    }
-
-    private func takeDamage() {
-        health -= 1
-        invincibilityTimer = invincibilityDuration
-        onHealthUpdate?(health)
-
+    private func playDamageEffects() {
         HapticsService.shared.play(.warning)
 
         // Screen shake
@@ -677,17 +523,7 @@ class ManualOverrideScene: SKScene {
             SKAction.moveBy(x: -10, y: 0, duration: 0.05),
             SKAction.moveBy(x: 5, y: 0, duration: 0.05)
         ])
-
-        if let camera = self.camera {
-            camera.run(shake)
-        } else {
-            // Create camera for shake
-            let cam = SKCameraNode()
-            cam.position = CGPoint(x: size.width / 2, y: size.height / 2)
-            addChild(cam)
-            self.camera = cam
-            cam.run(shake)
-        }
+        camera?.run(shake)
 
         // Flash red
         let flash = SKShapeNode(rect: CGRect(origin: .zero, size: size))
@@ -700,9 +536,5 @@ class ManualOverrideScene: SKScene {
         let fadeOut = SKAction.fadeOut(withDuration: 0.3)
         let remove = SKAction.removeFromParent()
         flash.run(SKAction.sequence([fadeOut, remove]))
-
-        if health <= 0 {
-            isGameOver = true
-        }
     }
 }
