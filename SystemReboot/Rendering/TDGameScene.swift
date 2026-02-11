@@ -66,22 +66,15 @@ class TDGameScene: SKScene {
     // Particle layer
     var particleLayer: SKNode!
 
-    // Camera for zoom/pan
-    var cameraNode: SKCameraNode!
-    var currentScale: CGFloat = 1.0
-    let minScale: CGFloat = 0.15  // Zoom IN limit - closer for detail inspection
-    let maxScale: CGFloat = 1.8   // Zoom OUT limit (see more map but not too much black)
+    // Camera controller (zoom, pan, inertia — extracted in Step 4.2)
+    let cameraController = CameraController()
+
+    // Forwarding properties so extensions keep compiling unchanged
+    var cameraNode: SKCameraNode! { cameraController.cameraNode }
+    var currentScale: CGFloat { cameraController.currentScale }
 
     /// Expose camera scale for coordinate conversion from SwiftUI layer
-    var cameraScale: CGFloat {
-        return currentScale
-    }
-
-    // Inertia camera physics
-    var cameraVelocity: CGPoint = .zero
-    let cameraFriction: CGFloat = 0.92
-    let cameraBoundsElasticity: CGFloat = 0.3
-    var lastPanVelocity: CGPoint = .zero
+    var cameraScale: CGFloat { cameraController.currentScale }
 
     // Parallax background
     var parallaxLayers: [(node: SKNode, speedFactor: CGFloat)] = []
@@ -171,273 +164,20 @@ class TDGameScene: SKScene {
             setupLayers()
         }
 
-        // Setup camera for zoom/pan
-        setupCamera()
-        setupGestureRecognizers(view: view)
-    }
-
-    private func setupCamera() {
-        cameraNode = SKCameraNode()
-
-        // Center camera on the starter sector for motherboard, or scene center for others
-        if isMotherboardMap {
-            // Motherboard: Center on starter sector (RAM at center of 3x3 grid)
-            if let starterSector = MegaBoardSystem.shared.starterSector {
-                cameraNode.position = starterSector.center
-            } else {
-                // Fallback: center of grid (1400 * 1.5 = 2100)
-                cameraNode.position = CGPoint(x: 2100, y: 2100)
-            }
-        } else {
-            cameraNode.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        // Setup camera for zoom/pan (delegated to CameraController)
+        cameraController.isMotherboardMap = isMotherboardMap
+        cameraController.shouldSuppressPan = { [weak self] in
+            guard let self = self else { return false }
+            return self.isInPlacementMode || self.isDragging
         }
-        addChild(cameraNode)
-        camera = cameraNode
-
-        // Start zoomed out to give overview, then animate to comfortable level
-        if isMotherboardMap {
-            // Motherboard: start zoomed out, animate to comfortable view
-            currentScale = 2.0  // Start at max zoom out
-            cameraNode.setScale(currentScale)
-
-            // Animate zoom-in to comfortable level
-            let wait = SKAction.wait(forDuration: 0.8)
-            let zoomIn = SKAction.scale(to: 1.0, duration: 1.0)
-            zoomIn.timingMode = .easeInEaseOut
-            let updateScale = SKAction.run { [weak self] in
-                self?.currentScale = 1.0
-            }
-            cameraNode.run(SKAction.sequence([wait, zoomIn, updateScale]))
-        } else {
-            currentScale = 1.5  // Start slightly zoomed out
-            cameraNode.setScale(currentScale)
-
-            // Animate zoom-in
-            let wait = SKAction.wait(forDuration: 1.0)
-            let zoomIn = SKAction.scale(to: 0.8, duration: 0.6)
-            zoomIn.timingMode = .easeInEaseOut
-            let updateScale = SKAction.run { [weak self] in
-                self?.currentScale = 0.8
-            }
-            cameraNode.run(SKAction.sequence([wait, zoomIn, updateScale]))
-        }
-    }
-
-    private func setupGestureRecognizers(view: SKView) {
-        // Pinch to zoom
-        let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
-        pinchGesture.cancelsTouchesInView = false  // Allow touches to pass through
-        view.addGestureRecognizer(pinchGesture)
-
-        // Pan to move camera (one finger for easy navigation)
-        // Tower placement is handled via drag from weapon deck in SwiftUI layer
-        let panGesture = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
-        panGesture.minimumNumberOfTouches = 1
-        panGesture.maximumNumberOfTouches = 2
-        panGesture.cancelsTouchesInView = false  // Allow SwiftUI gestures to also work
-        view.addGestureRecognizer(panGesture)
-    }
-
-    @objc private func handlePinch(_ gesture: UIPinchGestureRecognizer) {
-        guard let cameraNode = cameraNode, let view = gesture.view else { return }
-
-        if gesture.state == .changed {
-            // Get pinch center in view coordinates
-            let pinchCenter = gesture.location(in: view)
-
-            // Convert to scene coordinates BEFORE zoom
-            let scenePointBefore = convertPoint(fromView: pinchCenter)
-
-            // Calculate new scale (invert: pinch out = smaller scale = zoom in)
-            let newScale = currentScale / gesture.scale
-            let clampedScale = max(minScale, min(maxScale, newScale))
-
-            // Apply new scale
-            cameraNode.setScale(clampedScale)
-            currentScale = clampedScale
-
-            // Convert same view point to scene coordinates AFTER zoom
-            let scenePointAfter = convertPoint(fromView: pinchCenter)
-
-            // Adjust camera position so pinch point stays fixed (Google Maps style)
-            let deltaX = scenePointAfter.x - scenePointBefore.x
-            let deltaY = scenePointAfter.y - scenePointBefore.y
-            cameraNode.position.x -= deltaX
-            cameraNode.position.y -= deltaY
-
-            gesture.scale = 1.0
-        } else if gesture.state == .ended {
-            currentScale = cameraNode.xScale
-        }
-    }
-
-    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        guard let cameraNode = cameraNode, let view = gesture.view else { return }
-
-        // CRITICAL: Suppress camera panning when in tower placement mode OR dragging tower
-        // This prevents the "wishy-washy" UX where map moves while placing/moving towers
-        if isInPlacementMode || isDragging {
-            gesture.setTranslation(.zero, in: view)
-            return
-        }
-
-        switch gesture.state {
-        case .began:
-            // Stop any existing inertia
-            cameraVelocity = .zero
-
-        case .changed:
-            let translation = gesture.translation(in: view)
-
-            // Pan speed multiplier - faster for large maps
-            let panSpeedMultiplier: CGFloat = isMotherboardMap ? 2.5 : 1.0
-
-            // Move camera (inverted for natural scrolling)
-            let newX = cameraNode.position.x - translation.x * currentScale * panSpeedMultiplier
-            let newY = cameraNode.position.y + translation.y * currentScale * panSpeedMultiplier
-
-            // Get camera bounds
-            let bounds = calculateCameraBounds()
-
-            // Soft bounds - allow slight overscroll with resistance
-            let overscrollResistance: CGFloat = 0.3
-            var finalX = newX
-            var finalY = newY
-
-            if newX < bounds.minX {
-                finalX = bounds.minX + (newX - bounds.minX) * overscrollResistance
-            } else if newX > bounds.maxX {
-                finalX = bounds.maxX + (newX - bounds.maxX) * overscrollResistance
-            }
-
-            if newY < bounds.minY {
-                finalY = bounds.minY + (newY - bounds.minY) * overscrollResistance
-            } else if newY > bounds.maxY {
-                finalY = bounds.maxY + (newY - bounds.maxY) * overscrollResistance
-            }
-
-            cameraNode.position = CGPoint(x: finalX, y: finalY)
-
-            // Capture velocity for inertia
-            let velocity = gesture.velocity(in: view)
-            lastPanVelocity = CGPoint(x: -velocity.x * currentScale * panSpeedMultiplier, y: velocity.y * currentScale * panSpeedMultiplier)
-
-            gesture.setTranslation(.zero, in: view)
-
-        case .ended, .cancelled:
-            // Transfer velocity for inertia scrolling
-            cameraVelocity = lastPanVelocity
-            lastPanVelocity = .zero
-
-        default:
-            break
-        }
-    }
-
-    /// Calculate camera bounds based on map size
-    /// Now allows panning to see full map edges (Google Maps style)
-    private func calculateCameraBounds() -> (minX: CGFloat, maxX: CGFloat, minY: CGFloat, maxY: CGFloat) {
-        guard let view = self.view else {
-            // Fallback for motherboard: center of map
-            if isMotherboardMap {
-                return (2100, 2100, 2100, 2100)
-            }
-            return (size.width / 2, size.width / 2, size.height / 2, size.height / 2)
-        }
-
-        // Calculate visible area in game units
-        let visibleWidth = view.bounds.width * currentScale
-        let visibleHeight = view.bounds.height * currentScale
-        let halfWidth = visibleWidth / 2
-        let halfHeight = visibleHeight / 2
-
-        if isMotherboardMap {
-            // Full motherboard is 4200x4200 (3x3 sectors of 1400 each)
-            let mapWidth: CGFloat = 4200
-            let mapHeight: CGFloat = 4200
-
-            // Allow camera to reach edges - camera can go from halfWidth to mapWidth-halfWidth
-            let minX = halfWidth
-            let maxX = mapWidth - halfWidth
-            let minY = halfHeight
-            let maxY = mapHeight - halfHeight
-
-            // If zoomed out so much that visible area > map, center it
-            return (
-                minX: min(minX, mapWidth / 2),
-                maxX: max(maxX, mapWidth / 2),
-                minY: min(minY, mapHeight / 2),
-                maxY: max(maxY, mapHeight / 2)
-            )
-        }
-
-        // Standard maps: allow panning to edges
-        let minX = halfWidth
-        let maxX = size.width - halfWidth
-        let minY = halfHeight
-        let maxY = size.height - halfHeight
-
-        return (
-            minX: min(minX, size.width / 2),
-            maxX: max(maxX, size.width / 2),
-            minY: min(minY, size.height / 2),
-            maxY: max(maxY, size.height / 2)
-        )
-    }
-
-    /// Update camera physics for inertia scrolling
-    private func updateCameraPhysics(deltaTime: TimeInterval) {
-        guard let cameraNode = cameraNode else { return }
-
-        // Skip if velocity is negligible
-        let speed = sqrt(cameraVelocity.x * cameraVelocity.x + cameraVelocity.y * cameraVelocity.y)
-        guard speed > 0.1 else {
-            cameraVelocity = .zero
-            return
-        }
-
-        // Apply velocity to camera position
-        let dt = CGFloat(deltaTime)
-        var newX = cameraNode.position.x + cameraVelocity.x * dt
-        var newY = cameraNode.position.y + cameraVelocity.y * dt
-
-        // Get camera bounds
-        let bounds = calculateCameraBounds()
-
-        // Elastic bounce at bounds
-        if newX < bounds.minX {
-            newX = bounds.minX
-            cameraVelocity.x = -cameraVelocity.x * cameraBoundsElasticity
-        } else if newX > bounds.maxX {
-            newX = bounds.maxX
-            cameraVelocity.x = -cameraVelocity.x * cameraBoundsElasticity
-        }
-
-        if newY < bounds.minY {
-            newY = bounds.minY
-            cameraVelocity.y = -cameraVelocity.y * cameraBoundsElasticity
-        } else if newY > bounds.maxY {
-            newY = bounds.maxY
-            cameraVelocity.y = -cameraVelocity.y * cameraBoundsElasticity
-        }
-
-        cameraNode.position = CGPoint(x: newX, y: newY)
-
-        // Apply friction
-        cameraVelocity.x *= cameraFriction
-        cameraVelocity.y *= cameraFriction
+        let starterCenter = isMotherboardMap ? MegaBoardSystem.shared.starterSector?.center : nil
+        cameraController.setup(in: self, starterSectorCenter: starterCenter)
+        cameraController.setupGestureRecognizers(view: view)
     }
 
     /// Reset camera to default view
     func resetCamera() {
-        guard let cameraNode = cameraNode else { return }
-        let action = SKAction.group([
-            SKAction.move(to: CGPoint(x: size.width / 2, y: size.height / 2), duration: 0.3),
-            SKAction.scale(to: 1.0, duration: 0.3)
-        ])
-        action.timingMode = .easeInEaseOut
-        cameraNode.run(action)
-        currentScale = 1.0
+        cameraController.reset(to: CGPoint(x: size.width / 2, y: size.height / 2), scale: 1.0)
     }
 
     private func setupLayers() {
@@ -983,7 +723,7 @@ class TDGameScene: SKScene {
         _ = ZeroDaySystem.update(state: &state, deltaTime: deltaTime)
 
         // Update camera physics (inertia scrolling)
-        updateCameraPhysics(deltaTime: deltaTime)
+        cameraController.updatePhysics(deltaTime: deltaTime)
 
         // Update parallax background
         updateParallaxLayers()

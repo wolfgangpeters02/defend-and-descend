@@ -516,7 +516,7 @@ class BossRenderingManager {
 
 ---
 
-### 4.2 Extract `CameraController` from TDGameScene
+### [x] 4.2 Extract `CameraController` from TDGameScene
 
 **Source:** `TDGameScene.swift` lines 179–441
 
