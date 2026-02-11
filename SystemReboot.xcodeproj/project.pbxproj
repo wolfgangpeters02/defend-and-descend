@@ -127,6 +127,9 @@
 		CMBTTYPB0001 /* CombatTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CMBTTYP00001 /* CombatTypes.swift */; };
 		BSSTYPB00001 /* BossTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSTYP000001 /* BossTypes.swift */; };
 		PLYRPRFB0001 /* PlayerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRF00001 /* PlayerProfile.swift */; };
+		PLYRPRGB0001 /* PlayerProfile+Progression.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRG00001 /* PlayerProfile+Progression.swift */; };
+		PLYRPRIB0001 /* PlayerProfile+Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRI00001 /* PlayerProfile+Inventory.swift */; };
+		PLYRPRUB0001 /* PlayerProfile+Unlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRU00001 /* PlayerProfile+Unlocks.swift */; };
 		TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPT00001 /* TDGameScene+Paths.swift */; };
 		TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEF00001 /* TDGameScene+Effects.swift */; };
 		TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */; };
@@ -287,6 +290,9 @@
 		CMBTTYP00001 /* CombatTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CombatTypes.swift; sourceTree = "<group>"; };
 		BSSTYP000001 /* BossTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossTypes.swift; sourceTree = "<group>"; };
 		PLYRPRF00001 /* PlayerProfile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerProfile.swift; sourceTree = "<group>"; };
+		PLYRPRG00001 /* PlayerProfile+Progression.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "PlayerProfile+Progression.swift"; sourceTree = "<group>"; };
+		PLYRPRI00001 /* PlayerProfile+Inventory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "PlayerProfile+Inventory.swift"; sourceTree = "<group>"; };
+		PLYRPRU00001 /* PlayerProfile+Unlocks.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "PlayerProfile+Unlocks.swift"; sourceTree = "<group>"; };
 		TDSCNPT00001 /* TDGameScene+Paths.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Paths.swift"; sourceTree = "<group>"; };
 		TDSCNEF00001 /* TDGameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Effects.swift"; sourceTree = "<group>"; };
 		TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EntityVisuals.swift"; sourceTree = "<group>"; };
@@ -479,6 +485,9 @@
 				CMBTTYP00001 /* CombatTypes.swift */,
 				BSSTYP000001 /* BossTypes.swift */,
 				PLYRPRF00001 /* PlayerProfile.swift */,
+				PLYRPRG00001 /* PlayerProfile+Progression.swift */,
+				PLYRPRI00001 /* PlayerProfile+Inventory.swift */,
+				PLYRPRU00001 /* PlayerProfile+Unlocks.swift */,
 			);
 			path = Types;
 			sourceTree = "<group>";
@@ -837,6 +846,9 @@
 				CMBTTYPB0001 /* CombatTypes.swift in Sources */,
 				BSSTYPB00001 /* BossTypes.swift in Sources */,
 				PLYRPRFB0001 /* PlayerProfile.swift in Sources */,
+				PLYRPRGB0001 /* PlayerProfile+Progression.swift in Sources */,
+				PLYRPRIB0001 /* PlayerProfile+Inventory.swift in Sources */,
+				PLYRPRUB0001 /* PlayerProfile+Unlocks.swift in Sources */,
 				TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */,
 				TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */,
 				TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */,

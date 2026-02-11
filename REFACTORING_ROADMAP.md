@@ -666,7 +666,7 @@ struct TDCollisionSystem {
 
 ---
 
-### 4.7 Decouple `PlayerProfile` responsibilities
+### [x] 4.7 Decouple `PlayerProfile` responsibilities
 
 **Source:** `GameTypes.swift` lines 889–1171
 
