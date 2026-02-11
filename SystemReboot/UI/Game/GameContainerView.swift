@@ -1,13 +1,6 @@
 import SwiftUI
 import SpriteKit
 
-// MARK: - Notification for Boss Fight Completion
-// Used to reliably communicate boss fight results back to TDGameContainerView
-// (SwiftUI closure capture in fullScreenCover is unreliable)
-extension Notification.Name {
-    static let bossFightCompleted = Notification.Name("bossFightCompleted")
-}
-
 // MARK: - Game Container View
 // System: Reboot - Active/Debugger Mode
 // Terminal hacker aesthetic with scan lines and glitch effects
@@ -17,6 +10,8 @@ struct GameContainerView: View {
     var bossDifficulty: BossDifficulty = .normal
     let onExit: () -> Void
     var onBossFightComplete: ((Bool) -> Void)? = nil  // Called with victory result for boss mode
+    /// When provided, the coordinator handles boss fight completion instead of NotificationCenter.
+    var bossFightCoordinator: BossFightCoordinator? = nil
 
     @ObservedObject var appState = AppState.shared
     @State private var gameState: GameState?
@@ -384,36 +379,20 @@ struct GameContainerView: View {
             scene.initializeBoss(bossId: bossId)
         }
 
-        scene.onGameOver = { finalState in
+        scene.onGameOver = { [bossFightCoordinator] finalState in
             gameState = finalState
-            if finalState.victory {
-                // For boss mode from TD: dismiss first, then post notification with delay
-                if gameMode == .boss {
-                    onExit()  // Dismiss fullScreenCover first
-                    // Post notification after a short delay so parent view is active
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        NotificationCenter.default.post(
-                            name: .bossFightCompleted,
-                            object: nil,
-                            userInfo: ["victory": true]
-                        )
-                    }
-                    return
+            if gameMode == .boss {
+                let victory = finalState.victory
+                onExit()  // Dismiss fullScreenCover first
+                // Small delay to let dismiss animation complete
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    bossFightCoordinator?.onFightCompleted(victory: victory)
                 }
+                return
+            }
+            if finalState.victory {
                 showVictory = true
             } else {
-                // For boss mode, losing means player retreated
-                if gameMode == .boss {
-                    onExit()  // Dismiss fullScreenCover first
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        NotificationCenter.default.post(
-                            name: .bossFightCompleted,
-                            object: nil,
-                            userInfo: ["victory": false]
-                        )
-                    }
-                    return
-                }
                 showGameOver = true
             }
         }

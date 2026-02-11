@@ -211,11 +211,7 @@ class EmbeddedTDGameController: ObservableObject {
     func startDrag(weaponType: String) {
         isDraggingFromDeck = true
         draggedWeaponType = weaponType
-
-        if let proto = ProtocolLibrary.get(weaponType) {
-            let cost = TowerSystem.towerPlacementCost(rarity: proto.rarity)
-            canAffordDraggedTower = (gameState?.hash ?? 0) >= cost
-        }
+        canAffordDraggedTower = TowerPlacementService.canAfford(weaponType: weaponType, hash: gameState?.hash ?? 0)
 
         scene?.enterPlacementMode(weaponType: weaponType)
         HapticsService.shared.play(.selection)
@@ -227,28 +223,9 @@ class EmbeddedTDGameController: ObservableObject {
         guard let state = gameState else { return }
 
         let gamePos = convertScreenToGame(dragPosition, geometry: geometry)
-        var nearest: TowerSlot?
-
-        // Use camera scale for snap distance
-        // When zoomed OUT (scale > 1), we need LARGER snap distance in game units
-        // because game units appear smaller on screen
         let cameraScale = scene?.cameraScale ?? 1.0
-        // Reduced snap distance to prevent confusing placement (was 200 for large maps)
-        let baseSnapDistance: CGFloat = state.map.width > 2000 ? BalanceConfig.TDSession.largeMapSnapScreenDistance : BalanceConfig.TDSession.baseSnapScreenDistance
-        // Divide by scale so zoomed out = larger snap area
-        let snapDistanceInGameUnits: CGFloat = baseSnapDistance / min(cameraScale, 1.0) * max(cameraScale, 1.0)
-
-        var minDistance: CGFloat = snapDistanceInGameUnits
-
-        for slot in state.towerSlots where !slot.occupied {
-            let dx = slot.x - gamePos.x
-            let dy = slot.y - gamePos.y
-            let distance = sqrt(dx*dx + dy*dy)
-            if distance < minDistance {
-                minDistance = distance
-                nearest = slot
-            }
-        }
+        let snap = TowerPlacementService.snapDistance(cameraScale: cameraScale, mapWidth: state.map.width)
+        let nearest = TowerPlacementService.findNearestSlot(gamePoint: gamePos, slots: state.towerSlots, snapDistance: snap)
 
         if nearestValidSlot?.id != nearest?.id {
             nearestValidSlot = nearest
@@ -280,53 +257,19 @@ class EmbeddedTDGameController: ObservableObject {
     // MARK: - Coordinate Conversion
 
     func convertScreenToGame(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // Use scene's camera-aware conversion if available
         if let scene = scene {
             return scene.convertScreenToGame(screenPoint: point, viewSize: geometry.size)
         }
-
-        // Fallback: simple conversion without camera
-        let gameWidth = gameState?.map.width ?? 800
-        let gameHeight = gameState?.map.height ?? 600
-        let screenWidth = geometry.size.width
-        let screenHeight = geometry.size.height
-        let scaleX = screenWidth / gameWidth
-        let scaleY = screenHeight / gameHeight
-        let scale = max(scaleX, scaleY)
-        let scaledWidth = gameWidth * scale
-        let scaledHeight = gameHeight * scale
-        let offsetX = (screenWidth - scaledWidth) / 2
-        let offsetY = (screenHeight - scaledHeight) / 2
-
-        return CGPoint(
-            x: (point.x - offsetX) / scale,
-            y: (point.y - offsetY) / scale
-        )
+        let gameSize = CGSize(width: gameState?.map.width ?? 800, height: gameState?.map.height ?? 600)
+        return TowerPlacementService.convertScreenToGame(point, screenSize: geometry.size, gameSize: gameSize)
     }
 
     func convertGameToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // Use scene's camera-aware conversion if available
         if let scene = scene {
             return scene.convertGameToScreen(gamePoint: point, viewSize: geometry.size)
         }
-
-        // Fallback: simple conversion without camera
-        let gameWidth = gameState?.map.width ?? 800
-        let gameHeight = gameState?.map.height ?? 600
-        let screenWidth = geometry.size.width
-        let screenHeight = geometry.size.height
-        let scaleX = screenWidth / gameWidth
-        let scaleY = screenHeight / gameHeight
-        let scale = max(scaleX, scaleY)
-        let scaledWidth = gameWidth * scale
-        let scaledHeight = gameHeight * scale
-        let offsetX = (screenWidth - scaledWidth) / 2
-        let offsetY = (screenHeight - scaledHeight) / 2
-
-        return CGPoint(
-            x: point.x * scale + offsetX,
-            y: point.y * scale + offsetY
-        )
+        let gameSize = CGSize(width: gameState?.map.width ?? 800, height: gameState?.map.height ?? 600)
+        return TowerPlacementService.convertGameToScreen(point, screenSize: geometry.size, gameSize: gameSize)
     }
 
     // MARK: - System Freeze Recovery

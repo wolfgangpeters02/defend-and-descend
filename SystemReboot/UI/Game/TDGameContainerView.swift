@@ -50,13 +50,9 @@ struct TDGameContainerView: View {
     @State private var showBossAlert = false           // Boss spawned, show alert
     @State private var showBossDifficultySelector = false  // Difficulty picker modal
     @State private var selectedBossDifficulty: BossDifficulty?
-    @State private var showBossFight = false           // Transition to boss fight
-    @State private var currentBossDistrictId: String?  // District the boss is from
 
-    // Boss Loot Modal state
-    @State private var showBossLootModal = false
-    @State private var pendingBossLootReward: BossLootReward?
-    @State private var bossFightNotificationObserver: NSObjectProtocol?
+    // Boss Fight Coordinator (replaces NotificationCenter pattern)
+    @StateObject private var bossCoordinator = BossFightCoordinator()
 
     // Overclock state
     @State private var overclockTimeRemaining: TimeInterval = 0
@@ -150,30 +146,10 @@ struct TDGameContainerView: View {
         }
         .onAppear {
             setupGame()
-
-            // Register for boss fight completion notifications (traditional observer is more reliable)
-            bossFightNotificationObserver = NotificationCenter.default.addObserver(
-                forName: .bossFightCompleted,
-                object: nil,
-                queue: .main
-            ) { notification in
-                guard let userInfo = notification.userInfo,
-                      let victory = userInfo["victory"] as? Bool else {
-                    return
-                }
-                showBossFight = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    handleBossFightCompletion(victory: victory)
-                }
-            }
+            setupBossCoordinator()
         }
         .onDisappear {
             saveOfflineSimulationState()
-            // Remove notification observer
-            if let observer = bossFightNotificationObserver {
-                NotificationCenter.default.removeObserver(observer)
-                bossFightNotificationObserver = nil
-            }
         }
         // Force view refresh when boss or overclock state changes
         .onChange(of: gameState?.bossActive) { _ in isPaused = isPaused }
@@ -188,132 +164,59 @@ struct TDGameContainerView: View {
                 }
             )
         }
-        .fullScreenCover(isPresented: $showBossFight) {
-            // Use GameContainerView for boss fight
+        .fullScreenCover(isPresented: $bossCoordinator.showBossFight) {
             if let difficulty = selectedBossDifficulty {
                 GameContainerView(
                     gameMode: .boss,
                     bossDifficulty: difficulty,
                     onExit: {
-                        // Called if player manually exits/retreats
-                        showBossFight = false
-                    }
+                        bossCoordinator.showBossFight = false
+                    },
+                    bossFightCoordinator: bossCoordinator
                 )
                 .environmentObject(appState)
             }
         }
-        .fullScreenCover(isPresented: $showBossLootModal) {
-            // Boss loot reward modal - shows after successful boss fight
+        .fullScreenCover(isPresented: $bossCoordinator.showBossLootModal) {
             BossLootModalWrapper(
-                reward: pendingBossLootReward,
+                reward: bossCoordinator.pendingBossLootReward,
                 onCollect: {
-                    handleBossLootCollected()
+                    bossCoordinator.onLootCollected()
+                    isPaused = false
                 }
             )
         }
     }
 
-    // MARK: - Boss Fight Result Handler
-
-    private func handleBossFightCompletion(victory: Bool) {
-        guard var state = gameState else {
-            isPaused = false
-            return
+    /// Configure the boss fight coordinator with context-specific callbacks
+    private func setupBossCoordinator() {
+        bossCoordinator.onVictory = { [self] districtId, difficulty in
+            guard var state = gameState else {
+                return BossFightVictoryContext(hashReward: difficulty.hashReward, isFirstKill: false, nextDistrictUnlocked: nil)
+            }
+            let baseReward = TDBossSystem.onBossFightWon(state: &state, districtId: districtId)
+            gameState = state
+            return BossFightVictoryContext(
+                hashReward: baseReward.hashReward,
+                isFirstKill: baseReward.nextDistrictUnlocked != nil,
+                nextDistrictUnlocked: baseReward.nextDistrictUnlocked
+            )
         }
 
-        // Check if the boss fight was won
-        if victory {
-            // Boss defeated - calculate rewards but don't apply yet
-            let districtId = currentBossDistrictId ?? SectorID.power.rawValue
-            let difficulty = selectedBossDifficulty ?? .normal
-            let baseReward = TDBossSystem.onBossFightWon(state: &state, districtId: districtId)
-
-            gameState = state
-
-            // Calculate protocol drop using BlueprintDropSystem
-            let dropResult = BlueprintDropSystem.shared.calculateDrop(
-                bossId: state.activeBossType ?? "cyberboss",
-                difficulty: difficulty,
-                profile: appState.currentPlayer
-            )
-
-            // Get sector info if first kill unlocked a new sector
-            var sectorInfo: (id: String, name: String, themeColor: String)?
-            if let nextSectorId = baseReward.nextDistrictUnlocked,
-               let lane = MotherboardLaneConfig.getLane(forSectorId: nextSectorId) {
-                sectorInfo = (nextSectorId, lane.displayName, lane.themeColorHex)
-            }
-
-            // Get protocol rarity if dropped
-            var protocolRarity: Rarity?
-            if let protocolId = dropResult.protocolId,
-               let proto = ProtocolLibrary.get(protocolId) {
-                protocolRarity = proto.rarity
-            }
-
-            // Build the loot reward for display
-            pendingBossLootReward = BossLootReward.create(
-                difficulty: difficulty,
-                hashReward: baseReward.hashReward,
-                protocolId: dropResult.protocolId,
-                protocolRarity: protocolRarity,
-                unlockedSector: sectorInfo,
-                isFirstKill: baseReward.nextDistrictUnlocked != nil
-            )
-
-            // Show loot modal (rewards applied when collected)
-            showBossLootModal = true
-
-            HapticsService.shared.play(.success)
-        } else {
-            // Boss fight lost or exited - player chose to let pass
+        bossCoordinator.onDefeat = { [self] in
+            guard var state = gameState else { return }
             TDBossSystem.onBossFightLostLetPass(state: &state)
             gameState = state
             isPaused = false
-            currentBossDistrictId = nil
-
-            HapticsService.shared.play(.defeat)
-        }
-    }
-
-    /// Apply rewards and dismiss the loot modal
-    private func handleBossLootCollected() {
-        guard let reward = pendingBossLootReward else {
-            showBossLootModal = false
-            isPaused = false
-            currentBossDistrictId = nil
-            return
+            bossCoordinator.currentBossDistrictId = nil
         }
 
-        let districtId = currentBossDistrictId ?? SectorID.power.rawValue
-
-        // Apply all rewards to player profile
-        appState.updatePlayer { profile in
-            // Add hash reward
-            profile.addHash(reward.totalHashReward)
-
-            // Record boss defeat for progression (first-time only)
+        bossCoordinator.onLootApplied = { [self] reward in
             if reward.unlockedSectorId != nil {
-                _ = SectorUnlockSystem.shared.recordBossDefeat(districtId, profile: &profile)
+                scene?.refreshMegaBoardVisuals()
             }
-
-            // Add protocol blueprint if dropped
-            if let protocolId = reward.droppedProtocolId,
-               !profile.protocolBlueprints.contains(protocolId) {
-                profile.protocolBlueprints.append(protocolId)
-            }
+            isPaused = false
         }
-
-        // Refresh mega-board visuals if sector was unlocked
-        if reward.unlockedSectorId != nil {
-            scene?.refreshMegaBoardVisuals()
-        }
-
-        // Clean up
-        pendingBossLootReward = nil
-        showBossLootModal = false
-        isPaused = false
-        currentBossDistrictId = nil
     }
 
     // MARK: - Zero-Day Alert Overlay (System Breach)
@@ -599,11 +502,13 @@ struct TDGameContainerView: View {
         }
 
         gameState = state
-        currentBossDistrictId = engagement.districtId
+        bossCoordinator.currentBossDistrictId = engagement.districtId
+        bossCoordinator.selectedBossDifficulty = difficulty
+        bossCoordinator.activeBossType = state.activeBossType
 
         // Pause TD and transition to boss fight
         isPaused = true
-        showBossFight = true
+        bossCoordinator.showBossFight = true
 
         HapticsService.shared.play(.warning)
     }
@@ -1144,15 +1049,7 @@ struct TDGameContainerView: View {
         isDraggingFromDeck = true
         draggedWeaponType = weaponType
         previousNearestSlot = nil
-
-        // Check affordability - Protocol or legacy weapon
-        if let proto = ProtocolLibrary.get(weaponType) {
-            let cost = TowerSystem.towerPlacementCost(rarity: proto.rarity)
-            canAffordDraggedTower = (gameState?.hash ?? 0) >= cost
-        } else if let weapon = GameConfigLoader.shared.getWeapon(weaponType) {
-            let cost = TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common)
-            canAffordDraggedTower = (gameState?.hash ?? 0) >= cost
-        }
+        canAffordDraggedTower = TowerPlacementService.canAfford(weaponType: weaponType, hash: gameState?.hash ?? 0)
 
         // Enter placement mode - shows grid dots (progressive disclosure)
         scene?.enterPlacementMode(weaponType: weaponType)
@@ -1163,38 +1060,18 @@ struct TDGameContainerView: View {
     private func updateDragPosition(_ value: DragGesture.Value, geometry: GeometryProxy) {
         dragPosition = value.location
 
-        // Find nearest valid slot
         if let state = gameState {
             let gamePos = convertScreenToGame(dragPosition, geometry: geometry)
-            var nearest: TowerSlot?
-
-            // Calculate scale-adjusted snap distance (60 screen pixels worth)
-            // Use camera scale if available, otherwise compute from view/scene ratio
             let cameraScale = scene?.cameraScale ?? 1.0
-            // Snap distance in game units: larger when zoomed out, smaller when zoomed in
-            let snapDistanceInGameUnits: CGFloat = BalanceConfig.TDSession.baseSnapScreenDistance * cameraScale
+            let snap = TowerPlacementService.snapDistance(cameraScale: cameraScale, mapWidth: state.map.width)
+            let nearest = TowerPlacementService.findNearestSlot(gamePoint: gamePos, slots: state.towerSlots, snapDistance: snap)
 
-            var minDistance: CGFloat = snapDistanceInGameUnits
-
-            for slot in state.towerSlots where !slot.occupied {
-                let dx = slot.x - gamePos.x
-                let dy = slot.y - gamePos.y
-                let distance = sqrt(dx*dx + dy*dy)
-                if distance < minDistance {
-                    minDistance = distance
-                    nearest = slot
-                }
-            }
-
-            // Check if we snapped to a new slot
             if nearestValidSlot?.id != nearest?.id {
                 previousNearestSlot = nearestValidSlot
                 nearestValidSlot = nearest
 
-                // Update scene highlight
                 scene?.highlightNearestSlot(nearest, canAfford: canAffordDraggedTower)
 
-                // Snap haptic when entering a new valid slot
                 if nearest != nil && canAffordDraggedTower {
                     HapticsService.shared.play(.slotSnap)
                 }
@@ -1236,53 +1113,19 @@ struct TDGameContainerView: View {
     private let bottomDeckHeight: CGFloat = 110
 
     private func convertGameToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // Use scene's camera-aware conversion if available
         if let scene = scene {
             return scene.convertGameToScreen(gamePoint: point, viewSize: geometry.size)
         }
-
-        // Fallback: simple conversion without camera
-        let gameWidth = gameState?.map.width ?? 800
-        let gameHeight = gameState?.map.height ?? 600
-        let screenWidth = geometry.size.width
-        let screenHeight = geometry.size.height
-        let scaleX = screenWidth / gameWidth
-        let scaleY = screenHeight / gameHeight
-        let scale = max(scaleX, scaleY)
-        let scaledWidth = gameWidth * scale
-        let scaledHeight = gameHeight * scale
-        let offsetX = (screenWidth - scaledWidth) / 2
-        let offsetY = (screenHeight - scaledHeight) / 2
-
-        return CGPoint(
-            x: point.x * scale + offsetX,
-            y: point.y * scale + offsetY
-        )
+        let gameSize = CGSize(width: gameState?.map.width ?? 800, height: gameState?.map.height ?? 600)
+        return TowerPlacementService.convertGameToScreen(point, screenSize: geometry.size, gameSize: gameSize)
     }
 
     private func convertScreenToGame(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        // Use scene's camera-aware conversion if available
         if let scene = scene {
             return scene.convertScreenToGame(screenPoint: point, viewSize: geometry.size)
         }
-
-        // Fallback: simple conversion without camera
-        let gameWidth = gameState?.map.width ?? 800
-        let gameHeight = gameState?.map.height ?? 600
-        let screenWidth = geometry.size.width
-        let screenHeight = geometry.size.height
-        let scaleX = screenWidth / gameWidth
-        let scaleY = screenHeight / gameHeight
-        let scale = max(scaleX, scaleY)
-        let scaledWidth = gameWidth * scale
-        let scaledHeight = gameHeight * scale
-        let offsetX = (screenWidth - scaledWidth) / 2
-        let offsetY = (screenHeight - scaledHeight) / 2
-
-        return CGPoint(
-            x: (point.x - offsetX) / scale,
-            y: (point.y - offsetY) / scale
-        )
+        let gameSize = CGSize(width: gameState?.map.width ?? 800, height: gameState?.map.height ?? 600)
+        return TowerPlacementService.convertScreenToGame(point, screenSize: geometry.size, gameSize: gameSize)
     }
 
     // MARK: - Tower Selection Menu
@@ -2202,31 +2045,16 @@ struct TDGameContainerView: View {
     }
 
     private func saveGameResult(state: TDGameState) {
-        // Update player profile with TD stats
-        var profile = appState.currentPlayer
-        profile.tdStats.gamesPlayed += 1
-        if state.victory {
-            profile.tdStats.gamesWon += 1
+        appState.updatePlayer { profile in
+            GameRewardService.applyTDResult(
+                to: &profile,
+                wavesCompleted: state.wavesCompleted,
+                enemiesKilled: state.stats.enemiesKilled,
+                towersPlaced: state.stats.towersPlaced,
+                hashEarned: state.stats.hashEarned,
+                victory: state.victory
+            )
         }
-        profile.tdStats.totalWavesCompleted += state.wavesCompleted
-        profile.tdStats.highestWave = max(profile.tdStats.highestWave, state.wavesCompleted)
-        profile.tdStats.totalTowersPlaced += state.stats.towersPlaced
-        profile.tdStats.totalTDKills += state.stats.enemiesKilled
-
-        // Award XP and Hash (System: Reboot)
-        let xpReward = state.wavesCompleted * BalanceConfig.TDRewards.xpPerWave + state.stats.enemiesKilled + (state.victory ? BalanceConfig.TDRewards.victoryXPBonus : 0)
-        let hashReward = state.stats.hashEarned / BalanceConfig.TDRewards.hashRewardDivisor + (state.victory ? state.wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave : 0)
-
-        profile.xp += xpReward         // XP for leveling
-        profile.addHash(hashReward)    // Hash currency
-
-        // Check level up
-        while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
-            profile.xp -= PlayerProfile.xpForLevel(profile.level)
-            profile.level += 1
-        }
-
-        appState.updatePlayer { $0 = profile }
     }
 }
 

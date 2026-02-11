@@ -213,6 +213,7 @@ struct BossGameView: View {
     let difficulty: BossDifficulty
     let `protocol`: Protocol
     let onExit: () -> Void
+    var bossFightCoordinator: BossFightCoordinator? = nil
 
     @ObservedObject var appState = AppState.shared
 
@@ -221,7 +222,8 @@ struct BossGameView: View {
             gameMode: .boss,
             bossDifficulty: difficulty,
             onExit: onExit,
-            onBossFightComplete: { _ in onExit() }  // Just exit when fight ends
+            onBossFightComplete: { _ in onExit() },
+            bossFightCoordinator: bossFightCoordinator
         )
         .onAppear {
             // Set the boss type in AppState for GameContainerView to use

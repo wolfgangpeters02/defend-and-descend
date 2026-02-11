@@ -817,21 +817,12 @@ struct TDGameResult {
 
     /// Calculate XP reward
     var xpReward: Int {
-        var xp = wavesCompleted * BalanceConfig.TDRewards.xpPerWave
-        xp += enemiesKilled
-        if victory {
-            xp += BalanceConfig.TDRewards.victoryXPBonus
-        }
-        return xp
+        GameRewardService.calculateTDRewards(wavesCompleted: wavesCompleted, enemiesKilled: enemiesKilled, hashEarned: hashEarned, victory: victory).xpReward
     }
 
     /// Calculate hash reward
     var hashReward: Int {
-        var reward = hashEarned / BalanceConfig.TDRewards.hashRewardDivisor
-        if victory {
-            reward += wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave
-        }
-        return reward
+        GameRewardService.calculateTDRewards(wavesCompleted: wavesCompleted, enemiesKilled: enemiesKilled, hashEarned: hashEarned, victory: victory).hashReward
     }
 }
 

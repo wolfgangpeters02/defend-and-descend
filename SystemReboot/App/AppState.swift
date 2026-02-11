@@ -246,26 +246,14 @@ class AppState: ObservableObject {
     /// Record TD game result
     func recordTDResult(wavesCompleted: Int, enemiesKilled: Int, hashEarned: Int, victory: Bool) {
         updatePlayer { profile in
-            profile.tdStats.gamesPlayed += 1
-            if victory {
-                profile.tdStats.gamesWon += 1
-            }
-            profile.tdStats.totalWavesCompleted += wavesCompleted
-            profile.tdStats.highestWave = max(profile.tdStats.highestWave, wavesCompleted)
-            profile.tdStats.totalTDKills += enemiesKilled
-
-            // Award XP and hash
-            let xpReward = wavesCompleted * BalanceConfig.TDRewards.xpPerWave + enemiesKilled + (victory ? BalanceConfig.TDRewards.victoryXPBonus : 0)
-            let hashReward = hashEarned / BalanceConfig.TDRewards.hashRewardDivisor + (victory ? wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave : 0)
-
-            profile.xp += xpReward
-            profile.addHash(hashReward)
-
-            // Check level up
-            while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
-                profile.xp -= PlayerProfile.xpForLevel(profile.level)
-                profile.level += 1
-            }
+            GameRewardService.applyTDResult(
+                to: &profile,
+                wavesCompleted: wavesCompleted,
+                enemiesKilled: enemiesKilled,
+                towersPlaced: 0,
+                hashEarned: hashEarned,
+                victory: victory
+            )
         }
     }
 
@@ -282,63 +270,19 @@ class AppState: ObservableObject {
         extracted: Bool = false
     ) {
         updatePlayer { profile in
-            profile.totalRuns += 1
-            profile.totalKills += kills
-
-            if time > profile.bestTime {
-                profile.bestTime = time
-            }
-
-            // Update mode-specific stats
-            if gameMode == .survival || gameMode == .arena {
-                profile.survivorStats.arenaRuns += 1
-            } else if gameMode == .boss || gameMode == .dungeon {
-                profile.survivorStats.dungeonRuns += 1
-                if victory {
-                    profile.survivorStats.dungeonsCompleted += 1
-                    profile.survivorStats.bossesDefeated += 1
-                }
-            }
-
-            profile.survivorStats.totalSurvivorKills += kills
-            if time > profile.survivorStats.longestSurvival {
-                profile.survivorStats.longestSurvival = time
-            }
-
-            // Award XP
-            let xpReward = kills + Int(time / BalanceConfig.SurvivorRewards.xpPerTimePeriod) + (victory || extracted ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
-            profile.xp += xpReward
-
-            // System: Reboot - Award HASH
-            // Use session-earned Hash with extraction multiplier
-            let hashReward: Int
-            if hashEarned > 0 {
-                // New system: Use actual session Hash with extraction bonus
-                hashReward = extracted ? hashEarned : Int(CGFloat(hashEarned) * BalanceConfig.SurvivorRewards.deathHashPenalty)
-            } else {
-                // Legacy fallback for old calls
-                let hashFromKills = kills / BalanceConfig.SurvivorRewards.legacyHashPerKills
-                let hashFromTime = Int(time / TimeInterval(BalanceConfig.SurvivorRewards.legacyHashPerSeconds))
-                let hashVictoryBonus = victory ? BalanceConfig.SurvivorRewards.legacyVictoryHashBonus : 0
-                hashReward = max(1, hashFromKills + hashFromTime + hashVictoryBonus)
-            }
-
-            profile.addHash(hashReward)
-
-            // Check level up
-            while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
-                profile.xp -= PlayerProfile.xpForLevel(profile.level)
-                profile.level += 1
-            }
+            GameRewardService.applySurvivorResult(
+                to: &profile,
+                time: time,
+                kills: kills,
+                gameMode: gameMode,
+                victory: victory,
+                hashEarned: hashEarned,
+                extracted: extracted
+            )
         }
     }
 
     // MARK: - Boss Rewards
-
-    /// Difficulty-based Hash bonus (from BalanceConfig)
-    static var difficultyHashBonus: [BossDifficulty: Int] {
-        BalanceConfig.BossRewards.difficultyHashBonus
-    }
 
     /// Record boss defeat and award blueprint using RNG loot system
     /// - Returns: BlueprintDropSystem.DropResult containing the awarded protocol (nil if no drop)
@@ -352,39 +296,13 @@ class AppState: ObservableObject {
         var dropResult = BlueprintDropSystem.DropResult.noDrop
 
         updatePlayer { profile in
-            // Calculate drop BEFORE recording the kill (for first-kill detection)
-            dropResult = BlueprintDropSystem.shared.calculateDrop(
+            dropResult = GameRewardService.applyBossDefeatResult(
+                to: &profile,
                 bossId: bossId,
                 difficulty: difficulty,
-                profile: profile
+                time: time,
+                kills: kills
             )
-
-            // Record the boss kill
-            profile.recordBossKill(bossId, difficulty: difficulty)
-            profile.survivorStats.bossesDefeated += 1
-            profile.totalKills += kills
-
-            // Award Hash based on difficulty
-            let hashBonus = Self.difficultyHashBonus[difficulty] ?? 500
-            profile.addHash(hashBonus)
-
-            // Award XP
-            let xpReward = 100 + (difficulty == .nightmare ? 100 : difficulty == .hard ? 50 : 0)
-            profile.xp += xpReward
-
-            // Award blueprint if one dropped
-            if let protocolId = dropResult.protocolId {
-                if !profile.hasBlueprint(protocolId) && !profile.isProtocolCompiled(protocolId) {
-                    profile.protocolBlueprints.append(protocolId)
-                    profile.recordBlueprintDrop(bossId, protocolId: protocolId)
-                }
-            }
-
-            // Level up check
-            while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
-                profile.xp -= PlayerProfile.xpForLevel(profile.level)
-                profile.level += 1
-            }
         }
 
         return dropResult

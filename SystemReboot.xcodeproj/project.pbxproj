@@ -131,6 +131,9 @@
 		DBGGMVWBL0 /* DebugGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBGGMVWRF0 /* DebugGameView.swift */; };
 		OFLNSMBLD0 /* OfflineSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OFLNSMREF0 /* OfflineSimulator.swift */; };
 		FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRZRCVREF0 /* FreezeRecoveryService.swift */; };
+		GMRWDSVCBL /* GameRewardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GMRWDSVCRF /* GameRewardService.swift */; };
+		TWRPLCSVCBL /* TowerPlacementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRPLCSVCRF /* TowerPlacementService.swift */; };
+		BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSFGHTCDRF /* BossFightCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -198,6 +201,9 @@
 		TROJANWYRM1 /* TrojanWyrmAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrojanWyrmAI.swift; sourceTree = "<group>"; };
 		OFLNSMREF0 /* OfflineSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OfflineSimulator.swift; sourceTree = "<group>"; };
 		FRZRCVREF0 /* FreezeRecoveryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreezeRecoveryService.swift; sourceTree = "<group>"; };
+		GMRWDSVCRF /* GameRewardService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameRewardService.swift; sourceTree = "<group>"; };
+		TWRPLCSVCRF /* TowerPlacementService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerPlacementService.swift; sourceTree = "<group>"; };
+		BSSFGHTCDRF /* BossFightCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossFightCoordinator.swift; sourceTree = "<group>"; };
 		AA100041 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
 		AA100042 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		AA100043 /* NotificationSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsSheet.swift; sourceTree = "<group>"; };
@@ -476,6 +482,9 @@
 				651BD9A10095829CA07C1FDB /* OverclockSystem.swift */,
 				OFLNSMREF0 /* OfflineSimulator.swift */,
 				FRZRCVREF0 /* FreezeRecoveryService.swift */,
+				GMRWDSVCRF /* GameRewardService.swift */,
+				TWRPLCSVCRF /* TowerPlacementService.swift */,
+				BSSFGHTCDRF /* BossFightCoordinator.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -774,6 +783,9 @@
 				DBGGMVWBL0 /* DebugGameView.swift in Sources */,
 				OFLNSMBLD0 /* OfflineSimulator.swift in Sources */,
 				FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */,
+				GMRWDSVCBL /* GameRewardService.swift in Sources */,
+				TWRPLCSVCBL /* TowerPlacementService.swift in Sources */,
+				BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

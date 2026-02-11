@@ -211,76 +211,29 @@ class StorageService {
     /// Save survivor run result (arena or dungeon)
     func saveRunResult(time: TimeInterval, kills: Int, coinsCollected: Int, victory: Bool, gameMode: GameMode = .arena) {
         var profile = getOrCreateDefaultPlayer()
-
-        // Update global stats
-        profile.totalRuns += 1
-        profile.totalKills += kills
-
-        if time > profile.bestTime {
-            profile.bestTime = time
-        }
-
-        // Update survivor-specific stats
-        if gameMode == .arena {
-            profile.survivorStats.arenaRuns += 1
-        } else if gameMode == .dungeon {
-            profile.survivorStats.dungeonRuns += 1
-            if victory {
-                profile.survivorStats.dungeonsCompleted += 1
-            }
-        }
-
-        profile.survivorStats.totalSurvivorKills += kills
-        if time > profile.survivorStats.longestSurvival {
-            profile.survivorStats.longestSurvival = time
-        }
-
-        // Award XP and hash
-        let xpReward = kills + Int(time / BalanceConfig.SurvivorRewards.xpPerTimePeriod) + (victory ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
-        let hashReward = coinsCollected / BalanceConfig.SurvivorRewards.hashRewardDivisor
-
-        profile.xp += xpReward
-        profile.addHash(hashReward)
-
-        // Check level up
-        while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
-            profile.xp -= PlayerProfile.xpForLevel(profile.level)
-            profile.level += 1
-        }
-
+        GameRewardService.applySurvivorResult(
+            to: &profile,
+            time: time,
+            kills: kills,
+            gameMode: gameMode,
+            victory: victory,
+            hashEarned: coinsCollected,
+            extracted: false
+        )
         savePlayer(profile)
     }
 
     /// Save TD game result
     func saveTDResult(wavesCompleted: Int, enemiesKilled: Int, hashEarned: Int, towersPlaced: Int, victory: Bool) {
         var profile = getOrCreateDefaultPlayer()
-
-        // Update TD-specific stats
-        profile.tdStats.gamesPlayed += 1
-        if victory {
-            profile.tdStats.gamesWon += 1
-        }
-        profile.tdStats.totalWavesCompleted += wavesCompleted
-        profile.tdStats.highestWave = max(profile.tdStats.highestWave, wavesCompleted)
-        profile.tdStats.totalTowersPlaced += towersPlaced
-        profile.tdStats.totalTDKills += enemiesKilled
-
-        // Update global stats (TD kills count toward total)
-        profile.totalKills += enemiesKilled
-
-        // Award XP and hash
-        let xpReward = wavesCompleted * BalanceConfig.TDRewards.xpPerWave + enemiesKilled + (victory ? BalanceConfig.TDRewards.victoryXPBonus : 0)
-        let hashReward = hashEarned / BalanceConfig.TDRewards.hashRewardDivisor + (victory ? wavesCompleted * BalanceConfig.TDRewards.victoryHashPerWave : 0)
-
-        profile.xp += xpReward
-        profile.addHash(hashReward)
-
-        // Check level up
-        while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
-            profile.xp -= PlayerProfile.xpForLevel(profile.level)
-            profile.level += 1
-        }
-
+        GameRewardService.applyTDResult(
+            to: &profile,
+            wavesCompleted: wavesCompleted,
+            enemiesKilled: enemiesKilled,
+            towersPlaced: towersPlaced,
+            hashEarned: hashEarned,
+            victory: victory
+        )
         savePlayer(profile)
     }
 

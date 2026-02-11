@@ -204,7 +204,7 @@ struct OfflineSimulator {
 
 ---
 
-### 2.2 Extract `TowerPlacementService` from scattered UI code
+### [x] 2.2 Extract `TowerPlacementService` from scattered UI code
 
 **Source:**
 - `TDGameContainerView.swift` lines 1144–1287 (drag handling + coordinate conversion)
@@ -236,7 +236,7 @@ struct TowerPlacementService {
 
 ---
 
-### 2.3 Extract `GameRewardService` from UI layer
+### [x] 2.3 Extract `GameRewardService` from UI layer
 
 **Source:**
 - `TDGameContainerView.swift` lines 2210–2236 (saveGameResult with XP/hash formulas)
@@ -287,7 +287,7 @@ struct GameRewardService {
 
 ---
 
-### 2.5 Extract `BossFightCoordinator` from UI layer
+### [x] 2.5 Extract `BossFightCoordinator` from UI layer
 
 **Source:**
 - `SystemTabView.swift` lines 311–420 (handleBossFightCompletion, handleBossLootCollected)

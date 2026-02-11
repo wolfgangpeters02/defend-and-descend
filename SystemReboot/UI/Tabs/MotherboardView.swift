@@ -9,10 +9,8 @@ struct MotherboardView: View {
     @State private var showManualOverride = false
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
 
-    // Boss Loot Modal state
-    @State private var showBossLootModal = false
-    @State private var pendingBossLootReward: BossLootReward?
-    @State private var bossFightNotificationObserver: NSObjectProtocol?
+    // Boss Fight Coordinator (replaces NotificationCenter pattern)
+    @StateObject private var bossCoordinator = BossFightCoordinator()
 
     var body: some View {
         GeometryReader { geometry in
@@ -99,8 +97,8 @@ struct MotherboardView: View {
                 if embeddedGameController.isBossActive &&
                    !embeddedGameController.showBossDifficultySelector &&
                    !embeddedGameController.bossAlertDismissed &&
-                   !embeddedGameController.showBossFight &&
-                   !showBossLootModal {
+                   !bossCoordinator.showBossFight &&
+                   !bossCoordinator.showBossLootModal {
                     bossAlertOverlay
                 }
 
@@ -124,69 +122,36 @@ struct MotherboardView: View {
             .animation(.easeInOut(duration: 0.3), value: showManualOverride)
             .animation(.easeInOut(duration: 0.3), value: embeddedGameController.isBossActive)
         }
-        .fullScreenCover(isPresented: $embeddedGameController.showBossFight) {
+        .fullScreenCover(isPresented: $bossCoordinator.showBossFight) {
             if let bossType = embeddedGameController.activeBossType,
                let boss = BossEncounter.all.first(where: { $0.bossId == bossType }) {
                 BossGameView(
                     boss: boss,
-                    difficulty: embeddedGameController.selectedBossDifficulty,
+                    difficulty: bossCoordinator.selectedBossDifficulty,
                     protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
-                    onExit: { [weak embeddedGameController] in
-                        // Only dismiss the fullScreenCover here
-                        // State cleanup happens in notification handler (handleBossFightCompletion)
-                        embeddedGameController?.showBossFight = false
-                    }
+                    onExit: {
+                        bossCoordinator.showBossFight = false
+                    },
+                    bossFightCoordinator: bossCoordinator
                 )
             }
         }
-        .fullScreenCover(isPresented: $showBossLootModal) {
+        .fullScreenCover(isPresented: $bossCoordinator.showBossLootModal) {
             BossLootModalWrapper(
-                reward: pendingBossLootReward,
+                reward: bossCoordinator.pendingBossLootReward,
                 onCollect: {
-                    handleBossLootCollected()
+                    bossCoordinator.onLootCollected()
                 }
             )
         }
         .onAppear {
-            // Register for boss fight completion notifications
-            bossFightNotificationObserver = NotificationCenter.default.addObserver(
-                forName: .bossFightCompleted,
-                object: nil,
-                queue: .main
-            ) { notification in
-                guard let userInfo = notification.userInfo,
-                      let victory = userInfo["victory"] as? Bool else {
-                    return
-                }
-                // Small delay to let fullScreenCover dismiss animation complete
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    self.handleBossFightCompletion(victory: victory)
-                }
-            }
-        }
-        .onDisappear {
-            // Remove notification observer
-            if let observer = bossFightNotificationObserver {
-                NotificationCenter.default.removeObserver(observer)
-                bossFightNotificationObserver = nil
-            }
+            setupBossCoordinator()
         }
     }
 
-    // MARK: - Boss Fight Completion Handler
-
-    private func handleBossFightCompletion(victory: Bool) {
-        let difficulty = embeddedGameController.selectedBossDifficulty
-        let bossId = embeddedGameController.activeBossType ?? "cyberboss"
-
-        // NOTE: Scene stays paused until state is fully cleaned up to prevent
-        // enemies from spawning/leaking during the transition
-
-        if victory {
-            // Get the district ID from the game state (where the boss actually spawned from)
-            let districtId = embeddedGameController.gameState?.activeBossDistrictId ?? SectorID.power.rawValue
-
-            // Check if this is the first defeat of this district's boss (BEFORE updating state)
+    /// Configure the boss fight coordinator with embedded-mode callbacks
+    private func setupBossCoordinator() {
+        bossCoordinator.onVictory = { [self] districtId, difficulty in
             let isFirstKill = !appState.currentPlayer.defeatedDistrictBosses.contains(districtId)
 
             // Reset boss state on VICTORY only
@@ -195,96 +160,40 @@ struct MotherboardView: View {
 
             // Notify the TD scene that boss was defeated (cleans up boss, resets threat level)
             embeddedGameController.scene?.onBossFightWon(districtId: districtId)
-
-            // NOW unpause the scene - after state is fully cleaned up
             embeddedGameController.scene?.isPaused = false
 
-            // Calculate hash reward based on difficulty
             let hashReward = difficulty.hashReward
 
-            // Calculate protocol drop using BlueprintDropSystem
-            let dropResult = BlueprintDropSystem.shared.calculateDrop(
-                bossId: bossId,
-                difficulty: difficulty,
-                profile: appState.currentPlayer
-            )
-
-            // Get protocol rarity if dropped
-            var protocolRarity: Rarity?
-            if let protocolId = dropResult.protocolId,
-               let proto = ProtocolLibrary.get(protocolId) {
-                protocolRarity = proto.rarity
+            // Determine next sector from BalanceConfig (embedded uses BalanceConfig directly)
+            var nextDistrictUnlocked: String?
+            if isFirstKill {
+                nextDistrictUnlocked = BalanceConfig.SectorUnlock.nextSector(after: districtId)
             }
 
-            // Get sector info if first kill unlocked a new sector
-            var sectorInfo: (id: String, name: String, themeColor: String)?
-            if isFirstKill,
-               let nextSectorId = BalanceConfig.SectorUnlock.nextSector(after: districtId),
-               let lane = MotherboardLaneConfig.getLane(forSectorId: nextSectorId) {
-                sectorInfo = (nextSectorId, lane.displayName, lane.themeColorHex)
-            }
-
-            // Build the loot reward for display
-            pendingBossLootReward = BossLootReward.create(
-                difficulty: difficulty,
+            return BossFightVictoryContext(
                 hashReward: hashReward,
-                protocolId: dropResult.protocolId,
-                protocolRarity: protocolRarity,
-                unlockedSector: sectorInfo,
-                isFirstKill: isFirstKill
+                isFirstKill: isFirstKill,
+                nextDistrictUnlocked: nextDistrictUnlocked
             )
+        }
 
-            // Show loot modal
-            showBossLootModal = true
-
-            HapticsService.shared.play(.success)
-        } else {
+        bossCoordinator.onDefeat = { [self] in
             // Boss fight lost/retreated - boss stays on board for retry
-            // Reset bossEngaged so player can tap to fight again
             if var state = embeddedGameController.gameState {
                 state.bossEngaged = false
                 state.bossSelectedDifficulty = nil
                 embeddedGameController.gameState = state
                 embeddedGameController.scene?.state = state
             }
-
-            // NOW unpause the scene - after state is updated
             embeddedGameController.scene?.isPaused = false
-
-            // Don't reset isBossActive or activeBossType - boss is still there!
-            HapticsService.shared.play(.defeat)
-        }
-    }
-
-    /// Apply rewards and dismiss the loot modal
-    private func handleBossLootCollected() {
-        guard let reward = pendingBossLootReward else {
-            showBossLootModal = false
-            return
         }
 
-        // Apply hash reward (uses convenience property)
-        let hashAmount = reward.totalHashReward
-        if hashAmount > 0 {
-            appState.updatePlayer { profile in
-                profile.hash += hashAmount
-            }
-            // Also update the game state hash
-            embeddedGameController.gameState?.hash += hashAmount
-        }
-
-        // Apply protocol unlock (uses convenience property)
-        if let protocolId = reward.droppedProtocolId {
-            appState.updatePlayer { profile in
-                if !profile.compiledProtocols.contains(protocolId) {
-                    profile.compiledProtocols.append(protocolId)
-                }
+        bossCoordinator.onLootApplied = { [self] reward in
+            // Sync hash to game state
+            if reward.totalHashReward > 0 {
+                embeddedGameController.gameState?.hash += reward.totalHashReward
             }
         }
-
-        // Dismiss modal
-        pendingBossLootReward = nil
-        showBossLootModal = false
     }
 
     private var motherboardHUD: some View {
@@ -731,11 +640,16 @@ struct MotherboardView: View {
                 embeddedGameController.scene?.state = state
             }
 
+            // Configure coordinator for this fight
+            bossCoordinator.selectedBossDifficulty = difficulty
+            bossCoordinator.activeBossType = embeddedGameController.activeBossType
+            bossCoordinator.currentBossDistrictId = embeddedGameController.gameState?.activeBossDistrictId
+
             // Pause TD scene before starting boss fight
             embeddedGameController.scene?.isPaused = true
             // Small delay before showing boss fight to let animation complete
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                embeddedGameController.showBossFight = true
+                bossCoordinator.showBossFight = true
             }
         } label: {
             HStack {
