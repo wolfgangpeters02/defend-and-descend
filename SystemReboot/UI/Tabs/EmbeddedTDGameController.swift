@@ -107,20 +107,8 @@ class EmbeddedTDGameController: ObservableObject {
                 if newState.isSystemFrozen && !(self?.isSystemFrozen ?? false) {
                     self?.isSystemFrozen = true
                 }
-                // Track boss state
-                if newState.bossActive && !newState.bossEngaged {
-                    if !(self?.isBossActive ?? false) {
-                        self?.isBossActive = true
-                        self?.activeBossType = newState.activeBossType
-                    }
-                } else if !newState.bossActive {
-                    self?.isBossActive = false
-                    self?.activeBossType = nil
-                    self?.bossAlertDismissed = false  // Reset for next boss
-                }
-                // Track overclock state
-                self?.overclockActive = newState.overclockActive
-                self?.overclockTimeRemaining = newState.overclockTimeRemaining
+                // Track boss + overclock state (delegated to +BossState extension)
+                self?.syncBossState(from: newState)
                 // Sync hash to player profile (throttled to once per second to avoid excessive UserDefaults writes)
                 if newState.hash != AppState.shared.currentPlayer.hash {
                     let now = Date()
@@ -170,25 +158,17 @@ class EmbeddedTDGameController: ObservableObject {
         }
         handler.onBossSpawned = { [weak self] bossType in
             DispatchQueue.main.async {
-                self?.isBossActive = true
-                self?.activeBossType = bossType
-                self?.bossAlertDismissed = false  // Reset so alert shows for new boss
-                HapticsService.shared.play(.warning)
+                self?.handleBossSpawned(type: bossType)
             }
         }
         handler.onBossReachedCPU = { [weak self] in
             DispatchQueue.main.async {
-                self?.isBossActive = false
-                self?.activeBossType = nil
-                self?.bossAlertDismissed = false  // Reset for next boss
-                HapticsService.shared.play(.defeat)
+                self?.handleBossReachedCPU()
             }
         }
         handler.onBossTapped = { [weak self] in
             DispatchQueue.main.async {
-                // Show difficulty selector when boss is tapped
-                self?.bossAlertDismissed = false  // Reset in case alert was dismissed
-                self?.showBossDifficultySelector = true
+                self?.handleBossTapped()
             }
         }
 
@@ -204,72 +184,6 @@ class EmbeddedTDGameController: ObservableObject {
         self.delegateHandler = handler
         self.gameState = state
         self.scene = newScene
-    }
-
-    // MARK: - Drag Handling
-
-    func startDrag(weaponType: String) {
-        isDraggingFromDeck = true
-        draggedWeaponType = weaponType
-        canAffordDraggedTower = TowerPlacementService.canAfford(weaponType: weaponType, hash: gameState?.hash ?? 0)
-
-        scene?.enterPlacementMode(weaponType: weaponType)
-        HapticsService.shared.play(.selection)
-    }
-
-    func updateDrag(_ value: DragGesture.Value, geometry: GeometryProxy) {
-        dragPosition = value.location
-
-        guard let state = gameState else { return }
-
-        let gamePos = convertScreenToGame(dragPosition, geometry: geometry)
-        let cameraScale = scene?.cameraScale ?? 1.0
-        let snap = TowerPlacementService.snapDistance(cameraScale: cameraScale, mapWidth: state.map.width)
-        let nearest = TowerPlacementService.findNearestSlot(gamePoint: gamePos, slots: state.towerSlots, snapDistance: snap)
-
-        if nearestValidSlot?.id != nearest?.id {
-            nearestValidSlot = nearest
-            scene?.highlightNearestSlot(nearest, canAfford: canAffordDraggedTower)
-
-            if nearest != nil && canAffordDraggedTower {
-                HapticsService.shared.play(.slotSnap)
-            }
-        }
-    }
-
-    func endDrag(profile: PlayerProfile) {
-        scene?.exitPlacementMode()
-
-        defer {
-            isDraggingFromDeck = false
-            draggedWeaponType = nil
-            nearestValidSlot = nil
-        }
-
-        if let weaponType = draggedWeaponType,
-           let slot = nearestValidSlot,
-           canAffordDraggedTower {
-            scene?.placeTower(weaponType: weaponType, slotId: slot.id, profile: profile)
-            HapticsService.shared.play(.towerPlace)
-        }
-    }
-
-    // MARK: - Coordinate Conversion
-
-    func convertScreenToGame(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        if let scene = scene {
-            return scene.convertScreenToGame(screenPoint: point, viewSize: geometry.size)
-        }
-        let gameSize = CGSize(width: gameState?.map.width ?? 800, height: gameState?.map.height ?? 600)
-        return TowerPlacementService.convertScreenToGame(point, screenSize: geometry.size, gameSize: gameSize)
-    }
-
-    func convertGameToScreen(_ point: CGPoint, geometry: GeometryProxy) -> CGPoint {
-        if let scene = scene {
-            return scene.convertGameToScreen(gamePoint: point, viewSize: geometry.size)
-        }
-        let gameSize = CGSize(width: gameState?.map.width ?? 800, height: gameState?.map.height ?? 600)
-        return TowerPlacementService.convertGameToScreen(point, screenSize: geometry.size, gameSize: gameSize)
     }
 
     // MARK: - System Freeze Recovery

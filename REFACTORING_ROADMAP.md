@@ -587,7 +587,7 @@ class ParticleEffectService {
 
 ---
 
-### 4.4 Extract `EmbeddedTDGameController` logic to ViewModel pattern
+### [x] 4.4 Extract `EmbeddedTDGameController` logic to ViewModel pattern
 
 **Source:** `SystemTabView.swift` lines 986–1358 (currently `ObservableObject` class)
 

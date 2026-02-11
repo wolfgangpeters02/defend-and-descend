@@ -142,6 +142,8 @@
 		GSCNSEB0001 /* GameScene+SurvivalEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNSE00001 /* GameScene+SurvivalEvents.swift */; };
 		MTHRBRDVBL0 /* MotherboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTHRBRDVRF0 /* MotherboardView.swift */; };
 		EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCTRF0 /* EmbeddedTDGameController.swift */; };
+		EMBTDCDBL0 /* EmbeddedTDGameController+Drag.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */; };
+		EMBTDCBBL0 /* EmbeddedTDGameController+BossState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */; };
 		EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDGVRF0 /* EmbeddedTDGameView.swift */; };
 		SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SYSFRZOVRF0 /* SystemFreezeOverlay.swift */; };
 		ARSNLVWBL0 /* ArsenalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ARSNLVWRF0 /* ArsenalView.swift */; };
@@ -308,6 +310,8 @@
 		GSCNSE00001 /* GameScene+SurvivalEvents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+SurvivalEvents.swift"; sourceTree = "<group>"; };
 		MTHRBRDVRF0 /* MotherboardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardView.swift; sourceTree = "<group>"; };
 		EMBTDCTRF0 /* EmbeddedTDGameController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameController.swift; sourceTree = "<group>"; };
+		EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "EmbeddedTDGameController+Drag.swift"; sourceTree = "<group>"; };
+		EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "EmbeddedTDGameController+BossState.swift"; sourceTree = "<group>"; };
 		EMBTDGVRF0 /* EmbeddedTDGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameView.swift; sourceTree = "<group>"; };
 		SYSFRZOVRF0 /* SystemFreezeOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemFreezeOverlay.swift; sourceTree = "<group>"; };
 		ARSNLVWRF0 /* ArsenalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArsenalView.swift; sourceTree = "<group>"; };
@@ -626,6 +630,8 @@
 				A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */,
 				MTHRBRDVRF0 /* MotherboardView.swift */,
 				EMBTDCTRF0 /* EmbeddedTDGameController.swift */,
+				EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */,
+				EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */,
 				EMBTDGVRF0 /* EmbeddedTDGameView.swift */,
 				SYSFRZOVRF0 /* SystemFreezeOverlay.swift */,
 				ARSNLVWRF0 /* ArsenalView.swift */,
@@ -870,6 +876,8 @@
 				MBCFGDTBL0 /* MotherboardConfigData.swift in Sources */,
 				MTHRBRDVBL0 /* MotherboardView.swift in Sources */,
 				EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */,
+				EMBTDCDBL0 /* EmbeddedTDGameController+Drag.swift in Sources */,
+				EMBTDCBBL0 /* EmbeddedTDGameController+BossState.swift in Sources */,
 				EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */,
 				SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */,
 				ARSNLVWBL0 /* ArsenalView.swift in Sources */,
