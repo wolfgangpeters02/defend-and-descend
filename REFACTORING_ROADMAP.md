@@ -377,7 +377,7 @@ This is the highest-impact split. The file contains 18 types that should live in
 
 ---
 
-### 3.2 Split `GameScene.swift` (2,654 lines → 5 files)
+### [x] 3.2 Split `GameScene.swift` (2,654 lines → 5 files)
 
 The survival-mode scene mixes boss rendering, entity rendering, game loop, and effects.
 

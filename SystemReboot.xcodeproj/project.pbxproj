@@ -117,6 +117,10 @@
 		TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */; };
 		TDSCNINB0001 /* TDGameScene+Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNIN00001 /* TDGameScene+Input.swift */; };
 		TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNAC00001 /* TDGameScene+Actions.swift */; };
+		GSCNEFB0001 /* GameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNEF00001 /* GameScene+Effects.swift */; };
+		GSCNBRB0001 /* GameScene+BossRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNBR00001 /* GameScene+BossRendering.swift */; };
+		GSCNERB0001 /* GameScene+EntityRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNER00001 /* GameScene+EntityRendering.swift */; };
+		GSCNSEB0001 /* GameScene+SurvivalEvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNSE00001 /* GameScene+SurvivalEvents.swift */; };
 		MTHRBRDVBL0 /* MotherboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTHRBRDVRF0 /* MotherboardView.swift */; };
 		EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCTRF0 /* EmbeddedTDGameController.swift */; };
 		EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDGVRF0 /* EmbeddedTDGameView.swift */; };
@@ -240,6 +244,10 @@
 		TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EntityVisuals.swift"; sourceTree = "<group>"; };
 		TDSCNIN00001 /* TDGameScene+Input.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Input.swift"; sourceTree = "<group>"; };
 		TDSCNAC00001 /* TDGameScene+Actions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Actions.swift"; sourceTree = "<group>"; };
+		GSCNEF00001 /* GameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+Effects.swift"; sourceTree = "<group>"; };
+		GSCNBR00001 /* GameScene+BossRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+BossRendering.swift"; sourceTree = "<group>"; };
+		GSCNER00001 /* GameScene+EntityRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+EntityRendering.swift"; sourceTree = "<group>"; };
+		GSCNSE00001 /* GameScene+SurvivalEvents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+SurvivalEvents.swift"; sourceTree = "<group>"; };
 		MTHRBRDVRF0 /* MotherboardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardView.swift; sourceTree = "<group>"; };
 		EMBTDCTRF0 /* EmbeddedTDGameController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameController.swift; sourceTree = "<group>"; };
 		EMBTDGVRF0 /* EmbeddedTDGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameView.swift; sourceTree = "<group>"; };
@@ -331,6 +339,10 @@
 			isa = PBXGroup;
 			children = (
 				AA100010 /* GameScene.swift */,
+				GSCNEF00001 /* GameScene+Effects.swift */,
+				GSCNBR00001 /* GameScene+BossRendering.swift */,
+				GSCNER00001 /* GameScene+EntityRendering.swift */,
+				GSCNSE00001 /* GameScene+SurvivalEvents.swift */,
 				AA100011 /* EntityRenderer.swift */,
 				AA100022 /* ParticleFactory.swift */,
 				AA100023 /* VisualEffects.swift */,
@@ -645,6 +657,10 @@
 				AA000008 /* GameState.swift in Sources */,
 				AA000009 /* PlayerSystem.swift in Sources */,
 				AA000010 /* GameScene.swift in Sources */,
+				GSCNEFB0001 /* GameScene+Effects.swift in Sources */,
+				GSCNBRB0001 /* GameScene+BossRendering.swift in Sources */,
+				GSCNERB0001 /* GameScene+EntityRendering.swift in Sources */,
+				GSCNSEB0001 /* GameScene+SurvivalEvents.swift in Sources */,
 				AA000011 /* EntityRenderer.swift in Sources */,
 				AA000012 /* GameContainerView.swift in Sources */,
 				AA000013 /* VirtualJoystick.swift in Sources */,
