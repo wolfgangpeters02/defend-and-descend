@@ -239,6 +239,7 @@ class ManualOverrideController: ObservableObject {
 }
 
 // MARK: - Manual Override Scene (Thin Renderer)
+// Visual compositions live in ManualOverrideScene+Visuals.swift extension.
 
 class ManualOverrideScene: SKScene {
     // Callbacks
@@ -252,22 +253,35 @@ class ManualOverrideScene: SKScene {
     private var previousHealth: Int = 0
 
     // Render nodes
-    private var playerNode: SKShapeNode!
+    private var playerNode: SKNode!
     private var hazardNodes: [UUID: SKNode] = [:]
+    // Track hazard types for removal animations
+    private var hazardTypes: [UUID: HazardVisualType] = [:]
+    private enum HazardVisualType { case projectile, expanding, sweep }
 
     // Pending expanding hazards waiting for warning animation to finish
     private var pendingExpandingHazards: [ManualOverrideSystem.Hazard] = []
 
     override func didMove(to view: SKView) {
-        backgroundColor = UIColor(hex: "0a0a0f") ?? .black
+        backgroundColor = DesignColors.backgroundUI
 
         simState = ManualOverrideSystem.makeInitialState(sceneSize: size)
         previousHealth = simState.health
 
         setupCamera()
-        setupPlayer()
-        setupBoundary()
-        setupBackground()
+
+        // Background (circuit board grid + copper traces)
+        let bg = createCircuitBackground()
+        addChild(bg)
+        startAmbientDataFlow()
+
+        // Border (copper double-stroke + corner pads)
+        let border = createCircuitBorder()
+        addChild(border)
+
+        // Player (multi-node composition)
+        playerNode = createPlayerComposition(at: simState.playerPosition)
+        addChild(playerNode)
     }
 
     // MARK: - Setup
@@ -277,51 +291,6 @@ class ManualOverrideScene: SKScene {
         cam.position = CGPoint(x: size.width / 2, y: size.height / 2)
         addChild(cam)
         self.camera = cam
-    }
-
-    private func setupPlayer() {
-        playerNode = SKShapeNode(circleOfRadius: 20)
-        playerNode.fillColor = DesignColors.primaryUI
-        playerNode.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.8)
-        playerNode.lineWidth = 3
-        playerNode.glowWidth = 10
-        playerNode.position = simState.playerPosition
-        playerNode.zPosition = 10
-        playerNode.name = "player"
-        addChild(playerNode)
-
-        let pulse = SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.5),
-            SKAction.scale(to: 1.0, duration: 0.5)
-        ])
-        playerNode.run(SKAction.repeatForever(pulse))
-    }
-
-    private func setupBoundary() {
-        let border = SKShapeNode(rect: CGRect(x: 20, y: 100, width: size.width - 40, height: size.height - 200), cornerRadius: 10)
-        border.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.3)
-        border.fillColor = .clear
-        border.lineWidth = 2
-        border.glowWidth = 3
-        border.zPosition = 1
-        addChild(border)
-    }
-
-    private func setupBackground() {
-        for x in stride(from: CGFloat(0), to: size.width, by: 40) {
-            let line = SKShapeNode(rect: CGRect(x: x, y: 0, width: 1, height: size.height))
-            line.fillColor = UIColor.white.withAlphaComponent(0.03)
-            line.strokeColor = .clear
-            line.zPosition = 0
-            addChild(line)
-        }
-        for y in stride(from: CGFloat(0), to: size.height, by: 40) {
-            let line = SKShapeNode(rect: CGRect(x: 0, y: y, width: size.width, height: 1))
-            line.fillColor = UIColor.white.withAlphaComponent(0.03)
-            line.strokeColor = .clear
-            line.zPosition = 0
-            addChild(line)
-        }
     }
 
     // MARK: - Input
@@ -353,12 +322,20 @@ class ManualOverrideScene: SKScene {
             return
         }
 
-        // Render player
+        // Render player position + invincibility flicker
         playerNode.position = simState.playerPosition
         if simState.invincibilityTimer > 0 {
             playerNode.alpha = sin(currentTime * 20) > 0 ? 1.0 : 0.3
         } else {
             playerNode.alpha = 1.0
+        }
+
+        // Update player damage state visual (color shift based on health)
+        if simState.health != previousHealth {
+            updatePlayerDamageState(
+                playerNode: playerNode,
+                health: simState.health,
+                maxHealth: BalanceConfig.ManualOverride.maxHealth)
         }
 
         // Handle spawned hazards
@@ -379,8 +356,9 @@ class ManualOverrideScene: SKScene {
 
         // Handle damage
         if events.damageDealt {
+            previousHealth = simState.health
             onHealthUpdate?(simState.health)
-            playDamageEffects()
+            playUpgradedDamageEffects(playerPosition: simState.playerPosition)
 
             if events.gameLost {
                 onHealthUpdate?(simState.health)
@@ -393,87 +371,32 @@ class ManualOverrideScene: SKScene {
     private func createHazardNode(for hazard: ManualOverrideSystem.Hazard) {
         switch hazard.kind {
         case .projectile:
-            let node = SKShapeNode(circleOfRadius: 15)
-            node.fillColor = DesignColors.dangerUI
-            node.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
-            node.lineWidth = 2
-            node.glowWidth = 8
-            node.name = "hazard"
-            node.zPosition = 5
-            node.position = hazard.position
+            let node = createProjectileVirusNode(at: hazard.position)
             addChild(node)
             hazardNodes[hazard.id] = node
+            hazardTypes[hazard.id] = .projectile
 
         case .expanding:
-            // Show warning animation first; the actual hazard node is created after
-            showExpandingWarning(for: hazard)
-
-        case .sweep(_, let isHorizontal, let gapStart, let gapEnd):
-            let node = SKShapeNode()
-            node.name = "hazard"
-            node.zPosition = 5
-            node.strokeColor = DesignColors.dangerUI
-            node.lineWidth = 8
-            node.glowWidth = 15
-            node.position = hazard.position
-
-            let path = CGMutablePath()
-            if isHorizontal {
-                path.move(to: CGPoint(x: 0, y: 0))
-                path.addLine(to: CGPoint(x: gapStart, y: 0))
-                path.move(to: CGPoint(x: gapEnd, y: 0))
-                path.addLine(to: CGPoint(x: size.width, y: 0))
-            } else {
-                let playAreaBottom: CGFloat = 120
-                let playAreaTop = size.height - 120
-                path.move(to: CGPoint(x: 0, y: playAreaBottom))
-                path.addLine(to: CGPoint(x: 0, y: gapStart))
-                path.move(to: CGPoint(x: 0, y: gapEnd))
-                path.addLine(to: CGPoint(x: 0, y: playAreaTop))
+            pendingExpandingHazards.append(hazard)
+            createExpandingWarning(at: hazard.position) { [weak self] in
+                guard let self,
+                      self.simState.hazards.contains(where: { $0.id == hazard.id }) else { return }
+                let node = self.createExpandingHazardNode(at: hazard.position)
+                self.addChild(node)
+                self.hazardNodes[hazard.id] = node
+                self.hazardTypes[hazard.id] = .expanding
+                self.pendingExpandingHazards.removeAll { $0.id == hazard.id }
             }
-            node.path = path
+
+        case .sweep:
+            let node = createSweepScanNode(hazard: hazard, sceneSize: size)
             addChild(node)
             hazardNodes[hazard.id] = node
-        }
-    }
-
-    private func showExpandingWarning(for hazard: ManualOverrideSystem.Hazard) {
-        let warning = SKShapeNode(circleOfRadius: 30)
-        warning.strokeColor = DesignColors.warningUI
-        warning.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
-        warning.lineWidth = 2
-        warning.position = hazard.position
-        warning.zPosition = 4
-        addChild(warning)
-
-        pendingExpandingHazards.append(hazard)
-
-        let pulse = SKAction.sequence([
-            SKAction.scale(to: 1.2, duration: 0.2),
-            SKAction.scale(to: 1.0, duration: 0.2)
-        ])
-        warning.run(SKAction.repeat(pulse, count: 3)) { [weak self] in
-            warning.removeFromParent()
-
-            guard let self else { return }
-
-            // Create the actual expanding hazard node
-            let node = SKShapeNode(circleOfRadius: 5)
-            node.fillColor = DesignColors.dangerUI
-            node.strokeColor = DesignColors.dangerUI
-            node.glowWidth = 10
-            node.position = hazard.position
-            node.name = "hazard"
-            node.zPosition = 5
-            self.addChild(node)
-            self.hazardNodes[hazard.id] = node
-            self.pendingExpandingHazards.removeAll { $0.id == hazard.id }
+            hazardTypes[hazard.id] = .sweep
         }
     }
 
     private func commitPendingExpandingHazards() {
-        // Clean up pending hazards that were already removed from simulation
-        // (e.g., if the system removed them before the warning animation finished)
         pendingExpandingHazards.removeAll { pending in
             !simState.hazards.contains { $0.id == pending.id }
         }
@@ -485,56 +408,26 @@ class ManualOverrideScene: SKScene {
 
             node.position = hazard.position
 
-            // Update expanding hazard shape
-            if case .expanding(let currentRadius, _) = hazard.kind,
-               let shapeNode = node as? SKShapeNode {
-                shapeNode.path = CGPath(
-                    ellipseIn: CGRect(x: -currentRadius, y: -currentRadius,
-                                      width: currentRadius * 2, height: currentRadius * 2),
-                    transform: nil
-                )
+            // Update expanding hazard child shapes
+            if case .expanding(let currentRadius, _) = hazard.kind {
+                updateExpandingHazardVisuals(node: node, currentRadius: currentRadius)
             }
         }
     }
 
     private func removeHazardNode(id: UUID) {
         guard let node = hazardNodes.removeValue(forKey: id) else { return }
-        // Expanding hazards get a shrink animation
-        if node.userData == nil {
-            // Check if this was an expanding type by seeing if it has a circle path
-            let shrink = SKAction.scale(to: 0, duration: 0.2)
-            let remove = SKAction.removeFromParent()
-            node.run(SKAction.sequence([shrink, remove]))
-        } else {
+        let type = hazardTypes.removeValue(forKey: id)
+
+        switch type {
+        case .projectile:
+            animateProjectileRemoval(node)
+        case .expanding:
+            animateExpandingRemoval(node)
+        case .sweep:
+            animateSweepRemoval(node)
+        case .none:
             node.removeFromParent()
         }
-    }
-
-    // MARK: - Damage Effects
-
-    private func playDamageEffects() {
-        HapticsService.shared.play(.warning)
-
-        // Screen shake
-        let shake = SKAction.sequence([
-            SKAction.moveBy(x: 10, y: 0, duration: 0.05),
-            SKAction.moveBy(x: -20, y: 0, duration: 0.05),
-            SKAction.moveBy(x: 15, y: 0, duration: 0.05),
-            SKAction.moveBy(x: -10, y: 0, duration: 0.05),
-            SKAction.moveBy(x: 5, y: 0, duration: 0.05)
-        ])
-        camera?.run(shake)
-
-        // Flash red
-        let flash = SKShapeNode(rect: CGRect(origin: .zero, size: size))
-        flash.fillColor = UIColor.red.withAlphaComponent(0.3)
-        flash.strokeColor = .clear
-        flash.zPosition = 100
-        flash.position = .zero
-        addChild(flash)
-
-        let fadeOut = SKAction.fadeOut(withDuration: 0.3)
-        let remove = SKAction.removeFromParent()
-        flash.run(SKAction.sequence([fadeOut, remove]))
     }
 }

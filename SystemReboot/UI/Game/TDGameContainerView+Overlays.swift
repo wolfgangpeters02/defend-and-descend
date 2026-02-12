@@ -251,7 +251,7 @@ extension TDGameContainerView {
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(difficultyColor(difficulty))
 
-                    Text("\(difficulty.hashReward) Ħ  •  \(Int(difficulty.blueprintChance * 100))% Blueprint")
+                    Text("\(difficulty.hashReward) Ħ")
                         .font(.system(size: 11, design: .monospaced))
                         .foregroundColor(.gray)
                 }
@@ -306,8 +306,6 @@ extension TDGameContainerView {
         let buttonColor: Color = canOverclock ? .orange : .gray
 
         return VStack {
-            Spacer()
-
             HStack {
                 Spacer()
 
@@ -343,7 +341,9 @@ extension TDGameContainerView {
                 }
                 .padding(.trailing, 20)
             }
-            .padding(.bottom, 180) // Above tower deck
+            .padding(.top, 60)
+
+            Spacer()
         }
     }
 
@@ -528,8 +528,9 @@ extension TDGameContainerView {
         isPerformingManualOverride = true
 
         // TODO: Launch 30-second survival mini-game
-        // For now, just restore to 100% as placeholder
-        scene?.restoreEfficiency(to: 0)  // 100% efficiency = 0 leaks
+        // For now, just restore efficiency as placeholder
+        let targetLeakCount = FreezeRecoveryService.leakCountForEfficiency(BalanceConfig.Freeze.manualOverrideRecoveryEfficiency)
+        scene?.restoreEfficiency(to: targetLeakCount)
 
         withAnimation {
             showSystemFreeze = false

@@ -42,10 +42,9 @@ struct MotherboardView: View {
                 // System Freeze overlay (0% efficiency)
                 if embeddedGameController.isSystemFrozen && !showManualOverride {
                     SystemFreezeOverlay(
-                        currentHash: embeddedGameController.gameState?.hash ?? 0,
+                        currentHash: appState.currentPlayer.hash,
                         onFlushMemory: {
-                            // Deduct Hash based on BalanceConfig percentage and recover
-                            let hashCost = max(1, (embeddedGameController.gameState?.hash ?? 0) / BalanceConfig.Freeze.recoveryHashDivisor)
+                            let hashCost = FreezeRecoveryService.flushCost(currentHash: appState.currentPlayer.hash)
                             appState.updatePlayer { profile in
                                 profile.hash = max(0, profile.hash - hashCost)
                             }
@@ -665,15 +664,9 @@ struct MotherboardView: View {
 
                 Spacer()
 
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(Int(difficulty.blueprintChance * 100))%")
-                        .font(DesignTypography.headline(14))
-                        .foregroundColor(DesignColors.warning)
-
-                    Text(L10n.Boss.blueprintDrop)
-                        .font(DesignTypography.caption(10))
-                        .foregroundColor(DesignColors.muted)
-                }
+                Text("\(String(format: "%.1f", difficulty.healthMultiplier))x HP")
+                    .font(DesignTypography.headline(14))
+                    .foregroundColor(DesignColors.muted)
             }
             .padding()
             .background(DesignColors.surface)
@@ -693,8 +686,6 @@ struct MotherboardView: View {
     /// Overclock button (visible when not overclocking)
     private var overclockButton: some View {
         VStack {
-            Spacer()
-
             HStack {
                 Spacer()
 
@@ -721,15 +712,15 @@ struct MotherboardView: View {
                 }
             }
             .padding(.trailing, 16)
-            .padding(.bottom, 130)  // Above the build deck
+            .padding(.top, 60)
+
+            Spacer()
         }
     }
 
     /// Overclock active indicator
     private var overclockActiveIndicator: some View {
         VStack {
-            Spacer()
-
             HStack {
                 Spacer()
 
@@ -757,7 +748,9 @@ struct MotherboardView: View {
                 )
             }
             .padding(.trailing, 16)
-            .padding(.bottom, 130)
+            .padding(.top, 60)
+
+            Spacer()
         }
     }
 }

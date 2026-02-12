@@ -13,7 +13,7 @@ struct FreezeRecoveryService {
     /// Calculate the cost to flush memory (fraction of banked hash)
     static func flushCost(currentHash: Int) -> Int {
         let divisor = BalanceConfig.Freeze.recoveryHashDivisor
-        return max(1, currentHash / divisor)
+        return max(BalanceConfig.Freeze.minimumFlushCost, currentHash / divisor)
     }
 
     /// Check if player can afford to flush memory

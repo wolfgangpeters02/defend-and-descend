@@ -1,6 +1,27 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - Loot Table Types (used by BalanceConfig.BossLoot)
+
+/// A single entry in a boss's loot table
+struct LootTableEntry {
+    let protocolId: String
+    let weight: Int              // Higher = more likely within same tier
+    let isFirstKillGuarantee: Bool  // Guaranteed on first kill of this boss
+}
+
+/// Defines the complete loot table for a boss
+struct BossLootTable {
+    let bossId: String
+    let entries: [LootTableEntry]
+    let guaranteeOnFirstKill: Bool  // At least one drop on first kill
+
+    /// Get all protocol IDs this boss can drop
+    var possibleDrops: [String] {
+        entries.map { $0.protocolId }
+    }
+}
+
 // MARK: - Balance Config
 // Centralized game balance values for easy tuning
 // All hardcoded numbers should live here for discoverability
@@ -135,7 +156,7 @@ struct BalanceConfig {
         static let color: String = "#ff4444"
 
         /// Default enemy shape
-        static let shape: String = "square"
+        static let shape: String = "circle"
     }
 
     // MARK: - Threat Level Display
@@ -1040,13 +1061,6 @@ struct BalanceConfig {
             "Nightmare": 20000
         ]
 
-        /// Blueprint drop chances by difficulty
-        static let blueprintChances: [String: CGFloat] = [
-            "Easy": 0.05,
-            "Normal": 0.15,
-            "Hard": 0.30,
-            "Nightmare": 0.50
-        ]
     }
 
     // MARK: - Tower Upgrades
@@ -1142,7 +1156,7 @@ struct BalanceConfig {
         ]
     }
 
-    struct BossLoot {
+    struct BossLootReveal {
         /// Number of taps required to decrypt each item
         static let tapsToDecrypt: Int = 2
 
@@ -1293,26 +1307,155 @@ struct BalanceConfig {
         static let maxPlayerLevel: Int = 20
     }
 
-    // MARK: - Drop Rates (See also: LootTables.swift)
+    // MARK: - Boss Loot System
+    // Single source of truth for blueprint drop rates, loot tables, and boss metadata.
+    // Used by BlueprintDropSystem for all drop calculations.
 
-    struct DropRates {
+    struct BossLoot {
+
+        // MARK: - Drop Rate Constants
+
         /// Base drop rates by rarity
-        static let common: Double = 0.60
-        static let rare: Double = 0.30
-        static let epic: Double = 0.08
-        static let legendary: Double = 0.02
+        static let rarityBaseRates: [Rarity: Double] = [
+            .common: 0.60,      // 60% base
+            .rare: 0.30,        // 30% base
+            .epic: 0.08,        // 8% base
+            .legendary: 0.02    // 2% base
+        ]
 
-        /// Difficulty multipliers
-        static let easyMultiplier: Double = 0.5
-        static let normalMultiplier: Double = 1.0
-        static let hardMultiplier: Double = 1.5
-        static let nightmareMultiplier: Double = 2.5
+        /// Difficulty multipliers for drop rates
+        static let difficultyMultipliers: [BossDifficulty: Double] = [
+            .easy: 0.5,         // 50% - practice mode
+            .normal: 1.0,       // 100% - standard
+            .hard: 1.5,         // 150% - rewarding
+            .nightmare: 2.5     // 250% - very rewarding
+        ]
 
-        /// Pity system: guaranteed drop after N kills without one
+        /// Legendary protocols only drop on this difficulty or higher
+        static let legendaryMinDifficulty: BossDifficulty = .normal
+
+        /// Pity system: guaranteed drop every N kills without a drop
         static let pityThreshold: Int = 10
 
-        /// Diminishing returns: 1 / (1 + factor × killCount)
+        /// Diminishing returns factor (higher = faster diminishment)
+        /// Formula: 1 / (1 + factor × killCount)
         static let diminishingFactor: Double = 0.1
+
+        // MARK: - Boss Loot Tables
+
+        /// Cyberboss - Hacking/Tech theme
+        /// Drops: Burst Protocol (C), Trace Route (R), Ice Shard (R)
+        static let cyberboss = BossLootTable(
+            bossId: "cyberboss",
+            entries: [
+                LootTableEntry(
+                    protocolId: "burst_protocol",
+                    weight: 100,
+                    isFirstKillGuarantee: true
+                ),
+                LootTableEntry(
+                    protocolId: "trace_route",
+                    weight: 60,
+                    isFirstKillGuarantee: false
+                ),
+                LootTableEntry(
+                    protocolId: "ice_shard",
+                    weight: 40,
+                    isFirstKillGuarantee: false
+                )
+            ],
+            guaranteeOnFirstKill: true
+        )
+
+        /// Void Harbinger - Chaos/Corruption theme
+        /// Drops: Fork Bomb (E), Root Access (E), Overflow (L)
+        static let voidHarbinger = BossLootTable(
+            bossId: "void_harbinger",
+            entries: [
+                LootTableEntry(
+                    protocolId: "fork_bomb",
+                    weight: 60,
+                    isFirstKillGuarantee: true
+                ),
+                LootTableEntry(
+                    protocolId: "root_access",
+                    weight: 40,
+                    isFirstKillGuarantee: false
+                ),
+                LootTableEntry(
+                    protocolId: "overflow",
+                    weight: 100,
+                    isFirstKillGuarantee: false
+                )
+            ],
+            guaranteeOnFirstKill: true
+        )
+
+        /// Overclocker - Heat/PSU theme
+        /// Drops: Ice Shard (R), Null Pointer (L)
+        static let overclocker = BossLootTable(
+            bossId: "overclocker",
+            entries: [
+                LootTableEntry(
+                    protocolId: "ice_shard",
+                    weight: 100,
+                    isFirstKillGuarantee: true
+                ),
+                LootTableEntry(
+                    protocolId: "null_pointer",
+                    weight: 100,
+                    isFirstKillGuarantee: false
+                )
+            ],
+            guaranteeOnFirstKill: true
+        )
+
+        /// Trojan Wyrm - Network/Worm theme
+        /// Drops: Root Access (E)
+        static let trojanWyrm = BossLootTable(
+            bossId: "trojan_wyrm",
+            entries: [
+                LootTableEntry(
+                    protocolId: "root_access",
+                    weight: 100,
+                    isFirstKillGuarantee: true
+                )
+            ],
+            guaranteeOnFirstKill: true
+        )
+
+        /// All loot tables
+        static let all: [BossLootTable] = [
+            cyberboss,
+            voidHarbinger,
+            overclocker,
+            trojanWyrm
+        ]
+
+        // MARK: - Helpers
+
+        /// Get loot table for a boss by ID
+        static func lootTable(for bossId: String) -> BossLootTable? {
+            return all.first { $0.bossId == bossId }
+        }
+
+        /// Get which boss drops a specific protocol
+        static func bossesDropping(_ protocolId: String) -> [String] {
+            return all.filter { table in
+                table.entries.contains { $0.protocolId == protocolId }
+            }.map { $0.bossId }
+        }
+
+        /// Get display name for a boss
+        static func bossDisplayName(_ bossId: String) -> String {
+            switch bossId {
+            case "cyberboss": return "Cyberboss"
+            case "void_harbinger": return "Void Harbinger"
+            case "overclocker": return "Overclocker"
+            case "trojan_wyrm": return "Trojan Wyrm"
+            default: return bossId.capitalized
+            }
+        }
     }
 
     // MARK: - Sector Unlock System
@@ -1797,6 +1940,38 @@ struct BalanceConfig {
 
         /// Minimum hazard spawn interval (floor for difficulty scaling)
         static let minHazardSpawnInterval: TimeInterval = 0.5
+
+        // MARK: Visual Tuning
+
+        /// Player shield aura radius
+        static let playerShieldRadius: CGFloat = 28
+
+        /// Player additive glow layer radius
+        static let playerGlowRadius: CGFloat = 24
+
+        /// Player octagon body radius
+        static let playerBodyRadius: CGFloat = 18
+
+        /// Player bright core radius
+        static let playerCoreRadius: CGFloat = 8
+
+        /// Player orbit dots distance from center
+        static let playerOrbitRadius: CGFloat = 18
+
+        /// Player orbit rotation period (seconds per revolution)
+        static let playerOrbitSpeed: TimeInterval = 4.0
+
+        /// Interval between ambient data flow particle spawns
+        static let ambientParticleInterval: TimeInterval = 0.8
+
+        /// Maximum concurrent ambient particles
+        static let maxAmbientParticles: Int = 6
+
+        /// Duration of screen glitch effect on damage
+        static let damageGlitchDuration: TimeInterval = 0.3
+
+        /// Number of scatter fragments on damage hit
+        static let damageFragmentCount: Int = 8
     }
 
     // MARK: - TD Rendering
@@ -2035,8 +2210,14 @@ extension BalanceConfig {
         /// Divisor for flush memory cost (hash / this = cost, i.e. 10% of current hash)
         static let recoveryHashDivisor: Int = 10
 
-        /// Target efficiency after recovery (percentage points)
+        /// Minimum flush cost (even with very low hash)
+        static let minimumFlushCost: Int = 1
+
+        /// Target efficiency after flush memory recovery (percentage points)
         static let recoveryTargetEfficiency: CGFloat = 50
+
+        /// Target efficiency after manual override success (percentage points)
+        static let manualOverrideRecoveryEfficiency: CGFloat = 100
     }
 
     // MARK: - Offline Earnings
@@ -2122,16 +2303,16 @@ extension BalanceConfig {
         ]
 
         let dropsDict: [String: Any] = [
-            "common": DropRates.common,
-            "rare": DropRates.rare,
-            "epic": DropRates.epic,
-            "legendary": DropRates.legendary,
-            "easyMultiplier": DropRates.easyMultiplier,
-            "normalMultiplier": DropRates.normalMultiplier,
-            "hardMultiplier": DropRates.hardMultiplier,
-            "nightmareMultiplier": DropRates.nightmareMultiplier,
-            "pityThreshold": DropRates.pityThreshold,
-            "diminishingFactor": DropRates.diminishingFactor
+            "common": BossLoot.rarityBaseRates[.common] ?? 0.60,
+            "rare": BossLoot.rarityBaseRates[.rare] ?? 0.30,
+            "epic": BossLoot.rarityBaseRates[.epic] ?? 0.08,
+            "legendary": BossLoot.rarityBaseRates[.legendary] ?? 0.02,
+            "easyMultiplier": BossLoot.difficultyMultipliers[.easy] ?? 0.5,
+            "normalMultiplier": BossLoot.difficultyMultipliers[.normal] ?? 1.0,
+            "hardMultiplier": BossLoot.difficultyMultipliers[.hard] ?? 1.5,
+            "nightmareMultiplier": BossLoot.difficultyMultipliers[.nightmare] ?? 2.5,
+            "pityThreshold": BossLoot.pityThreshold,
+            "diminishingFactor": BossLoot.diminishingFactor
         ]
 
         let towerPowerDict: [String: Any] = [

@@ -202,26 +202,36 @@ struct ManualOverrideSystem {
     private static func spawnSweepHazard(sceneSize: CGSize) -> Hazard {
         let isHorizontal = Bool.random()
         let gapSize = BalanceConfig.ManualOverride.sweepGapSize
-        let direction: CGFloat = Bool.random() ? 1 : -1
+        let speed = BalanceConfig.ManualOverride.sweepVelocity
 
         if isHorizontal {
-            let startY = CGFloat.random(in: 150...(sceneSize.height - 150))
+            // Horizontal sweep: line moves vertically. Start at top or bottom border.
+            let playAreaBottom: CGFloat = 120
+            let playAreaTop = sceneSize.height - 120
+            let startFromBottom = Bool.random()
+            let startY = startFromBottom ? playAreaBottom : playAreaTop
+            let direction: CGFloat = startFromBottom ? 1 : -1
             let gapStart = CGFloat.random(in: 40...(sceneSize.width - 40 - gapSize))
             return Hazard(
                 id: UUID(),
                 position: CGPoint(x: 0, y: startY),
-                kind: .sweep(velocity: BalanceConfig.ManualOverride.sweepVelocity * direction, isHorizontal: true,
+                kind: .sweep(velocity: speed * direction, isHorizontal: true,
                              gapStart: gapStart, gapEnd: gapStart + gapSize)
             )
         } else {
-            let startX = CGFloat.random(in: 50...(sceneSize.width - 50))
+            // Vertical sweep: line moves horizontally. Start at left or right border.
+            let playAreaLeft: CGFloat = 30
+            let playAreaRight = sceneSize.width - 30
+            let startFromLeft = Bool.random()
+            let startX = startFromLeft ? playAreaLeft : playAreaRight
+            let direction: CGFloat = startFromLeft ? 1 : -1
             let playAreaBottom: CGFloat = 120
             let playAreaTop = sceneSize.height - 120
             let gapStart = CGFloat.random(in: (playAreaBottom + 20)...(playAreaTop - 20 - gapSize))
             return Hazard(
                 id: UUID(),
                 position: CGPoint(x: startX, y: 0),
-                kind: .sweep(velocity: BalanceConfig.ManualOverride.sweepVelocity * direction, isHorizontal: false,
+                kind: .sweep(velocity: speed * direction, isHorizontal: false,
                              gapStart: gapStart, gapEnd: gapStart + gapSize)
             )
         }

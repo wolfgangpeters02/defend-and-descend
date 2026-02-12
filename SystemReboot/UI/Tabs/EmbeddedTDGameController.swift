@@ -199,7 +199,7 @@ class EmbeddedTDGameController: ObservableObject {
     func manualOverrideSuccess() {
         guard isSystemFrozen else { return }
         isSystemFrozen = false
-        scene?.recoverFromFreeze(restoreToEfficiency: BalanceConfig.Freeze.recoveryTargetEfficiency)
+        scene?.recoverFromFreeze(restoreToEfficiency: BalanceConfig.Freeze.manualOverrideRecoveryEfficiency)
     }
 
     /// Unlock a sector (decrypt it)
