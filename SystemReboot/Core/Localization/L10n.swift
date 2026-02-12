@@ -37,6 +37,7 @@ enum L10n {
         static let enterSystem = String(localized: "intro.enterSystem")
         static let offline = String(localized: "intro.offline")
         static let earning = String(localized: "intro.earning")
+        static let operatingHours = String(localized: "intro.operatingHours")
     }
 
     // MARK: - Welcome Back Modal
@@ -213,6 +214,7 @@ enum L10n {
         static let dragToDeploy = String(localized: "motherboard.dragToDeploy")
         static let initializing = String(localized: "motherboard.initializing")
         static let tapToUpgrade = String(localized: "motherboard.tapToUpgrade")
+        static let system = String(localized: "motherboard.system")
     }
 
     // MARK: - Sector

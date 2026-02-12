@@ -2951,6 +2951,23 @@
         }
       }
     },
+    "intro.operatingHours" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24/7"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "24/7"
+          }
+        }
+      }
+    },
     "intro.skip" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3253,6 +3270,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "INITIALIZING_SYSTEM..."
+          }
+        }
+      }
+    },
+    "motherboard.system" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SYSTEM"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SYSTEM"
           }
         }
       }

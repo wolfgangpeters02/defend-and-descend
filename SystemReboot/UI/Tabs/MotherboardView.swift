@@ -262,7 +262,7 @@ struct MotherboardView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 10))
-                    Text("SYSTEM")
+                    Text(L10n.Motherboard.system)
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                 }
                 .foregroundColor(DesignColors.secondary)

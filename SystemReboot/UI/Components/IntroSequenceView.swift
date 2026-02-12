@@ -308,7 +308,7 @@ struct IntroSequenceView: View {
                             .font(.system(size: 28, weight: .bold, design: .monospaced))
                             .foregroundColor(color)
 
-                        Text("24/7")
+                        Text(L10n.Intro.operatingHours)
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundColor(color.opacity(0.7))
                     }

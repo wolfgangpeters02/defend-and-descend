@@ -72,9 +72,9 @@ Preview-only (non-production):
 
 ### Action Items
 
-- [ ] Add L10n keys + German translations for the 2 production strings
-- [ ] Optionally localize preview strings for consistency
-- [ ] Verify all rendering files (SKLabelNode text assignments) use L10n — confirmed clean
+- [x] Add L10n keys + German translations for the 2 production strings
+- [x] Optionally localize preview strings for consistency (skipped — preview-only, not shipped)
+- [x] Verify all rendering files (SKLabelNode text assignments) use L10n — confirmed clean
 
 ### Already Compliant (verified)
 
