@@ -158,25 +158,25 @@ All SpriteKit labels, all alert messages, all navigation titles, all button labe
 Each system should be reviewed for: correct delegation to services, no stale/dead code, proper error handling at boundaries, and consistent use of BalanceConfig.
 
 #### Phase 2 Services (verify delegation is complete)
-- [ ] `OfflineSimulator` — StorageService fully delegates, no inline calculations remain
-- [ ] `TowerPlacementService` — No coordinate conversion logic remains in UI files
-- [ ] `GameRewardService` — No XP/hash formulas remain in TDGameContainerView or AppState
-- [ ] `FreezeRecoveryService` — No efficiency restoration logic remains in UI/scene files
-- [ ] `BossFightCoordinator` — No NotificationCenter patterns remain for boss fight flow
-- [ ] `SectorUnlockSystem` — No inline unlock→save→refresh flows remain in UI files
+- [x] `OfflineSimulator` — StorageService fully delegates, no inline calculations remain
+- [x] `TowerPlacementService` — No coordinate conversion logic remains in UI files
+- [x] `GameRewardService` — No XP/hash formulas remain in TDGameContainerView or AppState *(unused legacy DebugGameView has inline hash calc — dead code, not a production violation)*
+- [x] `FreezeRecoveryService` — No efficiency restoration logic remains in UI/scene files *(1 minor violation: TDGameContainerView+Overlays.swift:107 directly sets leakCounter for Zero-Day defeat penalty; TDBossSystem.swift:302 resets leakCounter on boss victory — both are single-line state resets, not formula duplication)*
+- [x] `BossFightCoordinator` — No NotificationCenter patterns remain for boss fight flow
+- [x] `SectorUnlockSystem` — No inline unlock→save→refresh flows remain in UI files *(unused legacy DebugGameView has inline unlock — dead code, not a production violation)*
 
 #### Phase 4 Extractions (verify clean boundaries)
-- [ ] `TDGameLoop` — No SpriteKit imports, returns pure data via TDFrameResult
-- [ ] `TDCollisionSystem` — No rendering side effects, returns VisualEvents
-- [ ] `ManualOverrideSystem` — No SKNode references, returns FrameEvents
-- [ ] `BossRenderingManager` — Scene reference is weak, no game state mutation
-- [ ] `CameraController` — No game state dependencies
-- [ ] `ParticleEffectService` — No game state reads, only position/color inputs
+- [x] `TDGameLoop` — No SpriteKit imports, returns pure data via TDFrameResult (imports Foundation + CoreGraphics only)
+- [x] `TDCollisionSystem` — No rendering side effects, returns VisualEvents (imports Foundation + CoreGraphics only)
+- [x] `ManualOverrideSystem` — No SKNode references, returns FrameEvents (imports Foundation only)
+- [x] `BossRenderingManager` — Scene reference is weak (`weak var scene: SKScene?`), no game state mutation
+- [x] `CameraController` — No game state dependencies (only camera/viewport logic)
+- [x] `ParticleEffectService` — No game state reads, only position/color inputs (uses injectable closures for queries)
 
 #### Cross-cutting Concerns
-- [ ] No circular dependencies between layers (Core → GameEngine → Rendering → UI)
-- [ ] No retain cycles from weak/strong scene references in extracted managers
-- [ ] Consistent error handling: what happens if a service gets nil/invalid input?
+- [x] No circular dependencies between layers (Core → GameEngine → Rendering → UI) *(2 known exceptions: DesignSystem.swift imports SpriteKit for SKShapeNode extensions, CurrencyInfoType.swift imports SwiftUI for Color type; 11 TDGameScene\* files in Rendering/ have unnecessary `import SwiftUI` — no actual SwiftUI usage)*
+- [x] No retain cycles from weak/strong scene references in extracted managers *(all managers use `weak var scene`, closures use `[weak self]` correctly)*
+- [x] Consistent error handling: what happens if a service gets nil/invalid input? *(services use guard-let + early return consistently; OfflineSimulator has theoretical division-by-zero paths if BalanceConfig values are zero — acceptable since config is static; BossFightCoordinator uses silent fallback defaults for optional callbacks)*
 
 ---
 
