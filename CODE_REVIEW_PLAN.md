@@ -139,13 +139,13 @@ All SpriteKit labels, all alert messages, all navigation titles, all button labe
 - [x] Add Sector progression timeline
 
 #### Low Priority (structural improvements)
-- [ ] Split web simulator into separate HTML/CSS/JS files
-- [ ] Add automated sync test: web defaults vs BalanceConfig.exportJSON()
-- [ ] Consider exposing game simulator results in web UI
+- [x] Split web simulator into separate HTML/CSS/JS files
+- [x] Add automated sync test: web defaults vs BalanceConfig.exportJSON()
+- [x] Consider exposing game simulator results in web UI *(evaluated — not recommended: game simulators run full Swift engine simulations that can't be meaningfully replicated in JS; the web tool serves a different purpose of parameter tuning/visualization)*
 
 ### Should the Simulator Be Split?
 
-**Yes, but not yet.** The web simulator should be split into separate files (HTML template, CSS, JS modules) when it's next extended with new tabs. Splitting it now without adding functionality would be churn. The CLI simulator is small enough to stay as one file — but it must stop duplicating values.
+**Done.** The web simulator has been split into `balance-simulator.html` (1,066 lines), `balance-simulator.css` (299 lines), and `balance-simulator.js` (772 lines). A sync test script (`check-balance-sync.py`) was added to verify web defaults match BalanceConfig.exportJSON() output. The CLI simulator is small enough to stay as one file — but it must stop duplicating values.
 
 ---
 
