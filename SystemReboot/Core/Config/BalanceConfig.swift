@@ -331,6 +331,9 @@ struct BalanceConfig {
     // MARK: - Cyberboss Configuration
 
     struct Cyberboss {
+        // Base health for boss arena fight
+        static let baseHealth: CGFloat = 4000
+
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.75
         static let phase3Threshold: CGFloat = 0.50
@@ -416,6 +419,9 @@ struct BalanceConfig {
     // MARK: - Void Harbinger Configuration
 
     struct VoidHarbinger {
+        // Base health for boss arena fight
+        static let baseHealth: CGFloat = 5000
+
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.70
         static let phase3Threshold: CGFloat = 0.40
@@ -513,6 +519,9 @@ struct BalanceConfig {
     // MARK: - Overclocker Boss
 
     struct Overclocker {
+        // Base health for boss arena fight
+        static let baseHealth: CGFloat = 4500
+
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.75
         static let phase3Threshold: CGFloat = 0.50
@@ -563,6 +572,9 @@ struct BalanceConfig {
     // MARK: - Trojan Wyrm Boss
 
     struct TrojanWyrm {
+        // Base health for boss arena fight
+        static let baseHealth: CGFloat = 5500
+
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.70
         static let phase3Threshold: CGFloat = 0.40
@@ -2122,12 +2134,100 @@ extension BalanceConfig {
             "diminishingFactor": DropRates.diminishingFactor
         ]
 
+        let towerPowerDict: [String: Any] = [
+            "common": TowerPower.powerDraw(for: .common),
+            "rare": TowerPower.powerDraw(for: .rare),
+            "epic": TowerPower.powerDraw(for: .epic),
+            "legendary": TowerPower.powerDraw(for: .legendary)
+        ]
+
+        let powerGridDict: [String: Any] = [
+            "basePowerBudget": CPU.tierMultipliers[0],
+            "towerPower": towerPowerDict,
+            "cpuTierMultipliers": CPU.tierMultipliers.map { Double($0) },
+            "cpuUpgradeCosts": CPU.upgradeCosts,
+            "cpuMaxTier": CPU.maxTier
+        ]
+
+        let cyberbossDict: [String: Any] = [
+            "baseHealth": Double(Cyberboss.baseHealth),
+            "phase2Threshold": Double(Cyberboss.phase2Threshold),
+            "phase3Threshold": Double(Cyberboss.phase3Threshold),
+            "phase4Threshold": Double(Cyberboss.phase4Threshold),
+            "laserBeamDamage": Double(Cyberboss.laserBeamDamage),
+            "puddleDPS": Double(Cyberboss.puddleDPS)
+        ]
+
+        let voidHarbingerDict: [String: Any] = [
+            "baseHealth": Double(VoidHarbinger.baseHealth),
+            "phase2Threshold": Double(VoidHarbinger.phase2Threshold),
+            "phase3Threshold": Double(VoidHarbinger.phase3Threshold),
+            "phase4Threshold": Double(VoidHarbinger.phase4Threshold)
+        ]
+
+        let overclockerDict: [String: Any] = [
+            "baseHealth": Double(Overclocker.baseHealth),
+            "phase2Threshold": Double(Overclocker.phase2Threshold),
+            "phase3Threshold": Double(Overclocker.phase3Threshold),
+            "phase4Threshold": Double(Overclocker.phase4Threshold)
+        ]
+
+        let trojanWyrmDict: [String: Any] = [
+            "baseHealth": Double(TrojanWyrm.baseHealth),
+            "phase2Threshold": Double(TrojanWyrm.phase2Threshold),
+            "phase3Threshold": Double(TrojanWyrm.phase3Threshold),
+            "phase4Threshold": Double(TrojanWyrm.phase4Threshold)
+        ]
+
+        let bossesDict: [String: Any] = [
+            "cyberboss": cyberbossDict,
+            "voidHarbinger": voidHarbingerDict,
+            "overclocker": overclockerDict,
+            "trojanWyrm": trojanWyrmDict
+        ]
+
+        let zeroDayDict: [String: Any] = [
+            "baseHealth": Double(ZeroDay.baseHealth),
+            "speed": Double(ZeroDay.speed),
+            "efficiencyDrainRate": Double(ZeroDay.efficiencyDrainRate),
+            "minWavesBeforeSpawn": ZeroDay.minWavesBeforeSpawn,
+            "defeatHashBonus": ZeroDay.defeatHashBonus,
+            "defeatEfficiencyRestore": ZeroDay.defeatEfficiencyRestore
+        ]
+
+        let overclockDict: [String: Any] = [
+            "duration": Overclock.duration,
+            "hashMultiplier": Double(Overclock.hashMultiplier),
+            "threatMultiplier": Double(Overclock.threatMultiplier),
+            "powerDemandMultiplier": Double(Overclock.powerDemandMultiplier)
+        ]
+
+        let hashEconomyDict: [String: Any] = [
+            "baseHashPerSecond": Double(HashEconomy.baseHashPerSecond),
+            "cpuLevelScaling": Double(HashEconomy.cpuLevelScaling),
+            "offlineEarningsRate": Double(HashEconomy.offlineEarningsRate),
+            "maxOfflineHours": Double(HashEconomy.maxOfflineHours)
+        ]
+
+        let protocolScalingDict: [String: Any] = [
+            "rangePerLevel": Double(ProtocolScaling.rangePerLevel),
+            "fireRatePerLevel": Double(ProtocolScaling.fireRatePerLevel),
+            "attackSpeedPerLevel": Double(ProtocolScaling.attackSpeedPerLevel),
+            "maxUpgradeLevel": maxUpgradeLevel
+        ]
+
         let config: [String: Any] = [
             "waves": wavesDict,
             "threatLevel": threatDict,
             "survivalEconomy": economyDict,
             "towers": towersDict,
-            "dropRates": dropsDict
+            "dropRates": dropsDict,
+            "powerGrid": powerGridDict,
+            "bosses": bossesDict,
+            "zeroDay": zeroDayDict,
+            "overclock": overclockDict,
+            "hashEconomy": hashEconomyDict,
+            "protocolScaling": protocolScalingDict
         ]
 
         if let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),

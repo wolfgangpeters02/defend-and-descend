@@ -18,11 +18,14 @@
 
 import Foundation
 
-// MARK: - Balance Config (Matches BalanceConfig.swift)
+// MARK: - Balance Config (Mirrors BalanceConfig.swift — keep in sync!)
+// These values are duplicated from SystemReboot/Core/Config/BalanceConfig.swift
+// because this CLI tool cannot import from the app module.
+// Use BalanceConfig.exportJSON() to verify sync.
 
 struct Config {
 
-    // Protocol Scaling
+    // Protocol Scaling — mirrors BalanceConfig.ProtocolScaling
     struct ProtocolScaling {
         static let damageMultiplierPerLevel: Double = 1.0  // Level = multiplier
         static let rangePerLevel: Double = 0.05
@@ -38,7 +41,7 @@ struct Config {
         ]
     }
 
-    // Hash Economy
+    // Hash Economy — mirrors BalanceConfig.HashEconomy
     struct HashEconomy {
         static let baseHashPerSecond: Double = 1.0
         static let cpuLevelMultiplier: Double = 1.5
@@ -49,29 +52,29 @@ struct Config {
         static let maxOfflineHours: Double = 8.0
     }
 
-    // Overclock
+    // Overclock — mirrors BalanceConfig.Overclock
     struct Overclock {
         static let duration: Double = 60
         static let hashMultiplier: Double = 2.0
         static let powerMultiplier: Double = 2.0
     }
 
-    // Power Grid
+    // Power Grid — mirrors BalanceConfig.TowerPower + BalanceConfig.CPU
     struct PowerGrid {
         static let basePowerBudget: Int = 100
         static let powerPerCPULevel: Int = 50
         static let maxCPULevel: Int = 10
 
-        // Tower power draw by rarity
+        // Tower power draw by rarity — must match BalanceConfig.TowerPower.powerDrawByRarity
         static let towerPower: [String: Int] = [
             "common": 15,
-            "rare": 30,
-            "epic": 60,
-            "legendary": 100
+            "rare": 20,
+            "epic": 30,
+            "legendary": 40
         ]
     }
 
-    // Threat Level
+    // Threat Level — mirrors BalanceConfig.ThreatLevel
     struct ThreatLevel {
         static let maxThreatLevel: Double = 100.0
         static let onlineGrowthRate: Double = 0.01  // per second
@@ -88,9 +91,9 @@ struct Config {
         static let bossThreshold: Double = 10.0
     }
 
-    // Cyberboss
+    // Cyberboss — mirrors BalanceConfig.Cyberboss
     struct Cyberboss {
-        static let baseHealth: Double = 5000
+        static let baseHealth: Double = 4000
         static let healthScalingPerWave: Double = 0.15
         static let laserDamage: Double = 50
         static let laserWarningDuration: Double = 1.5
@@ -103,7 +106,7 @@ struct Config {
         static let phase4Threshold: Double = 0.25
     }
 
-    // Zero-Day Virus
+    // Zero-Day Virus — mirrors BalanceConfig.ZeroDay
     struct ZeroDay {
         static let baseHealth: Double = 9999
         static let speed: Double = 30

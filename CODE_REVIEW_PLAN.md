@@ -127,10 +127,10 @@ All SpriteKit labels, all alert messages, all navigation titles, all button labe
 ### Action Items
 
 #### High Priority (fix what's broken)
-- [ ] Fix tower power draw values in web simulator to match BalanceConfig
-- [ ] Fix Cyberboss HP default in web simulator
-- [ ] Expand `BalanceConfig.exportJSON()` to cover all tunable sections
-- [ ] Make CLI simulator import from BalanceConfig instead of hardcoding values
+- [x] Fix tower power draw values in web simulator to match BalanceConfig
+- [x] Fix Cyberboss HP default in web simulator
+- [x] Expand `BalanceConfig.exportJSON()` to cover all tunable sections
+- [x] Make CLI simulator import from BalanceConfig instead of hardcoding values
 
 #### Medium Priority (extend coverage)
 - [ ] Add Component upgrade tab to web simulator
