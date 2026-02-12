@@ -18,6 +18,9 @@ struct SettingsSheet: View {
                     // Notifications Section
                     notificationsSection
 
+                    // Debug
+                    debugSection
+
                     // Danger Zone
                     dangerZoneSection
                 }
@@ -127,6 +130,41 @@ struct SettingsSheet: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Debug Section
+
+    private var debugSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader(title: L10n.Settings.debug, icon: "ladybug.fill", color: .orange)
+
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.Settings.debugOverlay)
+                            .font(DesignTypography.headline(16))
+                            .foregroundColor(.white)
+
+                        Text(L10n.Settings.debugOverlayDesc)
+                            .font(DesignTypography.caption(12))
+                            .foregroundColor(DesignColors.muted)
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { appState.showDebugOverlay },
+                        set: { newValue in
+                            appState.showDebugOverlay = newValue
+                            HapticsService.shared.play(.selection)
+                        }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: .orange))
+                }
+            }
+            .padding(16)
+            .background(settingsCardBackground)
         }
     }
 

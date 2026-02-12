@@ -42,7 +42,7 @@ final class BlueprintDropSystem {
         profile: PlayerProfile
     ) -> DropResult {
         // Get loot table for this boss
-        guard let lootTable = LootTableLibrary.lootTable(for: bossId) else {
+        guard let lootTable = BalanceConfig.BossLoot.lootTable(for: bossId) else {
             return .noDrop
         }
 
@@ -80,7 +80,7 @@ final class BlueprintDropSystem {
 
         // PITY SYSTEM: Check if player needs a guaranteed drop
         let killsSinceLastDrop = profile.killsSinceLastDrop(bossId)
-        if killsSinceLastDrop >= LootTableLibrary.pityThreshold {
+        if killsSinceLastDrop >= BalanceConfig.BossLoot.pityThreshold {
             let pityEntry = availableEntries.max(by: { $0.weight < $1.weight })
             return DropResult(
                 protocolId: pityEntry?.protocolId,
@@ -108,10 +108,10 @@ final class BlueprintDropSystem {
         isFirstKill: Bool
     ) -> DropResult {
         // Get difficulty multiplier
-        let difficultyMult = LootTableLibrary.difficultyMultipliers[difficulty] ?? 1.0
+        let difficultyMult = BalanceConfig.BossLoot.difficultyMultipliers[difficulty] ?? 1.0
 
         // Calculate diminishing returns based on kill count
-        let diminishingMult = 1.0 / (1.0 + LootTableLibrary.diminishingFactor * Double(killCount))
+        let diminishingMult = 1.0 / (1.0 + BalanceConfig.BossLoot.diminishingFactor * Double(killCount))
 
         // Roll the dice
         let roll = Double.random(in: 0..<1)
@@ -121,10 +121,10 @@ final class BlueprintDropSystem {
 
         for entry in entries {
             guard let proto = ProtocolLibrary.get(entry.protocolId) else { continue }
-            let baseRate = LootTableLibrary.rarityBaseRates[proto.rarity] ?? 0.0
+            let baseRate = BalanceConfig.BossLoot.rarityBaseRates[proto.rarity] ?? 0.0
 
             // Legendary protocols only drop on minimum difficulty or higher
-            if proto.rarity == .legendary && !meetsMinimumDifficulty(difficulty, minimum: LootTableLibrary.legendaryMinDifficulty) {
+            if proto.rarity == .legendary && !meetsMinimumDifficulty(difficulty, minimum: BalanceConfig.BossLoot.legendaryMinDifficulty) {
                 continue
             }
 

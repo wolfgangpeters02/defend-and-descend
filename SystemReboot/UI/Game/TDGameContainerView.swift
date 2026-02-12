@@ -7,7 +7,7 @@ import SpriteKit
 // Implements progressive disclosure: show only what's needed, when it's needed
 //
 // Extensions:
-//   TDGameContainerView+Overlays.swift  — Zero-Day, Boss, Overclock, Freeze overlays
+//   TDGameContainerView+Overlays.swift  — Boss, Overclock, Freeze overlays
 //   TDGameContainerView+HUD.swift       — Top bar, wave controls, CPU upgrade
 //   TDGameContainerView+Towers.swift    — Tower deck, drag preview, tower info panel
 //   TDGameContainerView+Panels.swift    — Pause, game over, sector unlock/management
@@ -40,10 +40,6 @@ struct TDGameContainerView: View {
     // System Freeze state (0% efficiency)
     @State var showSystemFreeze = false
     @State var isPerformingManualOverride = false
-
-    // Zero-Day Boss Fight state
-    @State var showZeroDayBossFight = false
-    @State var zeroDayBossFightResult: ZeroDayBossFightResult?
 
     // Sector unlock panel state (mega-board)
     @State var showSectorUnlockPanel = false
@@ -96,11 +92,6 @@ struct TDGameContainerView: View {
                 // Drag preview overlay
                 if isDraggingFromDeck, let weaponType = draggedWeaponType {
                     dragPreviewOverlay(weaponType: weaponType, geometry: geometry)
-                }
-
-                // Zero-Day Alert overlay (System Breach)
-                if let state = gameState, state.zeroDayActive, !showSystemFreeze {
-                    zeroDayAlertOverlay
                 }
 
                 // TD Boss Alert overlay (threat milestone boss)
@@ -161,15 +152,6 @@ struct TDGameContainerView: View {
         .onChange(of: gameState?.bossActive) { _ in isPaused = isPaused }
         .onChange(of: gameState?.overclockActive) { _ in isPaused = isPaused }
         .navigationBarHidden(true)
-        .fullScreenCover(isPresented: $showZeroDayBossFight) {
-            ZeroDayBossFightView(
-                onComplete: { result in
-                    zeroDayBossFightResult = result
-                    handleZeroDayBossFightResult(result)
-                    showZeroDayBossFight = false
-                }
-            )
-        }
         .fullScreenCover(isPresented: $bossCoordinator.showBossFight) {
             if let difficulty = selectedBossDifficulty {
                 GameContainerView(
@@ -554,7 +536,7 @@ private class TDGameSceneDelegateHandler: TDGameSceneDelegate {
 // MARK: - Extracted Views
 // TowerDeckCard, ProtocolDeckCard → TowerDeckCards.swift
 // TDStatRow, ResourceIndicator, WaveProgressBar, CountdownBar → TDHelperViews.swift
-// ZeroDayBossFightView, BossLootModalWrapper → TDHelperViews.swift
+// BossLootModalWrapper → TDHelperViews.swift
 
 // MARK: - Preview
 
@@ -576,5 +558,3 @@ struct TDGameContainerView_Previews: PreviewProvider {
 // - CountdownBar (TDHelperViews.swift)
 // - GameEndStatRow (TDHelperViews.swift)
 // - BossLootModalWrapper (TDHelperViews.swift)
-// - ZeroDayBossFightResult (TDHelperViews.swift)
-// - ZeroDayBossFightView (TDHelperViews.swift)

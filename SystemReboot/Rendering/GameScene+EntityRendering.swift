@@ -98,9 +98,11 @@ extension GameScene {
                 enemy: enemy
             )
 
-            // Add to layer if new
+            // Add to layer if new, with spawn animation
             if node.parent == nil {
                 enemyLayer.addChild(node)
+                let shape = node.userData?["shape"] as? String ?? "circle"
+                EntityRenderer.runSpawnAnimation(on: node, shape: shape)
             }
 
             // Update position
@@ -111,6 +113,19 @@ extension GameScene {
 
             // Slow effect visual
             node.alpha = enemy.isSlowed ? 0.7 : 1.0
+        }
+
+        // Death effects for enemies about to be released (Phase 7B)
+        for (id, node) in enemyNodes where !activeIds.contains(id) {
+            // Find the enemy to get its shape/color for death animation
+            let shape = node.userData?["shape"] as? String ?? "circle"
+            let size = node.userData?["size"] as? CGFloat ?? 12
+            let color = node.userData?["color"] as? UIColor ?? .red
+            // Spawn lightweight death fragments at enemy position
+            EntityRenderer.spawnSurvivalDeathEffect(
+                at: node.position, in: enemyLayer,
+                shape: shape, color: color, size: size
+            )
         }
 
         // Release unused nodes back to pool (Phase 5)

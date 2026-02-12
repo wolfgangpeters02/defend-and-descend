@@ -73,11 +73,20 @@ class BossRenderingManager {
     var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
     var zonePhaseCache: [String: Bool] = [:]       // id -> isActive
 
+    // MARK: - Boss Body Visual References
+
+    weak var enemyLayer: SKNode?
+    var cachedBossBodyNode: SKNode?
+    var cachedCyberbossPhase: Int = -1
+    var cachedVoidHarbingerPhase: Int = -1
+    var cachedOverclockerPhase: Int = -1
+
     // MARK: - Configuration
 
-    func configure(scene: SKScene, nodePool: NodePool) {
+    func configure(scene: SKScene, nodePool: NodePool, enemyLayer: SKNode? = nil) {
         self.scene = scene
         self.nodePool = nodePool
+        self.enemyLayer = enemyLayer
     }
 
     // MARK: - Public Rendering API
@@ -117,6 +126,10 @@ class BossRenderingManager {
         bossMechanicNodes.removeAll()
         puddlePhaseCache.removeAll()
         zonePhaseCache.removeAll()
+        cachedBossBodyNode = nil
+        cachedCyberbossPhase = -1
+        cachedVoidHarbingerPhase = -1
+        cachedOverclockerPhase = -1
     }
 
     func cleanupBossNodes(prefix: String) {
@@ -224,17 +237,17 @@ class BossRenderingManager {
                         node.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                         node.strokeColor = DesignColors.warningUI
                         node.lineWidth = 3
-                        node.glowWidth = 0
+                        node.glowWidth = 1.5
                     } else if isAboutToPop {
                         node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.5)
                         node.strokeColor = DesignColors.dangerUI
                         node.lineWidth = 5
-                        node.glowWidth = 0
+                        node.glowWidth = 3.0  // Danger! About to pop
                     } else {
                         node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.25)
                         node.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
                         node.lineWidth = 3
-                        node.glowWidth = 0
+                        node.glowWidth = 1.0
                     }
                 }
             } else {
@@ -242,7 +255,7 @@ class BossRenderingManager {
                 puddleNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                 puddleNode.strokeColor = DesignColors.warningUI
                 puddleNode.lineWidth = 3
-                puddleNode.glowWidth = 0
+                puddleNode.glowWidth = 1.5  // Danger puddle glow (boss fight only)
                 puddleNode.position = CGPoint(x: puddle.x, y: gameState.arena.height - puddle.y)
                 puddleNode.zPosition = 5
                 puddleNode.name = nodeKey
@@ -290,7 +303,7 @@ class BossRenderingManager {
                 let laserNode = SKShapeNode(path: path)
                 laserNode.strokeColor = laserColor
                 laserNode.lineWidth = laserWidth
-                laserNode.glowWidth = 0
+                laserNode.glowWidth = 2.0  // Laser beam glow (boss fight only)
                 laserNode.zPosition = 100
                 laserNode.name = nodeKey
                 laserNode.position = CGPoint(x: bossSceneX, y: bossSceneY)
@@ -312,6 +325,97 @@ class BossRenderingManager {
         }
 
         renderPhaseIndicator(phase: bossState.phase, bossType: "cyberboss", gameState: gameState)
+
+        // Phase-specific body visual escalation (Phase 4B)
+        updateCyberbossBodyVisuals(phase: bossState.phase, boss: boss, gameState: gameState)
+    }
+
+    // MARK: - Cyberboss Phase Body Visuals
+
+    /// Update Cyberboss body composition based on current phase.
+    /// LED colors, pulse speed, glitch effects escalate per phase.
+    func updateCyberbossBodyVisuals(phase: Int, boss: Enemy, gameState: GameState) {
+        guard phase != cachedCyberbossPhase else { return }
+        cachedCyberbossPhase = phase
+
+        // Find boss body node (lazy cache)
+        if cachedBossBodyNode == nil || cachedBossBodyNode?.parent == nil {
+            let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
+            cachedBossBodyNode = enemyLayer?.children.first(where: {
+                abs($0.position.x - bossScenePos.x) < 5 && abs($0.position.y - bossScenePos.y) < 5
+            })
+        }
+        guard let bossNode = cachedBossBodyNode else { return }
+
+        // Update status LEDs color based on phase
+        if let leds = bossNode.childNode(withName: "statusLEDs") as? SKShapeNode {
+            switch phase {
+            case 1: leds.fillColor = UIColor.green
+            case 2: leds.fillColor = UIColor.yellow
+            case 3, 4: leds.fillColor = UIColor.red
+            default: leds.fillColor = UIColor.green
+            }
+        }
+
+        // Update threat ring intensity
+        if let ring = bossNode.childNode(withName: "threatRing") as? SKShapeNode {
+            switch phase {
+            case 1:
+                ring.strokeColor = UIColor.red.withAlphaComponent(0.4)
+                ring.setScale(1.0)
+            case 2:
+                ring.strokeColor = UIColor.red.withAlphaComponent(0.6)
+            case 3:
+                ring.strokeColor = UIColor.red.withAlphaComponent(0.8)
+                ring.setScale(1.1)
+            case 4:
+                ring.strokeColor = UIColor.red
+                ring.setScale(1.15)
+            default: break
+            }
+        }
+
+        // Update eye scanner speed
+        if let eye = bossNode.childNode(withName: "eye") as? SKShapeNode {
+            eye.removeAction(forKey: "eyeSweep")
+            let scanHeight = (boss.size ?? 60) * 0.4
+            let sweepDuration: TimeInterval = phase >= 3 ? 1.0 : 2.0
+            let sweep = SKAction.sequence([
+                SKAction.moveTo(y: scanHeight, duration: sweepDuration),
+                SKAction.moveTo(y: -scanHeight, duration: sweepDuration)
+            ])
+            eye.run(SKAction.repeatForever(sweep), withKey: "eyeSweep")
+
+            // Phase 3+: eye turns red
+            if phase >= 3 {
+                eye.strokeColor = UIColor.red
+                eye.lineWidth = 3
+            }
+        }
+
+        // Phase 4: glitch jitter on chassis
+        if let chassis = bossNode.childNode(withName: "body") as? SKShapeNode {
+            if phase >= 4 {
+                if chassis.action(forKey: "phaseJitter") == nil {
+                    let jitter = SKAction.repeatForever(SKAction.sequence([
+                        SKAction.moveBy(x: CGFloat.random(in: -2...2),
+                                        y: CGFloat.random(in: -2...2), duration: 0.05),
+                        SKAction.move(to: .zero, duration: 0.05)
+                    ]))
+                    chassis.run(jitter, withKey: "phaseJitter")
+                }
+            } else {
+                chassis.removeAction(forKey: "phaseJitter")
+            }
+        }
+
+        // Phase 2+: shield hexagon gains visual emphasis
+        if let shield = bossNode.childNode(withName: "shield") as? SKShapeNode {
+            if phase >= 2 {
+                shield.strokeColor = UIColor.white
+                shield.lineWidth = 4
+            }
+        }
     }
 
     // MARK: - Chainsaw Effect
@@ -338,7 +442,7 @@ class BossRenderingManager {
                 dangerCircle.fillColor = DesignColors.dangerUI.withAlphaComponent(0.15)
                 dangerCircle.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.6)
                 dangerCircle.lineWidth = 2
-                dangerCircle.glowWidth = 4
+                dangerCircle.glowWidth = 1.5  // Chainsaw danger zone
                 dangerCircle.name = "dangerCircle"
                 chainsawNode.addChild(dangerCircle)
 
@@ -360,7 +464,7 @@ class BossRenderingManager {
                     toothNode.fillColor = DesignColors.dangerUI.withAlphaComponent(0.8)
                     toothNode.strokeColor = DesignColors.dangerUI
                     toothNode.lineWidth = 1
-                    toothNode.glowWidth = 2
+                    toothNode.glowWidth = 0
                     toothNode.position = CGPoint(x: toothX, y: toothY)
                     toothNode.zRotation = angle
                     chainsawNode.addChild(toothNode)
@@ -425,7 +529,7 @@ class BossRenderingManager {
                 if zone.isActive {
                     zoneNode.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.3)
                     zoneNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
-                    zoneNode.glowWidth = 4
+                    zoneNode.glowWidth = 1.5  // Active void zone
                 } else {
                     zoneNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                     zoneNode.strokeColor = DesignColors.warningUI
@@ -469,14 +573,14 @@ class BossRenderingManager {
                 pylonBody.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
                 pylonBody.strokeColor = DesignColors.secondaryUI
                 pylonBody.lineWidth = 2
-                pylonBody.glowWidth = 3
+                pylonBody.glowWidth = 1.0  // Pylon structure glow
                 container.addChild(pylonBody)
 
                 let crystal = SKShapeNode(circleOfRadius: 12)
                 crystal.fillColor = DesignColors.secondaryUI
                 crystal.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.6)
                 crystal.position = CGPoint(x: 0, y: 40)
-                crystal.glowWidth = 6
+                crystal.glowWidth = 2.0  // Pylon crystal glow
                 container.addChild(crystal)
 
                 let healthBg = SKShapeNode(rectOf: CGSize(width: 50, height: 6))
@@ -536,7 +640,7 @@ class BossRenderingManager {
                 shieldNode.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.15)
                 shieldNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
                 shieldNode.lineWidth = 3
-                shieldNode.glowWidth = 8
+                shieldNode.glowWidth = 2.0  // Shield glow
                 shieldNode.position = bossScenePos
                 shieldNode.zPosition = 45
                 shieldNode.name = shieldKey
@@ -589,7 +693,7 @@ class BossRenderingManager {
                     let lineNode = SKShapeNode(path: linePath)
                     lineNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.6)
                     lineNode.lineWidth = 2
-                    lineNode.glowWidth = 4
+                    lineNode.glowWidth = 1.5  // Energy tether glow
                     lineNode.zPosition = 40
                     lineNode.name = lineKey
 
@@ -670,7 +774,7 @@ class BossRenderingManager {
                         arrowNode.fillColor = DesignColors.warningUI
                         arrowNode.strokeColor = DesignColors.warningUI.withAlphaComponent(0.8)
                         arrowNode.lineWidth = 2
-                        arrowNode.glowWidth = 4
+                        arrowNode.glowWidth = 0
                         arrowNode.position = CGPoint(x: clampedX, y: clampedY)
                         arrowNode.zRotation = angle
                         arrowNode.zPosition = 150
@@ -729,7 +833,7 @@ class BossRenderingManager {
                 let riftNode = SKShapeNode(path: path)
                 riftNode.strokeColor = DesignColors.secondaryUI
                 riftNode.lineWidth = rift.width
-                riftNode.glowWidth = 6
+                riftNode.glowWidth = 2.0  // Void rift glow
                 riftNode.alpha = 0.8
                 riftNode.zPosition = 10
                 riftNode.name = nodeKey
@@ -767,7 +871,7 @@ class BossRenderingManager {
                 let innerCircle = SKShapeNode(circleOfRadius: 30)
                 innerCircle.fillColor = SKColor.black.withAlphaComponent(0.7)
                 innerCircle.strokeColor = DesignColors.secondaryUI
-                innerCircle.glowWidth = 8
+                innerCircle.glowWidth = 2.5  // Gravity well singularity
                 wellNode.addChild(innerCircle)
 
                 wellNode.run(SKAction.repeatForever(gravityWellRotateAction), withKey: "rotate")
@@ -801,7 +905,7 @@ class BossRenderingManager {
                 arenaNode.fillColor = SKColor.clear
                 arenaNode.strokeColor = DesignColors.dangerUI
                 arenaNode.lineWidth = 4
-                arenaNode.glowWidth = 4
+                arenaNode.glowWidth = 3.0  // Shrinking arena danger boundary
                 arenaNode.zPosition = 3
                 arenaNode.name = arenaKey
                 arenaNode.position = CGPoint(x: bossState.arenaCenter.x, y: centerSceneY)
@@ -821,6 +925,97 @@ class BossRenderingManager {
         }
 
         renderPhaseIndicator(phase: bossState.phase, bossType: "voidharbinger", isInvulnerable: bossState.isInvulnerable, gameState: gameState)
+
+        // Phase-specific body visual escalation (Phase 5A)
+        updateVoidHarbingerBodyVisuals(phase: bossState.phase, gameState: gameState)
+    }
+
+    // MARK: - Void Harbinger Phase Body Visuals
+
+    /// Update Void Harbinger body based on current phase.
+    /// Fragment speed, aura thickness, body cracks escalate per phase.
+    func updateVoidHarbingerBodyVisuals(phase: Int, gameState: GameState) {
+        guard phase != cachedVoidHarbingerPhase else { return }
+        cachedVoidHarbingerPhase = phase
+
+        // Find boss body node
+        if cachedBossBodyNode == nil || cachedBossBodyNode?.parent == nil {
+            guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+            let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
+            cachedBossBodyNode = enemyLayer?.children.first(where: {
+                abs($0.position.x - bossScenePos.x) < 5 && abs($0.position.y - bossScenePos.y) < 5
+            })
+        }
+        guard let bossNode = cachedBossBodyNode else { return }
+
+        // Phase 2+: fragment orbit speeds up
+        if phase >= 2 {
+            bossNode.removeAction(forKey: "fragmentRotate")
+            let orbitDuration: TimeInterval = phase >= 3 ? 1.5 : 2.0
+            let fragmentRotate = SKAction.rotate(byAngle: .pi * 2, duration: orbitDuration)
+            bossNode.run(SKAction.repeatForever(fragmentRotate), withKey: "fragmentRotate")
+        }
+
+        // Phase 2+: aura stroke thickens
+        if let aura = bossNode.children.first(where: { ($0 as? SKShapeNode)?.glowWidth ?? 0 > 1.5 }) as? SKShapeNode {
+            switch phase {
+            case 2: aura.lineWidth = 4
+            case 3: aura.lineWidth = 5
+            case 4:
+                aura.lineWidth = 6
+                // Phase 4: aura expands
+                aura.setScale(1.2)
+            default: break
+            }
+        }
+
+        // Phase 3+: body crack lines (lazily created)
+        if phase >= 3 {
+            let crackKey = "voidCracks"
+            if bossNode.childNode(withName: crackKey) == nil {
+                let bossSize = (gameState.enemies.first(where: { $0.isBoss && !$0.isDead })?.size ?? 60)
+                let crackPath = CGMutablePath()
+                // 3-4 crack lines radiating from center
+                for i in 0..<4 {
+                    let angle = CGFloat(i) * (.pi / 2) + 0.3
+                    let innerR = bossSize * 0.3
+                    let outerR = bossSize * 0.85
+                    crackPath.move(to: CGPoint(x: cos(angle) * innerR, y: sin(angle) * innerR))
+                    // Jagged line
+                    let midR = (innerR + outerR) / 2
+                    let jitter: CGFloat = bossSize * 0.1
+                    crackPath.addLine(to: CGPoint(x: cos(angle + 0.1) * midR + jitter,
+                                                  y: sin(angle + 0.1) * midR))
+                    crackPath.addLine(to: CGPoint(x: cos(angle) * outerR, y: sin(angle) * outerR))
+                }
+                let cracks = SKShapeNode(path: crackPath)
+                cracks.strokeColor = UIColor(hex: "ff00ff")?.withAlphaComponent(0.6) ?? UIColor.magenta.withAlphaComponent(0.6)
+                cracks.lineWidth = 1.5
+                cracks.lineCap = .round
+                cracks.zPosition = 0.3
+                cracks.name = crackKey
+                bossNode.addChild(cracks)
+
+                // Crack flicker
+                let flicker = SKAction.sequence([
+                    SKAction.fadeAlpha(to: 0.3, duration: 0.2),
+                    SKAction.fadeAlpha(to: 0.8, duration: 0.2)
+                ])
+                cracks.run(SKAction.repeatForever(flicker))
+            }
+        }
+
+        // Phase 4: body becomes semi-transparent
+        if phase >= 4 {
+            bossNode.alpha = 0.75
+            // Eye color shifts to red
+            if let eye = bossNode.children.first(where: {
+                ($0 as? SKShapeNode)?.fillColor == (UIColor(hex: "8800ff") ?? UIColor.purple)
+            }) as? SKShapeNode {
+                eye.fillColor = UIColor.red.withAlphaComponent(0.9)
+                eye.strokeColor = UIColor(hex: "ff0044") ?? UIColor.red
+            }
+        }
     }
 
     // MARK: - Overclocker Rendering
@@ -985,15 +1180,30 @@ class BossRenderingManager {
 
         guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
 
+        let wyrmGreen = SKColor(red: 0, green: 1, blue: 0.27, alpha: 1.0)
+        let wyrmDark = SKColor(red: 0, green: 0.6, blue: 0.15, alpha: 1.0)
+        let wyrmLime = SKColor(red: 0.53, green: 1, blue: 0, alpha: 1.0)
+
         // Render body segments (Phase 1, 2, 4)
         if bossState.phase != 3 {
+            let segCount = bossState.segments.count
             for (i, segment) in bossState.segments.enumerated() {
                 let nodeKey = "trojanwyrm_seg_\(i)"
                 let segNode: SKShapeNode
                 if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
                     segNode = existing
                 } else {
-                    segNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.bodyCollisionRadius)
+                    // Taper: tail segments shrink gradually over last 6 segments
+                    let taperStart = max(0, segCount - 6)
+                    let baseR = BalanceConfig.TrojanWyrm.bodyCollisionRadius
+                    let radius: CGFloat
+                    if i >= taperStart {
+                        let t = CGFloat(i - taperStart + 1) / 6.0
+                        radius = baseR * (1.0 - t * 0.4)  // Shrinks to 60% at tip
+                    } else {
+                        radius = baseR
+                    }
+                    segNode = SKShapeNode(circleOfRadius: radius)
                     segNode.lineWidth = 2
                     segNode.zPosition = 100
                     scene.addChild(segNode)
@@ -1006,26 +1216,84 @@ class BossRenderingManager {
                     segNode.fillColor = SKColor.cyan.withAlphaComponent(0.2)
                     segNode.strokeColor = SKColor.cyan
                 } else {
-                    segNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.7)
-                    segNode.strokeColor = SKColor(red: 0, green: 0.8, blue: 0.2, alpha: 1.0)
+                    // Alternating light/dark fills for caterpillar effect
+                    let isEven = i % 2 == 0
+                    segNode.fillColor = isEven
+                        ? wyrmGreen.withAlphaComponent(0.7)
+                        : wyrmDark.withAlphaComponent(0.7)
+                    segNode.strokeColor = isEven
+                        ? wyrmLime.withAlphaComponent(0.8)
+                        : wyrmGreen.withAlphaComponent(0.6)
                 }
             }
 
-            // Render head glow
-            let headKey = "trojanwyrm_head"
-            let headNode: SKShapeNode
-            if let existing = bossMechanicNodes[headKey] as? SKShapeNode {
-                headNode = existing
-            } else {
-                headNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.headCollisionRadius + 5)
-                headNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.9)
-                headNode.strokeColor = SKColor.white
-                headNode.lineWidth = 3
-                headNode.zPosition = 101
-                scene.addChild(headNode)
-                bossMechanicNodes[headKey] = headNode
+            // Tail wisp — trailing line behind the last segment
+            let tailKey = "trojanwyrm_tailwisp"
+            if segCount >= 2 {
+                let tailWisp: SKShapeNode
+                if let existing = bossMechanicNodes[tailKey] as? SKShapeNode {
+                    tailWisp = existing
+                } else {
+                    tailWisp = SKShapeNode()
+                    tailWisp.strokeColor = wyrmGreen.withAlphaComponent(0.25)
+                    tailWisp.lineWidth = 1.5
+                    tailWisp.lineCap = .round
+                    tailWisp.zPosition = 99
+                    scene.addChild(tailWisp)
+                    bossMechanicNodes[tailKey] = tailWisp
+                }
+                // Draw a short trailing wisp from last segment extending away
+                let lastSeg = bossState.segments[segCount - 1]
+                let prevSeg = bossState.segments[segCount - 2]
+                let dx = lastSeg.x - prevSeg.x
+                let dy = lastSeg.y - prevSeg.y
+                let wispLen: CGFloat = 20
+                let wispPath = CGMutablePath()
+                let lastPos = CGPoint(x: lastSeg.x, y: arenaH - lastSeg.y)
+                wispPath.move(to: lastPos)
+                wispPath.addLine(to: CGPoint(x: lastPos.x + dx * 0.5, y: lastPos.y - dy * 0.5))
+                wispPath.addLine(to: CGPoint(x: lastPos.x + dx * 0.5 + wispLen * (dx / max(1, hypot(dx, dy))),
+                                             y: lastPos.y - dy * 0.5 - wispLen * (dy / max(1, hypot(dx, dy)))))
+                tailWisp.path = wispPath
             }
-            headNode.position = CGPoint(x: boss.x, y: arenaH - boss.y)
+
+            // Render head with jaw/eye details
+            let headKey = "trojanwyrm_head"
+            let headContainer: SKNode
+            if let existing = bossMechanicNodes[headKey] {
+                headContainer = existing
+            } else {
+                headContainer = SKNode()
+                headContainer.zPosition = 101
+
+                // Head base circle
+                let headBase = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.headCollisionRadius + 5)
+                headBase.fillColor = wyrmGreen.withAlphaComponent(0.9)
+                headBase.strokeColor = SKColor.white
+                headBase.lineWidth = 3
+                headBase.name = "body"
+                headContainer.addChild(headBase)
+
+                // Add jaw, eyes, mandible details
+                EntityRenderer.addTrojanWyrmHeadDetails(
+                    to: headContainer,
+                    size: BalanceConfig.TrojanWyrm.headCollisionRadius
+                )
+
+                scene.addChild(headContainer)
+                bossMechanicNodes[headKey] = headContainer
+            }
+            headContainer.position = CGPoint(x: boss.x, y: arenaH - boss.y)
+
+            // Orient head toward movement direction
+            if bossState.segments.count > 0 {
+                let firstSeg = bossState.segments[0]
+                let dx = boss.x - firstSeg.x
+                let dy = boss.y - firstSeg.y
+                if dx != 0 || dy != 0 {
+                    headContainer.zRotation = atan2(-dy, dx) - .pi / 2
+                }
+            }
         } else {
             // Clean up main body in Phase 3
             for i in 0..<BalanceConfig.TrojanWyrm.segmentCount {
@@ -1039,41 +1307,84 @@ class BossRenderingManager {
                 node.removeFromParent()
                 bossMechanicNodes.removeValue(forKey: "trojanwyrm_head")
             }
+            if let node = bossMechanicNodes["trojanwyrm_tailwisp"] {
+                node.removeFromParent()
+                bossMechanicNodes.removeValue(forKey: "trojanwyrm_tailwisp")
+            }
         }
 
-        // Phase 3: Render sub-worms
+        // Phase 3: Render sub-worms with enhanced visuals
         if bossState.phase == 3 {
             for (wi, worm) in bossState.subWorms.enumerated() {
+                // Sub-worm head — container with mini jaw details
                 let headKey = "trojanwyrm_sw_\(wi)_head"
-                let swHeadNode: SKShapeNode
-                if let existing = bossMechanicNodes[headKey] as? SKShapeNode {
-                    swHeadNode = existing
+                let swHeadContainer: SKNode
+                if let existing = bossMechanicNodes[headKey] {
+                    swHeadContainer = existing
                 } else {
-                    swHeadNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.subWormHeadSize)
-                    swHeadNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.9)
-                    swHeadNode.strokeColor = SKColor.white
-                    swHeadNode.lineWidth = 2
-                    swHeadNode.zPosition = 101
-                    scene.addChild(swHeadNode)
-                    bossMechanicNodes[headKey] = swHeadNode
-                }
-                swHeadNode.position = CGPoint(x: worm.head.x, y: arenaH - worm.head.y)
+                    swHeadContainer = SKNode()
+                    swHeadContainer.zPosition = 101
 
+                    let swHeadBase = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.subWormHeadSize)
+                    swHeadBase.fillColor = wyrmGreen.withAlphaComponent(0.9)
+                    swHeadBase.strokeColor = SKColor.white
+                    swHeadBase.lineWidth = 2
+                    swHeadBase.name = "body"
+                    swHeadContainer.addChild(swHeadBase)
+
+                    // Mini jaw/eye details (scaled down)
+                    EntityRenderer.addTrojanWyrmHeadDetails(
+                        to: swHeadContainer,
+                        size: BalanceConfig.TrojanWyrm.subWormHeadSize * 0.7
+                    )
+
+                    scene.addChild(swHeadContainer)
+                    bossMechanicNodes[headKey] = swHeadContainer
+                }
+                swHeadContainer.position = CGPoint(x: worm.head.x, y: arenaH - worm.head.y)
+
+                // Orient sub-worm head toward movement direction
+                if let firstBody = worm.body.first {
+                    let dx = worm.head.x - firstBody.x
+                    let dy = worm.head.y - firstBody.y
+                    if dx != 0 || dy != 0 {
+                        swHeadContainer.zRotation = atan2(-dy, dx) - .pi / 2
+                    }
+                }
+
+                // Sub-worm body segments with alternating fills
                 for (si, seg) in worm.body.enumerated() {
                     let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
                     let swSegNode: SKShapeNode
                     if let existing = bossMechanicNodes[segKey] as? SKShapeNode {
                         swSegNode = existing
                     } else {
-                        swSegNode = SKShapeNode(circleOfRadius: BalanceConfig.TrojanWyrm.subWormBodySize)
-                        swSegNode.fillColor = SKColor(red: 0, green: 1, blue: 0.27, alpha: 0.6)
-                        swSegNode.strokeColor = SKColor(red: 0, green: 0.8, blue: 0.2, alpha: 1.0)
+                        // Taper sub-worm tail
+                        let bodyCount = worm.body.count
+                        let taperStart = max(0, bodyCount - 2)
+                        let radius: CGFloat
+                        if si >= taperStart {
+                            let t = CGFloat(si - taperStart + 1) / 2.0
+                            radius = BalanceConfig.TrojanWyrm.subWormBodySize * (1.0 - t * 0.3)
+                        } else {
+                            radius = BalanceConfig.TrojanWyrm.subWormBodySize
+                        }
+                        swSegNode = SKShapeNode(circleOfRadius: radius)
                         swSegNode.lineWidth = 1
                         swSegNode.zPosition = 100
                         scene.addChild(swSegNode)
                         bossMechanicNodes[segKey] = swSegNode
                     }
                     swSegNode.position = CGPoint(x: seg.x, y: arenaH - seg.y)
+
+                    // Alternating caterpillar colors for sub-worms
+                    let isEven = si % 2 == 0
+                    swSegNode.fillColor = isEven
+                        ? wyrmGreen.withAlphaComponent(0.6)
+                        : wyrmDark.withAlphaComponent(0.6)
+                    swSegNode.strokeColor = isEven
+                        ? wyrmLime.withAlphaComponent(0.7)
+                        : wyrmGreen.withAlphaComponent(0.5)
                 }
             }
         } else {

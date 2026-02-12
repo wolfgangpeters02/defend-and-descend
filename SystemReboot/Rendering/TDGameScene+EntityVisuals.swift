@@ -60,6 +60,7 @@ extension TDGameScene {
             if !state.towers.contains(where: { $0.id == id }) {
                 node.removeFromParent()
                 towerNodes.removeValue(forKey: id)
+                towerNodeRefs.removeValue(forKey: id)
                 towerLastAttackTimes.removeValue(forKey: id)
                 towerBarrelRotations.removeValue(forKey: id)
                 pausedTowerAnimations.remove(id)  // Clean up animation LOD tracking
@@ -72,24 +73,41 @@ extension TDGameScene {
                 // Update existing
                 node.position = convertToScene(tower.position)
 
-                // Update range indicator visibility with animation
+                // Get or build cached refs
+                var refs = towerNodeRefs[tower.id] ?? TowerNodeRefs()
+
+                // Update range indicator visibility with lazy creation
                 let shouldShowRange = tower.id == selectedTowerId || isDragging
-                if let rangeNode = node.childNode(withName: "range") {
-                    if shouldShowRange && rangeNode.isHidden {
-                        TowerAnimations.showRange(node: node, animated: true)
-                    } else if !shouldShowRange && !rangeNode.isHidden {
-                        TowerAnimations.hideRange(node: node, animated: true)
+                if shouldShowRange {
+                    // Lazily create range indicator on first need
+                    if refs.rangeNode == nil {
+                        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                        let rangeIndicator = TowerVisualFactory.createRangeIndicator(range: tower.range, color: towerColor)
+                        rangeIndicator.name = "range"
+                        rangeIndicator.isHidden = true
+                        rangeIndicator.zPosition = -2  // Below tower body but above background (effective: 4-2=2)
+                        node.addChild(rangeIndicator)
+                        refs.rangeNode = rangeIndicator
                     }
+                    if let rangeNode = refs.rangeNode, rangeNode.isHidden {
+                        TowerAnimations.showRange(node: node, animated: true)
+                    }
+                } else if let rangeNode = refs.rangeNode, !rangeNode.isHidden {
+                    TowerAnimations.hideRange(node: node, animated: true)
                 }
 
                 // Update rotation (barrel points to target) - Smooth interpolation
-                if let barrel = node.childNode(withName: "barrel") {
+                // Use cached barrel ref, falling back to lookup if needed
+                if refs.barrel == nil {
+                    refs.barrel = node.childNode(withName: "barrel")
+                }
+                if let barrel = refs.barrel {
                     let targetRotation = tower.rotation - .pi/2
 
                     // Get current tracked rotation, or initialize from node
                     let currentRotation = towerBarrelRotations[tower.id] ?? barrel.zRotation
 
-                    // Calculate angle difference (normalized to -π to π)
+                    // Calculate angle difference (normalized to -pi to pi)
                     var angleDiff = targetRotation - currentRotation
                     while angleDiff > .pi { angleDiff -= 2 * .pi }
                     while angleDiff < -.pi { angleDiff += 2 * .pi }
@@ -111,16 +129,22 @@ extension TDGameScene {
                     towerBarrelRotations[tower.id] = newRotation
                 }
 
-                // Update level indicator if level changed
-                if let levelNode = node.childNode(withName: "levelIndicator") {
-                    if let levelLabel = levelNode.childNode(withName: "levelLabel") as? SKLabelNode {
-                        if levelLabel.text != "\(tower.level)" {
-                            levelLabel.text = "\(tower.level)"
-                        }
+                // Update level indicator if level changed (cached ref)
+                if refs.levelLabel == nil {
+                    if let levelNode = node.childNode(withName: "levelIndicator") {
+                        refs.levelLabel = levelNode.childNode(withName: "levelLabel") as? SKLabelNode
+                    }
+                }
+                if let levelLabel = refs.levelLabel {
+                    if levelLabel.text != "\(tower.level)" {
+                        levelLabel.text = "\(tower.level)"
                     }
                 }
 
-                // Update cooldown arc
+                // Save refs before cooldown arc (which may lazily create the cooldown node)
+                towerNodeRefs[tower.id] = refs
+
+                // Update cooldown arc (lazy creation inside)
                 updateCooldownArc(for: tower, node: node, currentTime: state.gameTime)
 
                 // Detect firing (lastAttackTime changed) and trigger animation
@@ -137,6 +161,16 @@ extension TDGameScene {
                 node.position = convertToScene(tower.position)
                 towerLayer.addChild(node)
                 towerNodes[tower.id] = node
+
+                // Populate cached refs from the freshly created node
+                var refs = TowerNodeRefs()
+                refs.barrel = node.childNode(withName: "barrel")
+                refs.glowNode = node.childNode(withName: "glow")
+                if let levelNode = node.childNode(withName: "levelIndicator") {
+                    refs.levelLabel = levelNode.childNode(withName: "levelLabel") as? SKLabelNode
+                }
+                // rangeNode, cooldownNode, lodDetail are nil — created lazily on first need
+                towerNodeRefs[tower.id] = refs
 
                 // Spawn placement particles
                 spawnPlacementParticles(at: convertToScene(tower.position), color: UIColor(hex: tower.color) ?? .blue)
@@ -204,13 +238,14 @@ extension TDGameScene {
     /// Cached cooldown progress per tower to avoid redundant arc path rebuilds
     private static var cachedCooldownProgress: [String: CGFloat] = [:]
 
-    /// Update cooldown arc indicator on tower (cached: only rebuilds path when progress changes)
+    /// Update cooldown arc indicator on tower (cached refs + lazy creation + arc path caching)
     func updateCooldownArc(for tower: Tower, node: SKNode, currentTime: TimeInterval) {
-        guard let cooldownNode = node.childNode(withName: "cooldown") as? SKShapeNode else { return }
-
         // Guard against invalid attack speed (prevents NaN/Infinity angles)
         guard tower.attackSpeed > 0 else {
-            cooldownNode.isHidden = true
+            // Hide if it exists
+            if let refs = towerNodeRefs[tower.id], let cooldownNode = refs.cooldownNode {
+                cooldownNode.isHidden = true
+            }
             return
         }
 
@@ -220,11 +255,27 @@ extension TDGameScene {
 
         // Guard against NaN progress values
         guard cooldownProgress.isFinite else {
-            cooldownNode.isHidden = true
+            if let refs = towerNodeRefs[tower.id], let cooldownNode = refs.cooldownNode {
+                cooldownNode.isHidden = true
+            }
             return
         }
 
         if cooldownProgress < 1.0 && cooldownProgress > 0.0 {
+            // Lazily create cooldown node on first need
+            var refs = towerNodeRefs[tower.id] ?? TowerNodeRefs()
+            if refs.cooldownNode == nil {
+                let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                let cooldownArc = TowerVisualFactory.createCooldownArc(color: towerColor)
+                cooldownArc.name = "cooldown"
+                cooldownArc.isHidden = true
+                cooldownArc.zPosition = 5
+                node.addChild(cooldownArc)
+                refs.cooldownNode = cooldownArc
+                towerNodeRefs[tower.id] = refs
+            }
+
+            guard let cooldownNode = refs.cooldownNode else { return }
             cooldownNode.isHidden = false
 
             // Only rebuild arc path when progress changes by a visible amount (~2% arc step)
@@ -240,7 +291,9 @@ extension TDGameScene {
                 cooldownNode.path = path.cgPath
             }
         } else {
-            cooldownNode.isHidden = true
+            if let refs = towerNodeRefs[tower.id], let cooldownNode = refs.cooldownNode {
+                cooldownNode.isHidden = true
+            }
             Self.cachedCooldownProgress.removeValue(forKey: tower.id)
         }
     }
@@ -306,13 +359,41 @@ extension TDGameScene {
         let paddedRect = visibleRect.insetBy(dx: -100, dy: -100)
 
         for (towerId, node) in towerNodes {
-            // LOD detail visibility based on zoom
-            if let lodDetail = node.childNode(withName: "lodDetail") {
-                // Only animate if needed
-                if abs(lodDetail.alpha - targetAlpha) > 0.01 {
-                    lodDetail.removeAction(forKey: "lodFade")
-                    let fadeAction = SKAction.fadeAlpha(to: targetAlpha, duration: 0.2)
-                    lodDetail.run(fadeAction, withKey: "lodFade")
+            // LOD detail visibility based on zoom (lazy creation)
+            if showDetail {
+                var refs = towerNodeRefs[towerId] ?? TowerNodeRefs()
+                // Lazily create LOD detail on first zoom-in
+                if refs.lodDetail == nil, let tower = state?.towers.first(where: { $0.id == towerId }) {
+                    let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                    let lodDetail = TowerVisualFactory.createLODDetail(
+                        damage: tower.damage,
+                        attackSpeed: tower.attackSpeed,
+                        projectileCount: tower.projectileCount,
+                        level: tower.level,
+                        color: towerColor
+                    )
+                    lodDetail.name = "lodDetail"
+                    lodDetail.alpha = 0
+                    lodDetail.zPosition = 20
+                    node.addChild(lodDetail)
+                    refs.lodDetail = lodDetail
+                    towerNodeRefs[towerId] = refs
+                }
+                if let lodDetail = refs.lodDetail {
+                    if abs(lodDetail.alpha - targetAlpha) > 0.01 {
+                        lodDetail.removeAction(forKey: "lodFade")
+                        let fadeAction = SKAction.fadeAlpha(to: targetAlpha, duration: 0.2)
+                        lodDetail.run(fadeAction, withKey: "lodFade")
+                    }
+                }
+            } else {
+                // Not zoomed in — only animate fade-out if LOD detail exists
+                if let refs = towerNodeRefs[towerId], let lodDetail = refs.lodDetail {
+                    if abs(lodDetail.alpha - targetAlpha) > 0.01 {
+                        lodDetail.removeAction(forKey: "lodFade")
+                        let fadeAction = SKAction.fadeAlpha(to: targetAlpha, duration: 0.2)
+                        lodDetail.run(fadeAction, withKey: "lodFade")
+                    }
                 }
             }
 
@@ -348,6 +429,58 @@ extension TDGameScene {
         )
     }
 
+    // MARK: - Background Detail LOD (Performance)
+
+    /// Hide background decorations, parallax, and grid dots when zoomed out.
+    /// These small details are invisible at high zoom levels and waste GPU rendering time.
+    func updateBackgroundDetailLOD() {
+        let shouldShow = currentScale < 0.55
+        guard shouldShow != backgroundDetailVisible else { return }
+        backgroundDetailVisible = shouldShow
+
+        // Toggle parallax layers
+        for (layer, _) in parallaxLayers {
+            layer.isHidden = !shouldShow
+        }
+
+        // Toggle sector decoration nodes
+        backgroundLayer.enumerateChildNodes(withName: "sectorDecor_*") { node, _ in
+            node.isHidden = !shouldShow
+        }
+
+        // Toggle grid dots layer (small dots not visible when zoomed out)
+        gridDotsLayer?.isHidden = !shouldShow
+    }
+
+    // MARK: - Glow LOD (Performance)
+
+    /// Disable expensive glowWidth (Gaussian blur shader) when zoomed out.
+    /// Each glowWidth > 0 node triggers a separate GPU blur pass per frame.
+    /// At zoomed-out view, glows are sub-pixel and invisible — pure waste.
+    func updateGlowLOD() {
+        let shouldEnable = currentScale < 0.5
+        guard shouldEnable != glowLODEnabled else { return }
+        glowLODEnabled = shouldEnable
+
+        for entry in glowNodes {
+            entry.node.glowWidth = shouldEnable ? entry.normalGlowWidth : 0
+        }
+    }
+
+    /// Hide/unhide path LEDs when zoomed out.
+    /// LEDs are individual nodes with blendMode=.add — still cost draw calls even when frozen.
+    func updateLEDVisibility() {
+        let shouldHide = currentScale >= 0.8
+        guard shouldHide != ledsHidden else { return }
+        ledsHidden = shouldHide
+
+        for (_, leds) in pathLEDNodes {
+            for led in leds {
+                led.isHidden = shouldHide
+            }
+        }
+    }
+
     // MARK: - Sector Visibility Culling (Performance)
 
     /// Update which sectors are visible and pause/resume ambient effects accordingly
@@ -360,7 +493,7 @@ extension TDGameScene {
         // Expand rect to include sectors partially visible (sector size is 1400)
         let paddedRect = visibleRect.insetBy(dx: -700, dy: -700)
 
-        let megaConfig = MegaBoardConfig.createDefault()
+        let megaConfig = cachedMegaBoardConfig
         var newVisibleSectors = Set<String>()
 
         for sector in megaConfig.sectors {
@@ -411,7 +544,7 @@ extension TDGameScene {
 
     /// Resume ambient effect actions for a sector (re-start them)
     func resumeSectorAmbientEffects(sectorId: String) {
-        guard let sector = MegaBoardConfig.createDefault().sectors.first(where: { $0.id == sectorId }) else { return }
+        guard let sector = cachedMegaBoardConfig.sectors.first(where: { $0.id == sectorId }) else { return }
 
         // Re-start the appropriate ambient effects based on sector theme
         switch sector.theme {
@@ -495,197 +628,211 @@ extension TDGameScene {
         let container = SKNode()
 
         // Virus color based on enemy type/tier
-        // Zero-Day: deep purple with white corona
         // Boss: white with warning glow
         // Tank: purple (tier 3)
         // Fast: orange (tier 2)
         // Basic: red (tier 1)
         let virusColor: UIColor
-        if enemy.isZeroDay {
-            virusColor = DesignColors.zeroDayVirusUI
-        } else if enemy.isBoss {
-            virusColor = DesignColors.enemyTier4UI
+        if enemy.isBoss {
+            virusColor = DesignColors.enemyBossUI
         } else {
             switch enemy.type {
-            case "tank":
-                virusColor = DesignColors.enemyTier3UI  // Purple
             case "fast":
                 virusColor = DesignColors.enemyTier2UI  // Orange
+            case "tank":
+                virusColor = DesignColors.enemyTier3UI  // Purple
+            case "elite":
+                virusColor = DesignColors.enemyTier4UI  // Magenta
             default:
-                virusColor = DesignColors.enemyTier1UI  // Red
+                virusColor = DesignColors.enemyTier1UI  // Red (basic)
             }
         }
 
-        // Virus body - hexagonal shape for tech aesthetic
+        // Virus body — archetype compositions for non-boss, legacy shapes for bosses
         let body: SKShapeNode
-        switch enemy.shape {
-        case "triangle":
-            // Triangle virus - fast/small
-            let path = UIBezierPath()
-            let size = enemy.size
-            path.move(to: CGPoint(x: 0, y: size))
-            path.addLine(to: CGPoint(x: -size * 0.866, y: -size/2))
-            path.addLine(to: CGPoint(x: size * 0.866, y: -size/2))
-            path.close()
-            body = SKShapeNode(path: path.cgPath)
-        case "hexagon":
-            // Hexagon virus - standard
-            body = SKShapeNode(path: createHexagonPath(radius: enemy.size))
-        case "diamond":
-            // Diamond virus - armored
-            body = SKShapeNode(path: createDiamondPath(size: enemy.size * 2))
-        default:
-            // Default hexagon virus
-            body = SKShapeNode(path: createHexagonPath(radius: enemy.size))
-        }
 
-        body.fillColor = virusColor.withAlphaComponent(0.85)
-        body.strokeColor = enemy.isBoss ? DesignColors.warningUI : virusColor
-        body.lineWidth = enemy.isBoss ? 3 : 2
-        body.glowWidth = enemy.isBoss ? 6 : 3
-        body.name = "body"
-        container.addChild(body)
+        if enemy.isBoss {
+            // Boss-specific compositions based on type
+            let innerNode: SKShapeNode?
 
-        // Inner detail - digital corruption pattern
-        let innerSize = enemy.size * 0.5
-        let innerPath = createHexagonPath(radius: innerSize)
-        let innerNode = SKShapeNode(path: innerPath)
-        innerNode.fillColor = UIColor.black.withAlphaComponent(0.3)
-        innerNode.strokeColor = virusColor.withAlphaComponent(0.8)
-        innerNode.lineWidth = 1
-        container.addChild(innerNode)
+            if enemy.type == "cyberboss" {
+                // Cyberboss — full 8-node "Corporate AI" composition
+                let _ = EntityRenderer.createCyberbossComposition(in: container, size: enemy.size)
+                body = (container.childNode(withName: "body") as? SKShapeNode)
+                    ?? SKShapeNode(path: createHexagonPath(radius: enemy.size))
+                if body.parent == nil {
+                    body.name = "body"
+                    container.addChild(body)
+                }
+                innerNode = nil  // Cyberboss has its own inner nodes
 
-        // Boss effects - different for Zero-Day vs regular boss
-        if enemy.isZeroDay {
-            // Zero-Day: Deep purple with white corona effect
-            body.glowWidth = 15
-            body.strokeColor = UIColor.white
+            } else if enemy.type == "overclocker" {
+                // Overclocker — 7-node "CPU Overheat" composition
+                let _ = EntityRenderer.createOverclockerComposition(in: container, size: enemy.size)
+                body = (container.childNode(withName: "body") as? SKShapeNode)
+                    ?? SKShapeNode(path: createHexagonPath(radius: enemy.size))
+                if body.parent == nil {
+                    body.name = "body"
+                    container.addChild(body)
+                }
+                innerNode = nil
 
-            // Add white corona/ring effect
-            let corona = SKShapeNode(circleOfRadius: enemy.size * 1.3)
-            corona.strokeColor = UIColor.white.withAlphaComponent(0.6)
-            corona.fillColor = .clear
-            corona.lineWidth = 2
-            corona.glowWidth = 10
-            corona.zPosition = -1
-            container.addChild(corona)
+            } else {
+                // Other bosses (Void Harbinger, Trojan Wyrm, generic): legacy shapes
+                switch enemy.shape {
+                case "triangle":
+                    let path = UIBezierPath()
+                    path.move(to: CGPoint(x: 0, y: enemy.size))
+                    path.addLine(to: CGPoint(x: -enemy.size * 0.866, y: -enemy.size / 2))
+                    path.addLine(to: CGPoint(x: enemy.size * 0.866, y: -enemy.size / 2))
+                    path.close()
+                    body = SKShapeNode(path: path.cgPath)
+                case "diamond":
+                    body = SKShapeNode(path: createDiamondPath(size: enemy.size * 2))
+                default:
+                    body = SKShapeNode(path: createHexagonPath(radius: enemy.size))
+                }
 
-            // Corona pulse animation
-            let coronaPulse = SKAction.sequence([
-                SKAction.fadeAlpha(to: 0.3, duration: 0.6),
-                SKAction.fadeAlpha(to: 0.8, duration: 0.6)
-            ])
-            corona.run(SKAction.repeatForever(coronaPulse))
+                body.fillColor = virusColor.withAlphaComponent(0.85)
+                body.strokeColor = DesignColors.warningUI
+                body.lineWidth = 3
+                body.glowWidth = 0
+                body.name = "body"
+                container.addChild(body)
 
-            // Zero-Day indicator
-            let zeroDayLabel = SKLabelNode(text: L10n.ZeroDay.indicator)
-            zeroDayLabel.fontName = "Menlo-Bold"
-            zeroDayLabel.fontSize = 10
-            zeroDayLabel.fontColor = DesignColors.zeroDayVirusUI
-            zeroDayLabel.position = CGPoint(x: 0, y: enemy.size + 20)
-            zeroDayLabel.name = "bossIndicator"
-            container.addChild(zeroDayLabel)
+                // Inner detail for legacy bosses
+                let innerSize = enemy.size * 0.5
+                let innerPath = createHexagonPath(radius: innerSize)
+                let inner = SKShapeNode(path: innerPath)
+                inner.fillColor = UIColor.black.withAlphaComponent(0.3)
+                inner.strokeColor = virusColor.withAlphaComponent(0.8)
+                inner.lineWidth = 1
+                container.addChild(inner)
+                innerNode = inner
+            }
 
-            // Menacing slow rotation
-            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 6.0)
-            body.run(SKAction.repeatForever(rotate))
+            // Boss effects
+            if enemy.immuneToTowers && enemy.isBoss {
+                body.strokeColor = UIColor.orange
 
-        } else if enemy.immuneToTowers && enemy.isBoss {
-            // Super Virus: TD boss immune to towers - orange/red with shield effect
-            body.glowWidth = 15
-            body.strokeColor = UIColor.orange
+                let superVirusLabel = SKLabelNode(text: L10n.Enemy.superVirusIndicator)
+                superVirusLabel.fontName = "Menlo-Bold"
+                superVirusLabel.fontSize = 12
+                superVirusLabel.fontColor = .orange
+                superVirusLabel.position = CGPoint(x: 0, y: enemy.size + 28)
+                superVirusLabel.name = "bossIndicator"
+                container.addChild(superVirusLabel)
 
-            // Super Virus indicator (top)
-            let superVirusLabel = SKLabelNode(text: L10n.Enemy.superVirusIndicator)
-            superVirusLabel.fontName = "Menlo-Bold"
-            superVirusLabel.fontSize = 12
-            superVirusLabel.fontColor = .orange
-            superVirusLabel.position = CGPoint(x: 0, y: enemy.size + 28)
-            superVirusLabel.name = "bossIndicator"
-            container.addChild(superVirusLabel)
+                let immuneLabel = SKLabelNode(text: L10n.Enemy.immuneToTowers)
+                immuneLabel.fontName = "Menlo-Bold"
+                immuneLabel.fontSize = 9
+                immuneLabel.fontColor = UIColor.cyan
+                immuneLabel.position = CGPoint(x: 0, y: enemy.size + 16)
+                immuneLabel.name = "immuneIndicator"
+                container.addChild(immuneLabel)
 
-            // Immune indicator (below super virus label)
-            let immuneLabel = SKLabelNode(text: L10n.Enemy.immuneToTowers)
-            immuneLabel.fontName = "Menlo-Bold"
-            immuneLabel.fontSize = 9
-            immuneLabel.fontColor = UIColor.cyan
-            immuneLabel.position = CGPoint(x: 0, y: enemy.size + 16)
-            immuneLabel.name = "immuneIndicator"
-            container.addChild(immuneLabel)
+                let shieldRing = SKShapeNode(circleOfRadius: enemy.size * 1.4)
+                shieldRing.strokeColor = UIColor.orange.withAlphaComponent(0.7)
+                shieldRing.fillColor = .clear
+                shieldRing.lineWidth = 3
+                shieldRing.glowWidth = 0
+                shieldRing.zPosition = -1
+                shieldRing.name = "shieldRing"
+                container.addChild(shieldRing)
 
-            // Shield ring effect (shows immunity)
-            let shieldRing = SKShapeNode(circleOfRadius: enemy.size * 1.4)
-            shieldRing.strokeColor = UIColor.orange.withAlphaComponent(0.7)
-            shieldRing.fillColor = .clear
-            shieldRing.lineWidth = 3
-            shieldRing.glowWidth = 8
-            shieldRing.zPosition = -1
-            shieldRing.name = "shieldRing"
-            container.addChild(shieldRing)
-
-            // Shield pulse animation
-            let shieldPulse = SKAction.sequence([
-                SKAction.group([
-                    SKAction.scale(to: 1.1, duration: 0.8),
-                    SKAction.fadeAlpha(to: 0.4, duration: 0.8)
-                ]),
-                SKAction.group([
-                    SKAction.scale(to: 1.0, duration: 0.8),
-                    SKAction.fadeAlpha(to: 0.8, duration: 0.8)
+                let shieldPulse = SKAction.sequence([
+                    SKAction.group([
+                        SKAction.scale(to: 1.1, duration: 0.8),
+                        SKAction.fadeAlpha(to: 0.4, duration: 0.8)
+                    ]),
+                    SKAction.group([
+                        SKAction.scale(to: 1.0, duration: 0.8),
+                        SKAction.fadeAlpha(to: 0.8, duration: 0.8)
+                    ])
                 ])
-            ])
-            shieldRing.run(SKAction.repeatForever(shieldPulse))
+                shieldRing.run(SKAction.repeatForever(shieldPulse))
 
-            // Color cycle between red and orange
-            let colorCycle = SKAction.sequence([
-                SKAction.colorize(with: .red, colorBlendFactor: 0.6, duration: 0.6),
-                SKAction.colorize(with: .orange, colorBlendFactor: 0.6, duration: 0.6)
-            ])
-            body.run(SKAction.repeatForever(colorCycle))
+                let colorCycle = SKAction.sequence([
+                    SKAction.colorize(with: .red, colorBlendFactor: 0.6, duration: 0.6),
+                    SKAction.colorize(with: .orange, colorBlendFactor: 0.6, duration: 0.6)
+                ])
+                body.run(SKAction.repeatForever(colorCycle))
 
-            // Slow menacing pulse
-            let pulse = SKAction.sequence([
-                SKAction.scale(to: 1.1, duration: 0.6),
-                SKAction.scale(to: 0.95, duration: 0.6)
-            ])
-            body.run(SKAction.repeatForever(pulse), withKey: "bossPulse")
+                let pulse = SKAction.sequence([
+                    SKAction.scale(to: 1.1, duration: 0.6),
+                    SKAction.scale(to: 0.95, duration: 0.6)
+                ])
+                body.run(SKAction.repeatForever(pulse), withKey: "bossPulse")
 
-            // Rotation for inner detail
-            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 5.0)
-            innerNode.run(SKAction.repeatForever(rotate))
+                let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 5.0)
+                innerNode?.run(SKAction.repeatForever(rotate))
 
-        } else if enemy.isBoss {
-            // Regular boss: White with warning glow and color cycle
-            body.glowWidth = 10
+            } else if enemy.isBoss && enemy.type != "cyberboss" && enemy.type != "overclocker" {
+                // Regular/legacy boss (not handled by archetype compositions)
+                let bossLabel = SKLabelNode(text: L10n.Enemy.bossIndicator)
+                bossLabel.fontName = "Menlo-Bold"
+                bossLabel.fontSize = 10
+                bossLabel.fontColor = DesignColors.warningUI
+                bossLabel.position = CGPoint(x: 0, y: enemy.size + 16)
+                bossLabel.name = "bossIndicator"
+                container.addChild(bossLabel)
 
-            // Boss indicator
-            let bossLabel = SKLabelNode(text: L10n.Enemy.bossIndicator)
-            bossLabel.fontName = "Menlo-Bold"
-            bossLabel.fontSize = 10
-            bossLabel.fontColor = DesignColors.warningUI
-            bossLabel.position = CGPoint(x: 0, y: enemy.size + 16)
-            bossLabel.name = "bossIndicator"
-            container.addChild(bossLabel)
+                let colorCycle = SKAction.sequence([
+                    SKAction.colorize(with: .red, colorBlendFactor: 0.5, duration: 0.5),
+                    SKAction.colorize(with: .orange, colorBlendFactor: 0.5, duration: 0.5),
+                    SKAction.colorize(with: .yellow, colorBlendFactor: 0.5, duration: 0.5),
+                    SKAction.colorize(with: .white, colorBlendFactor: 0.0, duration: 0.5)
+                ])
+                body.run(SKAction.repeatForever(colorCycle))
 
-            // Color cycle effect for boss
-            let colorCycle = SKAction.sequence([
-                SKAction.colorize(with: .red, colorBlendFactor: 0.5, duration: 0.5),
-                SKAction.colorize(with: .orange, colorBlendFactor: 0.5, duration: 0.5),
-                SKAction.colorize(with: .yellow, colorBlendFactor: 0.5, duration: 0.5),
-                SKAction.colorize(with: .white, colorBlendFactor: 0.0, duration: 0.5)
-            ])
-            body.run(SKAction.repeatForever(colorCycle))
+                let pulse = SKAction.sequence([
+                    SKAction.scale(to: 1.15, duration: 0.4),
+                    SKAction.scale(to: 0.95, duration: 0.4)
+                ])
+                body.run(SKAction.repeatForever(pulse), withKey: "bossPulse")
 
-            // Menacing pulse animation
-            let pulse = SKAction.sequence([
-                SKAction.scale(to: 1.15, duration: 0.4),
-                SKAction.scale(to: 0.95, duration: 0.4)
-            ])
-            body.run(SKAction.repeatForever(pulse), withKey: "bossPulse")
+                let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
+                innerNode?.run(SKAction.repeatForever(rotate))
+            }
 
-            // Rotation for boss inner
-            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
-            innerNode.run(SKAction.repeatForever(rotate))
+        } else {
+            // Non-boss enemies: full archetype compositions (Phase 3)
+            switch enemy.shape {
+            case "triangle":
+                // Fast virus — "Packet Runner"
+                body = EntityRenderer.createFastVirusComposition(in: container, size: enemy.size, color: virusColor)
+                let fastRotate = SKAction.rotate(byAngle: .pi * 2, duration: 2.0)
+                container.run(SKAction.repeatForever(fastRotate))
+
+            case "square":
+                // Tank virus — "Armored Payload"
+                body = EntityRenderer.createTankVirusComposition(in: container, size: enemy.size, color: virusColor)
+                let breathe = SKAction.sequence([
+                    SKAction.scale(to: 1.03, duration: 1.0),
+                    SKAction.scale(to: 1.0, duration: 1.0)
+                ])
+                body.run(SKAction.repeatForever(breathe))
+
+            case "hexagon":
+                // Elite virus — "Zero-Day Exploit"
+                body = EntityRenderer.createEliteVirusComposition(in: container, size: enemy.size, color: virusColor)
+                let flicker = SKAction.sequence([
+                    SKAction.fadeAlpha(to: 0.9, duration: 0.15),
+                    SKAction.fadeAlpha(to: 1.0, duration: 0.15)
+                ])
+                body.run(SKAction.repeatForever(flicker))
+
+            default:
+                // Basic virus — "Malware Blob"
+                body = EntityRenderer.createBasicVirusComposition(in: container, size: enemy.size, color: virusColor)
+                let pulse = SKAction.sequence([
+                    SKAction.scale(to: 1.05, duration: 0.8),
+                    SKAction.scale(to: 0.95, duration: 0.8)
+                ])
+                body.run(SKAction.repeatForever(pulse))
+                let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
+                container.run(SKAction.repeatForever(rotate))
+            }
         }
 
         // Slow effect overlay (ice blue, hidden by default)
@@ -697,18 +844,17 @@ extension TDGameScene {
         slowOverlay.isHidden = true
         container.addChild(slowOverlay)
 
-        // Health bar background - dark
-        let healthBarWidth = enemy.size * 1.5
-        let healthBg = SKSpriteNode(color: DesignColors.backgroundUI.withAlphaComponent(0.8), size: CGSize(width: healthBarWidth + 2, height: 5))
-        healthBg.position = CGPoint(x: 0, y: enemy.size + 8)
-        container.addChild(healthBg)
+        // Health arc is created lazily in updateEnemyVisuals on first damage
 
-        // Health bar - red for virus health
-        let healthBar = SKSpriteNode(color: virusColor, size: CGSize(width: healthBarWidth, height: 3))
-        healthBar.anchorPoint = CGPoint(x: 0, y: 0.5)
-        healthBar.position = CGPoint(x: -healthBarWidth / 2, y: enemy.size + 8)
-        healthBar.name = "healthBar"
-        container.addChild(healthBar)
+        // Store metadata for death/spawn animation
+        let deathShape = enemy.isBoss ? "boss" : enemy.shape
+        container.userData = NSMutableDictionary()
+        container.userData?["shape"] = deathShape
+        container.userData?["size"] = enemy.size
+        container.userData?["colorHex"] = enemy.color
+
+        // Spawn animation (Phase 7C)
+        EntityRenderer.runSpawnAnimation(on: container, shape: deathShape)
 
         return container
     }
@@ -726,37 +872,70 @@ extension TDGameScene {
 
         for id in enemiesToRemove {
             if let node = enemyNodes[id] {
-                // Death animation
-                let shrink = SKAction.scale(to: 0.1, duration: 0.2)
-                let fade = SKAction.fadeOut(withDuration: 0.2)
-                let group = SKAction.group([shrink, fade])
-                let remove = SKAction.removeFromParent()
-                node.run(SKAction.sequence([group, remove]))
+                // Type-specific death animation (Phase 7B)
+                let shape = node.userData?["shape"] as? String ?? "circle"
+                let size = node.userData?["size"] as? CGFloat ?? 12
+                let colorHex = node.userData?["colorHex"] as? String ?? "#ff4444"
+                let color = UIColor(hex: String(colorHex.dropFirst())) ?? .red
+                EntityRenderer.runDeathAnimation(on: node, shape: shape, color: color, size: size)
                 enemyNodes.removeValue(forKey: id)
+                enemyLastHealth.removeValue(forKey: id)
             }
         }
+
+        // Performance: calculate visible rect once for off-screen throttling
+        let visibleRect = calculateVisibleRect()
+        let paddedRect = visibleRect.insetBy(dx: -80, dy: -80)
 
         // Update/create enemy nodes
         for enemy in state.enemies {
             if enemy.isDead || enemy.reachedCore { continue }
 
             if let node = enemyNodes[enemy.id] {
-                // Update position
+                // Update position (always, even off-screen)
                 node.position = convertToScene(enemy.position)
 
-                // Update health bar
-                if let healthBar = node.childNode(withName: "healthBar") as? SKSpriteNode {
-                    let healthPercent = enemy.health / enemy.maxHealth
-                    healthBar.xScale = healthPercent
+                // Performance: skip expensive visual updates for off-screen enemies
+                guard paddedRect.contains(node.position) else { continue }
 
-                    // Color based on health
-                    if healthPercent > 0.6 {
-                        healthBar.color = .green
-                    } else if healthPercent > 0.3 {
-                        healthBar.color = .yellow
+                // Health arc indicator — lazy thin arc above enemy, only when damaged
+                let healthFraction = enemy.health / enemy.maxHealth
+                if healthFraction < 1.0 {
+                    let healthArc: SKShapeNode
+                    if let existing = node.childNode(withName: "healthArc") as? SKShapeNode {
+                        healthArc = existing
                     } else {
-                        healthBar.color = .red
+                        healthArc = SKShapeNode()
+                        healthArc.lineWidth = 2
+                        healthArc.lineCap = .round
+                        healthArc.zPosition = 0.2
+                        healthArc.name = "healthArc"
+                        node.addChild(healthArc)
                     }
+
+                    // Arc centered above enemy, ~160° sweep
+                    let arcRadius = enemy.size + 6
+                    let fullStart: CGFloat = .pi / 2 + .pi * 0.44
+                    let fullEnd: CGFloat = .pi / 2 - .pi * 0.44
+                    let sweep = fullStart - fullEnd
+                    let currentEnd = fullStart - sweep * healthFraction
+
+                    let arcPath = CGMutablePath()
+                    arcPath.addArc(center: .zero, radius: arcRadius,
+                                   startAngle: fullStart, endAngle: currentEnd,
+                                   clockwise: true)
+                    healthArc.path = arcPath
+
+                    // Green → Yellow → Red
+                    if healthFraction > 0.6 {
+                        healthArc.strokeColor = UIColor.green
+                    } else if healthFraction > 0.3 {
+                        healthArc.strokeColor = UIColor.yellow
+                    } else {
+                        healthArc.strokeColor = UIColor.red
+                    }
+                } else {
+                    node.childNode(withName: "healthArc")?.removeFromParent()
                 }
 
                 // Update slow effect with orbiting ice crystals
@@ -784,17 +963,49 @@ extension TDGameScene {
                     frostCrystals?.isHidden = true
                 }
 
-                // Tint body when slowed
+                // Hit flash — brief white tint when health drops
+                let healthPercent = enemy.health / enemy.maxHealth
                 if let body = node.childNode(withName: "body") as? SKShapeNode {
-                    if enemy.isSlowed {
-                        body.fillColor = (UIColor(hex: enemy.color) ?? .red).blended(with: .cyan, ratio: 0.3)
-                    } else {
-                        body.fillColor = UIColor(hex: enemy.color) ?? .red
+                    let prevHealth = enemyLastHealth[enemy.id] ?? enemy.maxHealth
+                    if enemy.health < prevHealth {
+                        // Flash white for 0.05s on hit
+                        body.removeAction(forKey: "hitFlash")
+                        let originalFill = body.fillColor
+                        let flash = SKAction.sequence([
+                            SKAction.run { body.fillColor = UIColor.white.withAlphaComponent(0.9) },
+                            SKAction.wait(forDuration: 0.05),
+                            SKAction.run { body.fillColor = originalFill }
+                        ])
+                        body.run(flash, withKey: "hitFlash")
+                    }
+
+                    // Tint body when slowed (only when not flashing)
+                    if body.action(forKey: "hitFlash") == nil {
+                        if enemy.isSlowed {
+                            body.fillColor = (UIColor(hex: enemy.color) ?? .red).blended(with: .cyan, ratio: 0.3)
+                        } else {
+                            body.fillColor = (UIColor(hex: enemy.color) ?? .red).withAlphaComponent(0.85)
+                        }
+                    }
+
+                    // Critical state (<20% HP): body stroke turns red + jitter
+                    if healthPercent <= 0.2 && !enemy.isBoss {
+                        body.strokeColor = UIColor.red
+                        body.lineWidth = 3
+                        if node.action(forKey: "criticalJitter") == nil {
+                            let jitter = SKAction.repeatForever(SKAction.sequence([
+                                SKAction.moveBy(x: CGFloat.random(in: -1.5...1.5), y: CGFloat.random(in: -1.5...1.5), duration: 0.05),
+                                SKAction.move(to: .zero, duration: 0.05)
+                            ]))
+                            body.run(jitter, withKey: "criticalJitter")
+                        }
+                    } else if healthPercent > 0.2 {
+                        body.removeAction(forKey: "criticalJitter")
                     }
                 }
+                enemyLastHealth[enemy.id] = enemy.health
 
                 // Low health glitch effect (under 30% HP)
-                let healthPercent = enemy.health / enemy.maxHealth
                 let damageOverlay = node.childNode(withName: "damageOverlay")
                 if healthPercent <= 0.3 {
                     if damageOverlay == nil {
@@ -814,6 +1025,7 @@ extension TDGameScene {
                 node.position = convertToScene(enemy.position)
                 enemyLayer.addChild(node)
                 enemyNodes[enemy.id] = node
+                enemyLastHealth[enemy.id] = enemy.health
             }
         }
     }
@@ -861,7 +1073,7 @@ extension TDGameScene {
             crystal.fillColor = UIColor.cyan.withAlphaComponent(0.7)
             crystal.strokeColor = UIColor.white.withAlphaComponent(0.9)
             crystal.lineWidth = 1
-            crystal.glowWidth = 3
+            crystal.glowWidth = 0  // PERF: was 3 (GPU Gaussian blur)
             crystal.blendMode = .add
 
             // Position in orbit
@@ -884,14 +1096,14 @@ extension TDGameScene {
             SKAction.customAction(withDuration: 0.5) { node, elapsed in
                 for child in node.children {
                     if let shape = child as? SKShapeNode {
-                        shape.glowWidth = 3 + 2 * sin(elapsed / 0.5 * .pi)
+                        shape.glowWidth = 0  // PERF: was 3 + 2 * sin(elapsed / 0.5 * .pi) (GPU Gaussian blur)
                     }
                 }
             },
             SKAction.customAction(withDuration: 0.5) { node, elapsed in
                 for child in node.children {
                     if let shape = child as? SKShapeNode {
-                        shape.glowWidth = 5 - 2 * sin(elapsed / 0.5 * .pi)
+                        shape.glowWidth = 0  // PERF: was 5 - 2 * sin(elapsed / 0.5 * .pi) (GPU Gaussian blur)
                     }
                 }
             }
@@ -911,7 +1123,7 @@ extension TDGameScene {
         overlay.fillColor = UIColor.red.withAlphaComponent(0.2)
         overlay.strokeColor = UIColor.red.withAlphaComponent(0.5)
         overlay.lineWidth = 1
-        overlay.glowWidth = 4
+        overlay.glowWidth = 0  // PERF: was 4 (GPU Gaussian blur)
         overlay.blendMode = .add
         container.addChild(overlay)
 
@@ -1053,7 +1265,7 @@ extension TDGameScene {
         // Update CPU body stroke color
         if let cpuBody = coreContainer.childNode(withName: "cpuBody") as? SKShapeNode {
             cpuBody.strokeColor = efficiencyColor
-            cpuBody.glowWidth = glowIntensity
+            cpuBody.glowWidth = 0  // PERF: was glowIntensity (GPU Gaussian blur)
         }
 
         // Update inner chip
@@ -1070,7 +1282,7 @@ extension TDGameScene {
         // Update glow ring
         if let glowRing = coreContainer.childNode(withName: "glowRing") as? SKShapeNode {
             glowRing.strokeColor = efficiencyColor.withAlphaComponent(0.3)
-            glowRing.glowWidth = glowIntensity
+            glowRing.glowWidth = 0  // PERF: was glowIntensity (GPU Gaussian blur)
         }
 
         // Pulse effect - more intense when efficiency is low

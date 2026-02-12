@@ -351,21 +351,6 @@ enum L10n {
         }
     }
 
-    // MARK: - Zero-Day
-    enum ZeroDay {
-        static let breachDetected = String(localized: "zeroDay.breachDetected")
-        static let virusDetected = String(localized: "zeroDay.virusDetected")
-        static let efficiencyDraining = String(localized: "zeroDay.efficiencyDraining")
-        static let manualOverride = String(localized: "zeroDay.manualOverride")
-        static let overrideTitle = String(localized: "zeroDay.overrideTitle")
-        static let neutralized = String(localized: "zeroDay.neutralized")
-        static let dataReward = String(localized: "zeroDay.dataReward")
-        static let wattsReward = String(localized: "zeroDay.wattsReward")
-        static let overrideFailed = String(localized: "zeroDay.overrideFailed")
-        static let efficiencyPenalty = String(localized: "zeroDay.efficiencyPenalty")
-        static let indicator = String(localized: "zeroDay.indicator")
-    }
-
     // MARK: - Enemy Indicators
     enum Enemy {
         static let bossIndicator = String(localized: "enemy.bossIndicator")

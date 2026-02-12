@@ -15,6 +15,14 @@ extension TDGameScene {
         // Brighten grid dots during placement (from ambient 0.3 to full visibility)
         gridDotsLayer.run(SKAction.fadeAlpha(to: 1.0, duration: DesignAnimations.Timing.quick))
 
+        // Subtle pulse to draw attention to available slots
+        let pulse = SKAction.sequence([
+            SKAction.scale(to: 1.12, duration: 0.6),
+            SKAction.scale(to: 1.0, duration: 0.6)
+        ])
+        pulse.timingMode = .easeInEaseOut
+        gridDotsLayer.run(SKAction.repeatForever(pulse), withKey: "placementPulse")
+
         // Update grid dots to show only unoccupied slots
         updateGridDotsVisibility()
     }
@@ -26,7 +34,9 @@ extension TDGameScene {
         isInPlacementMode = false
         placementWeaponType = nil
 
-        // Dim grid dots back to ambient visibility
+        // Stop placement pulse and dim grid dots back to ambient visibility
+        gridDotsLayer.removeAction(forKey: "placementPulse")
+        gridDotsLayer.setScale(1.0)
         gridDotsLayer.run(SKAction.fadeAlpha(to: 0.3, duration: DesignAnimations.Timing.quick))
 
         // Remove active slot highlight
@@ -69,7 +79,7 @@ extension TDGameScene {
         outerRing.fillColor = .clear
         outerRing.strokeColor = canAfford ? DesignColors.primaryUI : DesignColors.dangerUI
         outerRing.lineWidth = 3
-        outerRing.glowWidth = 10
+        outerRing.glowWidth = 3.0  // Placement crosshair (1 node, shown during drag only)
         outerRing.alpha = 0.8
         container.addChild(outerRing)
 
@@ -212,12 +222,17 @@ extension TDGameScene {
             }
         }
 
-        // Check for slot selection
-        for (slotId, node) in slotNodes {
-            if node.contains(location) {
-                selectedSlotId = slotId
-                gameStateDelegate?.slotSelected(slotId)
-                return
+        // Check for slot selection (distance-based, no invisible nodes needed)
+        if let state = state {
+            for slot in state.towerSlots where !slot.occupied {
+                let slotPos = convertToScene(slot.position)
+                let dx = location.x - slotPos.x
+                let dy = location.y - slotPos.y
+                if dx * dx + dy * dy < (slot.size / 2) * (slot.size / 2) {
+                    selectedSlotId = slot.id
+                    gameStateDelegate?.slotSelected(slot.id)
+                    return
+                }
             }
         }
 
@@ -314,7 +329,7 @@ extension TDGameScene {
         ghost.fillColor = (UIColor(hex: tower.color) ?? .blue).withAlphaComponent(0.7)
         ghost.strokeColor = .white
         ghost.lineWidth = 2
-        ghost.glowWidth = 5
+        ghost.glowWidth = 2.0  // Drag ghost (1 node, only during drag)
         dragVisual.addChild(ghost)
 
         // Move indicator
@@ -504,7 +519,9 @@ extension TDGameScene {
 
     func updateRangeIndicatorVisibility() {
         for (towerId, node) in towerNodes {
-            if let rangeNode = node.childNode(withName: "range") as? SKShapeNode {
+            // Use cached ref if available, fall back to name lookup for compatibility
+            let rangeNode: SKNode? = towerNodeRefs[towerId]?.rangeNode ?? node.childNode(withName: "range")
+            if let rangeNode = rangeNode as? SKShapeNode {
                 let isSelected = towerId == selectedTowerId
                 rangeNode.isHidden = !isSelected
 

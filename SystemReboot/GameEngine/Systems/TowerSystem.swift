@@ -242,8 +242,8 @@ class TowerSystem {
         for enemy in candidates {
             if enemy.isDead || enemy.reachedCore { continue }
 
-            // Skip Zero-Day enemies (immune to tower damage)
-            if enemy.immuneToTowers || enemy.isZeroDay { continue }
+            // Skip enemies immune to tower damage (e.g. bosses)
+            if enemy.immuneToTowers { continue }
 
             let dx = enemy.x - towerPos.x
             let dy = enemy.y - towerPos.y

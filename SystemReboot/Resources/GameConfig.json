@@ -407,7 +407,7 @@
       "coinValue": 1,
       "size": 12,
       "color": "#ff4444",
-      "shape": "square"
+      "shape": "circle"
     },
     "fast": {
       "id": "fast",
@@ -417,7 +417,7 @@
       "damage": 5,
       "coinValue": 2,
       "size": 8,
-      "color": "#44ff44",
+      "color": "#ff8800",
       "shape": "triangle"
     },
     "tank": {
@@ -428,8 +428,8 @@
       "damage": 20,
       "coinValue": 5,
       "size": 20,
-      "color": "#4444ff",
-      "shape": "hexagon"
+      "color": "#8844ff",
+      "shape": "square"
     },
     "boss": {
       "id": "boss",
@@ -486,8 +486,8 @@
       "damage": 25,
       "coinValue": 15,
       "size": 16,
-      "color": "#ffaa00",
-      "shape": "diamond"
+      "color": "#ff00ff",
+      "shape": "hexagon"
     }
   },
   "spawning": {

@@ -20,11 +20,6 @@ struct GameRewardService {
         let hashReward: Int
     }
 
-    struct BossRewardResult {
-        let xpReward: Int
-        let hashReward: Int
-    }
-
     // MARK: - TD Rewards
 
     /// Calculate XP and Hash rewards for a Tower Defense game
@@ -107,49 +102,6 @@ struct GameRewardService {
 
         // Level up
         checkLevelUp(profile: &profile)
-    }
-
-    // MARK: - Boss Rewards (Standalone / Survivor Boss)
-
-    /// Calculate XP and Hash rewards for a standalone boss defeat
-    static func calculateBossRewards(difficulty: BossDifficulty) -> BossRewardResult {
-        let hashBonus = BalanceConfig.BossRewards.difficultyHashBonus[difficulty] ?? 500
-        let xpReward = 100 + (difficulty == .nightmare ? 100 : difficulty == .hard ? 50 : 0)
-        return BossRewardResult(xpReward: xpReward, hashReward: hashBonus)
-    }
-
-    /// Record a standalone boss defeat onto a player profile (stats + rewards + blueprint + level-up)
-    @discardableResult
-    static func applyBossDefeatResult(to profile: inout PlayerProfile, bossId: String, difficulty: BossDifficulty, time: TimeInterval, kills: Int) -> BlueprintDropSystem.DropResult {
-        // Calculate drop BEFORE recording the kill (for first-kill detection)
-        let dropResult = BlueprintDropSystem.shared.calculateDrop(
-            bossId: bossId,
-            difficulty: difficulty,
-            profile: profile
-        )
-
-        // Record the boss kill
-        profile.recordBossKill(bossId, difficulty: difficulty)
-        profile.survivorStats.bossesDefeated += 1
-        profile.totalKills += kills
-
-        // Rewards
-        let rewards = calculateBossRewards(difficulty: difficulty)
-        profile.addHash(rewards.hashReward)
-        profile.xp += rewards.xpReward
-
-        // Award blueprint if one dropped
-        if let protocolId = dropResult.protocolId {
-            if !profile.hasBlueprint(protocolId) && !profile.isProtocolCompiled(protocolId) {
-                profile.protocolBlueprints.append(protocolId)
-                profile.recordBlueprintDrop(bossId, protocolId: protocolId)
-            }
-        }
-
-        // Level up
-        checkLevelUp(profile: &profile)
-
-        return dropResult
     }
 
     // MARK: - Level Up

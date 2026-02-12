@@ -1277,28 +1277,26 @@ extension TDGameScene {
             }
         }
 
-        // Draw parallel traces
+        // Draw parallel traces (batched into single compound path)
         let isHorizontal = abs(dx) > abs(dy)
+        let compoundPath = CGMutablePath()
         for i in 0..<traceCount {
             let offset = CGFloat(i - traceCount/2) * traceSpacing
 
-            let trace = SKShapeNode()
-            let path = CGMutablePath()
-
             if isHorizontal {
-                path.move(to: CGPoint(x: startPoint.x, y: startPoint.y + offset))
-                path.addLine(to: CGPoint(x: endPoint.x, y: endPoint.y + offset))
+                compoundPath.move(to: CGPoint(x: startPoint.x, y: startPoint.y + offset))
+                compoundPath.addLine(to: CGPoint(x: endPoint.x, y: endPoint.y + offset))
             } else {
-                path.move(to: CGPoint(x: startPoint.x + offset, y: startPoint.y))
-                path.addLine(to: CGPoint(x: endPoint.x + offset, y: endPoint.y))
+                compoundPath.move(to: CGPoint(x: startPoint.x + offset, y: startPoint.y))
+                compoundPath.addLine(to: CGPoint(x: endPoint.x + offset, y: endPoint.y))
             }
-
-            trace.path = path
-            trace.strokeColor = traceColor
-            trace.lineWidth = traceWidth
-            trace.zPosition = -3.5
-            node.addChild(trace)
         }
+
+        let traceNode = SKShapeNode(path: compoundPath)
+        traceNode.strokeColor = traceColor
+        traceNode.lineWidth = traceWidth
+        traceNode.zPosition = -3.5
+        node.addChild(traceNode)
     }
 
 }

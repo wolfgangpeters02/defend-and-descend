@@ -102,9 +102,9 @@ class ParticleEffectService {
         particle.fillColor = psuYellow.withAlphaComponent(0.7)
         particle.strokeColor = psuYellow
         particle.lineWidth = 1
-        particle.glowWidth = 4
+        particle.glowWidth = 1.0  // Short-lived PSU power flow
         particle.blendMode = .add
-        particle.zPosition = 6
+        particle.zPosition = 1.2  // Above path trace, below enemies (effective: 3+1.2=4.2)
         particle.name = "powerParticle"
 
         let startPoint = convertToScene(path.waypoints[0])
@@ -179,14 +179,14 @@ class ParticleEffectService {
 
         let pulseContainer = SKNode()
         pulseContainer.position = convertToScene(towerPosition)
-        pulseContainer.zPosition = 8
+        pulseContainer.zPosition = 2  // Above base effects, below UI
         pulseContainer.name = "tracePulse"
 
         let core = SKShapeNode(circleOfRadius: 10)
         core.fillColor = color.withAlphaComponent(0.9)
         core.strokeColor = color
         core.lineWidth = 2
-        core.glowWidth = 12
+        core.glowWidth = 2.0  // Bright energy pulse (transient ~0.5s)
         core.blendMode = .add
         core.name = "core"
         pulseContainer.addChild(core)
@@ -195,12 +195,13 @@ class ParticleEffectService {
         ring.fillColor = .clear
         ring.strokeColor = color.withAlphaComponent(0.6)
         ring.lineWidth = 3
-        ring.glowWidth = 4
+        ring.glowWidth = 1.5  // Expanding energy ring (transient ~0.3s)
         ring.blendMode = .add
         ring.name = "ring"
         pulseContainer.addChild(ring)
 
-        pathLayer.addChild(pulseContainer)
+        // Add to particleLayer (z=7) not pathLayer (z=3), so pulses render above towers
+        (particleLayer ?? pathLayer).addChild(pulseContainer)
 
         let ringExpand = SKAction.sequence([
             SKAction.group([
@@ -364,18 +365,18 @@ class ParticleEffectService {
         let arcPath = createLightningPath(from: startScene, to: endScene, segments: Int.random(in: 2...3))
 
         let arc = SKShapeNode(path: arcPath)
-        arc.strokeColor = UIColor.yellow.withAlphaComponent(0.4)
-        arc.lineWidth = 1
-        arc.glowWidth = 3
+        arc.strokeColor = UIColor.yellow.withAlphaComponent(0.6)
+        arc.lineWidth = 1.5
+        arc.glowWidth = 2.0  // Electric flash (transient ~0.13s)
         arc.blendMode = .add
         arc.zPosition = -2.5
         arc.name = "voltageArc"
         pathLayer.addChild(arc)
 
         let flashSequence = SKAction.sequence([
-            SKAction.run { arc.glowWidth = 5 },
+            SKAction.run { arc.glowWidth = 3.0 },
             SKAction.wait(forDuration: 0.02),
-            SKAction.run { arc.glowWidth = 2 },
+            SKAction.run { arc.glowWidth = 1.5 },
             SKAction.wait(forDuration: 0.03),
             SKAction.fadeOut(withDuration: 0.08),
             SKAction.removeFromParent()
@@ -421,9 +422,9 @@ class ParticleEffectService {
         spark.position = position
         spark.fillColor = UIColor.white.withAlphaComponent(0.9)
         spark.strokeColor = .clear
-        spark.glowWidth = 8
+        spark.glowWidth = 2.0  // Bright spark flash (transient ~0.1s)
         spark.blendMode = .add
-        spark.zPosition = 8
+        spark.zPosition = 1.5  // Above path elements, below enemies (effective: 3+1.5=4.5)
         pathLayer.addChild(spark)
 
         let sparkAnim = SKAction.sequence([
@@ -587,7 +588,7 @@ class ParticleEffectService {
         ring.fillColor = .clear
         ring.strokeColor = color.withAlphaComponent(0.8)
         ring.lineWidth = 4
-        ring.glowWidth = 6
+        ring.glowWidth = 8  // Short-lived dramatic effect (0.6s)
         ring.blendMode = .add
         ring.zPosition = 100
         ring.setScale(0.5)
@@ -618,7 +619,7 @@ class ParticleEffectService {
         ring.fillColor = .clear
         ring.strokeColor = color.withAlphaComponent(0.9)
         ring.lineWidth = 6
-        ring.glowWidth = 10
+        ring.glowWidth = 10  // Short-lived dramatic effect (0.5s)
         ring.blendMode = .add
         ring.zPosition = 100
 
@@ -675,7 +676,7 @@ class ParticleEffectService {
             particle.fillColor = color.withAlphaComponent(0.9)
             particle.strokeColor = .white.withAlphaComponent(0.5)
             particle.lineWidth = 1
-            particle.glowWidth = size
+            particle.glowWidth = 6  // Short-lived dramatic effect (0.5-1.0s)
             particle.blendMode = .add
             particle.zPosition = 101
 
@@ -728,13 +729,13 @@ class ParticleEffectService {
         outerRing.fillColor = .clear
         outerRing.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
         outerRing.lineWidth = 3
-        outerRing.glowWidth = 8
+        outerRing.glowWidth = 0
         portal.addChild(outerRing)
 
         let innerGlow = SKShapeNode(circleOfRadius: 3)
         innerGlow.fillColor = DesignColors.dangerUI.withAlphaComponent(0.6)
         innerGlow.strokeColor = .clear
-        innerGlow.glowWidth = 15
+        innerGlow.glowWidth = 0
         portal.addChild(innerGlow)
 
         let swirlCount = 6
@@ -743,7 +744,7 @@ class ParticleEffectService {
             let swirl = SKShapeNode(circleOfRadius: 2)
             swirl.fillColor = DesignColors.warningUI
             swirl.strokeColor = .clear
-            swirl.glowWidth = 3
+            swirl.glowWidth = 0
             swirl.position = CGPoint(x: cos(angle) * 8, y: sin(angle) * 8)
             portal.addChild(swirl)
 
@@ -789,6 +790,7 @@ class ParticleEffectService {
             let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...6))
             particle.fillColor = color
             particle.strokeColor = color.withAlphaComponent(0.5)
+            particle.glowWidth = isBoss ? 5 : 3  // Short-lived dramatic effect (0.3-0.8s)
             particle.position = position
             particle.zPosition = 45
 
@@ -858,7 +860,7 @@ class ParticleEffectService {
         for _ in 0..<5 {
             let spark = SKShapeNode(circleOfRadius: CGFloat.random(in: 1...3))
             spark.fillColor = color
-            spark.glowWidth = 2
+            spark.glowWidth = 1.5  // Impact flash (transient ~0.2s)
             spark.position = position
             spark.zPosition = 46
 

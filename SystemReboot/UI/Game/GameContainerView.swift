@@ -24,9 +24,6 @@ struct GameContainerView: View {
     @State private var showGlitchEffect = false
     @State private var scanLineOffset: CGFloat = 0
     @State private var previousHealth: CGFloat = 0
-    @State private var awardedBlueprint: String?  // Protocol ID awarded from boss
-    @State private var showBlueprintDiscovery = false
-    @State private var blueprintDropResult: BlueprintDropSystem.DropResult?
 
     var body: some View {
         GeometryReader { geometry in
@@ -297,15 +294,12 @@ struct GameContainerView: View {
                 }
 
                 // Victory overlay (includes extraction and boss rewards)
-                if showVictory && !showBlueprintDiscovery {
+                if showVictory {
                     GameOverOverlay(
                         victory: true,
                         gameState: gameState,
-                        awardedBlueprint: awardedBlueprint,
                         onRetry: {
                             showVictory = false
-                            awardedBlueprint = nil
-                            blueprintDropResult = nil
                             sceneId = UUID()  // Force SpriteView refresh
                             setupGame()
                         },
@@ -322,17 +316,6 @@ struct GameContainerView: View {
                                 )
                             }
                             onExit()
-                        }
-                    )
-                }
-
-                // Blueprint reveal modal (4-tap decoding experience)
-                if showBlueprintDiscovery, let dropResult = blueprintDropResult, let protocolId = dropResult.protocolId {
-                    BlueprintRevealModal(
-                        protocolId: protocolId,
-                        isFirstKill: dropResult.isFirstKill,
-                        onDismiss: {
-                            showBlueprintDiscovery = false
                         }
                     )
                 }
@@ -452,7 +435,6 @@ struct GameContainerView: View {
 struct GameOverOverlay: View {
     let victory: Bool
     let gameState: GameState?
-    var awardedBlueprint: String? = nil  // Protocol ID awarded from boss
     let onRetry: () -> Void
     let onExit: () -> Void
 
@@ -471,12 +453,6 @@ struct GameOverOverlay: View {
     // Did player extract successfully?
     private var didExtract: Bool {
         gameState?.stats.extracted ?? false
-    }
-
-    // Get protocol name for display
-    private var awardedProtocolName: String? {
-        guard let id = awardedBlueprint else { return nil }
-        return ProtocolLibrary.get(id)?.name
     }
 
     var body: some View {
@@ -574,7 +550,7 @@ struct GameOverOverlay: View {
                             .fill(Color.white.opacity(0.1))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(awardedBlueprint != nil ? Color.purple.opacity(0.5) : Color.green.opacity(0.3), lineWidth: 1)
+                                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
                             )
                     )
                 }

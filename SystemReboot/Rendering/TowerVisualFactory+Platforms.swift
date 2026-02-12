@@ -41,10 +41,11 @@ extension TowerVisualFactory {
         platform.fillColor = color.withAlphaComponent(0.1)
         platform.strokeColor = UIColor.cyan.withAlphaComponent(0.4)
         platform.lineWidth = 1
-        platform.glowWidth = 3
+        platform.glowWidth = 0
         return platform
     }
 
+    // PERF: Batched 6 rune markers into single compound path (6→1 node)
     static func createArcaneCircle(radius: CGFloat, color: UIColor) -> SKShapeNode {
         let container = SKShapeNode()
         container.fillColor = .clear
@@ -55,7 +56,7 @@ extension TowerVisualFactory {
         outer.fillColor = .clear
         outer.strokeColor = color.withAlphaComponent(0.5)
         outer.lineWidth = 2
-        outer.glowWidth = 3
+        outer.glowWidth = 0
         container.addChild(outer)
 
         // Inner circle
@@ -65,16 +66,21 @@ extension TowerVisualFactory {
         inner.lineWidth = 1
         container.addChild(inner)
 
-        // Rune markers
+        // Rune markers — batched into single compound path
+        let markerRadius: CGFloat = 2
+        let markersPath = CGMutablePath()
         for i in 0..<6 {
             let angle = CGFloat(i) * .pi / 3
-            let marker = SKShapeNode(circleOfRadius: 2)
-            marker.fillColor = color
-            marker.strokeColor = .clear
-            marker.glowWidth = 2
-            marker.position = CGPoint(x: cos(angle) * radius, y: sin(angle) * radius)
-            container.addChild(marker)
+            let cx = cos(angle) * radius
+            let cy = sin(angle) * radius
+            markersPath.addEllipse(in: CGRect(x: cx - markerRadius, y: cy - markerRadius,
+                                               width: markerRadius * 2, height: markerRadius * 2))
         }
+        let markers = SKShapeNode(path: markersPath)
+        markers.fillColor = color
+        markers.strokeColor = .clear
+        markers.glowWidth = 0
+        container.addChild(markers)
 
         return container
     }
@@ -145,7 +151,7 @@ extension TowerVisualFactory {
         outer.fillColor = UIColor(hex: "f59e0b")?.withAlphaComponent(0.15) ?? color.withAlphaComponent(0.15)
         outer.strokeColor = UIColor(hex: "fbbf24") ?? .yellow
         outer.lineWidth = 2
-        outer.glowWidth = 4
+        outer.glowWidth = 0
         container.addChild(outer)
 
         // Inner sacred geometry (hexagram)
@@ -171,21 +177,27 @@ extension TowerVisualFactory {
         return container
     }
 
+    // PERF: Batched 3 server rack slot nodes into single compound path (3→1 node)
     static func createServerRackBase(size: CGFloat, color: UIColor) -> SKShapeNode {
         let platform = SKShapeNode(rectOf: CGSize(width: size, height: size), cornerRadius: 3)
         platform.fillColor = UIColor.darkGray.withAlphaComponent(0.7)
         platform.strokeColor = color.withAlphaComponent(0.5)
         platform.lineWidth = 1
 
-        // Server rack slots
+        // Server rack slots — batched into single compound path
+        let slotsPath = CGMutablePath()
+        let slotW = size - 8
+        let slotH: CGFloat = 4
         for i in 0..<3 {
-            let slot = SKShapeNode(rectOf: CGSize(width: size - 8, height: 4), cornerRadius: 1)
-            slot.fillColor = color.withAlphaComponent(0.2)
-            slot.strokeColor = color.withAlphaComponent(0.4)
-            slot.lineWidth = 0.5
-            slot.position = CGPoint(x: 0, y: CGFloat(i - 1) * 8)
-            platform.addChild(slot)
+            let y = CGFloat(i - 1) * 8
+            slotsPath.addRoundedRect(in: CGRect(x: -slotW / 2, y: y - slotH / 2, width: slotW, height: slotH),
+                                      cornerWidth: 1, cornerHeight: 1)
         }
+        let slots = SKShapeNode(path: slotsPath)
+        slots.fillColor = color.withAlphaComponent(0.2)
+        slots.strokeColor = color.withAlphaComponent(0.4)
+        slots.lineWidth = 0.5
+        platform.addChild(slots)
 
         return platform
     }
@@ -195,7 +207,7 @@ extension TowerVisualFactory {
         platform.fillColor = UIColor.black.withAlphaComponent(0.8)
         platform.strokeColor = UIColor(hex: "ef4444") ?? .red
         platform.lineWidth = 2
-        platform.glowWidth = 4
+        platform.glowWidth = 0
 
         return platform
     }

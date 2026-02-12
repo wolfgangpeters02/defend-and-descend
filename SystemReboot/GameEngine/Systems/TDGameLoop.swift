@@ -143,9 +143,6 @@ struct TDGameLoop {
         PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
         PathSystem.updateHashIncome(state: &state, deltaTime: deltaTime)
 
-        // MARK: Zero-Day Events
-        _ = ZeroDaySystem.update(state: &state, deltaTime: deltaTime)
-
         return result
     }
 

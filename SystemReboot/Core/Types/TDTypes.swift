@@ -172,27 +172,6 @@ struct TDGameState {
         return availableBlockerSlots > 0
     }
 
-    // MARK: - System Breach (Zero-Day Boss)
-    // Periodically spawns an unkillable boss that drains efficiency
-    // Player must enter Active/Debugger mode to defeat it
-
-    var zeroDayActive: Bool = false          // Is a Zero-Day boss currently active
-    var zeroDayBossId: String?               // ID of the Zero-Day boss enemy
-    var zeroDayTimer: TimeInterval = 120     // Timer until next Zero-Day (starts at 120s)
-    var zeroDayEfficiencyDrain: CGFloat = BalanceConfig.ZeroDay.efficiencyDrainRate
-    var zeroDayCooldown: TimeInterval = BalanceConfig.ZeroDay.cooldownAfterDefeat
-
-    // Zero-Day constants - reference BalanceConfig
-    static let zeroDayMinSpawnTime: TimeInterval = BalanceConfig.ZeroDay.minSpawnTime
-    static let zeroDayMaxSpawnTime: TimeInterval = BalanceConfig.ZeroDay.maxSpawnTime
-    static let zeroDayEfficiencyDrainRate: CGFloat = BalanceConfig.ZeroDay.efficiencyDrainRate
-
-    /// Check if the Zero-Day boss is alive
-    var isZeroDayAlive: Bool {
-        guard let bossId = zeroDayBossId else { return false }
-        return enemies.contains { $0.id == bossId && !$0.isDead && !$0.reachedCore }
-    }
-
     // MARK: - Integrated Boss System (Super Viruses)
     // Bosses spawn at threat milestones, immune to towers
     // Player must manually engage or let them pass (efficiency loss)
@@ -752,8 +731,6 @@ struct TDEnemy: Identifiable {
     // Lane-based spawning (8-lane motherboard system)
     var laneId: String?  // Which lane this enemy spawned from (e.g., "power", "gpu")
 
-    // Zero-Day (System Breach) properties
-    var isZeroDay: Bool = false        // Is this a Zero-Day boss
     var immuneToTowers: Bool = false   // Cannot be damaged by Firewalls
 
     var position: CGPoint {
@@ -1159,6 +1136,7 @@ class TDGameStateFactory {
         state.cpuTier = playerProfile.globalUpgrades.cpuLevel
         state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
         state.hashStorageCapacity = playerProfile.globalUpgrades.hashStorageCapacity
+        state.powerCapacity = playerProfile.globalUpgrades.powerCapacity
         // Initialize hash from player profile (allows spending earned hash on towers)
         state.hash = min(playerProfile.hash, playerProfile.globalUpgrades.hashStorageCapacity)
 

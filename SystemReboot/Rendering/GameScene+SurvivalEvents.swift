@@ -172,7 +172,7 @@ extension GameScene {
             if let borderColor = SurvivalArenaSystem.getEventBorderColor(state: gameState) {
                 let color = colorFromHex(borderColor)
                 eventBorderNode?.strokeColor = color
-                eventBorderNode?.glowWidth = 5
+                eventBorderNode?.glowWidth = 0  // PERF: was 5 (GPU Gaussian blur)
 
                 // Pulsing effect
                 let pulse = 0.5 + 0.3 * sin(CGFloat(gameState.timeElapsed * 4))
@@ -244,7 +244,7 @@ extension GameScene {
 
                 // Pulsing glow
                 let pulse = 0.7 + 0.3 * sin(CGFloat(gameState.timeElapsed * 3))
-                healingZoneNode?.glowWidth = 8 * pulse
+                healingZoneNode?.glowWidth = 0  // PERF: was 8 * pulse (GPU Gaussian blur)
 
                 // Check if player is in zone - intensify effect
                 let dx = gameState.player.x - zonePos.x
@@ -289,7 +289,7 @@ extension GameScene {
                 // Corrupted visual: purple glow + pulsing
                 if let shapeNode = node as? SKShapeNode {
                     shapeNode.strokeColor = SKColor(red: 0.66, green: 0.33, blue: 0.97, alpha: 1) // #a855f7
-                    shapeNode.glowWidth = 5 + 3 * sin(CGFloat(gameState.timeElapsed * 5))
+                    shapeNode.glowWidth = 0  // PERF: was 5 + 3 * sin(elapsed) (GPU Gaussian blur)
                     shapeNode.lineWidth = 3
                 }
             } else {

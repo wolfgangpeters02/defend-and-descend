@@ -131,7 +131,6 @@ struct TDBossSystem {
             shape: "boss",
             isBoss: true
         )
-        boss.isZeroDay = false
         boss.immuneToTowers = true  // Cannot be damaged by Firewalls
 
         state.enemies.append(boss)
@@ -270,13 +269,11 @@ struct TDBossSystem {
     /// Called when boss fight is won
     static func onBossFightWon(state: inout TDGameState, districtId: String) -> TDBossFightReward {
         guard let difficulty = state.bossSelectedDifficulty else {
-            return TDBossFightReward(hashReward: 0, blueprintDropped: false, nextDistrictUnlocked: nil)
+            return TDBossFightReward(hashReward: 0, nextDistrictUnlocked: nil)
         }
 
         // Calculate rewards
         let hashReward = difficulty.hashReward
-        let blueprintChance = difficulty.blueprintChance
-        let blueprintDropped = CGFloat.random(in: 0...1) < blueprintChance
 
         // Check for first defeat of this district's boss
         var nextDistrictUnlocked: String?
@@ -305,7 +302,6 @@ struct TDBossSystem {
 
         return TDBossFightReward(
             hashReward: hashReward,
-            blueprintDropped: blueprintDropped,
             nextDistrictUnlocked: nextDistrictUnlocked
         )
     }
@@ -339,7 +335,7 @@ struct TDBossSystem {
 
     /// Check if an enemy is a TD boss (immune to towers)
     static func isTDBoss(enemy: TDEnemy) -> Bool {
-        return enemy.immuneToTowers && enemy.isBoss && !enemy.isZeroDay
+        return enemy.immuneToTowers && enemy.isBoss
     }
 }
 
@@ -359,6 +355,5 @@ struct TDBossEngagement {
 
 struct TDBossFightReward {
     let hashReward: Int
-    let blueprintDropped: Bool
     let nextDistrictUnlocked: String?  // District ID that became visible (for first defeat)
 }

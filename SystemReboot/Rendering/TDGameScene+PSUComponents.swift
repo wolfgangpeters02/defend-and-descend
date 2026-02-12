@@ -124,25 +124,128 @@ extension TDGameScene {
             node.addChild(fins)
         }
 
-        // ========== LARGE ELECTROLYTIC CAPACITORS (keep as individual - 12 units) ==========
+        // ========== LARGE ELECTROLYTIC CAPACITORS (PERF: batched static geometry) ==========
+        // Pre-generate positions and sizes
         let bandColors = [PSUColors.capacitorBandBlue, PSUColors.capacitorBandGreen, PSUColors.capacitorBandDarkBlue]
-        var capIndex = 0
+        let capWidth: CGFloat = 55
+        struct CapData {
+            let worldX: CGFloat; let worldY: CGFloat; let h: CGFloat; let bandColor: UIColor
+        }
+        var caps: [CapData] = []
         for _ in 0..<15 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
-            if capIndex >= 12 { break }
+            guard !isNearLane(x, y), caps.count < 12 else { continue }
+            caps.append(CapData(worldX: baseX + x, worldY: baseY + y,
+                                h: CGFloat.random(in: 65...110),
+                                bandColor: bandColors[caps.count % bandColors.count]))
+        }
 
-            let container = createElectrolyticCapacitor(
-                height: CGFloat.random(in: 65...110),
-                bandColor: bandColors[capIndex % bandColors.count],
-                themeColor: themeColor
-            )
-            container.position = CGPoint(x: baseX + x, y: baseY + y)
-            container.zPosition = zPos + 0.2
+        // Batch all static geometry into compound paths
+        let shadowPath = CGMutablePath()
+        let bodyPath = CGMutablePath()
+        let topCapPath = CGMutablePath()
+        let leadsPath = CGMutablePath()
+        var bandPaths: [UIColor: CGMutablePath] = [:]
+        for color in bandColors { bandPaths[color] = CGMutablePath() }
+
+        for cap in caps {
+            let cx = cap.worldX
+            let cy = cap.worldY
+
+            // Shadow (offset by 4, -4)
+            shadowPath.addRoundedRect(in: CGRect(x: cx - capWidth/2 + 4, y: cy - cap.h/2 - 4,
+                                                  width: capWidth, height: cap.h),
+                                       cornerWidth: 8, cornerHeight: 8)
+            // Body
+            bodyPath.addRoundedRect(in: CGRect(x: cx - capWidth/2, y: cy - cap.h/2,
+                                                width: capWidth, height: cap.h),
+                                     cornerWidth: 8, cornerHeight: 8)
+            // Band
+            let bandHeight = cap.h * 0.25
+            bandPaths[cap.bandColor]?.addRoundedRect(
+                in: CGRect(x: cx - capWidth/2 + 2, y: cy + cap.h/2 - bandHeight - 4,
+                           width: capWidth - 4, height: bandHeight),
+                cornerWidth: 4, cornerHeight: 4)
+            // Top cap
+            topCapPath.addEllipse(in: CGRect(x: cx - capWidth/2 + 3, y: cy + cap.h/2 - 8,
+                                              width: capWidth - 6, height: 12))
+            // Leads
+            leadsPath.move(to: CGPoint(x: cx - 12, y: cy - cap.h/2))
+            leadsPath.addLine(to: CGPoint(x: cx - 12, y: cy - cap.h/2 - 15))
+            leadsPath.move(to: CGPoint(x: cx + 12, y: cy - cap.h/2))
+            leadsPath.addLine(to: CGPoint(x: cx + 12, y: cy - cap.h/2 - 15))
+        }
+
+        // Add batched static nodes (6 nodes instead of ~60)
+        let shadowNode = SKShapeNode(path: shadowPath)
+        shadowNode.fillColor = .black.withAlphaComponent(0.12)
+        shadowNode.strokeColor = .clear
+        shadowNode.zPosition = zPos + 0.15
+        node.addChild(shadowNode)
+
+        let bodyNode = SKShapeNode(path: bodyPath)
+        bodyNode.fillColor = PSUColors.capacitorBody
+        bodyNode.strokeColor = themeColor.withAlphaComponent(0.15)
+        bodyNode.lineWidth = 1
+        bodyNode.zPosition = zPos + 0.2
+        node.addChild(bodyNode)
+
+        for (color, path) in bandPaths {
+            let bandNode = SKShapeNode(path: path)
+            bandNode.fillColor = color.withAlphaComponent(0.6)
+            bandNode.strokeColor = color.withAlphaComponent(0.3)
+            bandNode.lineWidth = 1
+            bandNode.zPosition = zPos + 0.21
+            node.addChild(bandNode)
+        }
+
+        let topCapNode = SKShapeNode(path: topCapPath)
+        topCapNode.fillColor = PSUColors.capacitorBody.withAlphaComponent(0.8)
+        topCapNode.strokeColor = themeColor.withAlphaComponent(0.1)
+        topCapNode.lineWidth = 1
+        topCapNode.zPosition = zPos + 0.22
+        node.addChild(topCapNode)
+
+        let leadsNode = SKShapeNode(path: leadsPath)
+        leadsNode.strokeColor = PSUColors.leadWire.withAlphaComponent(0.5)
+        leadsNode.lineWidth = 2
+        leadsNode.zPosition = zPos + 0.18
+        node.addChild(leadsNode)
+
+        // Per-cap animation containers (lightweight: container + breatheGlow + dischargeGlow)
+        for cap in caps {
+            let container = SKNode()
+            container.position = CGPoint(x: cap.worldX, y: cap.worldY)
+            container.zPosition = zPos + 0.25
+
+            let glowRect = CGRect(x: -capWidth/2, y: -cap.h/2, width: capWidth, height: cap.h)
+            let glowPath = CGMutablePath()
+            glowPath.addRoundedRect(in: glowRect, cornerWidth: 8, cornerHeight: 8)
+
+            let breatheGlow = SKShapeNode(path: glowPath)
+            breatheGlow.fillColor = themeColor.withAlphaComponent(0.0)
+            breatheGlow.strokeColor = .clear
+            breatheGlow.name = "breatheGlow"
+            container.addChild(breatheGlow)
+
+            let dischargeGlow = SKShapeNode(path: glowPath)
+            dischargeGlow.fillColor = .clear
+            dischargeGlow.strokeColor = .clear
+            dischargeGlow.name = "dischargeGlow"
+            container.addChild(dischargeGlow)
+
+            let breatheIn = SKAction.customAction(withDuration: 3.0) { [weak breatheGlow] _, elapsed in
+                breatheGlow?.fillColor = themeColor.withAlphaComponent(0.08 * elapsed / 3.0)
+            }
+            let breatheOut = SKAction.customAction(withDuration: 3.0) { [weak breatheGlow] _, elapsed in
+                breatheGlow?.fillColor = themeColor.withAlphaComponent(0.08 * (1 - elapsed / 3.0))
+            }
+            breatheGlow.run(SKAction.repeatForever(SKAction.sequence([breatheIn, breatheOut])),
+                           withKey: "breathing")
+
             node.addChild(container)
             psuCapacitorNodes.append(container)
-            capIndex += 1
         }
 
         // ========== TRANSFORMERS (3 units - reduced) ==========

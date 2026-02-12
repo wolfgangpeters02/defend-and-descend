@@ -11,7 +11,7 @@ extension TowerAnimations {
         let flash = SKShapeNode(circleOfRadius: 100)
         flash.fillColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.3) ?? .yellow.withAlphaComponent(0.3)
         flash.strokeColor = .clear
-        flash.glowWidth = 20
+        flash.glowWidth = 0
         flash.blendMode = .add
         flash.zPosition = 100
 
@@ -39,7 +39,7 @@ extension TowerAnimations {
         let flash = SKShapeNode(circleOfRadius: 50)
         flash.fillColor = UIColor(hex: "ef4444")?.withAlphaComponent(0.5) ?? .red.withAlphaComponent(0.5)
         flash.strokeColor = .clear
-        flash.glowWidth = 15
+        flash.glowWidth = 0
         flash.blendMode = .add
         flash.zPosition = 100
 

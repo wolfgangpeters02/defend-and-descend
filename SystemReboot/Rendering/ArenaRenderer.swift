@@ -177,7 +177,7 @@ class ArenaRenderer {
 
         // Add glow effect for lava
         if hazard.type == "lava" {
-            node.glowWidth = 5
+            node.glowWidth = 1.5  // Lava hazard glow (boss fight only)
 
             // Bubbling effect
             let bubble = SKAction.sequence([

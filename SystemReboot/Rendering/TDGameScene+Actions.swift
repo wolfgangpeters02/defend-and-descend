@@ -54,7 +54,7 @@ extension TDGameScene {
         let flashGreen = SKAction.run {
             if let cpuBody = coreContainer.childNode(withName: "cpuBody") as? SKShapeNode {
                 cpuBody.strokeColor = DesignColors.successUI
-                cpuBody.glowWidth = 15  // Reduced from 30 for performance
+                cpuBody.glowWidth = 4.0  // Recovery flash (transient ~0.3s)
             }
         }
         let wait = SKAction.wait(forDuration: 0.3)
@@ -71,7 +71,7 @@ extension TDGameScene {
         ringNode.strokeColor = DesignColors.successUI
         ringNode.fillColor = .clear
         ringNode.lineWidth = 4
-        ringNode.glowWidth = 8
+        ringNode.glowWidth = 3.0  // Recovery ring (transient ~0.8s)
         ringNode.zPosition = 100
         backgroundLayer.addChild(ringNode)
 
@@ -106,7 +106,7 @@ extension TDGameScene {
         let flashOrange = SKAction.run {
             if let cpuBody = coreContainer.childNode(withName: "cpuBody") as? SKShapeNode {
                 cpuBody.strokeColor = .orange
-                cpuBody.glowWidth = 20
+                cpuBody.glowWidth = 0  // PERF: was 20 (GPU Gaussian blur)
             }
         }
         let wait = SKAction.wait(forDuration: 0.5)
@@ -117,31 +117,19 @@ extension TDGameScene {
 
     // MARK: - Boss Fight Results
 
-    /// Called when boss fight is won - handle rewards and state cleanup
+    /// Called when boss fight is won - handle game state cleanup
+    /// Profile rewards (hash, blueprints, sector unlock) are applied by BossFightCoordinator.onLootCollected()
     func onBossFightWon(districtId: String) {
         guard var state = state else { return }
 
-        // Process the boss fight win through TDBossSystem
+        // Process the boss fight win through TDBossSystem (threat reset, efficiency reset, boss removal)
         let reward = TDBossSystem.onBossFightWon(state: &state, districtId: districtId)
 
-        // Apply hash reward
+        // Apply hash reward to game state
         state.hash += reward.hashReward
-
-        // Sync to profile
-        if let delegate = gameStateDelegate {
-            AppState.shared.updatePlayer { profile in
-                profile.hash = state.hash
-                // Record boss defeat for progression
-                if !profile.defeatedDistrictBosses.contains(districtId) {
-                    profile.defeatedDistrictBosses.append(districtId)
-                }
-            }
-        }
 
         self.state = state
         gameStateDelegate?.gameStateUpdated(state)
-
-        HapticsService.shared.play(.legendary)
     }
 
     /// Called when boss fight is lost and player lets boss pass

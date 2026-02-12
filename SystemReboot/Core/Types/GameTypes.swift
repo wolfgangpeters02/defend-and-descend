@@ -163,11 +163,6 @@ enum BossDifficulty: String, Codable, CaseIterable {
         return BalanceConfig.BossDifficultyConfig.hashRewards[rawValue] ?? 1000
     }
 
-    /// Blueprint drop chance (from BalanceConfig)
-    var blueprintChance: CGFloat {
-        return BalanceConfig.BossDifficultyConfig.blueprintChances[rawValue] ?? 0.05
-    }
-
     /// Display name for UI
     var displayName: String {
         return self.rawValue

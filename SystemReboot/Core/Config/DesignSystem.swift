@@ -69,26 +69,23 @@ enum DesignColors {
     static let gridLineUI = UIColor(hex: "1a2332") ?? .darkGray
     static let gridDotUI = UIColor(hex: "2a3a4a") ?? .darkGray
 
-    // Enemy tier colors - virus classification
-    static let enemyTier1 = Color(hex: "ef4444") ?? Color.red         // Red - basic viruses
-    static let enemyTier2 = Color(hex: "f97316") ?? Color.orange      // Orange - medium threats
-    static let enemyTier3 = Color(hex: "a855f7") ?? Color.purple      // Purple - advanced threats
-    static let enemyTier4 = Color.white                               // White (with color cycle) - boss
-    static let zeroDayVirus = Color(hex: "9933ff") ?? Color.purple    // Deep purple/violet - Zero-Day
+    // Enemy tier colors - virus classification (unified color language)
+    static let enemyTier1 = Color(hex: "ff4444") ?? Color.red         // Red - basic viruses
+    static let enemyTier2 = Color(hex: "ff8800") ?? Color.orange      // Orange - fast threats
+    static let enemyTier3 = Color(hex: "8844ff") ?? Color.purple      // Purple - tank threats
+    static let enemyTier4 = Color(hex: "ff00ff") ?? Color.pink        // Magenta - elite threats
+    static let enemyBoss = Color.white                                // White (with color cycle) - boss
 
-    static let enemyTier1UI = UIColor(hex: "ef4444") ?? .red
-    static let enemyTier2UI = UIColor(hex: "f97316") ?? .orange
-    static let enemyTier3UI = UIColor(hex: "a855f7") ?? .purple
-    static let enemyTier4UI = UIColor.white
-    static let zeroDayVirusUI = UIColor(hex: "9933ff") ?? .purple
+    static let enemyTier1UI = UIColor(hex: "ff4444") ?? .red
+    static let enemyTier2UI = UIColor(hex: "ff8800") ?? .orange
+    static let enemyTier3UI = UIColor(hex: "8844ff") ?? .purple
+    static let enemyTier4UI = UIColor(hex: "ff00ff") ?? .magenta
+    static let enemyBossUI = UIColor.white
 
     /// Get enemy color based on tier (1-4+)
-    static func enemyColor(for tier: Int, isBoss: Bool = false, isZeroDay: Bool = false) -> UIColor {
-        if isZeroDay {
-            return zeroDayVirusUI
-        }
+    static func enemyColor(for tier: Int, isBoss: Bool = false) -> UIColor {
         if isBoss {
-            return enemyTier4UI
+            return enemyBossUI
         }
         switch tier {
         case 1: return enemyTier1UI

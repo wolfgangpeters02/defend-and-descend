@@ -48,7 +48,7 @@ extension TowerVisualFactory {
         shard.fillColor = color.withAlphaComponent(0.8)
         shard.strokeColor = .cyan
         shard.lineWidth = 1
-        shard.glowWidth = 3
+        shard.glowWidth = 1.0  // Frost shimmer (3 shards per tower)
         shard.position = CGPoint(x: cos(angle) * radius, y: sin(angle) * radius)
         shard.zRotation = angle + .pi / 2
         container.addChild(shard)
@@ -107,9 +107,11 @@ extension TowerVisualFactory {
     }
 
     // MARK: - Corner Bolts
+    // PERF: Batched 4 individual bolt nodes into single compound path (4→1 node)
 
     static func addCornerBolts(to container: SKNode, size: CGFloat, color: UIColor) {
         let offset = size / 2 - 4
+        let boltRadius: CGFloat = 3
         let positions = [
             CGPoint(x: -offset, y: -offset),
             CGPoint(x: offset, y: -offset),
@@ -117,15 +119,18 @@ extension TowerVisualFactory {
             CGPoint(x: offset, y: offset)
         ]
 
-        for (i, pos) in positions.enumerated() {
-            let bolt = SKShapeNode(circleOfRadius: 3)
-            bolt.fillColor = .gray
-            bolt.strokeColor = color.withAlphaComponent(0.5)
-            bolt.lineWidth = 1
-            bolt.position = pos
-            bolt.name = "bolt_\(i)"
-            container.addChild(bolt)
+        let boltsPath = CGMutablePath()
+        for pos in positions {
+            boltsPath.addEllipse(in: CGRect(x: pos.x - boltRadius, y: pos.y - boltRadius,
+                                             width: boltRadius * 2, height: boltRadius * 2))
         }
+
+        let bolts = SKShapeNode(path: boltsPath)
+        bolts.fillColor = .gray
+        bolts.strokeColor = color.withAlphaComponent(0.5)
+        bolts.lineWidth = 1
+        bolts.name = "bolts"
+        container.addChild(bolts)
     }
 
     // MARK: - Frost Particles
@@ -137,6 +142,7 @@ extension TowerVisualFactory {
     }
 
     // MARK: - Capacitor Nodes
+    // PERF: Batched 4 individual capacitor nodes into single compound path (4→1 node)
 
     static func addCapacitorNodes(to container: SKNode, color: UIColor) {
         let positions = [
@@ -146,16 +152,19 @@ extension TowerVisualFactory {
             CGPoint(x: 14, y: 14)
         ]
 
-        for (i, pos) in positions.enumerated() {
-            let capacitor = SKShapeNode(rectOf: CGSize(width: 6, height: 8), cornerRadius: 1)
-            capacitor.fillColor = color.withAlphaComponent(0.5)
-            capacitor.strokeColor = color
-            capacitor.lineWidth = 1
-            capacitor.glowWidth = 2
-            capacitor.position = pos
-            capacitor.name = "capacitor_\(i)"
-            container.addChild(capacitor)
+        let capsPath = CGMutablePath()
+        for pos in positions {
+            capsPath.addRoundedRect(in: CGRect(x: pos.x - 3, y: pos.y - 4, width: 6, height: 8),
+                                     cornerWidth: 1, cornerHeight: 1)
         }
+
+        let caps = SKShapeNode(path: capsPath)
+        caps.fillColor = color.withAlphaComponent(0.5)
+        caps.strokeColor = color
+        caps.lineWidth = 1
+        caps.glowWidth = 0
+        caps.name = "capacitors"
+        container.addChild(caps)
     }
 
     // MARK: - Hazard Stripes
@@ -180,21 +189,22 @@ extension TowerVisualFactory {
     }
 
     // MARK: - Divine Rays
+    // PERF: Batched 4 individual ray nodes into single compound path (4→1 node)
 
     static func addDivineRays(to container: SKNode, color: UIColor) {
+        let raysPath = CGMutablePath()
         for i in 0..<4 {
             let angle = CGFloat(i) * .pi / 2
-            let rayPath = UIBezierPath()
-            rayPath.move(to: CGPoint(x: cos(angle) * 20, y: sin(angle) * 20))
-            rayPath.addLine(to: CGPoint(x: cos(angle) * 40, y: sin(angle) * 40))
-
-            let ray = SKShapeNode(path: rayPath.cgPath)
-            ray.strokeColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.3) ?? .yellow.withAlphaComponent(0.3)
-            ray.lineWidth = 3
-            ray.glowWidth = 5
-            ray.blendMode = .add
-            ray.name = "divineRay_\(i)"
-            container.addChild(ray)
+            raysPath.move(to: CGPoint(x: cos(angle) * 20, y: sin(angle) * 20))
+            raysPath.addLine(to: CGPoint(x: cos(angle) * 40, y: sin(angle) * 40))
         }
+
+        let rays = SKShapeNode(path: raysPath)
+        rays.strokeColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.4) ?? .yellow.withAlphaComponent(0.4)
+        rays.lineWidth = 3
+        rays.glowWidth = 1.5  // Divine radiance (1 batched node per legendary tower)
+        rays.blendMode = .add
+        rays.name = "divineRays"
+        container.addChild(rays)
     }
 }

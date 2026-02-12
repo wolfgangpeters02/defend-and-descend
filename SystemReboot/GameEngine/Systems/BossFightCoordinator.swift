@@ -110,9 +110,14 @@ class BossFightCoordinator: ObservableObject {
         }
 
         let districtId = currentBossDistrictId ?? SectorID.power.rawValue
+        let bossId = activeBossType ?? "cyberboss"
+        let difficulty = selectedBossDifficulty
 
         // Apply all rewards to player profile
         AppState.shared.updatePlayer { profile in
+            // Record the boss kill for drop system tracking (pity, diminishing returns)
+            profile.recordBossKill(bossId, difficulty: difficulty)
+
             // Add hash reward
             profile.addHash(reward.totalHashReward)
 
@@ -121,10 +126,11 @@ class BossFightCoordinator: ObservableObject {
                 _ = SectorUnlockSystem.shared.recordBossDefeat(districtId, profile: &profile)
             }
 
-            // Add protocol blueprint if dropped
+            // Add protocol blueprint if dropped + record for pity tracking
             if let protocolId = reward.droppedProtocolId,
                !profile.protocolBlueprints.contains(protocolId) {
                 profile.protocolBlueprints.append(protocolId)
+                profile.recordBlueprintDrop(bossId, protocolId: protocolId)
             }
         }
 

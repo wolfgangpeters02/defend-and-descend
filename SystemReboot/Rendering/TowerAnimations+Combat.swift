@@ -200,7 +200,7 @@ extension TowerAnimations {
             spark.position = CGPoint(x: 0, y: 22)
             spark.fillColor = UIColor.cyan
             spark.strokeColor = .clear
-            spark.glowWidth = 3
+            spark.glowWidth = 0
             spark.blendMode = .add
             spark.zPosition = 15
 
@@ -300,7 +300,7 @@ extension TowerAnimations {
             crystal.fillColor = UIColor.cyan.withAlphaComponent(CGFloat.random(in: 0.5...0.8))
             crystal.strokeColor = UIColor.white.withAlphaComponent(0.6)
             crystal.lineWidth = 1
-            crystal.glowWidth = 2
+            crystal.glowWidth = 0
             crystal.blendMode = .add
             crystal.zPosition = 15
             barrel.addChild(crystal)
@@ -429,13 +429,13 @@ extension TowerAnimations {
             let intensify = SKAction.sequence([
                 SKAction.run {
                     if let shape = glow.children.first as? SKShapeNode {
-                        shape.glowWidth = 8
+                        shape.glowWidth = 0
                     }
                 },
                 SKAction.wait(forDuration: 0.3),
                 SKAction.run {
                     if let shape = glow.children.first as? SKShapeNode {
-                        shape.glowWidth = 5
+                        shape.glowWidth = 0
                     }
                 }
             ])
@@ -460,21 +460,17 @@ extension TowerAnimations {
 
     /// Play charging animation (for beam/laser types)
     static func playChargingAnimation(node: SKNode, duration: TimeInterval, color: UIColor) {
-        // Capacitor fill animation
-        if let platform = node.childNode(withName: "basePlatform") {
-            for i in 0..<4 {
-                if let capacitor = platform.childNode(withName: "capacitor_\(i)") as? SKShapeNode {
-                    let chargeDelay = duration * Double(i) / 4.0
-                    let charge = SKAction.sequence([
-                        SKAction.wait(forDuration: chargeDelay),
-                        SKAction.run {
-                            capacitor.fillColor = color
-                            capacitor.glowWidth = 6
-                        }
-                    ])
-                    capacitor.run(charge)
+        // Capacitor fill animation (batched node)
+        if let platform = node.childNode(withName: "basePlatform"),
+           let capacitors = platform.childNode(withName: "capacitors") as? SKShapeNode {
+            let charge = SKAction.sequence([
+                SKAction.wait(forDuration: duration * 0.25),
+                SKAction.run {
+                    capacitors.fillColor = color
+                    capacitors.glowWidth = 0
                 }
-            }
+            ])
+            capacitors.run(charge)
         }
 
         // Lens intensify
@@ -483,7 +479,7 @@ extension TowerAnimations {
                 let charge = SKAction.sequence([
                     SKAction.group([
                         SKAction.scale(to: 1.3, duration: duration),
-                        SKAction.run { lens.glowWidth = 10 }
+                        SKAction.run { lens.glowWidth = 0 }
                     ])
                 ])
                 lens.run(charge)
@@ -493,19 +489,16 @@ extension TowerAnimations {
 
     /// Reset charging animation
     static func resetChargingAnimation(node: SKNode, color: UIColor) {
-        if let platform = node.childNode(withName: "basePlatform") {
-            for i in 0..<4 {
-                if let capacitor = platform.childNode(withName: "capacitor_\(i)") as? SKShapeNode {
-                    capacitor.fillColor = color.withAlphaComponent(0.5)
-                    capacitor.glowWidth = 2
-                }
-            }
+        if let platform = node.childNode(withName: "basePlatform"),
+           let capacitors = platform.childNode(withName: "capacitors") as? SKShapeNode {
+            capacitors.fillColor = color.withAlphaComponent(0.5)
+            capacitors.glowWidth = 0
         }
 
         if let body = node.childNode(withName: "body") as? SKShapeNode {
             if let lens = body.childNode(withName: "lens") as? SKShapeNode {
                 lens.run(SKAction.scale(to: 1.0, duration: 0.2))
-                lens.glowWidth = 4
+                lens.glowWidth = 0
             }
         }
     }

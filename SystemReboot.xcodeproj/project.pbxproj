@@ -36,7 +36,6 @@
 		7584C9579299C011354D004E /* MegaBoardRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */; };
 		80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */; };
 		8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC456BE2F341A8C1006B747 /* CoreSystem.swift */; };
-		85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */; };
 		8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */; };
 		TDCOLSYBL01 /* TDCollisionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDCOLSYRF01 /* TDCollisionSystem.swift */; };
 		TDGMLPBL001 /* TDGameLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGMLPRF001 /* TDGameLoop.swift */; };
@@ -256,7 +255,6 @@
 		TDGCVHDRF01 /* TDGameContainerView+HUD.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+HUD.swift"; sourceTree = "<group>"; };
 		TDGCVTWRF01 /* TDGameContainerView+Towers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Towers.swift"; sourceTree = "<group>"; };
 		TDGCVPNRF01 /* TDGameContainerView+Panels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Panels.swift"; sourceTree = "<group>"; };
-		CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZeroDaySystem.swift; sourceTree = "<group>"; };
 		D0730EB976BE58FD41672919 /* SectorSchematics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorSchematics.swift; sourceTree = "<group>"; };
 		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
 		ENTIDFILE1 /* EntityIDs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntityIDs.swift; sourceTree = "<group>"; };
@@ -560,7 +558,6 @@
 				09DD228498839C35BD9C1D41 /* PathSystem.swift */,
 				9BC456BE2F341A8C1006B747 /* CoreSystem.swift */,
 				FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */,
-				CD9E6ED7EECE5CEDDC65F8CA /* ZeroDaySystem.swift */,
 				SURVARENA /* SurvivalArenaSystem.swift */,
 				B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */,
 				F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */,
@@ -817,7 +814,6 @@
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
-				85D742892A02CDAC50FA930C /* ZeroDaySystem.swift in Sources */,
 				469B93F994E728C789F86031 /* Protocol.swift in Sources */,
 				ENTID00001 /* EntityIDs.swift in Sources */,
 				D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */,

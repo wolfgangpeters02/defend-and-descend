@@ -54,7 +54,6 @@ struct FreezeRecoveryService {
     }
 
     /// Restore efficiency by setting the leak counter directly
-    /// Used for non-freeze efficiency adjustments (e.g., zero-day bonus)
     static func restoreEfficiency(state: inout TDGameState, toLeakCount leakCount: Int) {
         state.leakCounter = max(0, leakCount)
     }

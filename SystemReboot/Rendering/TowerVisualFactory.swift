@@ -65,23 +65,23 @@ final class TowerVisualFactory {
         let archetype = TowerArchetype.from(weaponType: weaponType)
         let rarityTier = RarityTier.from(rarity)
 
-        // Layer 1: Outer glow aura (largest, softest)
-        let outerGlow = createOuterGlow(color: color, archetype: archetype, rarity: rarityTier)
-        outerGlow.name = "outerGlow"
-        outerGlow.zPosition = -3
-        container.addChild(outerGlow)
-
-        // Layer 2: Mid glow (medium intensity)
-        let midGlow = createMidGlow(color: color, archetype: archetype, rarity: rarityTier)
-        midGlow.name = "midGlow"
-        midGlow.zPosition = -2
-        container.addChild(midGlow)
-
-        // Layer 3: Core glow (tight, bright)
-        let coreGlow = createCoreGlow(color: color, archetype: archetype)
-        coreGlow.name = "glow"
-        coreGlow.zPosition = -1
-        container.addChild(coreGlow)
+        // Single glow layer (Performance: collapsed from 3 layers to 1)
+        let baseRadius: CGFloat = archetype == .legendary ? 22 : 18
+        let glowOpacity: CGFloat = rarityTier == .legendary ? 0.35 : 0.25
+        let glow = SKShapeNode(circleOfRadius: baseRadius)
+        glow.fillColor = color.withAlphaComponent(glowOpacity)
+        glow.strokeColor = color.withAlphaComponent(0.4)
+        glow.lineWidth = 1.5
+        glow.blendMode = .add
+        glow.name = "glow"
+        glow.zPosition = -1
+        // Selective glow: Legendary/Epic get subtle halo, others stay flat
+        switch rarityTier {
+        case .legendary: glow.glowWidth = 2.5
+        case .epic: glow.glowWidth = 1.5
+        default: glow.glowWidth = 0
+        }
+        container.addChild(glow)
 
         // Layer 3.5: Rarity ring (colored outline around base)
         let rarityRing = createRarityRing(rarity: rarityTier)
@@ -129,32 +129,9 @@ final class TowerVisualFactory {
         levelIndicator.zPosition = 4
         container.addChild(levelIndicator)
 
-        // Range indicator (hidden by default)
-        let rangeIndicator = createRangeIndicator(range: range, color: color)
-        rangeIndicator.name = "range"
-        rangeIndicator.isHidden = true
-        rangeIndicator.zPosition = -5
-        container.addChild(rangeIndicator)
-
-        // Cooldown arc (hidden by default)
-        let cooldownArc = createCooldownArc(color: color)
-        cooldownArc.name = "cooldown"
-        cooldownArc.isHidden = true
-        cooldownArc.zPosition = 5
-        container.addChild(cooldownArc)
-
-        // LOD detail container
-        let lodDetail = createLODDetail(
-            damage: damage,
-            attackSpeed: attackSpeed,
-            projectileCount: projectileCount,
-            level: level,
-            color: color
-        )
-        lodDetail.name = "lodDetail"
-        lodDetail.alpha = 0
-        lodDetail.zPosition = 20
-        container.addChild(lodDetail)
+        // NOTE: Range indicator, cooldown arc, and LOD detail are created lazily
+        // on first access in TDGameScene+EntityVisuals.swift to save ~6 nodes per tower.
+        // Muzzle flash is kept here because it's attached to barrel and used frequently.
 
         // Start idle animations
         TowerAnimations.startIdleAnimation(node: container, archetype: archetype, color: color)
@@ -173,7 +150,7 @@ final class TowerVisualFactory {
         let glow = SKShapeNode(circleOfRadius: baseRadius)
         glow.fillColor = color.withAlphaComponent(glowOpacity)
         glow.strokeColor = .clear
-        glow.glowWidth = 8  // Reduced from 15 for performance
+        glow.glowWidth = 0  // Disabled for performance (GPU Gaussian blur)
         glow.blendMode = .add
         container.addChild(glow)
 
@@ -183,7 +160,7 @@ final class TowerVisualFactory {
             ring.fillColor = .clear
             ring.strokeColor = color.withAlphaComponent(0.1)
             ring.lineWidth = 1
-            ring.glowWidth = 3
+            ring.glowWidth = 0
             ring.name = "outerRing"
             container.addChild(ring)
         }
@@ -201,7 +178,7 @@ final class TowerVisualFactory {
         glow.fillColor = color.withAlphaComponent(glowOpacity)
         glow.strokeColor = color.withAlphaComponent(0.15)
         glow.lineWidth = 1
-        glow.glowWidth = 8
+        glow.glowWidth = 0
         glow.blendMode = .add
         container.addChild(glow)
 
@@ -217,7 +194,7 @@ final class TowerVisualFactory {
         glow.fillColor = color.withAlphaComponent(0.4)
         glow.strokeColor = color.withAlphaComponent(0.6)
         glow.lineWidth = 2
-        glow.glowWidth = 5
+        glow.glowWidth = 0
         glow.blendMode = .add
         container.addChild(glow)
 
@@ -225,7 +202,7 @@ final class TowerVisualFactory {
         let highlight = SKShapeNode(circleOfRadius: 4)
         highlight.fillColor = UIColor.white.withAlphaComponent(0.8)
         highlight.strokeColor = .clear
-        highlight.glowWidth = 3
+        highlight.glowWidth = 0
         highlight.blendMode = .add
         highlight.name = "coreHighlight"
         container.addChild(highlight)
@@ -362,7 +339,7 @@ final class TowerVisualFactory {
         spike.fillColor = color.withAlphaComponent(0.8)
         spike.strokeColor = .cyan
         spike.lineWidth = 1
-        spike.glowWidth = 4
+        spike.glowWidth = 0
         spike.position = CGPoint(x: 0, y: 8)
         barrel.addChild(spike)
 
@@ -371,7 +348,7 @@ final class TowerVisualFactory {
         tip.fillColor = .cyan
         tip.strokeColor = .white
         tip.lineWidth = 1
-        tip.glowWidth = 6
+        tip.glowWidth = 0
         tip.position = CGPoint(x: 0, y: 18)
         barrel.addChild(tip)
 
@@ -386,7 +363,7 @@ final class TowerVisualFactory {
         orb.fillColor = color
         orb.strokeColor = .white
         orb.lineWidth = 1
-        orb.glowWidth = 8
+        orb.glowWidth = 0
         orb.blendMode = .add
         orb.position = CGPoint(x: 0, y: 18)
         orb.name = "emitterOrb"
@@ -396,7 +373,7 @@ final class TowerVisualFactory {
         let trail = SKShapeNode(rectOf: CGSize(width: 2, height: 12), cornerRadius: 1)
         trail.fillColor = color.withAlphaComponent(0.5)
         trail.strokeColor = .clear
-        trail.glowWidth = 3
+        trail.glowWidth = 0
         trail.position = CGPoint(x: 0, y: 6)
         barrel.addChild(trail)
 
@@ -411,7 +388,7 @@ final class TowerVisualFactory {
         lens.fillColor = color.lighter(by: 0.3)
         lens.strokeColor = .white
         lens.lineWidth = 2
-        lens.glowWidth = 4
+        lens.glowWidth = 0
         lens.position = CGPoint(x: 0, y: 12)
         lens.name = "focusLens"
         barrel.addChild(lens)
@@ -427,7 +404,7 @@ final class TowerVisualFactory {
         antenna.fillColor = color
         antenna.strokeColor = .cyan
         antenna.lineWidth = 1
-        antenna.glowWidth = 3
+        antenna.glowWidth = 0
         antenna.position = CGPoint(x: 0, y: 11)
         barrel.addChild(antenna)
 
@@ -436,7 +413,7 @@ final class TowerVisualFactory {
         sphere.fillColor = .cyan
         sphere.strokeColor = .white
         sphere.lineWidth = 1
-        sphere.glowWidth = 8
+        sphere.glowWidth = 0
         sphere.position = CGPoint(x: 0, y: 24)
         sphere.name = "teslaSphere"
         barrel.addChild(sphere)
@@ -467,7 +444,7 @@ final class TowerVisualFactory {
         let beam = SKShapeNode(rectOf: CGSize(width: 4, height: 40), cornerRadius: 2)
         beam.fillColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.3) ?? .yellow.withAlphaComponent(0.3)
         beam.strokeColor = .clear
-        beam.glowWidth = 8
+        beam.glowWidth = 0
         beam.blendMode = .add
         beam.position = CGPoint(x: 0, y: 20)
         beam.name = "divineBeam"
@@ -491,7 +468,7 @@ final class TowerVisualFactory {
             emitter.fillColor = color
             emitter.strokeColor = .white
             emitter.lineWidth = 1
-            emitter.glowWidth = 3
+            emitter.glowWidth = 0
             emitter.position = pos
             emitter.name = "emitter_\(i)"
             barrel.addChild(emitter)
@@ -508,7 +485,7 @@ final class TowerVisualFactory {
         glitch.fillColor = UIColor(hex: "ef4444")?.withAlphaComponent(0.8) ?? .red.withAlphaComponent(0.8)
         glitch.strokeColor = .white
         glitch.lineWidth = 1
-        glitch.glowWidth = 4
+        glitch.glowWidth = 0
         glitch.position = CGPoint(x: 0, y: 7)
         glitch.name = "glitchEmitter"
         barrel.addChild(glitch)
@@ -526,7 +503,7 @@ final class TowerVisualFactory {
         flash.fillColor = color.lighter(by: 0.4)
         flash.strokeColor = .white
         flash.lineWidth = 2
-        flash.glowWidth = 15
+        flash.glowWidth = 0
         flash.blendMode = .add
         container.addChild(flash)
 
@@ -535,7 +512,7 @@ final class TowerVisualFactory {
         ring.fillColor = .clear
         ring.strokeColor = color
         ring.lineWidth = 2
-        ring.glowWidth = 8
+        ring.glowWidth = 0
         ring.blendMode = .add
         container.addChild(ring)
 

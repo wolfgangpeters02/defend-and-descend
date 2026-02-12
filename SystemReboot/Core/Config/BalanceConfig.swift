@@ -652,46 +652,6 @@ struct BalanceConfig {
         static let contactCooldown: Double = 0.5       // Contact damage cooldown
     }
 
-    // MARK: - Zero-Day System (TD Mode Boss)
-
-    struct ZeroDay {
-        /// Minimum waves before Zero-Day can spawn
-        static let minWavesBeforeSpawn: Int = 3
-
-        /// Minimum time between Zero-Day spawns
-        static let minSpawnTime: TimeInterval = 90
-
-        /// Maximum time between Zero-Day spawns
-        static let maxSpawnTime: TimeInterval = 180
-
-        /// Cooldown after defeating Zero-Day
-        static let cooldownAfterDefeat: TimeInterval = 180
-
-        /// Efficiency drain rate per second while Zero-Day is active
-        static let efficiencyDrainRate: CGFloat = 2.0
-
-        /// Hash bonus for defeating Zero-Day
-        static let defeatHashBonus: Int = 525
-
-        /// Efficiency restored when Zero-Day is defeated
-        static let defeatEfficiencyRestore: Int = 30
-
-        /// Maximum leak counter (100% efficiency loss)
-        static let maxLeakCounter: Int = 20
-
-        /// Leak counter increase when player loses Zero-Day boss fight
-        static let defeatLeakPenalty: Int = 5
-
-        /// Zero-Day base health
-        static let baseHealth: CGFloat = 9999
-
-        /// Zero-Day movement speed
-        static let speed: CGFloat = 30
-
-        /// Zero-Day visual size
-        static let size: CGFloat = 60
-    }
-
     // MARK: - Survival Events
 
     struct SurvivalEvents {
@@ -2005,12 +1965,6 @@ struct BalanceConfig {
         static let decryptAnimationDuration: TimeInterval = 1.5
     }
 
-    // MARK: - Zero-Day Boss Fight
-
-    struct ZeroDayFight {
-        /// Timer warning threshold (seconds) - changes color when below this
-        static let timerWarningThreshold: TimeInterval = 10.0
-    }
 }
 
 // MARK: - Balance Helpers
@@ -2367,15 +2321,6 @@ extension BalanceConfig {
             "trojanWyrm": trojanWyrmDict
         ]
 
-        let zeroDayDict: [String: Any] = [
-            "baseHealth": Double(ZeroDay.baseHealth),
-            "speed": Double(ZeroDay.speed),
-            "efficiencyDrainRate": Double(ZeroDay.efficiencyDrainRate),
-            "minWavesBeforeSpawn": ZeroDay.minWavesBeforeSpawn,
-            "defeatHashBonus": ZeroDay.defeatHashBonus,
-            "defeatEfficiencyRestore": ZeroDay.defeatEfficiencyRestore
-        ]
-
         let overclockDict: [String: Any] = [
             "duration": Overclock.duration,
             "hashMultiplier": Double(Overclock.hashMultiplier),
@@ -2450,7 +2395,6 @@ extension BalanceConfig {
             "dropRates": dropsDict,
             "powerGrid": powerGridDict,
             "bosses": bossesDict,
-            "zeroDay": zeroDayDict,
             "overclock": overclockDict,
             "hashEconomy": hashEconomyDict,
             "protocolScaling": protocolScalingDict,

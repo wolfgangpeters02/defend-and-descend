@@ -44,7 +44,7 @@ extension TowerVisualFactory {
         outerRing.fillColor = .clear
         outerRing.strokeColor = color
         outerRing.lineWidth = 2
-        outerRing.glowWidth = 2
+        outerRing.glowWidth = 0
         outerRing.name = "outerRing"
         container.addChild(outerRing)
 
@@ -76,7 +76,7 @@ extension TowerVisualFactory {
         centerDot.fillColor = color
         centerDot.strokeColor = .white
         centerDot.lineWidth = 1
-        centerDot.glowWidth = 4
+        centerDot.glowWidth = 0
         centerDot.name = "centerDot"
         container.addChild(centerDot)
 
@@ -147,7 +147,7 @@ extension TowerVisualFactory {
         let ammoGlow = SKShapeNode(circleOfRadius: 6)
         ammoGlow.fillColor = color.lighter(by: 0.3)
         ammoGlow.strokeColor = .clear
-        ammoGlow.glowWidth = 4
+        ammoGlow.glowWidth = 0
         ammoGlow.blendMode = .add
         ammoGlow.name = "ammoGlow"
         body.addChild(ammoGlow)
@@ -179,7 +179,7 @@ extension TowerVisualFactory {
         crystal.fillColor = color.withAlphaComponent(0.7)
         crystal.strokeColor = UIColor.cyan
         crystal.lineWidth = 2
-        crystal.glowWidth = 6
+        crystal.glowWidth = 0
 
         // Inner crystal facet
         let innerPath = UIBezierPath()
@@ -216,7 +216,7 @@ extension TowerVisualFactory {
         orbPlatform.fillColor = color.withAlphaComponent(0.3)
         orbPlatform.strokeColor = color
         orbPlatform.lineWidth = 2
-        orbPlatform.glowWidth = 4
+        orbPlatform.glowWidth = 0
         container.addChild(orbPlatform)
 
         // Central power orb
@@ -224,7 +224,7 @@ extension TowerVisualFactory {
         orb.fillColor = color
         orb.strokeColor = .white
         orb.lineWidth = 1
-        orb.glowWidth = 8
+        orb.glowWidth = 0
         orb.blendMode = .add
         orb.name = "powerOrb"
         container.addChild(orb)
@@ -249,7 +249,7 @@ extension TowerVisualFactory {
         rune.fillColor = color.withAlphaComponent(0.8)
         rune.strokeColor = .white
         rune.lineWidth = 1
-        rune.glowWidth = 3
+        rune.glowWidth = 0
         rune.name = "rune_\(index)"
         return rune
     }
@@ -267,7 +267,7 @@ extension TowerVisualFactory {
         lens.fillColor = color.lighter(by: 0.4)
         lens.strokeColor = .white
         lens.lineWidth = 2
-        lens.glowWidth = 6
+        lens.glowWidth = 0
         lens.name = "lens"
         body.addChild(lens)
 
@@ -275,7 +275,7 @@ extension TowerVisualFactory {
         let lensInner = SKShapeNode(circleOfRadius: 4)
         lensInner.fillColor = .white.withAlphaComponent(0.5)
         lensInner.strokeColor = .clear
-        lensInner.glowWidth = 3
+        lensInner.glowWidth = 0
         lens.addChild(lensInner)
 
         return body
@@ -301,7 +301,7 @@ extension TowerVisualFactory {
         spike.fillColor = color
         spike.strokeColor = UIColor.cyan
         spike.lineWidth = 2
-        spike.glowWidth = 4
+        spike.glowWidth = 0
         spike.position = CGPoint(x: 0, y: 4)
         spike.name = "conductor"
         container.addChild(spike)
@@ -313,7 +313,7 @@ extension TowerVisualFactory {
             node.fillColor = UIColor.cyan
             node.strokeColor = .white
             node.lineWidth = 1
-            node.glowWidth = 4
+            node.glowWidth = 0
             node.position = CGPoint(x: cos(angle) * 12, y: sin(angle) * 12 + 4)
             node.name = "dischargeNode_\(i)"
             container.addChild(node)
@@ -352,7 +352,7 @@ extension TowerVisualFactory {
         pilotFlame.fillColor = UIColor.orange
         pilotFlame.strokeColor = UIColor.yellow
         pilotFlame.lineWidth = 1
-        pilotFlame.glowWidth = 5
+        pilotFlame.glowWidth = 0
         pilotFlame.blendMode = .add
         pilotFlame.name = "pilotFlame"
         body.addChild(pilotFlame)
@@ -372,7 +372,7 @@ extension TowerVisualFactory {
         circle.fillColor = UIColor(hex: "f59e0b")?.withAlphaComponent(0.3) ?? color.withAlphaComponent(0.3)
         circle.strokeColor = UIColor(hex: "f59e0b") ?? color
         circle.lineWidth = 2
-        circle.glowWidth = 6
+        circle.glowWidth = 0
         container.addChild(circle)
 
         // Floating sword silhouette
@@ -381,7 +381,7 @@ extension TowerVisualFactory {
         sword.fillColor = UIColor(hex: "fbbf24") ?? .yellow
         sword.strokeColor = .white
         sword.lineWidth = 1
-        sword.glowWidth = 8
+        sword.glowWidth = 0
         sword.name = "sword"
         container.addChild(sword)
 
@@ -423,7 +423,7 @@ extension TowerVisualFactory {
         hub.fillColor = color
         hub.strokeColor = .white
         hub.lineWidth = 2
-        hub.glowWidth = 4
+        hub.glowWidth = 0
         hub.name = "hub"
         container.addChild(hub)
 
@@ -434,7 +434,7 @@ extension TowerVisualFactory {
             node.fillColor = color.withAlphaComponent(0.7)
             node.strokeColor = color
             node.lineWidth = 1
-            node.glowWidth = 3
+            node.glowWidth = 0
             node.position = CGPoint(x: cos(angle) * 14, y: sin(angle) * 14)
             node.name = "processNode_\(i)"
             container.addChild(node)
@@ -472,7 +472,7 @@ extension TowerVisualFactory {
         triangle.fillColor = UIColor(hex: "ef4444")?.withAlphaComponent(0.8) ?? .red.withAlphaComponent(0.8)
         triangle.strokeColor = UIColor(hex: "ef4444") ?? .red
         triangle.lineWidth = 2
-        triangle.glowWidth = 6
+        triangle.glowWidth = 0
         triangle.name = "warningTriangle"
         container.addChild(triangle)
 

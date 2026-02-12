@@ -35,9 +35,10 @@ extension TowerVisualFactory {
 
     static func createRangeIndicator(range: CGFloat, color: UIColor) -> SKShapeNode {
         let rangeCircle = SKShapeNode(circleOfRadius: range)
-        rangeCircle.fillColor = color.withAlphaComponent(0.1)
-        rangeCircle.strokeColor = color.withAlphaComponent(0.4)
+        rangeCircle.fillColor = color.withAlphaComponent(0.12)
+        rangeCircle.strokeColor = color.withAlphaComponent(0.5)
         rangeCircle.lineWidth = 2
+        rangeCircle.glowWidth = 1.5  // Shown on select only (1 tower at a time)
 
         // Dashed outer ring
         let dashPattern: [CGFloat] = [8, 4]
@@ -123,24 +124,24 @@ extension TowerVisualFactory {
         case .common:
             radius = 22
             lineWidth = 1.5
-            glowWidth = 2
+            glowWidth = 0
         case .rare:
             radius = 23
             lineWidth = 2.0
-            glowWidth = 4
+            glowWidth = 0
         case .epic:
             radius = 24
             lineWidth = 2.5
-            glowWidth = 6
+            glowWidth = 1.0
         case .legendary:
             radius = 25
             lineWidth = 3.0
-            glowWidth = 10
+            glowWidth = 2.0
         }
 
         // Outer glow ring
         let glowRing = SKShapeNode(circleOfRadius: radius)
-        glowRing.strokeColor = rarityColor.withAlphaComponent(0.3)
+        glowRing.strokeColor = rarityColor.withAlphaComponent(rarity == .legendary ? 0.5 : 0.3)
         glowRing.lineWidth = lineWidth + 4
         glowRing.fillColor = .clear
         glowRing.glowWidth = glowWidth
@@ -148,7 +149,7 @@ extension TowerVisualFactory {
 
         // Main rarity ring
         let ring = SKShapeNode(circleOfRadius: radius)
-        ring.strokeColor = rarityColor.withAlphaComponent(rarity == .common ? 0.4 : 0.7)
+        ring.strokeColor = rarityColor.withAlphaComponent(rarity == .common ? 0.4 : (rarity == .legendary ? 0.85 : 0.7))
         ring.lineWidth = lineWidth
         ring.fillColor = .clear
         container.addChild(ring)
@@ -167,7 +168,7 @@ extension TowerVisualFactory {
                 node.fillColor = rarityColor
                 node.strokeColor = rarityColor.withAlphaComponent(0.5)
                 node.lineWidth = 1
-                node.glowWidth = rarity == .legendary ? 4 : 2
+                node.glowWidth = rarity == .legendary ? 1.5 : 0.8
                 node.position = CGPoint(x: x, y: y)
                 container.addChild(node)
             }

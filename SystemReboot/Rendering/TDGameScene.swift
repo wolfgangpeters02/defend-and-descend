@@ -42,9 +42,21 @@ class TDGameScene: SKScene {
     // Cached nodes for performance
     var towerNodes: [String: SKNode] = [:]
     var enemyNodes: [String: SKNode] = [:]
+    var enemyLastHealth: [String: CGFloat] = [:]  // Track health for hit flash
     var projectileNodes: [String: SKNode] = [:]
-    var slotNodes: [String: SKNode] = [:]
+    // slotNodes removed — hit testing uses distance-based math now
     var gateNodes: [String: SKNode] = [:]  // Mega-board encryption gates
+
+    // Cached tower child node refs (avoids per-frame childNode(withName:) lookups)
+    struct TowerNodeRefs {
+        weak var barrel: SKNode?
+        weak var rangeNode: SKNode?
+        weak var cooldownNode: SKShapeNode?
+        weak var levelLabel: SKLabelNode?
+        weak var glowNode: SKNode?
+        weak var lodDetail: SKNode?
+    }
+    var towerNodeRefs: [String: TowerNodeRefs] = [:]
 
     // Animation LOD: Track which towers have paused animations for off-screen culling
     var pausedTowerAnimations: Set<String> = []
@@ -97,6 +109,10 @@ class TDGameScene: SKScene {
     var ledUpdateCounter: Int = 0                      // Update every 3 frames for performance
     var ledIdlePhase: CGFloat = 0                      // For idle heartbeat animation
 
+    // MARK: - Lane Flow Animation (Dashed data-flow overlay)
+    var laneFlowNodes: [String: (node: SKShapeNode, path: CGPath, dashLengths: [CGFloat])] = [:]
+    var laneFlowPhase: CGFloat = 0  // Animated dash phase offset
+
     // MARK: - Capacitor System (PSU Power Theme)
     // Capacitors in PSU sector that pulse and "discharge" when towers fire
     var psuCapacitorNodes: [SKNode] = []              // Capacitor containers for animation
@@ -104,6 +120,11 @@ class TDGameScene: SKScene {
 
     // MARK: - Power Flow Particles (PSU Power Theme)
     var lastPowerFlowSpawnTime: TimeInterval = 0
+
+    // MARK: - Debug Overlay
+    var debugFrameTimes: [TimeInterval] = []
+    var debugUpdateCounter: Int = 0
+    var debugOverlayNode: SKNode?
 
     // previousEfficiency is now in frameContext (TDGameLoop.FrameContext)
 
@@ -127,6 +148,20 @@ class TDGameScene: SKScene {
         }
         return cache
     }()
+
+    // Cached MegaBoardConfig (avoids recreating every call)
+    lazy var cachedMegaBoardConfig: MegaBoardConfig = MegaBoardConfig.createDefault()
+
+    // MARK: - Background Detail LOD (Performance)
+    // Hide background decorations and parallax when zoomed out (invisible at that scale anyway)
+    var backgroundDetailVisible: Bool = true
+    var sectorDetailsVisible: Bool = true
+
+    // MARK: - Glow LOD (Performance)
+    // Disable expensive glowWidth (Gaussian blur shader) when zoomed out
+    var glowNodes: [(node: SKShapeNode, normalGlowWidth: CGFloat)] = []
+    var glowLODEnabled: Bool = true
+    var ledsHidden: Bool = false
 
     // MARK: - Ambient Particle Management (Performance)
     // Caps on ambient particles to prevent unbounded growth
@@ -312,7 +347,6 @@ class TDGameScene: SKScene {
 
         towerSlotLayer.removeAllChildren()
         gridDotsLayer.removeAllChildren()
-        slotNodes.removeAll()
 
         for slot in state.towerSlots {
             // Create subtle grid dot (shown only during placement mode)
@@ -321,20 +355,14 @@ class TDGameScene: SKScene {
             gridDot.name = "gridDot_\(slot.id)"
             gridDotsLayer.addChild(gridDot)
 
-            // Create legacy slot node (hidden by default, used for hit detection)
-            let slotNode = createSlotNode(slot: slot)
-            slotNode.position = convertToScene(slot.position)
-            slotNode.name = "slot_\(slot.id)"
-            towerSlotLayer.addChild(slotNode)
-            slotNodes[slot.id] = slotNode
+            // PERF: Removed invisible slot hit-area nodes (-80 nodes).
+            // Hit testing now uses distance-based math in touchesBegan.
         }
     }
 
     /// Create tower socket visual (Circuit board aesthetic)
-    /// Smaller, subtler dots when idle; brighter appearance during placement
+    /// Performance: Single compound path per slot instead of 9 child nodes
     private func createGridDot(slot: TowerSlot) -> SKNode {
-        let container = SKNode()
-
         if slot.occupied {
             // Occupied slot: Bright chip indicator
             let chipSize: CGFloat = 20
@@ -342,56 +370,41 @@ class TDGameScene: SKScene {
             chip.fillColor = DesignColors.primaryUI.withAlphaComponent(0.6)
             chip.strokeColor = DesignColors.primaryUI
             chip.lineWidth = 1
-            chip.glowWidth = 4
-            container.addChild(chip)
+            chip.glowWidth = 0
+            return chip
         } else {
-            // Empty slot: Subtle grid point with circuit board pins
+            // Empty slot: Single compound path with dot, pins, and traces
             let dotRadius: CGFloat = 4
-            let dot = SKShapeNode(circleOfRadius: dotRadius)
-            dot.fillColor = UIColor(white: 0.3, alpha: 0.4)
-            dot.strokeColor = UIColor(white: 0.5, alpha: 0.3)
-            dot.lineWidth = 1
-            container.addChild(dot)
-
-            // Corner pins (circuit board aesthetic - smaller, subtler)
             let pinSize: CGFloat = 3
             let pinOffset: CGFloat = 10
+            let compoundPath = CGMutablePath()
+
+            // Center dot
+            compoundPath.addEllipse(in: CGRect(x: -dotRadius, y: -dotRadius, width: dotRadius * 2, height: dotRadius * 2))
+
+            // Corner pins
             for (xSign, ySign) in [(1, 1), (1, -1), (-1, 1), (-1, -1)] as [(CGFloat, CGFloat)] {
-                let pin = SKShapeNode(rectOf: CGSize(width: pinSize, height: pinSize))
-                pin.fillColor = UIColor(white: 0.4, alpha: 0.3)
-                pin.strokeColor = .clear
-                pin.position = CGPoint(x: pinOffset * xSign, y: pinOffset * ySign)
-                container.addChild(pin)
+                let px = pinOffset * xSign - pinSize / 2
+                let py = pinOffset * ySign - pinSize / 2
+                compoundPath.addRect(CGRect(x: px, y: py, width: pinSize, height: pinSize))
             }
 
-            // Connection traces (subtle lines to pins)
+            // Connection traces
             for (xSign, ySign) in [(1, 0), (-1, 0), (0, 1), (0, -1)] as [(CGFloat, CGFloat)] {
-                let trace = SKShapeNode()
-                let path = CGMutablePath()
-                path.move(to: CGPoint(x: dotRadius * xSign, y: dotRadius * ySign))
-                path.addLine(to: CGPoint(x: 8 * xSign, y: 8 * ySign))
-                trace.path = path
-                trace.strokeColor = UIColor(white: 0.35, alpha: 0.25)
-                trace.lineWidth = 1
-                container.addChild(trace)
+                compoundPath.move(to: CGPoint(x: dotRadius * xSign, y: dotRadius * ySign))
+                compoundPath.addLine(to: CGPoint(x: 8 * xSign, y: 8 * ySign))
             }
+
+            let slotShape = SKShapeNode(path: compoundPath)
+            slotShape.fillColor = UIColor(white: 0.3, alpha: 0.4)
+            slotShape.strokeColor = UIColor(white: 0.4, alpha: 0.3)
+            slotShape.lineWidth = 1
+            return slotShape
         }
-
-        return container
     }
 
-    private func createSlotNode(slot: TowerSlot) -> SKNode {
-        let container = SKNode()
-
-        // Invisible hit area for slot detection (progressive disclosure - no visible circles)
-        let hitArea = SKShapeNode(circleOfRadius: slot.size / 2)
-        hitArea.fillColor = .clear
-        hitArea.strokeColor = .clear
-        hitArea.name = "hitArea"
-        container.addChild(hitArea)
-
-        return container
-    }
+    // PERF: createSlotNode removed — invisible hit-area nodes replaced by
+    // distance-based math in touchesBegan (-80 nodes).
 
     // MARK: - Blocker Nodes (System: Reboot - Path Control)
 
@@ -440,7 +453,7 @@ class TDGameScene: SKScene {
         octagon.strokeColor = UIColor.red.withAlphaComponent(0.4)
         octagon.fillColor = UIColor.red.withAlphaComponent(0.1)
         octagon.lineWidth = 2
-        octagon.glowWidth = 2
+        octagon.glowWidth = 1.5  // Core damage indicator (1 node per game)
 
         // Subtle pulse animation
         let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: 1.0)
@@ -524,7 +537,7 @@ class TDGameScene: SKScene {
         cpuBody.fillColor = DesignColors.surfaceUI
         cpuBody.strokeColor = copperColor
         cpuBody.lineWidth = 4
-        cpuBody.glowWidth = 8
+        cpuBody.glowWidth = 2.0  // Important focal point (1 CPU per game)
         cpuBody.name = "cpuBody"
         coreContainer.addChild(cpuBody)
 
@@ -557,65 +570,65 @@ class TDGameScene: SKScene {
         efficiencyLabel.name = "efficiencyLabel"
         coreContainer.addChild(efficiencyLabel)
 
-        // Heatsink fins radiating from the chip (copper colored)
+        // PERF: Heatsink fins batched into single compound path (8→1 node)
         let finCount = 8
         let finLength: CGFloat = 20
         let finWidth: CGFloat = 6
         let finOffset = cpuSize / 2 + finLength / 2 + 2
+        let finsPath = CGMutablePath()
 
         for i in 0..<finCount {
-            let angle = CGFloat(i) * .pi / 4  // 8 directions
-            let fin = SKShapeNode(rectOf: CGSize(width: finWidth, height: finLength), cornerRadius: 2)
-            fin.fillColor = copperColor.withAlphaComponent(0.7)
-            fin.strokeColor = copperColor
-            fin.lineWidth = 1
-
-            fin.position = CGPoint(
-                x: cos(angle) * finOffset,
-                y: sin(angle) * finOffset
-            )
-            fin.zRotation = angle + .pi / 2
-            fin.zPosition = -0.5
-            coreContainer.addChild(fin)
+            let angle = CGFloat(i) * .pi / 4
+            let cx = cos(angle) * finOffset
+            let cy = sin(angle) * finOffset
+            let finRect = CGRect(x: -finWidth / 2, y: -finLength / 2, width: finWidth, height: finLength)
+            let transform = CGAffineTransform(translationX: cx, y: cy).rotated(by: angle + .pi / 2)
+            finsPath.addRoundedRect(in: finRect, cornerWidth: 2, cornerHeight: 2, transform: transform)
         }
 
-        // Pin connectors (circuit board aesthetic - copper)
+        let finsNode = SKShapeNode(path: finsPath)
+        finsNode.fillColor = copperColor.withAlphaComponent(0.7)
+        finsNode.strokeColor = copperColor
+        finsNode.lineWidth = 1
+        finsNode.zPosition = -0.5
+        coreContainer.addChild(finsNode)
+
+        // PERF: Pin connectors batched into single compound path (24→1 node)
         let pinCount = 6
         let pinLength: CGFloat = 15
         let pinWidth: CGFloat = 4
         let pinSpacing = cpuSize / CGFloat(pinCount + 1)
+        let pinsPath = CGMutablePath()
 
-        for side in 0..<4 {  // 4 sides
+        for side in 0..<4 {
             for i in 1...pinCount {
-                let pin = SKShapeNode(rectOf: CGSize(width: pinWidth, height: pinLength))
-                pin.fillColor = copperColor.withAlphaComponent(0.5)
-                pin.strokeColor = .clear
-
                 let offset = -cpuSize / 2 + pinSpacing * CGFloat(i)
                 switch side {
                 case 0: // Top
-                    pin.position = CGPoint(x: offset, y: cpuSize / 2 + pinLength / 2)
+                    pinsPath.addRect(CGRect(x: offset - pinWidth / 2, y: cpuSize / 2, width: pinWidth, height: pinLength))
                 case 1: // Bottom
-                    pin.position = CGPoint(x: offset, y: -cpuSize / 2 - pinLength / 2)
+                    pinsPath.addRect(CGRect(x: offset - pinWidth / 2, y: -cpuSize / 2 - pinLength, width: pinWidth, height: pinLength))
                 case 2: // Left
-                    pin.zRotation = .pi / 2
-                    pin.position = CGPoint(x: -cpuSize / 2 - pinLength / 2, y: offset)
+                    pinsPath.addRect(CGRect(x: -cpuSize / 2 - pinLength, y: offset - pinWidth / 2, width: pinLength, height: pinWidth))
                 case 3: // Right
-                    pin.zRotation = .pi / 2
-                    pin.position = CGPoint(x: cpuSize / 2 + pinLength / 2, y: offset)
+                    pinsPath.addRect(CGRect(x: cpuSize / 2, y: offset - pinWidth / 2, width: pinLength, height: pinWidth))
                 default:
                     break
                 }
-                coreContainer.addChild(pin)
             }
         }
+
+        let pinsNode = SKShapeNode(path: pinsPath)
+        pinsNode.fillColor = copperColor.withAlphaComponent(0.5)
+        pinsNode.strokeColor = .clear
+        coreContainer.addChild(pinsNode)
 
         // Glow ring (pulsing gold glow - intensity based on efficiency)
         let glowRing = SKShapeNode(circleOfRadius: cpuSize / 2 + 25)
         glowRing.fillColor = .clear
         glowRing.strokeColor = goldGlowColor.withAlphaComponent(0.4)
         glowRing.lineWidth = 4
-        glowRing.glowWidth = 10  // Reduced from 20 for performance
+        glowRing.glowWidth = 3.0  // Pulsing CPU halo (1 ring per game)
         glowRing.name = "glowRing"
         glowRing.zPosition = -1
         coreContainer.addChild(glowRing)
@@ -631,14 +644,19 @@ class TDGameScene: SKScene {
         // Secondary inner glow (copper)
         let innerGlow = SKShapeNode(circleOfRadius: cpuSize / 2 + 5)
         innerGlow.fillColor = .clear
-        innerGlow.strokeColor = copperColor.withAlphaComponent(0.3)
+        innerGlow.strokeColor = copperColor.withAlphaComponent(0.5)
         innerGlow.lineWidth = 2
-        innerGlow.glowWidth = 8
+        innerGlow.glowWidth = 1.5  // Inner copper glow (1 ring per game)
         innerGlow.name = "innerGlow"
         innerGlow.zPosition = -0.5
         coreContainer.addChild(innerGlow)
 
         backgroundLayer.addChild(coreContainer)
+
+        // Register CPU glow nodes for zoom-based LOD
+        glowNodes.append((cpuBody, 2.0))
+        glowNodes.append((glowRing, 3.0))
+        glowNodes.append((innerGlow, 1.5))
     }
 
     // MARK: - Update Loop
@@ -649,6 +667,17 @@ class TDGameScene: SKScene {
         // Calculate delta time
         let deltaTime = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
         lastUpdateTime = currentTime
+
+        // Debug overlay (before frozen check so FPS tracks during freeze)
+        if AppState.shared.showDebugOverlay {
+            syncDebugOverlayVisibility()
+            recordDebugFrameTime(deltaTime)
+            if shouldUpdateDebugOverlay() {
+                updateDebugOverlay()
+            }
+        } else if debugOverlayNode != nil {
+            removeDebugOverlay()
+        }
 
         // When frozen, only update core visual (pulsing red), no game logic
         if state.isSystemFrozen {
@@ -732,11 +761,30 @@ class TDGameScene: SKScene {
 
         // Motherboard theme: path LEDs
         if isMotherboardMap {
-            updatePathLEDs(enemies: state.enemies)
+            updatePathLEDs(enemies: state.enemies, currentTime: currentTime)
+            // Animate dashed data-flow overlay (every 6 frames, skip when zoomed out)
+            if ledUpdateCounter % 6 == 0 && currentScale < 0.8 {
+                updateLaneFlowAnimation(deltaTime: deltaTime)
+            }
         }
 
         // Tower Level of Detail based on zoom
+        TowerAnimations.currentCameraScale = currentScale
         updateTowerLOD()
+
+        // Sector IC component LOD: hide details when zoomed out
+        if isMotherboardMap {
+            updateSectorLOD()
+        }
+
+        // Background detail LOD: hide decorations and parallax when zoomed out
+        updateBackgroundDetailLOD()
+
+        // Glow LOD: disable expensive Gaussian blur shaders when zoomed out
+        updateGlowLOD()
+
+        // LED visibility: hide individual LED nodes when zoomed out
+        updateLEDVisibility()
 
         // Motherboard theme: sector visibility
         if isMotherboardMap {

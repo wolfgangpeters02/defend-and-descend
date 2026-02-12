@@ -22,7 +22,7 @@ struct BossLootModal: View {
     // MARK: - Computed
 
     private var tapsRequired: Int {
-        BalanceConfig.BossLoot.tapsToDecrypt
+        BalanceConfig.BossLootReveal.tapsToDecrypt
     }
 
     // MARK: - Body
@@ -215,7 +215,7 @@ struct BossLootModal: View {
 
         // Glitch effect
         withAnimation(.easeInOut(duration: 0.05)) {
-            glitchOffset = CGFloat.random(in: BalanceConfig.BossLoot.glitchOffsetRange)
+            glitchOffset = CGFloat.random(in: BalanceConfig.BossLootReveal.glitchOffsetRange)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in
             guard isViewActive else { return }
@@ -256,7 +256,7 @@ struct BossLootModal: View {
         }
 
         // Move to next item or complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + BalanceConfig.BossLoot.revealDelay) { [self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + BalanceConfig.BossLootReveal.revealDelay) { [self] in
             guard isViewActive else { return }
 
             if currentItemIndex < reward.items.count - 1 {
@@ -274,7 +274,7 @@ struct BossLootModal: View {
 
     private func startAutoAdvanceTimer() {
         autoAdvanceTimer?.invalidate()
-        autoAdvanceTimer = Timer.scheduledTimer(withTimeInterval: BalanceConfig.BossLoot.autoAdvanceDelay, repeats: false) { [self] _ in
+        autoAdvanceTimer = Timer.scheduledTimer(withTimeInterval: BalanceConfig.BossLootReveal.autoAdvanceDelay, repeats: false) { [self] _ in
             guard isViewActive, !allDecrypted, currentItemIndex < reward.items.count else { return }
             handleCardTap(index: currentItemIndex)
         }

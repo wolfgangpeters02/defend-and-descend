@@ -464,8 +464,8 @@ struct ProtocolCard: View {
 
                 if isLocked {
                     // Show which boss drops this
-                    if let boss = LootTableLibrary.bossesDropping(`protocol`.id).first {
-                        Text(LootTableLibrary.bossDisplayName(boss))
+                    if let boss = BalanceConfig.BossLoot.bossesDropping(`protocol`.id).first {
+                        Text(BalanceConfig.BossLoot.bossDisplayName(boss))
                             .font(DesignTypography.caption(8))
                             .foregroundColor(DesignColors.danger.opacity(0.7))
                     } else {

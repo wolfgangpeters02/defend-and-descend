@@ -55,6 +55,11 @@ class AppState: ObservableObject {
     // Background save signal (for persisting game state before app suspension)
     @Published var shouldSaveGameState: Bool = false
 
+    // Debug overlay (developer preference, persisted via UserDefaults)
+    @Published var showDebugOverlay: Bool = UserDefaults.standard.bool(forKey: "debugOverlayEnabled") {
+        didSet { UserDefaults.standard.set(showDebugOverlay, forKey: "debugOverlayEnabled") }
+    }
+
     private init() {
         self.currentPlayer = StorageService.shared.getOrCreateDefaultPlayer()
 
@@ -280,32 +285,6 @@ class AppState: ObservableObject {
                 extracted: extracted
             )
         }
-    }
-
-    // MARK: - Boss Rewards
-
-    /// Record boss defeat and award blueprint using RNG loot system
-    /// - Returns: BlueprintDropSystem.DropResult containing the awarded protocol (nil if no drop)
-    @discardableResult
-    func recordBossDefeat(
-        bossId: String,
-        difficulty: BossDifficulty,
-        time: TimeInterval,
-        kills: Int
-    ) -> BlueprintDropSystem.DropResult {
-        var dropResult = BlueprintDropSystem.DropResult.noDrop
-
-        updatePlayer { profile in
-            dropResult = GameRewardService.applyBossDefeatResult(
-                to: &profile,
-                bossId: bossId,
-                difficulty: difficulty,
-                time: time,
-                kills: kills
-            )
-        }
-
-        return dropResult
     }
 
 }

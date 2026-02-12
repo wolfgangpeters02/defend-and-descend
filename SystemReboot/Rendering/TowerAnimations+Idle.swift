@@ -5,6 +5,9 @@ import UIKit
 
 extension TowerAnimations {
 
+    /// Updated by the scene each frame for zoom-based particle gating
+    static var currentCameraScale: CGFloat = 1.0
+
     // MARK: - Start Idle Animation
 
     static func startIdleAnimation(node: SKNode, archetype: TowerVisualFactory.TowerArchetype, color: UIColor) {
@@ -42,34 +45,11 @@ extension TowerAnimations {
     // MARK: - Core Pulse Animation
 
     private static func startCorePulse(node: SKNode, color: UIColor, archetype: TowerVisualFactory.TowerArchetype) {
-        // Outer glow breathing
-        if let outerGlow = node.childNode(withName: "outerGlow") {
-            let breatheOut = SKAction.group([
-                SKAction.scale(to: 1.12, duration: 1.8),
-                SKAction.fadeAlpha(to: 0.6, duration: 1.8)
-            ])
-            let breatheIn = SKAction.group([
-                SKAction.scale(to: 1.0, duration: 1.8),
-                SKAction.fadeAlpha(to: 1.0, duration: 1.8)
-            ])
-            breatheOut.timingMode = .easeInEaseOut
-            breatheIn.timingMode = .easeInEaseOut
-
-            let breathe = SKAction.repeatForever(SKAction.sequence([breatheOut, breatheIn]))
-            outerGlow.run(breathe, withKey: AnimationKey.idlePulse)
-
-            // Rotate outer ring if present (epic+ rarity)
-            if let outerRing = outerGlow.childNode(withName: "outerRing") {
-                let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 20)
-                outerRing.run(SKAction.repeatForever(rotate), withKey: AnimationKey.idleRotation)
-            }
-        }
-
-        // Mid glow pulse (offset timing)
-        if let midGlow = node.childNode(withName: "midGlow") {
+        // Single glow pulse (Performance: collapsed from 3 separate animations)
+        if let glow = node.childNode(withName: "glow") {
             let pulseOut = SKAction.group([
                 SKAction.scale(to: 1.08, duration: 1.5),
-                SKAction.fadeAlpha(to: 0.75, duration: 1.5)
+                SKAction.fadeAlpha(to: 0.7, duration: 1.5)
             ])
             let pulseIn = SKAction.group([
                 SKAction.scale(to: 1.0, duration: 1.5),
@@ -77,38 +57,7 @@ extension TowerAnimations {
             ])
             pulseOut.timingMode = .easeInEaseOut
             pulseIn.timingMode = .easeInEaseOut
-
-            let pulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.wait(forDuration: 0.4),
-                pulseOut,
-                pulseIn
-            ]))
-            midGlow.run(pulse, withKey: AnimationKey.idlePulse)
-        }
-
-        // Core glow tight pulse
-        if let coreGlow = node.childNode(withName: "glow") {
-            let pulseOut = SKAction.group([
-                SKAction.scale(to: 1.05, duration: 1.2),
-                SKAction.fadeAlpha(to: 0.85, duration: 1.2)
-            ])
-            let pulseIn = SKAction.group([
-                SKAction.scale(to: 1.0, duration: 1.2),
-                SKAction.fadeAlpha(to: 1.0, duration: 1.2)
-            ])
-            pulseOut.timingMode = .easeInEaseOut
-            pulseIn.timingMode = .easeInEaseOut
-
-            coreGlow.run(SKAction.repeatForever(SKAction.sequence([pulseOut, pulseIn])), withKey: AnimationKey.idlePulse)
-
-            // Core highlight shimmer
-            if let highlight = coreGlow.childNode(withName: "coreHighlight") {
-                let shimmer = SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0.5, duration: 0.8),
-                    SKAction.fadeAlpha(to: 1.0, duration: 0.8)
-                ])
-                highlight.run(SKAction.repeatForever(shimmer))
-            }
+            glow.run(SKAction.repeatForever(SKAction.sequence([pulseOut, pulseIn])), withKey: AnimationKey.idlePulse)
         }
     }
 
@@ -141,10 +90,10 @@ extension TowerAnimations {
         // Center dot glow pulse
         if let centerDot = body.childNode(withName: "centerDot") as? SKShapeNode {
             let brighten = SKAction.run {
-                centerDot.glowWidth = 6
+                centerDot.glowWidth = 0
             }
             let dim = SKAction.run {
-                centerDot.glowWidth = 4
+                centerDot.glowWidth = 0
             }
             let pulse = SKAction.repeatForever(SKAction.sequence([
                 brighten,
@@ -185,23 +134,15 @@ extension TowerAnimations {
             barrel.run(sway, withKey: AnimationKey.idleFloat)
         }
 
-        // Capacitor sequence pulse (if platform has them)
-        if let platform = node.childNode(withName: "basePlatform") {
-            for i in 0..<4 {
-                if let capacitor = platform.childNode(withName: "capacitor_\(i)") as? SKShapeNode {
-                    let delay = Double(i) * 0.3
-                    let pulse = SKAction.sequence([
-                        SKAction.wait(forDuration: delay),
-                        SKAction.repeatForever(SKAction.sequence([
-                            SKAction.run { capacitor.glowWidth = 4 },
-                            SKAction.wait(forDuration: 0.2),
-                            SKAction.run { capacitor.glowWidth = 2 },
-                            SKAction.wait(forDuration: 1.0)
-                        ]))
-                    ])
-                    capacitor.run(pulse)
-                }
-            }
+        // Capacitor pulse (batched node)
+        if let platform = node.childNode(withName: "basePlatform"),
+           let capacitors = platform.childNode(withName: "capacitors") as? SKShapeNode {
+            let pulse = SKAction.repeatForever(SKAction.sequence([
+                SKAction.fadeAlpha(to: 0.6, duration: 0.3),
+                SKAction.fadeAlpha(to: 1.0, duration: 0.3),
+                SKAction.wait(forDuration: 1.0)
+            ]))
+            capacitors.run(pulse)
         }
     }
 
@@ -234,12 +175,12 @@ extension TowerAnimations {
             let shimmer = SKAction.repeatForever(SKAction.sequence([
                 SKAction.run { [weak body] in
                     guard let body = body else { return }
-                    body.glowWidth = 8
+                    body.glowWidth = 0
                 },
                 SKAction.wait(forDuration: 0.5),
                 SKAction.run { [weak body] in
                     guard let body = body else { return }
-                    body.glowWidth = 6
+                    body.glowWidth = 0
                 },
                 SKAction.wait(forDuration: 0.5)
             ]))
@@ -249,11 +190,11 @@ extension TowerAnimations {
         // Crystal barrel tip pulse
         if let barrel = node.childNode(withName: "barrel") {
             for child in barrel.children {
-                if let shape = child as? SKShapeNode, shape.glowWidth > 0 {
+                if let shape = child as? SKShapeNode {
                     let pulse = SKAction.repeatForever(SKAction.sequence([
-                        SKAction.run { shape.glowWidth = 8 },
+                        SKAction.run { shape.glowWidth = 0 },
                         SKAction.wait(forDuration: 0.4),
-                        SKAction.run { shape.glowWidth = 5 },
+                        SKAction.run { shape.glowWidth = 0 },
                         SKAction.wait(forDuration: 0.4)
                     ]))
                     shape.run(pulse)
@@ -265,11 +206,12 @@ extension TowerAnimations {
     private static func startFrostParticleEmission(node: SKNode, color: UIColor) {
         let emitParticle = SKAction.run { [weak node] in
             guard let node = node else { return }
+            guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 1...2))
             particle.fillColor = UIColor.cyan.withAlphaComponent(0.7)
             particle.strokeColor = .clear
-            particle.glowWidth = 2
+            particle.glowWidth = 0
             particle.blendMode = .add
 
             let angle = CGFloat.random(in: 0...(.pi * 2))
@@ -303,11 +245,11 @@ extension TowerAnimations {
             let pulse = SKAction.repeatForever(SKAction.sequence([
                 SKAction.group([
                     SKAction.scale(to: 1.15, duration: 1.0),
-                    SKAction.run { orb.glowWidth = 12 }
+                    SKAction.run { orb.glowWidth = 0 }
                 ]),
                 SKAction.group([
                     SKAction.scale(to: 1.0, duration: 1.0),
-                    SKAction.run { orb.glowWidth = 8 }
+                    SKAction.run { orb.glowWidth = 0 }
                 ])
             ]))
             orb.run(pulse)
@@ -333,9 +275,9 @@ extension TowerAnimations {
         if let barrel = node.childNode(withName: "barrel") {
             if let emitterOrb = barrel.childNode(withName: "emitterOrb") as? SKShapeNode {
                 let pulse = SKAction.repeatForever(SKAction.sequence([
-                    SKAction.run { emitterOrb.glowWidth = 12 },
+                    SKAction.run { emitterOrb.glowWidth = 0 },
                     SKAction.wait(forDuration: 0.5),
-                    SKAction.run { emitterOrb.glowWidth = 6 },
+                    SKAction.run { emitterOrb.glowWidth = 0 },
                     SKAction.wait(forDuration: 0.5)
                 ]))
                 emitterOrb.run(pulse)
@@ -353,48 +295,35 @@ extension TowerAnimations {
             let pulse = SKAction.repeatForever(SKAction.sequence([
                 SKAction.group([
                     SKAction.scale(to: 1.1, duration: 0.8),
-                    SKAction.run { lens.glowWidth = 8 }
+                    SKAction.run { lens.glowWidth = 0 }
                 ]),
                 SKAction.group([
                     SKAction.scale(to: 1.0, duration: 0.8),
-                    SKAction.run { lens.glowWidth = 4 }
+                    SKAction.run { lens.glowWidth = 0 }
                 ])
             ]))
             lens.run(pulse)
         }
 
-        // Capacitor charging sequence
-        if let platform = node.childNode(withName: "basePlatform") {
-            for i in 0..<4 {
-                if let capacitor = platform.childNode(withName: "capacitor_\(i)") as? SKShapeNode {
-                    let delay = Double(i) * 0.4
-                    let charge = SKAction.sequence([
-                        SKAction.wait(forDuration: delay),
-                        SKAction.repeatForever(SKAction.sequence([
-                            SKAction.run {
-                                capacitor.fillColor = color.lighter(by: 0.3)
-                                capacitor.glowWidth = 5
-                            },
-                            SKAction.wait(forDuration: 0.3),
-                            SKAction.run {
-                                capacitor.fillColor = color.withAlphaComponent(0.5)
-                                capacitor.glowWidth = 2
-                            },
-                            SKAction.wait(forDuration: 1.3)
-                        ]))
-                    ])
-                    capacitor.run(charge)
-                }
-            }
+        // Capacitor charging pulse (batched node)
+        if let platform = node.childNode(withName: "basePlatform"),
+           let capacitors = platform.childNode(withName: "capacitors") as? SKShapeNode {
+            let charge = SKAction.repeatForever(SKAction.sequence([
+                SKAction.run { capacitors.fillColor = color.lighter(by: 0.3) },
+                SKAction.wait(forDuration: 0.3),
+                SKAction.run { capacitors.fillColor = color.withAlphaComponent(0.5) },
+                SKAction.wait(forDuration: 1.3)
+            ]))
+            capacitors.run(charge)
         }
 
         // Barrel focus lens glow
         if let barrel = node.childNode(withName: "barrel") {
             if let focusLens = barrel.childNode(withName: "focusLens") as? SKShapeNode {
                 let pulse = SKAction.repeatForever(SKAction.sequence([
-                    SKAction.run { focusLens.glowWidth = 6 },
+                    SKAction.run { focusLens.glowWidth = 0 },
                     SKAction.wait(forDuration: 0.6),
-                    SKAction.run { focusLens.glowWidth = 3 },
+                    SKAction.run { focusLens.glowWidth = 0 },
                     SKAction.wait(forDuration: 0.6)
                 ]))
                 focusLens.run(pulse)
@@ -410,9 +339,9 @@ extension TowerAnimations {
         // Conductor pulse
         if let conductor = body.childNode(withName: "conductor") as? SKShapeNode {
             let pulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.run { conductor.glowWidth = 6 },
+                SKAction.run { conductor.glowWidth = 0 },
                 SKAction.wait(forDuration: 0.3),
-                SKAction.run { conductor.glowWidth = 3 },
+                SKAction.run { conductor.glowWidth = 0 },
                 SKAction.wait(forDuration: 0.3)
             ]))
             conductor.run(pulse)
@@ -425,9 +354,9 @@ extension TowerAnimations {
         if let barrel = node.childNode(withName: "barrel") {
             if let sphere = barrel.childNode(withName: "teslaSphere") as? SKShapeNode {
                 let crackle = SKAction.repeatForever(SKAction.sequence([
-                    SKAction.run { sphere.glowWidth = 12 },
+                    SKAction.run { sphere.glowWidth = 0 },
                     SKAction.wait(forDuration: 0.1),
-                    SKAction.run { sphere.glowWidth = 6 },
+                    SKAction.run { sphere.glowWidth = 0 },
                     SKAction.wait(forDuration: CGFloat.random(in: 0.2...0.8))
                 ]))
                 sphere.run(crackle)
@@ -439,6 +368,7 @@ extension TowerAnimations {
         // Create random arcs between discharge nodes
         let createArc = SKAction.run { [weak body] in
             guard let body = body else { return }
+            guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             // Pick two random nodes
             let node1 = Int.random(in: 0..<4)
@@ -456,7 +386,7 @@ extension TowerAnimations {
             let arc = SKShapeNode(path: arcPath)
             arc.strokeColor = UIColor.cyan.withAlphaComponent(0.8)
             arc.lineWidth = 1.5
-            arc.glowWidth = 4
+            arc.glowWidth = 0
             arc.blendMode = .add
             arc.zPosition = 4
 
@@ -503,7 +433,7 @@ extension TowerAnimations {
             let flicker = SKAction.repeatForever(SKAction.sequence([
                 SKAction.group([
                     SKAction.scale(to: CGFloat.random(in: 0.8...1.2), duration: 0.1),
-                    SKAction.run { pilotFlame.glowWidth = CGFloat.random(in: 4...8) }
+                    SKAction.run { pilotFlame.glowWidth = 0 }
                 ]),
                 SKAction.wait(forDuration: 0.05)
             ]))
@@ -536,6 +466,7 @@ extension TowerAnimations {
     private static func startHeatShimmer(node: SKNode, color: UIColor) {
         let emitShimmer = SKAction.run { [weak node] in
             guard let node = node else { return }
+            guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             let shimmer = SKShapeNode(rectOf: CGSize(width: CGFloat.random(in: 2...4), height: CGFloat.random(in: 3...6)), cornerRadius: 1)
             shimmer.fillColor = UIColor.orange.withAlphaComponent(0.3)
@@ -582,9 +513,9 @@ extension TowerAnimations {
 
             // Sword glow pulse
             let glow = SKAction.repeatForever(SKAction.sequence([
-                SKAction.run { sword.glowWidth = 12 },
+                SKAction.run { sword.glowWidth = 0 },
                 SKAction.wait(forDuration: 0.8),
-                SKAction.run { sword.glowWidth = 6 },
+                SKAction.run { sword.glowWidth = 0 },
                 SKAction.wait(forDuration: 0.8)
             ]))
             sword.run(glow)
@@ -601,21 +532,14 @@ extension TowerAnimations {
         // Divine particle emission
         startDivineParticleEmission(node: node)
 
-        // Divine ray pulse
-        if let platform = node.childNode(withName: "basePlatform") {
-            for i in 0..<4 {
-                if let ray = platform.childNode(withName: "divineRay_\(i)") as? SKShapeNode {
-                    let delay = Double(i) * 0.2
-                    let pulse = SKAction.sequence([
-                        SKAction.wait(forDuration: delay),
-                        SKAction.repeatForever(SKAction.sequence([
-                            SKAction.fadeAlpha(to: 0.6, duration: 0.5),
-                            SKAction.fadeAlpha(to: 0.2, duration: 0.5)
-                        ]))
-                    ])
-                    ray.run(pulse)
-                }
-            }
+        // Divine ray pulse (batched node)
+        if let platform = node.childNode(withName: "basePlatform"),
+           let rays = platform.childNode(withName: "divineRays") as? SKShapeNode {
+            let pulse = SKAction.repeatForever(SKAction.sequence([
+                SKAction.fadeAlpha(to: 0.6, duration: 0.5),
+                SKAction.fadeAlpha(to: 0.2, duration: 0.5)
+            ]))
+            rays.run(pulse)
         }
 
         // Divine beam in barrel
@@ -633,11 +557,12 @@ extension TowerAnimations {
     private static func startDivineParticleEmission(node: SKNode) {
         let emitParticle = SKAction.run { [weak node] in
             guard let node = node else { return }
+            guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 1.5...3))
             particle.fillColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.8) ?? .yellow.withAlphaComponent(0.8)
             particle.strokeColor = .clear
-            particle.glowWidth = 4
+            particle.glowWidth = 0
             particle.blendMode = .add
 
             let angle = CGFloat.random(in: 0...(.pi * 2))
@@ -671,11 +596,11 @@ extension TowerAnimations {
             let pulse = SKAction.repeatForever(SKAction.sequence([
                 SKAction.group([
                     SKAction.scale(to: 1.1, duration: 0.6),
-                    SKAction.run { hub.glowWidth = 6 }
+                    SKAction.run { hub.glowWidth = 0 }
                 ]),
                 SKAction.group([
                     SKAction.scale(to: 1.0, duration: 0.6),
-                    SKAction.run { hub.glowWidth = 4 }
+                    SKAction.run { hub.glowWidth = 0 }
                 ])
             ]))
             hub.run(pulse)
@@ -690,12 +615,12 @@ extension TowerAnimations {
                     SKAction.repeatForever(SKAction.sequence([
                         SKAction.run {
                             processNode.fillColor = color
-                            processNode.glowWidth = 5
+                            processNode.glowWidth = 0
                         },
                         SKAction.wait(forDuration: 0.15),
                         SKAction.run {
                             processNode.fillColor = color.withAlphaComponent(0.7)
-                            processNode.glowWidth = 3
+                            processNode.glowWidth = 0
                         },
                         SKAction.wait(forDuration: 0.85)
                     ]))
@@ -711,6 +636,7 @@ extension TowerAnimations {
     private static func startDataFlowAnimation(node: SKNode, body: SKShapeNode, color: UIColor) {
         let createDot = SKAction.run { [weak body] in
             guard let body = body else { return }
+            guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             let nodeIndex = Int.random(in: 0..<5)
             guard let processNode = body.childNode(withName: "processNode_\(nodeIndex)") else { return }
@@ -718,7 +644,7 @@ extension TowerAnimations {
             let dot = SKShapeNode(circleOfRadius: 2)
             dot.fillColor = color.lighter(by: 0.3)
             dot.strokeColor = .clear
-            dot.glowWidth = 3
+            dot.glowWidth = 0
             dot.blendMode = .add
             dot.position = .zero
             dot.zPosition = 3
@@ -748,9 +674,9 @@ extension TowerAnimations {
         // Warning triangle pulse
         if let triangle = body.childNode(withName: "warningTriangle") as? SKShapeNode {
             let pulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.run { triangle.glowWidth = 10 },
+                SKAction.run { triangle.glowWidth = 0 },
                 SKAction.wait(forDuration: 0.3),
-                SKAction.run { triangle.glowWidth = 4 },
+                SKAction.run { triangle.glowWidth = 0 },
                 SKAction.wait(forDuration: 0.7)
             ]))
             triangle.run(pulse)
@@ -797,6 +723,7 @@ extension TowerAnimations {
     private static func startCodeParticleEmission(node: SKNode) {
         let emitCode = SKAction.run { [weak node] in
             guard let node = node else { return }
+            guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             let codeChars = ["0", "1", "!", "?", "#", "@", "%"]
             let code = SKLabelNode(text: codeChars.randomElement()!)

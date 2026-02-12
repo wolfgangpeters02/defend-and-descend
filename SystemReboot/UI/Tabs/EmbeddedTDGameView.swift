@@ -45,6 +45,11 @@ struct EmbeddedTDGameView: View {
                     controller.setup(screenSize: geometry.size, playerProfile: appState.currentPlayer)
                 }
             }
+            .onChange(of: appState.showIntroSequence) { showIntro in
+                if !showIntro && controller.scene == nil && geometry.size.width > 0 && geometry.size.height > 0 {
+                    controller.setup(screenSize: geometry.size, playerProfile: appState.currentPlayer)
+                }
+            }
         }
     }
 
@@ -309,11 +314,14 @@ struct EmbeddedProtocolDeckCard: View {
                 }
             }
         }
-        .gesture(
-            DragGesture(minimumDistance: 5, coordinateSpace: .named("motherboardGameArea"))
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 10, coordinateSpace: .named("motherboardGameArea"))
                 .onChanged { value in
                     if canAfford {
                         if !isDragging {
+                            // Only start drag when pulling upward (toward the board)
+                            let translation = value.translation
+                            guard -translation.height > abs(translation.width) else { return }
                             isDragging = true
                             onDragStart()
                         }
@@ -321,8 +329,10 @@ struct EmbeddedProtocolDeckCard: View {
                     }
                 }
                 .onEnded { _ in
-                    isDragging = false
-                    onDragEnded()
+                    if isDragging {
+                        isDragging = false
+                        onDragEnded()
+                    }
                 }
         )
     }

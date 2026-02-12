@@ -1,119 +1,9 @@
 import SwiftUI
 
 // MARK: - TDGameContainerView Overlays
-// Zero-Day alert, Boss alert, Boss difficulty selector, Overclock, System Freeze
+// Boss alert, Boss difficulty selector, Overclock, System Freeze
 
 extension TDGameContainerView {
-
-    // MARK: - Zero-Day Alert Overlay (System Breach)
-
-    var zeroDayAlertOverlay: some View {
-        VStack {
-            Spacer()
-
-            // Alert banner at bottom of screen (above tower deck)
-            VStack(spacing: 12) {
-                // Warning header
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(DesignTypography.headline(22))
-                        .foregroundColor(.red)
-
-                    Text(L10n.ZeroDay.breachDetected)
-                        .font(.system(size: 18, weight: .black, design: .monospaced))
-                        .foregroundColor(.red)
-
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(DesignTypography.headline(22))
-                        .foregroundColor(.red)
-                }
-
-                Text(L10n.ZeroDay.virusDetected)
-                    .font(.system(size: 12, design: .monospaced))
-                    .foregroundColor(.gray)
-
-                Text(L10n.ZeroDay.efficiencyDraining)
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.orange)
-
-                // MANUAL_OVERRIDE button
-                Button(action: {
-                    initiateManualOverride()
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "person.fill.viewfinder")
-                            .font(DesignTypography.headline(18))
-                        Text(L10n.ZeroDay.manualOverride)
-                            .font(.system(size: 16, weight: .black, design: .monospaced))
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.green)
-                    )
-                    .shadow(color: .green.opacity(0.6), radius: 10)
-                }
-                .padding(.top, 4)
-            }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.black.opacity(0.95))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.red.opacity(0.8), lineWidth: 2)
-                    )
-            )
-            .padding(.horizontal, 20)
-            .padding(.bottom, 130) // Above tower deck
-        }
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: gameState?.zeroDayActive)
-    }
-
-    // MARK: - Manual Override (Zero-Day Boss Fight)
-
-    private func initiateManualOverride() {
-        HapticsService.shared.play(.warning)
-
-        // Pause the TD game and launch boss fight
-        isPaused = true
-        showZeroDayBossFight = true
-    }
-
-    func handleZeroDayBossFightResult(_ result: ZeroDayBossFightResult) {
-        isPaused = false
-
-        switch result {
-        case .victory(let hashBonus):
-            // Apply rewards and remove Zero-Day
-            if var state = gameState {
-                _ = ZeroDaySystem.onZeroDayDefeated(state: &state)
-                gameState = state
-                scene?.restoreEfficiency(to: max(0, state.leakCounter - 5))  // Bonus: restore some efficiency
-            }
-
-            appState.updatePlayer { profile in
-                profile.addHash(hashBonus)
-            }
-
-            HapticsService.shared.play(.success)
-
-        case .defeat:
-            // Zero-Day remains active, efficiency penalty
-            if var state = gameState {
-                state.leakCounter = min(BalanceConfig.ZeroDay.maxLeakCounter, state.leakCounter + BalanceConfig.ZeroDay.defeatLeakPenalty)
-                gameState = state
-            }
-            HapticsService.shared.play(.defeat)
-
-        case .fled:
-            // Zero-Day remains active, no penalty
-            HapticsService.shared.play(.light)
-        }
-    }
 
     // MARK: - TD Boss Alert Overlay
 
@@ -483,7 +373,7 @@ extension TDGameContainerView {
                             HStack(spacing: 8) {
                                 Image(systemName: "person.fill.viewfinder")
                                     .font(.system(size: 18, weight: .bold))
-                                Text(L10n.ZeroDay.manualOverride)
+                                Text(L10n.Freeze.manualOverride)
                                     .font(.system(size: 16, weight: .black, design: .monospaced))
                             }
 

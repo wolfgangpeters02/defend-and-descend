@@ -56,6 +56,11 @@ class GameScene: SKScene {
     var invulnerabilityAction: SKAction?
     var isPlayingInvulnerability = false
 
+    // Debug overlay
+    var debugFrameTimes: [TimeInterval] = []
+    var debugUpdateCounter: Int = 0
+    var debugOverlayNode: SKNode?
+
     // Screen effects
     var screenFlashNode: SKShapeNode?
     var cameraNode: SKCameraNode?
@@ -157,7 +162,7 @@ class GameScene: SKScene {
         nodePool = NodePool(maxPerType: 100)
 
         // Configure boss rendering manager (Step 4.1)
-        bossRenderingManager.configure(scene: self, nodePool: nodePool)
+        bossRenderingManager.configure(scene: self, nodePool: nodePool, enemyLayer: enemyLayer)
 
         // Setup camera for screen shake
         setupCamera()
@@ -225,37 +230,29 @@ class GameScene: SKScene {
     }
 
     private func createWireframeGrid(size: CGSize, spacing: CGFloat, color: SKColor) -> SKNode {
-        let container = SKNode()
+        // Performance: Single compound path instead of individual line nodes
+        let combinedPath = CGMutablePath()
 
         // Vertical lines
         var x: CGFloat = -size.width / 2
         while x <= size.width / 2 {
-            let path = CGMutablePath()
-            path.move(to: CGPoint(x: x, y: -size.height / 2))
-            path.addLine(to: CGPoint(x: x, y: size.height / 2))
-
-            let line = SKShapeNode(path: path)
-            line.strokeColor = color
-            line.lineWidth = 1
-            container.addChild(line)
+            combinedPath.move(to: CGPoint(x: x, y: -size.height / 2))
+            combinedPath.addLine(to: CGPoint(x: x, y: size.height / 2))
             x += spacing
         }
 
         // Horizontal lines
         var y: CGFloat = -size.height / 2
         while y <= size.height / 2 {
-            let path = CGMutablePath()
-            path.move(to: CGPoint(x: -size.width / 2, y: y))
-            path.addLine(to: CGPoint(x: size.width / 2, y: y))
-
-            let line = SKShapeNode(path: path)
-            line.strokeColor = color
-            line.lineWidth = 1
-            container.addChild(line)
+            combinedPath.move(to: CGPoint(x: -size.width / 2, y: y))
+            combinedPath.addLine(to: CGPoint(x: size.width / 2, y: y))
             y += spacing
         }
 
-        return container
+        let gridNode = SKShapeNode(path: combinedPath)
+        gridNode.strokeColor = color
+        gridNode.lineWidth = 1
+        return gridNode
     }
 
     private func setupObstacles() {
@@ -343,7 +340,20 @@ class GameScene: SKScene {
 
         // Create frame context with cached timestamp (Phase 1: Timestamp Caching)
         let context = FrameContext(currentTime: currentTime, lastUpdateTime: lastUpdateTime)
+        // Raw delta for debug FPS (uncapped — FrameContext caps at 33.3ms which hides real drops)
+        let rawDelta = lastUpdateTime > 0 ? currentTime - lastUpdateTime : 0
         lastUpdateTime = currentTime
+
+        // Debug overlay (before game logic so FPS tracks even when game is over)
+        if AppState.shared.showDebugOverlay {
+            syncDebugOverlayVisibility()
+            recordDebugFrameTime(rawDelta)
+            if shouldUpdateDebugOverlay() {
+                updateDebugOverlay()
+            }
+        } else if debugOverlayNode != nil {
+            removeDebugOverlay()
+        }
 
         // Update game state
         updateGameState(context: context)
@@ -518,6 +528,9 @@ class GameScene: SKScene {
         pickupNodes.removeAll()
         particleNodes.removeAll()
         pillarHealthBars.removeAll()
+
+        // Clear debug overlay
+        removeDebugOverlay()
 
         // Clear boss rendering (Step 4.1)
         bossRenderingManager.cleanup()

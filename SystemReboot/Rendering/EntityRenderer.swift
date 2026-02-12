@@ -14,7 +14,7 @@ class EntityRenderer {
         body.fillColor = SKColor(red: 0, green: 1, blue: 1, alpha: 1) // Cyan
         body.strokeColor = SKColor.white
         body.lineWidth = 2
-        body.glowWidth = 3
+        body.glowWidth = 0
         container.addChild(body)
 
         // Inner ring for detail
@@ -64,54 +64,72 @@ class EntityRenderer {
 
         switch enemy.shape ?? "circle" {
         case "square":
-            let square = SKShapeNode(rectOf: CGSize(width: size * 2, height: size * 2))
-            square.fillColor = color
-            square.strokeColor = color.darker(by: 0.3)
-            square.lineWidth = 2
-            container.addChild(square)
+            // Tank virus — "Armored Payload" full composition
+            let body = EntityRenderer.createTankVirusComposition(in: container, size: size, color: color)
+            // Scale breathing — tanks don't spin, they breathe
+            let breathe = SKAction.sequence([
+                SKAction.scale(to: 1.03, duration: 1.0),
+                SKAction.scale(to: 1.0, duration: 1.0)
+            ])
+            body.run(SKAction.repeatForever(breathe))
 
         case "triangle":
-            let path = CGMutablePath()
-            path.move(to: CGPoint(x: 0, y: size))
-            path.addLine(to: CGPoint(x: -size * 0.866, y: -size * 0.5))
-            path.addLine(to: CGPoint(x: size * 0.866, y: -size * 0.5))
-            path.closeSubpath()
-
-            let triangle = SKShapeNode(path: path)
-            triangle.fillColor = color
-            triangle.strokeColor = color.darker(by: 0.3)
-            triangle.lineWidth = 2
-            container.addChild(triangle)
+            // Fast virus — "Packet Runner" full composition
+            let body = EntityRenderer.createFastVirusComposition(in: container, size: size, color: color)
+            // Fast rotation (2s) — unstable speed
+            let fastRotate = SKAction.rotate(byAngle: .pi * 2, duration: 2.0)
+            container.run(SKAction.repeatForever(fastRotate))
 
         case "hexagon":
-            let path = hexagonPath(size: size)
-            let hexagon = SKShapeNode(path: path)
-            hexagon.fillColor = color
-            hexagon.strokeColor = color.darker(by: 0.3)
-            hexagon.lineWidth = 2
-            container.addChild(hexagon)
-
-            // Boss glow effect
             if enemy.isBoss {
-                hexagon.glowWidth = 5
+                // Boss: keep existing hexagon with glow + pulse
+                let path = hexagonPath(size: size)
+                let hexagon = SKShapeNode(path: path)
+                hexagon.fillColor = color
+                hexagon.strokeColor = color.darker(by: 0.3)
+                hexagon.lineWidth = 2
+                hexagon.glowWidth = 2.0
+                hexagon.name = "body"
+                container.addChild(hexagon)
 
                 let pulse = SKAction.sequence([
                     SKAction.scale(to: 1.15, duration: 0.3),
                     SKAction.scale(to: 1.0, duration: 0.3)
                 ])
                 container.run(SKAction.repeatForever(pulse))
+            } else {
+                // Elite virus — "Zero-Day Exploit" full composition
+                let body = EntityRenderer.createEliteVirusComposition(in: container, size: size, color: color)
+                // Alpha flicker — glitchy presence
+                let flicker = SKAction.sequence([
+                    SKAction.fadeAlpha(to: 0.9, duration: 0.15),
+                    SKAction.fadeAlpha(to: 1.0, duration: 0.15)
+                ])
+                body.run(SKAction.repeatForever(flicker))
             }
 
-        default: // Circle
-            let circle = SKShapeNode(circleOfRadius: size)
-            circle.fillColor = color
-            circle.strokeColor = color.darker(by: 0.3)
-            circle.lineWidth = 2
-            container.addChild(circle)
+        default:
+            // Basic virus — "Malware Blob" full composition
+            let body = EntityRenderer.createBasicVirusComposition(in: container, size: size, color: color)
+            // Subtle pulse on body
+            let pulse = SKAction.sequence([
+                SKAction.scale(to: 1.05, duration: 0.8),
+                SKAction.scale(to: 0.95, duration: 0.8)
+            ])
+            body.run(SKAction.repeatForever(pulse))
+            // Slow rotation (full turn every 4s) — viruses spin
+            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
+            container.run(SKAction.repeatForever(rotate))
         }
 
         // Boss health bar is now shown in the UI overlay (GameContainerView)
         // No need for sprite-attached health bar
+
+        // Store metadata for death animation (Phase 7B)
+        container.userData = NSMutableDictionary()
+        container.userData?["shape"] = enemy.isBoss ? "boss" : (enemy.shape ?? "circle")
+        container.userData?["size"] = size
+        container.userData?["color"] = color
 
         return container
     }
@@ -125,7 +143,7 @@ class EntityRenderer {
         aura.fillColor = SKColor.black.withAlphaComponent(0.4)
         aura.strokeColor = color.withAlphaComponent(0.6)
         aura.lineWidth = 3
-        aura.glowWidth = 15
+        aura.glowWidth = 2.0  // Menacing outer glow (1 Void Harbinger in game)
         container.addChild(aura)
 
         // Main body - octagonal void core
@@ -145,7 +163,7 @@ class EntityRenderer {
         body.fillColor = SKColor(hex: "1a0033") ?? SKColor.black
         body.strokeColor = color
         body.lineWidth = 4
-        body.glowWidth = 8
+        body.glowWidth = 1.5  // Void core shimmer
         container.addChild(body)
 
         // Inner eye/core - the "harbinger"
@@ -153,7 +171,7 @@ class EntityRenderer {
         eye.fillColor = color
         eye.strokeColor = SKColor(hex: "ff00ff") ?? SKColor.magenta
         eye.lineWidth = 3
-        eye.glowWidth = 12
+        eye.glowWidth = 1.5  // Hypnotic center glow
         container.addChild(eye)
 
         // Pupil
@@ -167,7 +185,7 @@ class EntityRenderer {
             let fragment = SKShapeNode(circleOfRadius: size * 0.15)
             fragment.fillColor = color.withAlphaComponent(0.8)
             fragment.strokeColor = SKColor.clear
-            fragment.glowWidth = 6
+            fragment.glowWidth = 1.0  // Eerie orbiting glow
             let angle = CGFloat(i) * (.pi / 2)
             fragment.position = CGPoint(x: cos(angle) * size * 0.8, y: sin(angle) * size * 0.8)
             fragment.name = "fragment_\(i)"
@@ -200,46 +218,107 @@ class EntityRenderer {
         return container
     }
 
-    /// Create void minion visual (spawned during Void Harbinger fight)
+    /// Create void minion visual — teardrop/wisp shape (Phase 5B)
     private func createVoidMinionNode(size: CGFloat, color: SKColor, isElite: Bool) -> SKNode {
         let container = SKNode()
 
-        // Wispy void body
-        let body = SKShapeNode(circleOfRadius: size)
-        body.fillColor = isElite ? color : color.withAlphaComponent(0.7)
-        body.strokeColor = isElite ? (SKColor(hex: "ff00ff") ?? SKColor.magenta) : color.darker(by: 0.2)
-        body.lineWidth = isElite ? 3 : 2
-        body.glowWidth = isElite ? 8 : 4
-        container.addChild(body)
-
-        // Inner core
-        let core = SKShapeNode(circleOfRadius: size * 0.4)
-        core.fillColor = SKColor.black.withAlphaComponent(0.6)
-        core.strokeColor = SKColor.clear
-        container.addChild(core)
-
         if isElite {
-            // Elite has orbiting particles
-            for i in 0..<3 {
-                let particle = SKShapeNode(circleOfRadius: size * 0.15)
-                particle.fillColor = color
-                particle.glowWidth = 4
-                let angle = CGFloat(i) * (2 * .pi / 3)
-                particle.position = CGPoint(x: cos(angle) * size * 0.7, y: sin(angle) * size * 0.7)
-                container.addChild(particle)
+            // Elite minion: mini-octagon (matching harbinger) with orbiting sparks
+            let octPath = CGMutablePath()
+            for i in 0..<8 {
+                let angle = CGFloat(i) * (.pi / 4) - (.pi / 8)
+                let pt = CGPoint(x: cos(angle) * size, y: sin(angle) * size)
+                if i == 0 { octPath.move(to: pt) } else { octPath.addLine(to: pt) }
             }
+            octPath.closeSubpath()
 
-            // Rotation for elite
+            let body = SKShapeNode(path: octPath)
+            body.fillColor = color
+            body.strokeColor = SKColor(hex: "ff00ff") ?? SKColor.magenta
+            body.lineWidth = 3
+            body.glowWidth = 0
+            body.name = "body"
+            container.addChild(body)
+
+            // Inner void core
+            let core = SKShapeNode(circleOfRadius: size * 0.35)
+            core.fillColor = SKColor.black.withAlphaComponent(0.6)
+            core.strokeColor = color.withAlphaComponent(0.5)
+            core.lineWidth = 1
+            container.addChild(core)
+
+            // Orbiting sparks (compound path, single node)
+            let sparkPath = CGMutablePath()
+            let sparkSize: CGFloat = size * 0.1
+            for i in 0..<3 {
+                let angle = CGFloat(i) * (2 * .pi / 3)
+                let sx = cos(angle) * size * 0.7
+                let sy = sin(angle) * size * 0.7
+                sparkPath.addArc(center: CGPoint(x: sx, y: sy), radius: sparkSize,
+                                 startAngle: 0, endAngle: .pi * 2, clockwise: false)
+            }
+            let sparks = SKShapeNode(path: sparkPath)
+            sparks.fillColor = color.withAlphaComponent(0.8)
+            sparks.strokeColor = .clear
+            container.addChild(sparks)
+
             let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 1.5)
             container.run(SKAction.repeatForever(rotate))
-        }
 
-        // Pulse animation
-        let pulse = SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.3),
-            SKAction.scale(to: 0.95, duration: 0.3)
-        ])
-        body.run(SKAction.repeatForever(pulse))
+            // Elite pulse
+            let pulse = SKAction.sequence([
+                SKAction.scale(to: 1.08, duration: 0.3),
+                SKAction.scale(to: 0.95, duration: 0.3)
+            ])
+            body.run(SKAction.repeatForever(pulse))
+
+        } else {
+            // Regular minion: teardrop/wisp shape with trailing fade
+            let tearPath = CGMutablePath()
+            // Teardrop: rounded top, pointed bottom
+            tearPath.move(to: CGPoint(x: 0, y: size * 0.8))
+            tearPath.addQuadCurve(to: CGPoint(x: size * 0.7, y: 0),
+                                  control: CGPoint(x: size * 0.8, y: size * 0.7))
+            tearPath.addQuadCurve(to: CGPoint(x: 0, y: -size * 1.1),
+                                  control: CGPoint(x: size * 0.3, y: -size * 0.5))
+            tearPath.addQuadCurve(to: CGPoint(x: -size * 0.7, y: 0),
+                                  control: CGPoint(x: -size * 0.3, y: -size * 0.5))
+            tearPath.addQuadCurve(to: CGPoint(x: 0, y: size * 0.8),
+                                  control: CGPoint(x: -size * 0.8, y: size * 0.7))
+
+            let body = SKShapeNode(path: tearPath)
+            body.fillColor = color.withAlphaComponent(0.6)
+            body.strokeColor = color.darker(by: 0.2)
+            body.lineWidth = 2
+            body.name = "body"
+            container.addChild(body)
+
+            // Trailing fade wisp (behind teardrop)
+            let wispPath = CGMutablePath()
+            wispPath.move(to: CGPoint(x: 0, y: -size * 1.1))
+            wispPath.addQuadCurve(to: CGPoint(x: 0, y: -size * 1.8),
+                                  control: CGPoint(x: size * 0.2, y: -size * 1.4))
+            let wisp = SKShapeNode(path: wispPath)
+            wisp.strokeColor = color.withAlphaComponent(0.25)
+            wisp.lineWidth = 2
+            wisp.lineCap = .round
+            wisp.zPosition = -0.1
+            container.addChild(wisp)
+
+            // Inner void speck
+            let speck = SKShapeNode(circleOfRadius: size * 0.2)
+            speck.fillColor = SKColor.black.withAlphaComponent(0.5)
+            speck.strokeColor = .clear
+            speck.position = CGPoint(x: 0, y: size * 0.1)
+            container.addChild(speck)
+
+            // Wisp pulse
+            let pulse = SKAction.sequence([
+                SKAction.scale(to: 1.1, duration: 0.3),
+                SKAction.scale(to: 0.95, duration: 0.3)
+            ])
+            body.run(SKAction.repeatForever(pulse))
+        }
 
         return container
     }
@@ -259,7 +338,7 @@ class EntityRenderer {
             outerRing.fillColor = color.withAlphaComponent(0.3)
             outerRing.strokeColor = color
             outerRing.lineWidth = 4
-            outerRing.glowWidth = 8  // Reduced from 15 for performance
+            outerRing.glowWidth = 0
             container.addChild(outerRing)
 
             // Middle energy core
@@ -267,7 +346,7 @@ class EntityRenderer {
             middleCore.fillColor = color.withAlphaComponent(0.6)
             middleCore.strokeColor = SKColor.white.withAlphaComponent(0.5)
             middleCore.lineWidth = 2
-            middleCore.glowWidth = 8
+            middleCore.glowWidth = 0
             container.addChild(middleCore)
 
             // Inner bright core
@@ -275,7 +354,7 @@ class EntityRenderer {
             innerCore.fillColor = SKColor.white
             innerCore.strokeColor = color
             innerCore.lineWidth = 2
-            innerCore.glowWidth = 6  // Reduced from 10 for performance
+            innerCore.glowWidth = 0
             container.addChild(innerCore)
 
             // Pulsing animation - threatening and dramatic
@@ -305,7 +384,7 @@ class EntityRenderer {
             voidCore.fillColor = SKColor(hex: "1a0033") ?? SKColor.black
             voidCore.strokeColor = color
             voidCore.lineWidth = 3
-            voidCore.glowWidth = 10
+            voidCore.glowWidth = 0
             container.addChild(voidCore)
 
             // Inner swirling void
@@ -313,7 +392,7 @@ class EntityRenderer {
             innerVoid.fillColor = color.withAlphaComponent(0.8)
             innerVoid.strokeColor = SKColor(hex: "ff00ff") ?? SKColor.magenta
             innerVoid.lineWidth = 2
-            innerVoid.glowWidth = 6
+            innerVoid.glowWidth = 0
             container.addChild(innerVoid)
 
             // Void tendrils (3 small orbs orbiting)
@@ -321,7 +400,7 @@ class EntityRenderer {
                 let tendril = SKShapeNode(circleOfRadius: size * 0.25)
                 tendril.fillColor = color
                 tendril.strokeColor = SKColor.clear
-                tendril.glowWidth = 4
+                tendril.glowWidth = 0
                 let angle = CGFloat(i) * (2 * .pi / 3)
                 tendril.position = CGPoint(x: cos(angle) * size * 0.8, y: sin(angle) * size * 0.8)
                 tendril.name = "tendril_\(i)"
@@ -349,7 +428,7 @@ class EntityRenderer {
             beamCore.fillColor = color
             beamCore.strokeColor = SKColor(hex: "ff66cc") ?? SKColor.magenta
             beamCore.lineWidth = 2
-            beamCore.glowWidth = 8
+            beamCore.glowWidth = 0
             container.addChild(beamCore)
 
             // Targeting reticle effect
@@ -371,7 +450,7 @@ class EntityRenderer {
         body.fillColor = color
         body.strokeColor = color.lighter(by: 0.3)
         body.lineWidth = 1
-        body.glowWidth = 2
+        body.glowWidth = 0
         container.addChild(body)
 
         // Trail effect
@@ -415,7 +494,7 @@ class EntityRenderer {
             hashNode.fillColor = hashColor
             hashNode.strokeColor = hashColorLight
             hashNode.lineWidth = 1.5
-            hashNode.glowWidth = 3
+            hashNode.glowWidth = 0
             container.addChild(hashNode)
 
             // Spinning animation
