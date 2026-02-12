@@ -29,8 +29,8 @@ struct OfflineSimulator {
             return nil
         }
 
-        // Cap at 24 hours (86400 seconds)
-        let cappedTime = min(timeAway, 86400)
+        // Cap at max offline time
+        let cappedTime = min(timeAway, BalanceConfig.OfflineSimulation.maxOfflineSeconds)
 
         // ---- OFFLINE SIMULATION ----
 
@@ -54,14 +54,14 @@ struct OfflineSimulator {
         let avgThreatLevel = (startThreatLevel + endThreatLevel) / 2
         let healthMultiplier = 1.0 + (avgThreatLevel - 1.0) * BalanceConfig.ThreatLevel.healthScaling
         let spawnRateMultiplier = 1.0 + avgThreatLevel * BalanceConfig.ThreatLevel.spawnRateThreatScaling
-        let baseEnemyHP: CGFloat = 20
+        let baseEnemyHP = BalanceConfig.OfflineSimulation.baseEnemyHP
         let offenseStrengthPerLane = baseEnemyHP * healthMultiplier * spawnRateMultiplier
         let totalOffenseStrength = offenseStrengthPerLane * CGFloat(laneCount)
 
         // 3. Calculate leak rate
         // If defense < offense, enemies leak through
         let defenseRatio = defenseStrength > 0 ? defenseStrength / totalOffenseStrength : 0
-        let defenseThreshold: CGFloat = 0.8  // Need 80% of offense to hold
+        let defenseThreshold = BalanceConfig.OfflineSimulation.defenseThreshold
 
         var leaksPerHour: CGFloat = 0
         if defenseRatio < defenseThreshold {
@@ -70,7 +70,7 @@ struct OfflineSimulator {
             // At 50% defense: ~5 leaks per hour
             // At 80% defense: 0 leaks
             let deficitRatio = 1.0 - (defenseRatio / defenseThreshold)
-            leaksPerHour = deficitRatio * 10.0
+            leaksPerHour = deficitRatio * BalanceConfig.OfflineSimulation.maxLeaksPerHour
         }
 
         // 4. Calculate total leaks
@@ -97,7 +97,7 @@ struct OfflineSimulator {
             hashEarned: hashEarned,
             timeAwaySeconds: timeAway,
             cappedTimeSeconds: cappedTime,
-            wasCapped: timeAway > 86400,
+            wasCapped: timeAway > BalanceConfig.OfflineSimulation.maxOfflineSeconds,
             leaksOccurred: totalLeaks,
             newThreatLevel: endThreatLevel,
             newEfficiency: newEfficiency,
@@ -124,11 +124,11 @@ struct OfflineSimulator {
         // Use the same calculation as offline simulation to estimate leak rate
         let offlineThreatGrowthRate = BalanceConfig.ThreatLevel.offlineThreatGrowthRate
 
-        // Estimate average threat over next 24 hours
-        let estimatedAvgThreat = threatLevel + (86400 * offlineThreatGrowthRate / 2)
+        // Estimate average threat over next max offline period
+        let estimatedAvgThreat = threatLevel + (CGFloat(BalanceConfig.OfflineSimulation.maxOfflineSeconds) * offlineThreatGrowthRate / 2)
 
         // Expected enemy HP at this threat level (base HP 20, scaling from BalanceConfig)
-        let baseEnemyHP: CGFloat = 20
+        let baseEnemyHP = BalanceConfig.OfflineSimulation.baseEnemyHP
         let avgEnemyHP = baseEnemyHP * (1 + estimatedAvgThreat * BalanceConfig.ThreatLevel.healthScaling)
 
         // Expected spawn rate from BalanceConfig
@@ -169,8 +169,9 @@ struct OfflineSimulator {
         let hoursUntilZero = leaksUntilZero / leaksPerHour
         let secondsUntilZero = hoursUntilZero * 3600
 
-        // Schedule notification (min 5 minutes, max 24 hours out)
-        if secondsUntilZero >= 300 && secondsUntilZero <= 86400 {
+        // Schedule notification within valid time range
+        if secondsUntilZero >= BalanceConfig.OfflineSimulation.minNotificationTime
+            && secondsUntilZero <= BalanceConfig.OfflineSimulation.maxNotificationTime {
             NotificationService.shared.scheduleEfficiencyZeroNotification(
                 estimatedTimeUntilZero: secondsUntilZero
             )

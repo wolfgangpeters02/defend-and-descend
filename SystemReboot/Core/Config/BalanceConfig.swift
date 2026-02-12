@@ -1761,6 +1761,30 @@ struct BalanceConfig {
 
         /// Hazard velocity variance (perpendicular to main direction)
         static let hazardVelocityVariance: CGFloat = 50
+
+        /// Sweep hazard gap size (pixels the player can fit through)
+        static let sweepGapSize: CGFloat = 70
+
+        /// Sweep hazard velocity (points per second)
+        static let sweepVelocity: CGFloat = 80
+
+        /// Expanding hazard growth rate (radius increase per second)
+        static let expandingGrowthRate: CGFloat = 80
+
+        /// Player collision radius for hit detection
+        static let playerCollisionRadius: CGFloat = 15
+
+        /// Hazard collision radius for projectile hit detection
+        static let hazardCollisionRadius: CGFloat = 15
+
+        /// Difficulty escalation interval (seconds between spawn rate increases)
+        static let difficultyEscalationInterval: TimeInterval = 5
+
+        /// Spawn interval reduction per escalation tick
+        static let spawnIntervalReduction: TimeInterval = 0.2
+
+        /// Minimum hazard spawn interval (floor for difficulty scaling)
+        static let minHazardSpawnInterval: TimeInterval = 0.5
     }
 
     // MARK: - TD Rendering
@@ -2008,6 +2032,28 @@ extension BalanceConfig {
     struct OfflineEarnings {
         /// Minimum hash earned to show the welcome-back modal
         static let minimumDisplayThreshold: Int = 10
+    }
+
+    // MARK: - Offline Simulation
+
+    struct OfflineSimulation {
+        /// Base enemy HP used for offline defense calculations
+        static let baseEnemyHP: CGFloat = 20
+
+        /// Defense threshold ratio — need this fraction of offense to hold (0.8 = 80%)
+        static let defenseThreshold: CGFloat = 0.8
+
+        /// Maximum leaks per hour when defense is 0%
+        static let maxLeaksPerHour: CGFloat = 10.0
+
+        /// Maximum offline time cap in seconds (24 hours)
+        static let maxOfflineSeconds: TimeInterval = 86400
+
+        /// Minimum notification schedule time (seconds)
+        static let minNotificationTime: TimeInterval = 300
+
+        /// Maximum notification schedule time (seconds)
+        static let maxNotificationTime: TimeInterval = 86400
     }
 
     // MARK: - TD Maps

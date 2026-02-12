@@ -83,9 +83,12 @@ struct ManualOverrideSystem {
 
         // Difficulty escalation — spawn faster every 5 seconds
         state.difficultyTimer += deltaTime
-        if state.difficultyTimer >= 5 {
+        if state.difficultyTimer >= BalanceConfig.ManualOverride.difficultyEscalationInterval {
             state.difficultyTimer = 0
-            state.hazardSpawnInterval = max(0.5, state.hazardSpawnInterval - 0.2)
+            state.hazardSpawnInterval = max(
+                BalanceConfig.ManualOverride.minHazardSpawnInterval,
+                state.hazardSpawnInterval - BalanceConfig.ManualOverride.spawnIntervalReduction
+            )
         }
 
         // Hazard spawning
@@ -198,7 +201,7 @@ struct ManualOverrideSystem {
 
     private static func spawnSweepHazard(sceneSize: CGSize) -> Hazard {
         let isHorizontal = Bool.random()
-        let gapSize: CGFloat = 70
+        let gapSize = BalanceConfig.ManualOverride.sweepGapSize
         let direction: CGFloat = Bool.random() ? 1 : -1
 
         if isHorizontal {
@@ -207,7 +210,7 @@ struct ManualOverrideSystem {
             return Hazard(
                 id: UUID(),
                 position: CGPoint(x: 0, y: startY),
-                kind: .sweep(velocity: 80 * direction, isHorizontal: true,
+                kind: .sweep(velocity: BalanceConfig.ManualOverride.sweepVelocity * direction, isHorizontal: true,
                              gapStart: gapStart, gapEnd: gapStart + gapSize)
             )
         } else {
@@ -218,7 +221,7 @@ struct ManualOverrideSystem {
             return Hazard(
                 id: UUID(),
                 position: CGPoint(x: startX, y: 0),
-                kind: .sweep(velocity: 80 * direction, isHorizontal: false,
+                kind: .sweep(velocity: BalanceConfig.ManualOverride.sweepVelocity * direction, isHorizontal: false,
                              gapStart: gapStart, gapEnd: gapStart + gapSize)
             )
         }
@@ -245,7 +248,7 @@ struct ManualOverrideSystem {
                 }
 
             case .expanding(var currentRadius, let maxRadius):
-                currentRadius += 80 * CGFloat(deltaTime)
+                currentRadius += BalanceConfig.ManualOverride.expandingGrowthRate * CGFloat(deltaTime)
                 if currentRadius >= maxRadius {
                     state.hazards[i].removed = true
                     removedIDs.insert(state.hazards[i].id)
@@ -282,12 +285,12 @@ struct ManualOverrideSystem {
     private static func checkCollisions(state: inout State) -> Bool {
         guard state.invincibilityTimer <= 0 else { return false }
 
-        let playerRadius: CGFloat = 15
+        let playerRadius = BalanceConfig.ManualOverride.playerCollisionRadius
 
         for hazard in state.hazards {
             switch hazard.kind {
             case .projectile:
-                let hazardRadius: CGFloat = 15
+                let hazardRadius = BalanceConfig.ManualOverride.hazardCollisionRadius
                 let dx = state.playerPosition.x - hazard.position.x
                 let dy = state.playerPosition.y - hazard.position.y
                 let distance = hypot(dx, dy)
