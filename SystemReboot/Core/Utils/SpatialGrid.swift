@@ -198,3 +198,34 @@ extension SpatialGrid where T == Enemy {
         return candidates.first?.enemy
     }
 }
+
+// MARK: - Spatial Grid Extensions for TD Enemies
+
+extension SpatialGrid where T == TDEnemy {
+    /// Rebuild the grid from an array of TD enemies.
+    func rebuild(from enemies: [TDEnemy]) {
+        clear()
+        for enemy in enemies where !enemy.isDead && !enemy.reachedCore {
+            insert(enemy, at: CGPoint(x: enemy.x, y: enemy.y))
+        }
+    }
+
+    /// Query for TD enemies within range of a point, with actual distance check.
+    func queryWithDistance(x: CGFloat, y: CGFloat, radius: CGFloat) -> [(enemy: TDEnemy, distanceSq: CGFloat)] {
+        let candidates = query(x: x, y: y, radius: radius)
+        let radiusSq = radius * radius
+        var results: [(enemy: TDEnemy, distanceSq: CGFloat)] = []
+
+        for enemy in candidates {
+            if enemy.isDead || enemy.reachedCore { continue }
+            let dx = enemy.x - x
+            let dy = enemy.y - y
+            let distSq = dx * dx + dy * dy
+            if distSq <= radiusSq {
+                results.append((enemy, distSq))
+            }
+        }
+
+        return results
+    }
+}

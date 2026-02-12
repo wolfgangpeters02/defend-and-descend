@@ -523,25 +523,27 @@ extension TDGameScene {
             for led in leds {
                 // Skip LEDs outside visible area
                 guard paddedRect.contains(led.position) else { continue }
-                // Find nearest enemy to this LED
+                // Find nearest enemy to this LED (squared distance avoids sqrt in inner loop)
                 let ledPosition = led.position
-                var minDistance: CGFloat = .infinity
+                var minDistanceSq: CGFloat = .infinity
                 var nearestEnemy: TDEnemy?
 
                 for enemy in laneEnemies {
                     let enemyPos = convertToScene(enemy.position)
                     let dx = enemyPos.x - ledPosition.x
                     let dy = enemyPos.y - ledPosition.y
-                    let distance = sqrt(dx * dx + dy * dy)
+                    let distanceSq = dx * dx + dy * dy
 
-                    if distance < minDistance {
-                        minDistance = distance
+                    if distanceSq < minDistanceSq {
+                        minDistanceSq = distanceSq
                         nearestEnemy = enemy
                     }
                 }
 
                 // Calculate intensity based on proximity (100pt range)
+                // Only compute sqrt for the single nearest enemy
                 let proximityRange: CGFloat = 100
+                let minDistance = sqrt(minDistanceSq)
                 let intensity = max(0, 1 - minDistance / proximityRange)
 
                 if intensity > 0.1, let enemy = nearestEnemy {

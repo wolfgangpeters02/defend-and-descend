@@ -226,11 +226,20 @@ class TowerSystem {
         let tower = state.towers[towerIndex]
         let towerPos = tower.position
 
+        // Use spatial grid for range query (O(1) cell lookup vs O(n) brute force)
+        let candidates: [TDEnemy]
+        if let grid = state.enemyGrid {
+            candidates = grid.query(x: towerPos.x, y: towerPos.y, radius: tower.range)
+        } else {
+            candidates = state.enemies
+        }
+
         // Find enemies in range
         var bestTarget: TDEnemy?
         var bestProgress: CGFloat = -1  // Target enemy furthest along path
+        let rangeSq = tower.range * tower.range
 
-        for enemy in state.enemies {
+        for enemy in candidates {
             if enemy.isDead || enemy.reachedCore { continue }
 
             // Skip Zero-Day enemies (immune to tower damage)
@@ -238,9 +247,9 @@ class TowerSystem {
 
             let dx = enemy.x - towerPos.x
             let dy = enemy.y - towerPos.y
-            let distance = sqrt(dx*dx + dy*dy)
+            let distSq = dx*dx + dy*dy
 
-            if distance <= tower.range {
+            if distSq <= rangeSq {
                 // Prioritize enemies further along path (closer to core)
                 if enemy.pathProgress > bestProgress {
                     bestProgress = enemy.pathProgress

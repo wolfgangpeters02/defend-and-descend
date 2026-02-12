@@ -167,6 +167,12 @@ class TDSimulator {
         // 4. Path system - move enemies
         PathSystem.updateEnemyPositions(state: &state, deltaTime: deltaTime, currentTime: currentTime)
 
+        // 4b. Rebuild spatial grid for targeting/collision queries
+        if state.enemyGrid == nil {
+            state.enemyGrid = SpatialGrid<TDEnemy>(cellSize: 100)
+        }
+        state.enemyGrid?.rebuild(from: state.enemies)
+
         // 5. Tower targeting
         TowerSystem.updateTargets(state: &state)
 

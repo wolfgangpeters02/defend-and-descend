@@ -250,21 +250,21 @@ With grid: 50 towers × ~5 grid cells = ~250 checks/frame
 - **Boss cached actions:** Already use lazy `SKAction` properties
 - **LED updates:** Already throttled to 1/3 frame rate with zoom culling
 
-### Recommended Execution Order
+### Implementation Status
 
-| Priority | Task | Files | Risk | Impact |
-|----------|------|-------|------|--------|
-| 1 | SpatialGrid for collisions | TDCollisionSystem.swift | Low | High |
-| 2 | SpatialGrid for targeting | TowerSystem.swift | Low | High |
-| 3 | Trail geometry caching | TDGameScene+EntityVisuals.swift | Low | Medium |
-| 4 | Particle node pooling | ParticleEffectService.swift | Low | Medium |
-| 5 | Frost crystal recycling | TDGameScene+EntityVisuals.swift | Low | Medium |
-| 6 | LED squared distance | TDGameScene+Paths.swift | Low | Medium |
-| 7 | Cooldown arc caching | TDGameScene+EntityVisuals.swift | Low | Low-Medium |
+| Priority | Task | Files | Status |
+|----------|------|-------|--------|
+| 1 | SpatialGrid for collisions | TDCollisionSystem.swift, SpatialGrid.swift, TDTypes.swift, TDGameLoop.swift | **Done** — Added `SpatialGrid<TDEnemy>` extension, `enemyGrid` property to TDGameState, grid rebuild per frame, spatial queries in collision loop + splash damage |
+| 2 | SpatialGrid for targeting | TowerSystem.swift | **Done** — Tower targeting uses grid query + squared distance instead of iterating all enemies |
+| 3 | Trail geometry caching | TDGameScene+EntityVisuals.swift | **Already optimized** — Code already uses single CGMutablePath per trail; trail changes every frame by design |
+| 4 | LED squared distance | TDGameScene+Paths.swift | **Done** — Inner loop uses squared distance comparison, sqrt only for final nearest enemy |
+| 5 | Frost crystal recycling | TDGameScene+EntityVisuals.swift | **Done** — Toggles `isHidden` instead of create/destroy cycle |
+| 6 | Cooldown arc caching | TDGameScene+EntityVisuals.swift | **Done** — Caches progress per tower, only rebuilds arc path when progress changes by >2% |
+| 7 | Particle pooling | ParticleEffectService.swift | **Done** — Boss death particles use internal pool (acquire/release) instead of fresh allocation + removeFromParent |
 
 ### Profiling Strategy
 
-Before implementing, profile on the lowest-supported device to establish baseline:
+Profile on the lowest-supported device to validate improvements:
 - [ ] Measure FPS during wave 15+ with 20+ towers (peak entity count)
 - [ ] Measure FPS during boss fight with active mechanics
 - [ ] Measure FPS on motherboard map with all sectors visible

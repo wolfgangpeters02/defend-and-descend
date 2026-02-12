@@ -41,7 +41,21 @@ struct TDCollisionSystem {
             let prevPos = prevPositions[proj.id] ?? CGPoint(x: proj.x, y: proj.y)
             let currPos = CGPoint(x: proj.x, y: proj.y)
 
-            for enemyIndex in 0..<state.enemies.count {
+            // Use spatial grid to narrow enemy candidates (O(1) cell lookup vs O(n) brute force)
+            let searchRadius = max(proj.radius + 30, hypot(currPos.x - prevPos.x, currPos.y - prevPos.y) + 30)
+            let midX = (prevPos.x + currPos.x) * 0.5
+            let midY = (prevPos.y + currPos.y) * 0.5
+
+            let candidateIndices: [Int]
+            if let grid = state.enemyGrid {
+                let candidates = grid.query(x: midX, y: midY, radius: searchRadius)
+                let candidateIds = Set(candidates.map { $0.id })
+                candidateIndices = state.enemies.indices.filter { candidateIds.contains(state.enemies[$0].id) }
+            } else {
+                candidateIndices = Array(state.enemies.indices)
+            }
+
+            for enemyIndex in candidateIndices {
                 var enemy = state.enemies[enemyIndex]
                 if enemy.isDead || enemy.reachedCore { continue }
 
@@ -193,7 +207,17 @@ struct TDCollisionSystem {
         slow: CGFloat?,
         slowDuration: TimeInterval?
     ) {
-        for i in 0..<state.enemies.count {
+        // Use spatial grid to narrow candidates
+        let candidateIndices: [Int]
+        if let grid = state.enemyGrid {
+            let candidates = grid.query(x: center.x, y: center.y, radius: radius)
+            let candidateIds = Set(candidates.map { $0.id })
+            candidateIndices = state.enemies.indices.filter { candidateIds.contains(state.enemies[$0].id) }
+        } else {
+            candidateIndices = Array(state.enemies.indices)
+        }
+
+        for i in candidateIndices {
             var enemy = state.enemies[i]
             if enemy.isDead || enemy.reachedCore { continue }
 

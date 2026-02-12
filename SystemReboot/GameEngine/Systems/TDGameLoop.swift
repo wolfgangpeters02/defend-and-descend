@@ -101,6 +101,13 @@ struct TDGameLoop {
 
         // MARK: Core Systems
         PathSystem.updateEnemyPositions(state: &state, deltaTime: deltaTime, currentTime: currentTime)
+
+        // Rebuild spatial grid after enemy positions update (O(n) instead of O(n²) for targeting/collisions)
+        if state.enemyGrid == nil {
+            state.enemyGrid = SpatialGrid<TDEnemy>(cellSize: 100)
+        }
+        state.enemyGrid?.rebuild(from: state.enemies)
+
         TowerSystem.updateTargets(state: &state)
         TowerSystem.processTowerAttacks(state: &state, currentTime: currentTime, deltaTime: deltaTime)
         CoreSystem.processCoreAttack(state: &state, currentTime: currentTime)

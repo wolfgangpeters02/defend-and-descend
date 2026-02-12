@@ -201,7 +201,10 @@ extension TDGameScene {
         }
     }
 
-    /// Update cooldown arc indicator on tower
+    /// Cached cooldown progress per tower to avoid redundant arc path rebuilds
+    private static var cachedCooldownProgress: [String: CGFloat] = [:]
+
+    /// Update cooldown arc indicator on tower (cached: only rebuilds path when progress changes)
     func updateCooldownArc(for tower: Tower, node: SKNode, currentTime: TimeInterval) {
         guard let cooldownNode = node.childNode(withName: "cooldown") as? SKShapeNode else { return }
 
@@ -222,17 +225,23 @@ extension TDGameScene {
         }
 
         if cooldownProgress < 1.0 && cooldownProgress > 0.0 {
-            // Show and update cooldown arc
             cooldownNode.isHidden = false
 
-            let radius: CGFloat = 18
-            let startAngle = -CGFloat.pi / 2
-            let endAngle = startAngle + (CGFloat.pi * 2 * CGFloat(cooldownProgress))
+            // Only rebuild arc path when progress changes by a visible amount (~2% arc step)
+            let lastProgress = Self.cachedCooldownProgress[tower.id] ?? -1
+            if abs(cooldownProgress - lastProgress) > 0.02 {
+                Self.cachedCooldownProgress[tower.id] = cooldownProgress
 
-            let path = UIBezierPath(arcCenter: .zero, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
-            cooldownNode.path = path.cgPath
+                let radius: CGFloat = 18
+                let startAngle = -CGFloat.pi / 2
+                let endAngle = startAngle + (CGFloat.pi * 2 * CGFloat(cooldownProgress))
+
+                let path = UIBezierPath(arcCenter: .zero, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
+                cooldownNode.path = path.cgPath
+            }
         } else {
             cooldownNode.isHidden = true
+            Self.cachedCooldownProgress.removeValue(forKey: tower.id)
         }
     }
 
@@ -755,11 +764,12 @@ extension TDGameScene {
                     slowOverlay.isHidden = !enemy.isSlowed
                 }
 
-                // Manage orbiting frost crystals
+                // Manage orbiting frost crystals (recycled: toggle visibility instead of create/destroy)
                 let frostCrystals = node.childNode(withName: "frostCrystals")
                 if enemy.isSlowed {
-                    if frostCrystals == nil {
-                        // Create frost crystal container
+                    if let crystals = frostCrystals {
+                        crystals.isHidden = false
+                    } else {
                         let crystalContainer = createFrostCrystals(enemySize: enemy.size)
                         crystalContainer.name = "frostCrystals"
                         node.addChild(crystalContainer)
@@ -770,8 +780,8 @@ extension TDGameScene {
                         spawnSlowParticle(at: node.position)
                     }
                 } else {
-                    // Remove frost crystals when no longer slowed
-                    frostCrystals?.removeFromParent()
+                    // Hide frost crystals when no longer slowed (reuse on next slow)
+                    frostCrystals?.isHidden = true
                 }
 
                 // Tint body when slowed

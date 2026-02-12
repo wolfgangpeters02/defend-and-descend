@@ -41,6 +41,10 @@ class ParticleEffectService {
 
     var isMotherboardMap: Bool = false
 
+    // MARK: - Particle Pool (reuse circle nodes to reduce allocation spikes)
+
+    private var circleParticlePool: [SKShapeNode] = []
+
     // MARK: - Init
 
     init(screenShakeCooldown: TimeInterval = BalanceConfig.TDRendering.screenShakeCooldown) {
@@ -629,7 +633,33 @@ class ParticleEffectService {
         ring.run(SKAction.sequence([expandAndFade, remove]))
     }
 
-    /// Spawn massive particle explosion for boss death.
+    /// Acquire a circle particle from pool or create a new one.
+    private func acquireCircleParticle(radius: CGFloat) -> SKShapeNode {
+        if let node = circleParticlePool.popLast() {
+            // Reset pooled node state
+            node.alpha = 1.0
+            node.isHidden = false
+            node.removeAllActions()
+            node.xScale = 1.0
+            node.yScale = 1.0
+            node.zRotation = 0
+            // Rebuild path for new size
+            node.path = CGPath(ellipseIn: CGRect(x: -radius, y: -radius, width: radius * 2, height: radius * 2), transform: nil)
+            return node
+        }
+        return SKShapeNode(circleOfRadius: radius)
+    }
+
+    /// Return a circle particle to the pool (max 60 pooled).
+    private func releaseCircleParticle(_ node: SKShapeNode) {
+        node.removeFromParent()
+        node.removeAllActions()
+        if circleParticlePool.count < 60 {
+            circleParticlePool.append(node)
+        }
+    }
+
+    /// Spawn massive particle explosion for boss death (pooled to eliminate allocation spikes).
     func spawnBossDeathExplosion(at position: CGPoint, color: UIColor) {
         guard let particleLayer = particleLayer else { return }
 
@@ -640,7 +670,7 @@ class ParticleEffectService {
             let speed = CGFloat.random(in: 80...200)
             let size = CGFloat.random(in: 4...10)
 
-            let particle = SKShapeNode(circleOfRadius: size)
+            let particle = acquireCircleParticle(radius: size)
             particle.position = position
             particle.fillColor = color.withAlphaComponent(0.9)
             particle.strokeColor = .white.withAlphaComponent(0.5)
@@ -662,11 +692,13 @@ class ParticleEffectService {
                 SKAction.scale(to: 0.2, duration: duration)
             ])
 
-            let remove = SKAction.removeFromParent()
-
+            // Return to pool instead of destroying
             particle.run(SKAction.sequence([
                 SKAction.group([move, fadeAndShrink]),
-                remove
+                SKAction.run { [weak self, weak particle] in
+                    guard let self, let particle else { return }
+                    self.releaseCircleParticle(particle)
+                }
             ]))
         }
     }

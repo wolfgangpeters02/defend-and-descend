@@ -30,6 +30,9 @@ struct TDGameState {
     // Enemies on the field
     var enemies: [TDEnemy]
 
+    // Spatial partitioning for O(1) cell lookup in collision/targeting
+    var enemyGrid: SpatialGrid<TDEnemy>?
+
     // Projectiles
     var projectiles: [Projectile]
     var particles: [Particle]
