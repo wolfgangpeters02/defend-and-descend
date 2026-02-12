@@ -2216,6 +2216,51 @@ extension BalanceConfig {
             "maxUpgradeLevel": maxUpgradeLevel
         ]
 
+        let componentCostsDict: [String: Int] = [
+            "psu": Components.psuBaseCost,
+            "ram": Components.ramBaseCost,
+            "gpu": Components.gpuBaseCost,
+            "cache": Components.cacheBaseCost,
+            "storage": Components.storageBaseCost,
+            "expansion": Components.expansionBaseCost,
+            "network": Components.networkBaseCost,
+            "io": Components.ioBaseCost,
+            "cpu": Components.cpuBaseCost
+        ]
+
+        let componentsDict: [String: Any] = [
+            "maxLevel": Components.maxLevel,
+            "baseCosts": componentCostsDict,
+            "psuCapacities": Components.psuCapacities,
+            "gpuDamagePerLevel": Double(Components.gpuDamagePerLevel),
+            "cacheAttackSpeedPerLevel": Double(Components.cacheAttackSpeedPerLevel),
+            "ramEfficiencyRegenPerLevel": Double(Components.ramEfficiencyRegenPerLevel),
+            "networkHashMultiplierPerLevel": Double(Components.networkHashMultiplierPerLevel),
+            "ioPickupRadiusPerLevel": Double(Components.ioPickupRadiusPerLevel),
+            "storageBaseCapacity": Components.storageBaseCapacity
+        ]
+
+        let efficiencyDict: [String: Any] = [
+            "leakDecayInterval": Efficiency.leakDecayInterval,
+            "warningThreshold": Double(Efficiency.warningThreshold)
+        ]
+
+        let freezeDict: [String: Any] = [
+            "recoveryHashDivisor": Freeze.recoveryHashDivisor,
+            "recoveryTargetEfficiency": Double(Freeze.recoveryTargetEfficiency)
+        ]
+
+        let sectorUnlockDict: [String: Any] = [
+            "unlockOrder": SectorUnlock.unlockOrder,
+            "hashCosts": SectorUnlock.hashCosts,
+            "totalUnlockCost": SectorUnlock.totalUnlockCost,
+            "firstKillBlueprintChance": Double(SectorUnlock.firstKillBlueprintChance)
+        ]
+
+        let sectorHashBonusDict: [String: Double] = Dictionary(
+            uniqueKeysWithValues: SectorHashBonus.multipliers.map { ($0.key, Double($0.value)) }
+        )
+
         let config: [String: Any] = [
             "waves": wavesDict,
             "threatLevel": threatDict,
@@ -2227,7 +2272,12 @@ extension BalanceConfig {
             "zeroDay": zeroDayDict,
             "overclock": overclockDict,
             "hashEconomy": hashEconomyDict,
-            "protocolScaling": protocolScalingDict
+            "protocolScaling": protocolScalingDict,
+            "components": componentsDict,
+            "efficiency": efficiencyDict,
+            "freeze": freezeDict,
+            "sectorUnlock": sectorUnlockDict,
+            "sectorHashBonus": sectorHashBonusDict
         ]
 
         if let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),

@@ -133,10 +133,10 @@ All SpriteKit labels, all alert messages, all navigation titles, all button labe
 - [x] Make CLI simulator import from BalanceConfig instead of hardcoding values
 
 #### Medium Priority (extend coverage)
-- [ ] Add Component upgrade tab to web simulator
-- [ ] Add Protocol ability comparison tab
-- [ ] Add Efficiency/Freeze system visualization
-- [ ] Add Sector progression timeline
+- [x] Add Component upgrade tab to web simulator
+- [x] Add Protocol ability comparison tab
+- [x] Add Efficiency/Freeze system visualization
+- [x] Add Sector progression timeline
 
 #### Low Priority (structural improvements)
 - [ ] Split web simulator into separate HTML/CSS/JS files

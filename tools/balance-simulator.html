@@ -317,6 +317,10 @@
         <div class="tab" data-panel="power">Power Grid</div>
         <div class="tab" data-panel="threat">Threat System</div>
         <div class="tab" data-panel="bosses">Boss Tuning</div>
+        <div class="tab" data-panel="components">Components</div>
+        <div class="tab" data-panel="protocolCompare">Protocol Compare</div>
+        <div class="tab" data-panel="efficiency">Efficiency/Freeze</div>
+        <div class="tab" data-panel="sectors">Sector Progression</div>
         <div class="tab" data-panel="export">Export/Import</div>
     </div>
 
@@ -901,6 +905,426 @@
         </div>
     </div>
 
+    <!-- COMPONENT UPGRADES PANEL -->
+    <div id="components" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If you increase component upgrade costs...</div>
+            <div class="effect"><strong>Players progress slower through the component tree</strong>. Each component buffs a different system — PSU unlocks power, GPU boosts damage, Network boosts Hash income.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Component Upgrade Config</h3>
+                <div class="input-group">
+                    <label>Max Component Level</label>
+                    <input type="number" id="comp-max-level" value="10" min="1" max="20">
+                </div>
+                <div class="input-group">
+                    <label>Cost Formula</label>
+                    <select id="comp-cost-formula" disabled>
+                        <option value="exponential">Exponential: base × 2^(level-1)</option>
+                    </select>
+                </div>
+
+                <h3 style="margin-top:20px">Base Upgrade Costs (Hash)</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>PSU (Power)</label>
+                        <input type="number" id="comp-cost-psu" value="500">
+                    </div>
+                    <div class="input-group">
+                        <label>RAM (Efficiency)</label>
+                        <input type="number" id="comp-cost-ram" value="400">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>GPU (Damage)</label>
+                        <input type="number" id="comp-cost-gpu" value="600">
+                    </div>
+                    <div class="input-group">
+                        <label>Cache (Atk Speed)</label>
+                        <input type="number" id="comp-cost-cache" value="550">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Storage (Capacity)</label>
+                        <input type="number" id="comp-cost-storage" value="400">
+                    </div>
+                    <div class="input-group">
+                        <label>Expansion (Slots)</label>
+                        <input type="number" id="comp-cost-expansion" value="800">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Network (Hash Mult)</label>
+                        <input type="number" id="comp-cost-network" value="1000">
+                    </div>
+                    <div class="input-group">
+                        <label>I/O (Pickup Range)</label>
+                        <input type="number" id="comp-cost-io" value="450">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>CPU (Hash/sec)</label>
+                    <input type="number" id="comp-cost-cpu" value="750">
+                </div>
+
+                <div class="button-row">
+                    <button onclick="updateComponentChart()">Calculate</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Upgrade Cost Curves (All Components)</h3>
+                <div class="cause-effect">
+                    <div class="cause">Cost = baseCost × 2^(level-1)</div>
+                    <div class="effect">More expensive components (Network, Expansion) create <strong>higher total investment</strong> requirements.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="componentCostChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Component Stat Progression (Lv 1–10)</h3>
+            <div class="cause-effect">
+                <div class="cause">Each component buffs a unique system stat</div>
+                <div class="effect"><strong>PSU</strong> = power capacity, <strong>GPU</strong> = tower damage, <strong>RAM</strong> = efficiency recovery, <strong>Cache</strong> = attack speed, <strong>Network</strong> = Hash multiplier.</div>
+            </div>
+            <table class="result-table" id="component-stat-table">
+                <thead>
+                    <tr>
+                        <th>Lv</th>
+                        <th>PSU (W)</th>
+                        <th>GPU (Dmg×)</th>
+                        <th>Cache (Spd×)</th>
+                        <th>RAM (Regen×)</th>
+                        <th>Network (Hash×)</th>
+                        <th>I/O (Pickup×)</th>
+                        <th>Storage (Cap)</th>
+                        <th>Expansion (+Slots)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="summary-box">
+                <h4>Total Upgrade Cost per Component (Lv1 → Lv10)</h4>
+                <ul id="comp-total-cost-summary"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROTOCOL COMPARISON PANEL -->
+    <div id="protocolCompare" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If one protocol outperforms others at the same rarity...</div>
+            <div class="effect"><strong>Players will always pick it</strong>. Compare DPS, cost-efficiency, and power draw to ensure meaningful trade-offs within each tier.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Protocol Level</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Compare at Level</label>
+                        <input type="range" id="proto-compare-level" min="1" max="10" value="1" oninput="updateProtocolCompare()">
+                        <span id="proto-compare-level-display" style="color:var(--accent-cyan)">Lv 1</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Firewall Mode (Tower Defense)</h3>
+            <div class="cause-effect">
+                <div class="cause">Damage × FireRate = raw DPS, but specials change effective value</div>
+                <div class="effect">Chain/splash/multi-shot protocols deal more <strong>effective DPS</strong> than raw numbers suggest.</div>
+            </div>
+            <table class="result-table" id="proto-firewall-table">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>Rarity</th>
+                        <th>Damage</th>
+                        <th>Fire Rate</th>
+                        <th>Range</th>
+                        <th>DPS</th>
+                        <th>Power (W)</th>
+                        <th>DPS/Watt</th>
+                        <th>Special</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="card" style="margin-top:20px">
+            <h3>Weapon Mode (Active/Boss)</h3>
+            <table class="result-table" id="proto-weapon-table">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>Rarity</th>
+                        <th>Damage</th>
+                        <th>Fire Rate</th>
+                        <th>Projectiles</th>
+                        <th>DPS</th>
+                        <th>Special</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div class="grid" style="margin-top:20px">
+            <div class="card">
+                <h3>Firewall DPS Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="protoDpsChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h3>DPS per Watt (Power Efficiency)</h3>
+                <div class="chart-container">
+                    <canvas id="protoPowerEffChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:20px">
+            <h3>Upgrade Cost & Compile Cost</h3>
+            <table class="result-table" id="proto-cost-table">
+                <thead>
+                    <tr>
+                        <th>Protocol</th>
+                        <th>Rarity</th>
+                        <th>Compile Cost</th>
+                        <th>Upgrade Base</th>
+                        <th>Total Lv1→10</th>
+                        <th>DPS at Lv10</th>
+                        <th>Hash per DPS</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- EFFICIENCY / FREEZE PANEL -->
+    <div id="efficiency" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If efficiency drops to 0%...</div>
+            <div class="effect"><strong>System freezes</strong> — towers stop firing, Hash stops generating. Players must pay Hash to recover. RAM upgrades speed up natural recovery.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Efficiency System Config</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Leak Decay Interval (sec)</label>
+                        <input type="number" id="eff-leak-interval" value="5.0" step="0.5">
+                    </div>
+                    <div class="input-group">
+                        <label>Warning Threshold (%)</label>
+                        <input type="number" id="eff-warning" value="25" min="0" max="100">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:20px">Freeze Recovery</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Recovery Cost (% of Hash)</label>
+                        <input type="number" id="freeze-cost-pct" value="10" min="1" max="100">
+                    </div>
+                    <div class="input-group">
+                        <label>Recovery Target Efficiency (%)</label>
+                        <input type="number" id="freeze-target-eff" value="50" min="1" max="100">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:20px">RAM Upgrade Impact</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Base Regen Multiplier</label>
+                        <input type="number" id="ram-base-regen" value="1.0" step="0.1">
+                    </div>
+                    <div class="input-group">
+                        <label>Regen per RAM Level</label>
+                        <input type="number" id="ram-regen-per-level" value="0.111" step="0.001">
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <button onclick="updateEfficiencyChart()">Calculate</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>RAM Efficiency Recovery by Level</h3>
+                <div class="cause-effect">
+                    <div class="cause">Higher RAM = faster natural recovery</div>
+                    <div class="effect">At Lv10, recovery is <strong>2× faster</strong> than Lv1. Reduces need for expensive freeze flush.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="efficiencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Freeze Recovery Cost Examples</h3>
+                <div class="cause-effect">
+                    <div class="cause">Cost = currentHash / recoveryDivisor</div>
+                    <div class="effect">Costs more when you have more Hash. <strong>Early game = cheap, late game = expensive</strong>.</div>
+                </div>
+                <table class="result-table" id="freeze-cost-table">
+                    <thead>
+                        <tr>
+                            <th>Current Hash</th>
+                            <th>Recovery Cost</th>
+                            <th>Restores To</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <h3>Efficiency Decay Timeline</h3>
+                <div class="cause-effect">
+                    <div class="cause">Each leak reduces efficiency at the decay interval</div>
+                    <div class="effect">Shows time until <strong>freeze threshold</strong> at different leak rates. Higher RAM level extends survival time.</div>
+                </div>
+                <table class="result-table" id="eff-decay-table">
+                    <thead>
+                        <tr>
+                            <th>Leaks/min</th>
+                            <th>Time to Warning (25%)</th>
+                            <th>Time to Freeze (0%)</th>
+                            <th>RAM Lv5 (to Freeze)</th>
+                            <th>RAM Lv10 (to Freeze)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTOR PROGRESSION PANEL -->
+    <div id="sectors" class="panel">
+        <div class="cause-effect">
+            <div class="cause">If sector unlock costs increase faster...</div>
+            <div class="effect"><strong>Players spend more time per sector</strong>, fully upgrading before expanding. Lower costs = faster expansion but weaker per-sector investment.</div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Sector Unlock Costs (Hash)</h3>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>PSU (Starter)</label>
+                        <input type="number" id="sector-cost-0" value="0" disabled>
+                    </div>
+                    <div class="input-group">
+                        <label>RAM</label>
+                        <input type="number" id="sector-cost-1" value="25000">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>GPU</label>
+                        <input type="number" id="sector-cost-2" value="50000">
+                    </div>
+                    <div class="input-group">
+                        <label>Cache</label>
+                        <input type="number" id="sector-cost-3" value="75000">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Storage</label>
+                        <input type="number" id="sector-cost-4" value="100000">
+                    </div>
+                    <div class="input-group">
+                        <label>Expansion</label>
+                        <input type="number" id="sector-cost-5" value="150000">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Network</label>
+                        <input type="number" id="sector-cost-6" value="200000">
+                    </div>
+                    <div class="input-group">
+                        <label>I/O</label>
+                        <input type="number" id="sector-cost-7" value="300000">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>CPU (Final)</label>
+                    <input type="number" id="sector-cost-8" value="500000">
+                </div>
+
+                <div class="button-row">
+                    <button onclick="updateSectorChart()">Calculate</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Unlock Cost & Cumulative Investment</h3>
+                <div class="cause-effect">
+                    <div class="cause">Total investment to reach each sector</div>
+                    <div class="effect">Cumulative cost shows the <strong>full price of expansion</strong>. Final unlock (CPU) requires 1.4M total Hash.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="sectorCostChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <h3>Sector Hash Bonus Multipliers</h3>
+                <div class="cause-effect">
+                    <div class="cause">Later sectors reward more Hash per enemy</div>
+                    <div class="effect">CPU sector gives <strong>3× Hash</strong> vs starter. Encourages expansion despite higher costs.</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="sectorBonusChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Time to Unlock (at CPU Lv1 Hash Rate)</h3>
+                <div class="cause-effect">
+                    <div class="cause">Time = cost / hashPerSecond</div>
+                    <div class="effect">At 1 Ħ/s base rate, unlocking all sectors takes a <strong>very long time</strong> — incentivizes CPU upgrades first.</div>
+                </div>
+                <table class="result-table" id="sector-timeline-table">
+                    <thead>
+                        <tr>
+                            <th>Sector</th>
+                            <th>Unlock Cost</th>
+                            <th>Cumulative</th>
+                            <th>Hash Bonus</th>
+                            <th>Time @ 1 Ħ/s</th>
+                            <th>Time @ 5 Ħ/s</th>
+                            <th>Time @ 38 Ħ/s</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- EXPORT/IMPORT PANEL -->
     <div id="export" class="panel">
         <div class="cause-effect">
@@ -949,7 +1373,9 @@
         });
 
         // Charts
-        let damageChart, hashRateChart, hashAccumChart, powerChart, threatChart, bossHpChart;
+        let damageChart, hashRateChart, hashAccumChart, powerChart, threatChart, bossHpChart,
+            componentCostChart, protoDpsChart, protoPowerEffChart, efficiencyChart,
+            sectorCostChart, sectorBonusChart;
 
         const chartDefaults = {
             responsive: true,
@@ -968,6 +1394,10 @@
             updatePowerChart();
             updateThreatChart();
             updateBossChart();
+            updateComponentChart();
+            updateProtocolCompare();
+            updateEfficiencyChart();
+            updateSectorChart();
         });
 
         function initCharts() {
@@ -1022,6 +1452,60 @@
                 options: { ...chartDefaults, scales: { ...chartDefaults.scales,
                     x: { ...chartDefaults.scales.x, title: { display: true, text: 'Wave Number', color: '#a1a1aa' } },
                     y: { ...chartDefaults.scales.y, title: { display: true, text: 'Boss HP', color: '#a1a1aa' } }
+                }}
+            });
+
+            componentCostChart = new Chart(document.getElementById('componentCostChart'), {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Level', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Upgrade Cost (Hash)', color: '#a1a1aa' } }
+                }}
+            });
+
+            protoDpsChart = new Chart(document.getElementById('protoDpsChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Protocol', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'DPS', color: '#a1a1aa' } }
+                }}
+            });
+
+            protoPowerEffChart = new Chart(document.getElementById('protoPowerEffChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Protocol', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'DPS per Watt', color: '#a1a1aa' } }
+                }}
+            });
+
+            efficiencyChart = new Chart(document.getElementById('efficiencyChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'RAM Level', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Recovery Multiplier', color: '#a1a1aa' } }
+                }}
+            });
+
+            sectorCostChart = new Chart(document.getElementById('sectorCostChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Sector', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Hash', color: '#a1a1aa' } }
+                }}
+            });
+
+            sectorBonusChart = new Chart(document.getElementById('sectorBonusChart'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+                    x: { ...chartDefaults.scales.x, title: { display: true, text: 'Sector', color: '#a1a1aa' } },
+                    y: { ...chartDefaults.scales.y, title: { display: true, text: 'Hash Multiplier', color: '#a1a1aa' } }
                 }}
             });
         }
@@ -1382,6 +1866,345 @@
             `;
         }
 
+        // ===== COMPONENT UPGRADES =====
+        function updateComponentChart() {
+            const maxLevel = parseInt(document.getElementById('comp-max-level').value);
+            const compIds = ['psu', 'ram', 'gpu', 'cache', 'storage', 'expansion', 'network', 'io', 'cpu'];
+            const compNames = ['PSU', 'RAM', 'GPU', 'Cache', 'Storage', 'Expansion', 'Network', 'I/O', 'CPU'];
+            const compColors = ['#22c55e', '#3b82f6', '#ef4444', '#eab308', '#a855f7', '#f97316', '#06b6d4', '#ec4899', '#00d4ff'];
+
+            const baseCosts = {};
+            compIds.forEach(id => {
+                baseCosts[id] = parseInt(document.getElementById('comp-cost-' + id).value);
+            });
+
+            // PSU capacity table (fixed values from BalanceConfig)
+            const psuCapacities = [300, 400, 550, 700, 900, 1100, 1350, 1600, 1900, 2300];
+
+            // Cost curves chart
+            const levels = [];
+            for (let l = 1; l <= maxLevel; l++) levels.push(l);
+
+            const datasets = compIds.map((id, i) => {
+                const data = levels.map(l => l === 1 ? 0 : baseCosts[id] * Math.pow(2, l - 2));
+                return {
+                    label: compNames[i],
+                    data: data,
+                    borderColor: compColors[i],
+                    fill: false,
+                    tension: 0.1
+                };
+            });
+
+            componentCostChart.data.labels = levels;
+            componentCostChart.data.datasets = datasets;
+            componentCostChart.update();
+
+            // Stat progression table
+            const tbody = document.querySelector('#component-stat-table tbody');
+            tbody.innerHTML = '';
+
+            for (let l = 1; l <= maxLevel; l++) {
+                const psuW = l <= psuCapacities.length ? psuCapacities[l - 1] : psuCapacities[psuCapacities.length - 1];
+                const gpuMult = (1.0 + (l - 1) * 0.055).toFixed(2);
+                const cacheMult = (1.0 + (l - 1) * 0.033).toFixed(2);
+                const ramRegen = (1.0 + (l - 1) * 0.111).toFixed(2);
+                const netMult = (1.0 + (l - 1) * 0.055).toFixed(2);
+                const ioMult = (1.0 + (l - 1) * 0.167).toFixed(2);
+                const storageCap = Math.floor(25000 * Math.pow(2, l - 1)).toLocaleString();
+                const expSlots = l >= 7 ? '+2' : (l >= 4 ? '+1' : '0');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${l}</td>
+                        <td class="highlight">${psuW}W</td>
+                        <td>${gpuMult}×</td>
+                        <td>${cacheMult}×</td>
+                        <td>${ramRegen}×</td>
+                        <td>${netMult}×</td>
+                        <td>${ioMult}×</td>
+                        <td>${storageCap}</td>
+                        <td>${expSlots}</td>
+                    </tr>
+                `;
+            }
+
+            // Total cost summary
+            const totalCostSummary = document.getElementById('comp-total-cost-summary');
+            totalCostSummary.innerHTML = '';
+            compIds.forEach((id, i) => {
+                let total = 0;
+                for (let l = 2; l <= maxLevel; l++) {
+                    total += baseCosts[id] * Math.pow(2, l - 2);
+                }
+                totalCostSummary.innerHTML += `<li><span style="color:${compColors[i]}">${compNames[i]}:</span> ${Math.floor(total).toLocaleString()} Hash (base: ${baseCosts[id]})</li>`;
+            });
+        }
+
+        // ===== PROTOCOL COMPARISON =====
+        const PROTOCOLS = [
+            { name: 'Kernel Pulse', rarity: 'Common', fwDmg: 8, fwRate: 1.0, fwRange: 120, fwProj: 1, fwPierce: 1, fwSplash: 0, power: 15, wpDmg: 8, wpRate: 2.0, wpProj: 1, compileCost: 0, upgradeCost: 50, fwSpecial: '-', wpSpecial: '-' },
+            { name: 'Burst Protocol', rarity: 'Common', fwDmg: 10, fwRate: 0.8, fwRange: 140, fwProj: 1, fwPierce: 1, fwSplash: 40, power: 20, wpDmg: 6, wpRate: 0.8, wpProj: 5, compileCost: 100, upgradeCost: 50, fwSpecial: 'Splash (40r)', wpSpecial: 'Spread (5 proj)' },
+            { name: 'Trace Route', rarity: 'Rare', fwDmg: 50, fwRate: 0.4, fwRange: 250, fwProj: 1, fwPierce: 3, fwSplash: 0, power: 35, wpDmg: 40, wpRate: 0.5, wpProj: 1, compileCost: 200, upgradeCost: 100, fwSpecial: 'Pierce (3)', wpSpecial: 'Pierce (5)' },
+            { name: 'Ice Shard', rarity: 'Rare', fwDmg: 5, fwRate: 1.5, fwRange: 130, fwProj: 1, fwPierce: 1, fwSplash: 0, power: 30, wpDmg: 4, wpRate: 3.0, wpProj: 1, compileCost: 200, upgradeCost: 100, fwSpecial: 'Slow (50%, 2s)', wpSpecial: 'Slow (50%, 2s)' },
+            { name: 'Fork Bomb', rarity: 'Epic', fwDmg: 12, fwRate: 0.7, fwRange: 140, fwProj: 3, fwPierce: 1, fwSplash: 0, power: 40, wpDmg: 10, wpRate: 1.0, wpProj: 8, compileCost: 400, upgradeCost: 200, fwSpecial: 'Multi (3 proj)', wpSpecial: 'Multi (8 proj)' },
+            { name: 'Root Access', rarity: 'Epic', fwDmg: 80, fwRate: 0.3, fwRange: 160, fwProj: 1, fwPierce: 1, fwSplash: 0, power: 75, wpDmg: 60, wpRate: 0.4, wpProj: 1, compileCost: 400, upgradeCost: 200, fwSpecial: 'Pure damage', wpSpecial: 'Pure damage' },
+            { name: 'Overflow', rarity: 'Legendary', fwDmg: 15, fwRate: 0.8, fwRange: 150, fwProj: 1, fwPierce: 1, fwSplash: 0, power: 120, wpDmg: 12, wpRate: 1.2, wpProj: 1, compileCost: 800, upgradeCost: 400, fwSpecial: 'Chain (3 targets)', wpSpecial: 'Ricochet (3 bounces)' },
+            { name: 'Null Pointer', rarity: 'Legendary', fwDmg: 25, fwRate: 0.6, fwRange: 140, fwProj: 1, fwPierce: 1, fwSplash: 0, power: 100, wpDmg: 20, wpRate: 0.8, wpProj: 1, compileCost: 800, upgradeCost: 400, fwSpecial: 'Execute (low HP)', wpSpecial: 'Critical (2× chance)' }
+        ];
+
+        const rarityColors = { 'Common': '#a1a1aa', 'Rare': '#3b82f6', 'Epic': '#a855f7', 'Legendary': '#eab308' };
+
+        function updateProtocolCompare() {
+            const level = parseInt(document.getElementById('proto-compare-level').value);
+            document.getElementById('proto-compare-level-display').textContent = 'Lv ' + level;
+
+            const dmgMult = level; // levelStatMultiplier = level number
+
+            // Firewall table
+            const fwBody = document.querySelector('#proto-firewall-table tbody');
+            fwBody.innerHTML = '';
+            const dpsValues = [];
+            const dpsPerWatt = [];
+            const names = [];
+
+            PROTOCOLS.forEach(p => {
+                const dmg = p.fwDmg * dmgMult;
+                const dps = dmg * p.fwRate * p.fwProj;
+                dpsValues.push(dps);
+                dpsPerWatt.push(dps / p.power);
+                names.push(p.name);
+
+                fwBody.innerHTML += `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td style="color:${rarityColors[p.rarity]}">${p.rarity}</td>
+                        <td>${dmg}</td>
+                        <td>${p.fwRate}/s</td>
+                        <td>${p.fwRange}</td>
+                        <td class="highlight">${dps.toFixed(1)}</td>
+                        <td>${p.power}W</td>
+                        <td>${(dps / p.power).toFixed(2)}</td>
+                        <td>${p.fwSpecial}</td>
+                    </tr>
+                `;
+            });
+
+            // Weapon table
+            const wpBody = document.querySelector('#proto-weapon-table tbody');
+            wpBody.innerHTML = '';
+
+            PROTOCOLS.forEach(p => {
+                const dmg = p.wpDmg * dmgMult;
+                const dps = dmg * p.wpRate * p.wpProj;
+
+                wpBody.innerHTML += `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td style="color:${rarityColors[p.rarity]}">${p.rarity}</td>
+                        <td>${dmg}</td>
+                        <td>${p.wpRate}/s</td>
+                        <td>${p.wpProj}</td>
+                        <td class="highlight">${dps.toFixed(1)}</td>
+                        <td>${p.wpSpecial}</td>
+                    </tr>
+                `;
+            });
+
+            // DPS chart
+            protoDpsChart.data.labels = names;
+            protoDpsChart.data.datasets = [{
+                label: 'Firewall DPS (Lv ' + level + ')',
+                data: dpsValues,
+                backgroundColor: PROTOCOLS.map(p => rarityColors[p.rarity])
+            }];
+            protoDpsChart.update();
+
+            // DPS/Watt chart
+            protoPowerEffChart.data.labels = names;
+            protoPowerEffChart.data.datasets = [{
+                label: 'DPS per Watt (Lv ' + level + ')',
+                data: dpsPerWatt,
+                backgroundColor: PROTOCOLS.map(p => rarityColors[p.rarity])
+            }];
+            protoPowerEffChart.update();
+
+            // Cost table
+            const costBody = document.querySelector('#proto-cost-table tbody');
+            costBody.innerHTML = '';
+
+            PROTOCOLS.forEach(p => {
+                let totalUpgrade = 0;
+                for (let l = 2; l <= 10; l++) {
+                    totalUpgrade += p.upgradeCost * Math.pow(2, l - 2);
+                }
+                const dpsLv10 = p.fwDmg * 10 * p.fwRate * p.fwProj;
+                const totalCost = p.compileCost + totalUpgrade;
+                const hashPerDps = dpsLv10 > 0 ? (totalCost / dpsLv10).toFixed(1) : '-';
+
+                costBody.innerHTML += `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td style="color:${rarityColors[p.rarity]}">${p.rarity}</td>
+                        <td>${p.compileCost.toLocaleString()}</td>
+                        <td>${p.upgradeCost}</td>
+                        <td class="highlight">${totalCost.toLocaleString()}</td>
+                        <td>${dpsLv10.toFixed(1)}</td>
+                        <td>${hashPerDps}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ===== EFFICIENCY / FREEZE =====
+        function updateEfficiencyChart() {
+            const leakInterval = parseFloat(document.getElementById('eff-leak-interval').value);
+            const warningPct = parseInt(document.getElementById('eff-warning').value);
+            const freezeCostPct = parseInt(document.getElementById('freeze-cost-pct').value);
+            const freezeTargetEff = parseInt(document.getElementById('freeze-target-eff').value);
+            const ramBaseRegen = parseFloat(document.getElementById('ram-base-regen').value);
+            const ramRegenPerLevel = parseFloat(document.getElementById('ram-regen-per-level').value);
+
+            // RAM recovery chart
+            const levels = [];
+            const regenValues = [];
+            for (let l = 1; l <= 10; l++) {
+                levels.push(l);
+                regenValues.push(ramBaseRegen + (l - 1) * ramRegenPerLevel);
+            }
+
+            efficiencyChart.data.labels = levels;
+            efficiencyChart.data.datasets = [{
+                label: 'Recovery Multiplier',
+                data: regenValues,
+                backgroundColor: '#22c55e'
+            }];
+            efficiencyChart.update();
+
+            // Freeze cost table
+            const freezeBody = document.querySelector('#freeze-cost-table tbody');
+            freezeBody.innerHTML = '';
+            const hashAmounts = [1000, 5000, 10000, 25000, 50000, 100000, 250000, 500000];
+
+            hashAmounts.forEach(hash => {
+                const cost = Math.floor(hash / (100 / freezeCostPct));
+                freezeBody.innerHTML += `
+                    <tr>
+                        <td>${hash.toLocaleString()} Ħ</td>
+                        <td class="warning">${cost.toLocaleString()} Ħ</td>
+                        <td>${freezeTargetEff}%</td>
+                    </tr>
+                `;
+            });
+
+            // Decay timeline table
+            const decayBody = document.querySelector('#eff-decay-table tbody');
+            decayBody.innerHTML = '';
+            const leakRates = [1, 2, 3, 5, 10];
+
+            leakRates.forEach(leaksPerMin => {
+                // Each leak at leakInterval reduces efficiency
+                // Simplified model: efficiency drops by ~5% per leak event
+                const effLossPerLeak = 5; // approximate % loss per leak
+                const leaksToWarning = Math.ceil((100 - warningPct) / effLossPerLeak);
+                const leaksToFreeze = Math.ceil(100 / effLossPerLeak);
+                const timeToWarning = leaksToWarning / leaksPerMin * 60;
+                const timeToFreeze = leaksToFreeze / leaksPerMin * 60;
+
+                // RAM extends survival by slowing net loss (regen counteracts decay)
+                const ramLv5Regen = ramBaseRegen + 4 * ramRegenPerLevel;
+                const ramLv10Regen = ramBaseRegen + 9 * ramRegenPerLevel;
+                const timeFreezeRam5 = timeToFreeze * ramLv5Regen;
+                const timeFreezeRam10 = timeToFreeze * ramLv10Regen;
+
+                decayBody.innerHTML += `
+                    <tr>
+                        <td>${leaksPerMin}/min</td>
+                        <td>${formatTime(timeToWarning)}</td>
+                        <td class="danger">${formatTime(timeToFreeze)}</td>
+                        <td>${formatTime(timeFreezeRam5)}</td>
+                        <td class="highlight">${formatTime(timeFreezeRam10)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ===== SECTOR PROGRESSION =====
+        const SECTOR_NAMES = ['PSU', 'RAM', 'GPU', 'Cache', 'Storage', 'Expansion', 'Network', 'I/O', 'CPU'];
+        const SECTOR_HASH_BONUS = [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.5, 3.0];
+
+        function updateSectorChart() {
+            const costs = [];
+            for (let i = 0; i < 9; i++) {
+                costs.push(parseInt(document.getElementById('sector-cost-' + i).value) || 0);
+            }
+
+            // Cumulative costs
+            const cumulative = [];
+            let running = 0;
+            costs.forEach(c => {
+                running += c;
+                cumulative.push(running);
+            });
+
+            // Cost chart (stacked: individual + cumulative line)
+            sectorCostChart.data.labels = SECTOR_NAMES;
+            sectorCostChart.data.datasets = [
+                {
+                    label: 'Unlock Cost',
+                    data: costs,
+                    backgroundColor: '#00d4ff',
+                    order: 2
+                },
+                {
+                    label: 'Cumulative',
+                    data: cumulative,
+                    type: 'line',
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239,68,68,0.1)',
+                    fill: true,
+                    order: 1
+                }
+            ];
+            sectorCostChart.update();
+
+            // Hash bonus chart
+            sectorBonusChart.data.labels = SECTOR_NAMES;
+            sectorBonusChart.data.datasets = [{
+                label: 'Hash Multiplier',
+                data: SECTOR_HASH_BONUS,
+                backgroundColor: SECTOR_HASH_BONUS.map(v =>
+                    v >= 2.5 ? '#eab308' : v >= 2.0 ? '#a855f7' : v >= 1.4 ? '#3b82f6' : '#22c55e'
+                )
+            }];
+            sectorBonusChart.update();
+
+            // Timeline table
+            const tbody = document.querySelector('#sector-timeline-table tbody');
+            tbody.innerHTML = '';
+
+            const hashRates = [1, 5, 38]; // CPU Lv1, ~Lv5, Lv10
+
+            costs.forEach((cost, i) => {
+                const cum = cumulative[i];
+                const bonus = SECTOR_HASH_BONUS[i];
+
+                const times = hashRates.map(rate => cost > 0 ? formatTime(cost / rate) : '-');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${SECTOR_NAMES[i]}</td>
+                        <td>${cost > 0 ? cost.toLocaleString() : 'Free'}</td>
+                        <td class="highlight">${cum.toLocaleString()}</td>
+                        <td>${bonus.toFixed(1)}×</td>
+                        <td>${times[0]}</td>
+                        <td>${times[1]}</td>
+                        <td>${times[2]}</td>
+                    </tr>
+                `;
+            });
+        }
+
         // ===== EXPORT/IMPORT =====
         function generateExport() {
             const config = {
@@ -1456,6 +2279,32 @@
                     minWavesBeforeSpawn: parseInt(document.getElementById('zeroday-min-waves').value),
                     defeatHashBonus: parseInt(document.getElementById('zeroday-hash').value),
                     defeatEfficiencyRestore: parseInt(document.getElementById('zeroday-restore').value)
+                },
+                components: {
+                    maxLevel: parseInt(document.getElementById('comp-max-level').value),
+                    baseCosts: {
+                        psu: parseInt(document.getElementById('comp-cost-psu').value),
+                        ram: parseInt(document.getElementById('comp-cost-ram').value),
+                        gpu: parseInt(document.getElementById('comp-cost-gpu').value),
+                        cache: parseInt(document.getElementById('comp-cost-cache').value),
+                        storage: parseInt(document.getElementById('comp-cost-storage').value),
+                        expansion: parseInt(document.getElementById('comp-cost-expansion').value),
+                        network: parseInt(document.getElementById('comp-cost-network').value),
+                        io: parseInt(document.getElementById('comp-cost-io').value),
+                        cpu: parseInt(document.getElementById('comp-cost-cpu').value)
+                    }
+                },
+                efficiency: {
+                    leakDecayInterval: parseFloat(document.getElementById('eff-leak-interval').value),
+                    warningThreshold: parseInt(document.getElementById('eff-warning').value),
+                    freezeRecoveryCostPct: parseInt(document.getElementById('freeze-cost-pct').value),
+                    freezeRecoveryTarget: parseInt(document.getElementById('freeze-target-eff').value),
+                    ramBaseRegen: parseFloat(document.getElementById('ram-base-regen').value),
+                    ramRegenPerLevel: parseFloat(document.getElementById('ram-regen-per-level').value)
+                },
+                sectorUnlock: {
+                    hashCosts: Array.from({length: 9}, (_, i) => parseInt(document.getElementById('sector-cost-' + i).value) || 0),
+                    hashBonusMultipliers: SECTOR_HASH_BONUS
                 }
             };
 
@@ -1544,12 +2393,40 @@
                     document.getElementById('zeroday-restore').value = config.zeroDay.defeatEfficiencyRestore ?? 30;
                 }
 
+                if (config.components) {
+                    document.getElementById('comp-max-level').value = config.components.maxLevel ?? 10;
+                    if (config.components.baseCosts) {
+                        ['psu','ram','gpu','cache','storage','expansion','network','io','cpu'].forEach(id => {
+                            document.getElementById('comp-cost-' + id).value = config.components.baseCosts[id] ?? 500;
+                        });
+                    }
+                }
+
+                if (config.efficiency) {
+                    document.getElementById('eff-leak-interval').value = config.efficiency.leakDecayInterval ?? 5.0;
+                    document.getElementById('eff-warning').value = config.efficiency.warningThreshold ?? 25;
+                    document.getElementById('freeze-cost-pct').value = config.efficiency.freezeRecoveryCostPct ?? 10;
+                    document.getElementById('freeze-target-eff').value = config.efficiency.freezeRecoveryTarget ?? 50;
+                    document.getElementById('ram-base-regen').value = config.efficiency.ramBaseRegen ?? 1.0;
+                    document.getElementById('ram-regen-per-level').value = config.efficiency.ramRegenPerLevel ?? 0.111;
+                }
+
+                if (config.sectorUnlock && config.sectorUnlock.hashCosts) {
+                    config.sectorUnlock.hashCosts.forEach((cost, i) => {
+                        document.getElementById('sector-cost-' + i).value = cost;
+                    });
+                }
+
                 // Update all charts
                 updateProtocolChart();
                 updateHashChart();
                 updatePowerChart();
                 updateThreatChart();
                 updateBossChart();
+                updateComponentChart();
+                updateProtocolCompare();
+                updateEfficiencyChart();
+                updateSectorChart();
 
                 alert('Configuration imported successfully!');
             } catch (e) {
