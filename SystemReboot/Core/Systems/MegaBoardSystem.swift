@@ -135,6 +135,22 @@ final class MegaBoardSystem {
         }
     }
 
+    /// Determine the visual render mode for a sector
+    func getRenderMode(for sectorId: String, profile: PlayerProfile) -> SectorRenderMode {
+        // Already unlocked = full rendering
+        if isSectorUnlocked(sectorId, profile: profile) {
+            return .unlocked
+        }
+
+        // Check if all required blueprints have been found (or compiled)
+        if SectorSchematicLibrary.hasFoundRequiredBlueprints(for: sectorId, profile: profile) {
+            return .unlockable
+        }
+
+        // Blueprints not found = locked/mystery
+        return .locked
+    }
+
     /// Get sectors that are locked and visible (adjacent to unlocked)
     func visibleLockedSectors(for profile: PlayerProfile) -> [MegaBoardSector] {
         guard let config = config else { return [] }
@@ -151,6 +167,26 @@ final class MegaBoardSystem {
         }
 
         return visibleLocked.compactMap { sector(id: $0) }
+    }
+
+    /// Get visible locked sectors split by render mode
+    func visibleLockedSectorsByMode(for profile: PlayerProfile) -> (locked: [MegaBoardSector], unlockable: [MegaBoardSector]) {
+        let allVisible = visibleLockedSectors(for: profile)
+        var locked: [MegaBoardSector] = []
+        var unlockable: [MegaBoardSector] = []
+
+        for sector in allVisible {
+            switch getRenderMode(for: sector.id, profile: profile) {
+            case .unlockable:
+                unlockable.append(sector)
+            case .locked:
+                locked.append(sector)
+            case .unlocked:
+                break  // Shouldn't happen for visible locked sectors
+            }
+        }
+
+        return (locked, unlockable)
     }
 
     // MARK: - Gate Queries

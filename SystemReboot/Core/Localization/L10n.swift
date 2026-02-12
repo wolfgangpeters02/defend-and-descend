@@ -220,6 +220,7 @@ enum L10n {
     // MARK: - Sector
     enum Sector {
         static let encrypted = String(localized: "sector.encrypted")
+        static let schematic = String(localized: "sector.schematic")
         static let decryptCost = String(localized: "sector.decryptCost")
         static let yourBalance = String(localized: "sector.yourBalance")
         static let select = String(localized: "sector.select")
@@ -431,6 +432,10 @@ enum L10n {
         static let defeated = String(localized: "settings.defeated")
         static let notEncountered = String(localized: "settings.notEncountered")
         static let fight = String(localized: "settings.fight")
+        // Debug
+        static let debug = String(localized: "settings.debug")
+        static let debugOverlay = String(localized: "settings.debugOverlay")
+        static let debugOverlayDesc = String(localized: "settings.debugOverlayDesc")
         // Danger Zone
         static let dangerZone = String(localized: "settings.dangerZone")
         static let resetAccount = String(localized: "settings.resetAccount")

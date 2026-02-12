@@ -6,12 +6,18 @@ extension TDGameScene {
     // MARK: - Sector Ambient Effects System
 
     /// Start ambient effects for each sector to make districts feel alive
+    /// Only applies to unlocked sectors — unlockable/locked sectors are static
     func startSectorAmbientEffects() {
-        let megaConfig = MegaBoardConfig.createDefault()
+        let megaConfig = cachedMegaBoardConfig
+        let profile = AppState.shared.currentPlayer
 
         for sector in megaConfig.sectors {
             // Skip CPU sector
             guard sector.id != SectorID.cpu.rawValue else { continue }
+
+            // Only start ambient effects for fully unlocked sectors
+            let renderMode = MegaBoardSystem.shared.getRenderMode(for: sector.id, profile: profile)
+            guard renderMode == .unlocked else { continue }
 
             switch sector.theme {
             case .power:
@@ -65,7 +71,7 @@ extension TDGameScene {
 
     /// Spawn a heat shimmer particle - OPTIMIZED: no glow, simpler animation
     func spawnHeatShimmer(at center: CGPoint, color: UIColor) {
-        guard ambientParticleCount < maxAmbientParticles else { return }
+        guard currentScale < 0.8, ambientParticleCount < maxAmbientParticles else { return }
         ambientParticleCount += 1
 
         let shimmer = SKShapeNode(rectOf: CGSize(width: 3, height: 8))
@@ -153,7 +159,7 @@ extension TDGameScene {
     /// RAM sector: Simplified data pulse - no glow, less frequent
     func startRAMDataPulse(sector: MegaBoardSector, color: UIColor) {
         let spawnPulse = SKAction.run { [weak self] in
-            guard let self = self, self.ambientParticleCount < self.maxAmbientParticles else { return }
+            guard let self = self, self.currentScale < 0.8, self.ambientParticleCount < self.maxAmbientParticles else { return }
             self.ambientParticleCount += 1
 
             let pulseY = sector.worldY + sector.height / 2 + CGFloat.random(in: -100...100)
@@ -225,7 +231,7 @@ extension TDGameScene {
 
         // Expanding signal rings (no glow, less frequent)
         let spawnRing = SKAction.run { [weak self] in
-            guard let self = self, self.ambientParticleCount < self.maxAmbientParticles else { return }
+            guard let self = self, self.currentScale < 0.8, self.ambientParticleCount < self.maxAmbientParticles else { return }
             self.ambientParticleCount += 1
 
             let ring = SKShapeNode(circleOfRadius: 20)
@@ -332,7 +338,7 @@ extension TDGameScene {
     /// Cache sector: Speed lines - simplified, no glow, less frequent
     func startCacheSpeedLines(sector: MegaBoardSector, color: UIColor) {
         let spawnLine = SKAction.run { [weak self] in
-            guard let self = self, self.ambientParticleCount < self.maxAmbientParticles else { return }
+            guard let self = self, self.currentScale < 0.8, self.ambientParticleCount < self.maxAmbientParticles else { return }
             self.ambientParticleCount += 1
 
             let y = sector.worldY + CGFloat.random(in: 100...(sector.height - 100))

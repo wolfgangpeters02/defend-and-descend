@@ -9,6 +9,15 @@ import CoreGraphics
 // - BusDirection from MotherboardTypes.swift
 // - SectorID from EntityIDs.swift
 
+// MARK: - Sector Render Mode
+
+/// Visual render state for a sector on the mega-board
+enum SectorRenderMode {
+    case locked       // Blueprint not found — corrupted data, mystery
+    case unlockable   // Blueprint found — schematic/wireframe preview
+    case unlocked     // Fully decrypted — full component rendering
+}
+
 // MARK: - Sector Theme
 
 /// Visual theme for a sector

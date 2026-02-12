@@ -144,6 +144,17 @@ struct SectorSchematicLibrary {
         return schematic.missingProtocolNames(profile: profile)
     }
 
+    /// Check if player has found (but not necessarily compiled) all required blueprints for a sector.
+    /// Used to determine the "unlockable" visual state — schematic preview visible.
+    static func hasFoundRequiredBlueprints(for sectorId: String, profile: PlayerProfile) -> Bool {
+        guard let schematic = schematic(for: sectorId) else {
+            return true  // No schematic = no requirements
+        }
+        // Union of found blueprints + already-compiled protocols
+        let knownProtocols = Set(profile.protocolBlueprints).union(Set(profile.compiledProtocols))
+        return schematic.requiredProtocols.allSatisfy { knownProtocols.contains($0) }
+    }
+
     /// Get all sectors requiring a specific protocol
     static func sectorsRequiring(_ protocolId: String) -> [String] {
         return all.filter { $0.requiredProtocols.contains(protocolId) }

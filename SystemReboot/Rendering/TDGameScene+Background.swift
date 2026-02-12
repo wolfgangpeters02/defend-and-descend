@@ -3,7 +3,8 @@ import SwiftUI
 
 extension TDGameScene {
 
-    /// Setup mega-board ghost sectors and encryption gates
+    /// Setup mega-board overlays: locked (corrupted data), unlockable (blueprint schematic),
+    /// encryption gates, and data bus connections
     func setupMegaBoardVisuals() {
         guard isMotherboardMap else { return }
 
@@ -16,10 +17,15 @@ extension TDGameScene {
         megaBoardRenderer = MegaBoardRenderer(scene: self)
         guard let renderer = megaBoardRenderer else { return }
 
-        // Render ghost sectors (locked but adjacent to unlocked)
-        let ghostSectors = MegaBoardSystem.shared.visibleLockedSectors(for: profile)
-        for sector in ghostSectors {
-            renderer.renderGhostSector(sector, in: backgroundLayer)
+        // Render locked and unlockable sectors with appropriate visual styles
+        let (lockedSectors, unlockableSectors) = MegaBoardSystem.shared.visibleLockedSectorsByMode(for: profile)
+
+        for sector in lockedSectors {
+            renderer.renderLockedSector(sector, in: backgroundLayer)
+        }
+
+        for sector in unlockableSectors {
+            renderer.renderUnlockableSector(sector, in: backgroundLayer)
         }
 
         // Render encryption gates and store references for hit testing
@@ -61,17 +67,26 @@ extension TDGameScene {
         // Also update spawn points in map
         state?.map.spawnPoints = activeLanes.map { $0.spawnPoint }
 
-        // Clear existing visuals
+        // Clear existing overlays
         megaBoardRenderer?.removeAllGhostSectors()
         megaBoardRenderer?.removeAllEncryptionGates()
         megaBoardRenderer?.removeAllDataBuses()
         gateNodes.removeAll()
 
+        // Rebuild sector decorations to reflect new render modes
+        // (e.g. unlockable → unlocked needs full-color components instead of wireframe)
+        backgroundLayer.enumerateChildNodes(withName: "sectorDecor_*") { node, _ in
+            node.removeFromParent()
+        }
+        drawSectorDecorations()
+
         // Rebuild lane visuals (copper traces)
         pathLayer.removeAllChildren()
+        // Remove stale lane glow refs (keep CPU glow refs which are stable)
+        glowNodes.removeAll(where: { $0.node.name?.hasPrefix("lane_") == true })
         setupMotherboardPaths()
 
-        // Rebuild
+        // Rebuild overlays
         setupMegaBoardVisuals()
     }
 
@@ -215,56 +230,72 @@ extension TDGameScene {
     }
 
     /// Draw decorative elements for each sector (ICs, vias, traces)
+    /// PERF: IC components wrapped in LOD container — hidden when zoomed out
+    /// Respects sector render mode: locked sectors skip rendering entirely,
+    /// unlockable sectors render wireframe outlines, unlocked sectors get full detail.
     func drawSectorDecorations() {
-        let megaConfig = MegaBoardConfig.createDefault()
+        let megaConfig = cachedMegaBoardConfig
         let ghostColor = UIColor(hex: MotherboardColors.ghostMode)?.withAlphaComponent(0.15) ?? UIColor.gray.withAlphaComponent(0.15)
+        let profile = AppState.shared.currentPlayer
 
         for sector in megaConfig.sectors {
             // Skip CPU sector - it has its own special rendering
             guard sector.id != SectorID.cpu.rawValue else { continue }
 
-            let sectorNode = SKNode()
-            let sectorCenter = CGPoint(
-                x: sector.worldX + sector.width / 2,
-                y: sector.worldY + sector.height / 2
-            )
+            let renderMode = MegaBoardSystem.shared.getRenderMode(for: sector.id, profile: profile)
 
+            let sectorNode = SKNode()
             let themeColor = UIColor(hex: sector.theme.primaryColorHex) ?? ghostColor
 
-            // === FOUNDATION LAYER (Phase 1: City Streets) ===
+            // === FOUNDATION LAYER (visible for unlocked & unlockable, skipped for locked) ===
+            if renderMode != .locked {
+                // 1. Secondary street grid (cosmetic PCB traces forming city blocks)
+                drawSecondaryStreetGrid(to: sectorNode, in: sector, themeColor: themeColor)
 
-            // 1. Secondary street grid (cosmetic PCB traces forming city blocks)
-            drawSecondaryStreetGrid(to: sectorNode, in: sector, themeColor: themeColor)
+                // 2. Via roundabouts at trace intersections
+                addViaRoundabouts(to: sectorNode, in: sector, themeColor: themeColor)
 
-            // 2. Via roundabouts at trace intersections
-            addViaRoundabouts(to: sectorNode, in: sector, themeColor: themeColor)
+                // 3. Silkscreen outlines (faint component footprints)
+                addSilkscreenLabels(to: sectorNode, in: sector, themeColor: themeColor)
+            }
 
-            // 3. Silkscreen labels (faint component markings)
-            addSilkscreenLabels(to: sectorNode, in: sector, themeColor: themeColor)
+            // === COMPONENT LAYER (LOD-gated: hidden when zoomed out) ===
+            let detailContainer = SKNode()
+            detailContainer.name = "sectorDetails_\(sector.id)"
 
-            // === COMPONENT LAYER (District-specific) ===
+            if renderMode != .locked {
+                // Add vias (small filled circles) - legacy scattered vias
+                addSectorVias(to: detailContainer, in: sector, color: ghostColor)
 
-            // Add vias (small filled circles) - legacy scattered vias
-            addSectorVias(to: sectorNode, in: sector, color: ghostColor)
+                // Add IC footprints — wireframe for unlockable, full for unlocked
+                addSectorICs(to: detailContainer, in: sector, renderMode: renderMode)
 
-            // Add IC footprints based on sector type
-            addSectorICs(to: sectorNode, in: sector)
+                // Add trace bundles to edges
+                addSectorTraces(to: detailContainer, in: sector, color: ghostColor)
+            }
 
-            // Add trace bundles to edges
-            addSectorTraces(to: sectorNode, in: sector, color: ghostColor)
-
-            // Sector name label (silkscreen style)
-            let nameLabel = SKLabelNode(text: sector.displayName.uppercased())
-            nameLabel.fontName = "Menlo"
-            nameLabel.fontSize = 18
-            nameLabel.fontColor = UIColor(hex: sector.theme.primaryColorHex)?.withAlphaComponent(0.4) ?? ghostColor
-            nameLabel.position = CGPoint(x: sectorCenter.x, y: sector.worldY + sector.height - 40)
-            nameLabel.horizontalAlignmentMode = .center
-            nameLabel.zPosition = -2
-            sectorNode.addChild(nameLabel)
+            sectorNode.addChild(detailContainer)
 
             sectorNode.zPosition = -3
+            sectorNode.name = "sectorDecor_\(sector.id)"
             backgroundLayer.addChild(sectorNode)
+        }
+    }
+
+    /// Update sector detail LOD based on camera zoom level.
+    /// Hides IC component details when zoomed out (too small to see anyway).
+    /// PERF: Saves ~200+ nodes worth of rendering at default zoom.
+    func updateSectorLOD() {
+        let showDetails = currentScale < 0.6  // Show details when zoomed in
+        guard showDetails != sectorDetailsVisible else { return }
+        sectorDetailsVisible = showDetails
+
+        let targetAlpha: CGFloat = showDetails ? 1.0 : 0.0
+        backgroundLayer.enumerateChildNodes(withName: "sectorDecor_*") { sectorNode, _ in
+            for child in sectorNode.children where child.name?.hasPrefix("sectorDetails_") == true {
+                child.removeAllActions()
+                child.run(SKAction.fadeAlpha(to: targetAlpha, duration: 0.25))
+            }
         }
     }
 
@@ -323,120 +354,8 @@ extension TDGameScene {
         backgroundLayer.addChild(brandLabel)
     }
 
-    /// Draw motherboard districts as ghost outlines (locked) or lit (unlocked)
-    func drawMotherboardDistricts() {
-        let config = MotherboardConfig.createDefault()
-        let ghostColor = UIColor(hex: MotherboardColors.ghostMode) ?? UIColor.darkGray
-
-        for district in config.districts {
-            let districtNode = SKNode()
-
-            // District outline
-            let rect = CGRect(x: 0, y: 0, width: district.width, height: district.height)
-            let outline = SKShapeNode(rect: rect, cornerRadius: 8)
-
-            // Check if this is the CPU district (always active)
-            let isActive = district.id == "cpu_district"
-
-            if isActive {
-                // Active district - full brightness
-                outline.strokeColor = UIColor(hex: district.primaryColor) ?? UIColor.blue
-                outline.lineWidth = 3
-                outline.fillColor = UIColor(hex: district.primaryColor)?.withAlphaComponent(0.1) ?? UIColor.blue.withAlphaComponent(0.1)
-                outline.glowWidth = 5
-            } else {
-                // Ghost district - dimmed at 15%
-                outline.strokeColor = ghostColor.withAlphaComponent(0.4)
-                outline.lineWidth = 1
-                outline.fillColor = ghostColor.withAlphaComponent(0.05)
-            }
-
-            districtNode.addChild(outline)
-
-            // District label (silkscreen text)
-            let label = SKLabelNode(text: district.name.uppercased())
-            label.fontName = "Menlo-Bold"
-            label.fontSize = isActive ? 16 : 12
-            label.fontColor = isActive ? UIColor.white : ghostColor
-            label.position = CGPoint(x: district.width/2, y: district.height + 10)
-            label.horizontalAlignmentMode = .center
-            districtNode.addChild(label)
-
-            // For locked districts, add "LOCKED" or cost text
-            if !isActive {
-                let lockedLabel = SKLabelNode(text: L10n.Common.locked)
-                lockedLabel.fontName = "Menlo"
-                lockedLabel.fontSize = 10
-                lockedLabel.fontColor = ghostColor.withAlphaComponent(0.6)
-                lockedLabel.position = CGPoint(x: district.width/2, y: district.height/2)
-                lockedLabel.horizontalAlignmentMode = .center
-                districtNode.addChild(lockedLabel)
-            }
-
-            // Position in scene (convert from game coords)
-            districtNode.position = CGPoint(x: district.x, y: district.y)
-            districtNode.zPosition = -3
-            backgroundLayer.addChild(districtNode)
-        }
-    }
-
-    /// Draw glowing CPU core at center
-    func drawCPUCore() {
-        let cpuColor = UIColor(hex: MotherboardColors.cpuCore) ?? UIColor.blue
-        let glowColor = UIColor(hex: MotherboardColors.activeGlow) ?? UIColor.green
-
-        let cpuSize: CGFloat = MotherboardLaneConfig.cpuSize
-        let cpuPosition = MotherboardLaneConfig.cpuCenter
-
-        // Outer glow
-        let outerGlow = SKShapeNode(rectOf: CGSize(width: cpuSize + 60, height: cpuSize + 60), cornerRadius: 20)
-        outerGlow.position = cpuPosition
-        outerGlow.fillColor = cpuColor.withAlphaComponent(0.1)
-        outerGlow.strokeColor = glowColor.withAlphaComponent(0.5)
-        outerGlow.lineWidth = 3
-        outerGlow.glowWidth = 10  // Reduced from 20 for performance
-        outerGlow.zPosition = -1
-        outerGlow.blendMode = .add
-        backgroundLayer.addChild(outerGlow)
-
-        // CPU body
-        let cpuBody = SKShapeNode(rectOf: CGSize(width: cpuSize, height: cpuSize), cornerRadius: 10)
-        cpuBody.position = cpuPosition
-        cpuBody.fillColor = UIColor(red: 0.15, green: 0.15, blue: 0.2, alpha: 1.0)
-        cpuBody.strokeColor = cpuColor
-        cpuBody.lineWidth = 4
-        cpuBody.zPosition = 0
-        backgroundLayer.addChild(cpuBody)
-
-        // CPU die (inner bright square)
-        let dieSize: CGFloat = 150
-        let cpuDie = SKShapeNode(rectOf: CGSize(width: dieSize, height: dieSize), cornerRadius: 5)
-        cpuDie.position = cpuPosition
-        cpuDie.fillColor = cpuColor.withAlphaComponent(0.3)
-        cpuDie.strokeColor = cpuColor
-        cpuDie.lineWidth = 2
-        cpuDie.zPosition = 1
-        backgroundLayer.addChild(cpuDie)
-
-        // CPU label
-        let label = SKLabelNode(text: "CPU")
-        label.fontName = "Menlo-Bold"
-        label.fontSize = 32
-        label.fontColor = UIColor.white
-        label.position = CGPoint(x: cpuPosition.x, y: cpuPosition.y - 10)
-        label.horizontalAlignmentMode = .center
-        label.verticalAlignmentMode = .center
-        label.zPosition = 2
-        backgroundLayer.addChild(label)
-
-        // Pulse animation for glow
-        let pulseUp = SKAction.scale(to: 1.05, duration: 1.5)
-        let pulseDown = SKAction.scale(to: 1.0, duration: 1.5)
-        pulseUp.timingMode = .easeInEaseOut
-        pulseDown.timingMode = .easeInEaseOut
-        let pulse = SKAction.sequence([pulseUp, pulseDown])
-        outerGlow.run(SKAction.repeatForever(pulse))
-    }
+    // PERF: Removed drawMotherboardDistricts() — dead code, replaced by MegaBoard system.
+    // PERF: Removed drawCPUCore() — dead code, CPU rendered by setupCore() in TDGameScene.swift.
 
     /// Setup parallax background layers for depth effect
     func setupParallaxBackground() {
@@ -472,28 +391,30 @@ extension TDGameScene {
     func createStarFieldLayer() -> SKNode {
         let layer = SKNode()
 
-        // Create small dots as distant stars
+        // Batched star field: single compound path instead of 50 individual nodes
         let starCount = 50
         let layerSize = CGSize(width: size.width * 2, height: size.height * 2)
+        let compoundPath = CGMutablePath()
 
         for _ in 0..<starCount {
-            let star = SKShapeNode(circleOfRadius: CGFloat.random(in: 1...2))
-            star.fillColor = UIColor.white.withAlphaComponent(CGFloat.random(in: 0.2...0.5))
-            star.strokeColor = .clear
-            star.position = CGPoint(
-                x: CGFloat.random(in: -layerSize.width/2...layerSize.width/2),
-                y: CGFloat.random(in: -layerSize.height/2...layerSize.height/2)
-            )
-
-            // Subtle twinkle animation
-            let fadeOut = SKAction.fadeAlpha(to: 0.1, duration: Double.random(in: 1...3))
-            let fadeIn = SKAction.fadeAlpha(to: star.alpha, duration: Double.random(in: 1...3))
-            let delay = SKAction.wait(forDuration: Double.random(in: 0...2))
-            star.run(SKAction.repeatForever(SKAction.sequence([delay, fadeOut, fadeIn])))
-
-            layer.addChild(star)
+            let radius = CGFloat.random(in: 1...2)
+            let x = CGFloat.random(in: -layerSize.width/2...layerSize.width/2)
+            let y = CGFloat.random(in: -layerSize.height/2...layerSize.height/2)
+            compoundPath.addEllipse(in: CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2))
         }
 
+        let stars = SKShapeNode(path: compoundPath)
+        stars.fillColor = UIColor.white.withAlphaComponent(0.35)
+        stars.strokeColor = .clear
+
+        // Single subtle pulse for entire star field
+        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 2.0)
+        let fadeIn = SKAction.fadeAlpha(to: 0.5, duration: 2.0)
+        fadeOut.timingMode = .easeInEaseOut
+        fadeIn.timingMode = .easeInEaseOut
+        stars.run(SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn])))
+
+        layer.addChild(stars)
         layer.position = CGPoint(x: size.width / 2, y: size.height / 2)
         return layer
     }
@@ -502,9 +423,12 @@ extension TDGameScene {
     func createCircuitPatternLayer() -> SKNode {
         let layer = SKNode()
 
-        // Create faint circuit traces in background
+        // Batched circuit traces: single compound path for traces + dots
         let traceCount = 15
         let layerSize = CGSize(width: size.width * 1.5, height: size.height * 1.5)
+        let tracePath = CGMutablePath()
+        let dotPath = CGMutablePath()
+        let dotRadius: CGFloat = 3
 
         for _ in 0..<traceCount {
             let startPoint = CGPoint(
@@ -518,23 +442,21 @@ extension TDGameScene {
                 ? CGPoint(x: startPoint.x + length, y: startPoint.y)
                 : CGPoint(x: startPoint.x, y: startPoint.y + length)
 
-            let path = UIBezierPath()
-            path.move(to: startPoint)
-            path.addLine(to: endPoint)
-
-            let trace = SKShapeNode(path: path.cgPath)
-            trace.strokeColor = DesignColors.tracePrimaryUI.withAlphaComponent(0.15)
-            trace.lineWidth = 2
-            trace.lineCap = .round
-            layer.addChild(trace)
-
-            // Add junction dot at end
-            let dot = SKShapeNode(circleOfRadius: 3)
-            dot.fillColor = DesignColors.tracePrimaryUI.withAlphaComponent(0.2)
-            dot.strokeColor = .clear
-            dot.position = endPoint
-            layer.addChild(dot)
+            tracePath.move(to: startPoint)
+            tracePath.addLine(to: endPoint)
+            dotPath.addEllipse(in: CGRect(x: endPoint.x - dotRadius, y: endPoint.y - dotRadius, width: dotRadius * 2, height: dotRadius * 2))
         }
+
+        let traceNode = SKShapeNode(path: tracePath)
+        traceNode.strokeColor = DesignColors.tracePrimaryUI.withAlphaComponent(0.15)
+        traceNode.lineWidth = 2
+        traceNode.lineCap = .round
+        layer.addChild(traceNode)
+
+        let dotNode = SKShapeNode(path: dotPath)
+        dotNode.fillColor = DesignColors.tracePrimaryUI.withAlphaComponent(0.2)
+        dotNode.strokeColor = .clear
+        layer.addChild(dotNode)
 
         layer.position = CGPoint(x: size.width / 2, y: size.height / 2)
         return layer
@@ -544,35 +466,33 @@ extension TDGameScene {
     func createDataFlowLayer() -> SKNode {
         let layer = SKNode()
 
-        // Create floating data particles
+        // Batched data flow particles: single compound path with shared animation
         let particleCount = 20
+        let compoundPath = CGMutablePath()
 
         for _ in 0..<particleCount {
-            let particle = SKShapeNode(rectOf: CGSize(width: 4, height: 4), cornerRadius: 1)
-            particle.fillColor = DesignColors.primaryUI.withAlphaComponent(0.3)
-            particle.strokeColor = .clear
-            particle.position = CGPoint(
-                x: CGFloat.random(in: 0...size.width),
-                y: CGFloat.random(in: 0...size.height)
-            )
-
-            // Floating animation
-            let moveUp = SKAction.moveBy(x: 0, y: 30, duration: Double.random(in: 2...4))
-            let moveDown = SKAction.moveBy(x: 0, y: -30, duration: Double.random(in: 2...4))
-            moveUp.timingMode = .easeInEaseOut
-            moveDown.timingMode = .easeInEaseOut
-            particle.run(SKAction.repeatForever(SKAction.sequence([moveUp, moveDown])))
-
-            // Fade animation
-            let fade = SKAction.sequence([
-                SKAction.fadeAlpha(to: 0.1, duration: Double.random(in: 1.5...3)),
-                SKAction.fadeAlpha(to: 0.3, duration: Double.random(in: 1.5...3))
-            ])
-            particle.run(SKAction.repeatForever(fade))
-
-            layer.addChild(particle)
+            let x = CGFloat.random(in: 0...size.width)
+            let y = CGFloat.random(in: 0...size.height)
+            compoundPath.addRect(CGRect(x: x - 2, y: y - 2, width: 4, height: 4))
         }
 
+        let particles = SKShapeNode(path: compoundPath)
+        particles.fillColor = DesignColors.primaryUI.withAlphaComponent(0.3)
+        particles.strokeColor = .clear
+
+        // Single shared floating animation
+        let moveUp = SKAction.moveBy(x: 0, y: 20, duration: 3.0)
+        let moveDown = SKAction.moveBy(x: 0, y: -20, duration: 3.0)
+        moveUp.timingMode = .easeInEaseOut
+        moveDown.timingMode = .easeInEaseOut
+        particles.run(SKAction.repeatForever(SKAction.sequence([moveUp, moveDown])))
+
+        // Fade animation
+        let fadeOut = SKAction.fadeAlpha(to: 0.1, duration: 2.0)
+        let fadeIn = SKAction.fadeAlpha(to: 0.3, duration: 2.0)
+        particles.run(SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn])))
+
+        layer.addChild(particles)
         return layer
     }
 

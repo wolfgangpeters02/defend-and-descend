@@ -3,68 +3,110 @@ import SwiftUI
 
 extension TDGameScene {
 
-    /// Add via holes scattered around a sector
+    /// Add via holes scattered around a sector (batched into 2 compound paths)
     func addSectorVias(to node: SKNode, in sector: MegaBoardSector, color: UIColor) {
         let viaCount = 12
         let viaRadius: CGFloat = 4
-        let margin: CGFloat = 100  // Keep vias away from edges
+        let padRadius: CGFloat = viaRadius + 3
+        let margin: CGFloat = 100
+
+        let viaPath = CGMutablePath()
+        let padPath = CGMutablePath()
 
         for _ in 0..<viaCount {
             let x = sector.worldX + margin + CGFloat.random(in: 0...(sector.width - margin * 2))
             let y = sector.worldY + margin + CGFloat.random(in: 0...(sector.height - margin * 2))
 
-            // Via hole (dark center with ring)
-            let via = SKShapeNode(circleOfRadius: viaRadius)
-            via.position = CGPoint(x: x, y: y)
-            via.fillColor = UIColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
-            via.strokeColor = color
-            via.lineWidth = 1.5
-            via.zPosition = -3
-            node.addChild(via)
-
-            // Copper pad around via
-            let pad = SKShapeNode(circleOfRadius: viaRadius + 3)
-            pad.position = CGPoint(x: x, y: y)
-            pad.fillColor = .clear
-            pad.strokeColor = UIColor(hex: MotherboardColors.copperTrace)?.withAlphaComponent(0.2) ?? UIColor.orange.withAlphaComponent(0.2)
-            pad.lineWidth = 2
-            pad.zPosition = -3.1
-            node.addChild(pad)
+            viaPath.addEllipse(in: CGRect(x: x - viaRadius, y: y - viaRadius, width: viaRadius * 2, height: viaRadius * 2))
+            padPath.addEllipse(in: CGRect(x: x - padRadius, y: y - padRadius, width: padRadius * 2, height: padRadius * 2))
         }
+
+        let padNode = SKShapeNode(path: padPath)
+        padNode.fillColor = .clear
+        padNode.strokeColor = UIColor(hex: MotherboardColors.copperTrace)?.withAlphaComponent(0.2) ?? UIColor.orange.withAlphaComponent(0.2)
+        padNode.lineWidth = 2
+        padNode.zPosition = -3.1
+        node.addChild(padNode)
+
+        let viaNode = SKShapeNode(path: viaPath)
+        viaNode.fillColor = UIColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
+        viaNode.strokeColor = color
+        viaNode.lineWidth = 1.5
+        viaNode.zPosition = -3
+        node.addChild(viaNode)
     }
 
     /// Add IC footprint decorations based on sector type
-    func addSectorICs(to node: SKNode, in sector: MegaBoardSector) {
+    /// - Parameters:
+    ///   - renderMode: `.locked` skips rendering, `.unlockable` renders wireframe outlines, `.unlocked` renders full detail
+    func addSectorICs(to node: SKNode, in sector: MegaBoardSector, renderMode: SectorRenderMode = .unlocked) {
+        // Locked sectors: no components visible (covered by corrupted data overlay)
+        if renderMode == .locked { return }
+
         let themeColor = UIColor(hex: sector.theme.primaryColorHex)?.withAlphaComponent(0.3) ?? UIColor.gray.withAlphaComponent(0.3)
+
+        // For unlockable, render into temporary container then convert to wireframe
+        let targetNode: SKNode
+        if renderMode == .unlockable {
+            targetNode = SKNode()
+            targetNode.name = "wireframe_\(sector.id)"
+        } else {
+            targetNode = node
+        }
 
         switch sector.theme {
         case .power:
-            // Capacitor symbols for PSU
-            addCapacitorSymbols(to: node, in: sector, color: themeColor)
+            addCapacitorSymbols(to: targetNode, in: sector, color: themeColor)
 
         case .graphics:
-            // Heat sink pattern for GPU
-            addHeatSinkPattern(to: node, in: sector, color: themeColor)
+            addHeatSinkPattern(to: targetNode, in: sector, color: themeColor)
 
         case .memory:
-            // Memory chip rows for RAM/Cache
-            addMemoryChips(to: node, in: sector, color: themeColor)
+            addMemoryChips(to: targetNode, in: sector, color: themeColor)
 
         case .storage:
-            // SSD chip outlines
-            addStorageChips(to: node, in: sector, color: themeColor)
+            addStorageChips(to: targetNode, in: sector, color: themeColor)
 
         case .io:
-            // Port/connector outlines
-            addIOConnectors(to: node, in: sector, color: themeColor)
+            addIOConnectors(to: targetNode, in: sector, color: themeColor)
 
         case .network:
-            // Network jack outline
-            addNetworkJack(to: node, in: sector, color: themeColor)
+            addNetworkJack(to: targetNode, in: sector, color: themeColor)
 
         case .processing:
-            // Small processor cache blocks
-            addCacheBlocks(to: node, in: sector, color: themeColor)
+            addCacheBlocks(to: targetNode, in: sector, color: themeColor)
+        }
+
+        // Apply wireframe blueprint style for unlockable sectors
+        if renderMode == .unlockable {
+            let glowColor = UIColor(hex: sector.theme.glowColorHex) ?? .cyan
+            applyWireframeStyle(to: targetNode, glowColor: glowColor)
+            // Clear PSU animation refs if power sector (animations stripped by wireframe)
+            if sector.theme == .power {
+                psuCapacitorNodes.removeAll()
+            }
+            node.addChild(targetNode)
+        }
+    }
+
+    /// Recursively apply wireframe "blueprint schematic" style to all shape/label nodes.
+    /// Converts solid fills to transparent outlines with theme glow color — creates
+    /// the architectural drawing / line-art look for unlockable sector previews.
+    private func applyWireframeStyle(to node: SKNode, glowColor: UIColor) {
+        for child in node.children {
+            if let shape = child as? SKShapeNode {
+                shape.fillColor = .clear
+                shape.strokeColor = glowColor.withAlphaComponent(0.4)
+                if shape.lineWidth < 0.5 { shape.lineWidth = 0.5 }
+                // Strip animations — blueprint is static wireframe
+                shape.removeAllActions()
+            }
+            if let label = child as? SKLabelNode {
+                label.fontColor = glowColor.withAlphaComponent(0.3)
+                label.removeAllActions()
+            }
+            // Recurse into child containers
+            applyWireframeStyle(to: child, glowColor: glowColor)
         }
     }
 
@@ -234,44 +276,17 @@ extension TDGameScene {
         node.addChild(holeNode)
     }
 
-    /// Add silkscreen labels (faint component markings)
-    /// Creates the "text" feel of real PCBs - very subtle
+    /// Add silkscreen outlines (component footprint markings)
+    /// PERF: Removed 8 individual SKLabelNode designators per sector (-64 nodes total).
+    /// Kept batched outline path (1 node) for subtle PCB footprint feel.
     func addSilkscreenLabels(to node: SKNode, in sector: MegaBoardSector, themeColor: UIColor) {
         let baseX = sector.worldX
         let baseY = sector.worldY
-        let zPos: CGFloat = 2  // Above streets/vias, below components
-
-        // Silkscreen labels - subtle but visible
+        let zPos: CGFloat = 2
         let labelAlpha: CGFloat = 0.35
 
-        // Component reference designators scattered around
-        let designators: [(text: String, x: CGFloat, y: CGFloat, rotation: CGFloat)] = [
-            ("C1", 150, 200, 0),
-            ("C2", 1200, 180, 0),
-            ("R12", 400, 550, CGFloat.pi / 12),
-            ("U3", 800, 700, 0),
-            ("L1", 250, 850, -CGFloat.pi / 8),
-            ("Q4", 1050, 450, CGFloat.pi / 6),
-            ("D7", 600, 300, 0),
-            ("T1", 700, 950, 0)
-        ]
-
-        for designator in designators {
-            let label = SKLabelNode(text: designator.text)
-            label.fontName = "Menlo"
-            label.fontSize = 10
-            label.fontColor = DistrictFoundationColors.silkscreen.withAlphaComponent(labelAlpha)
-            label.position = CGPoint(x: baseX + designator.x, y: baseY + designator.y)
-            label.zRotation = designator.rotation
-            label.horizontalAlignmentMode = .left
-            label.zPosition = zPos
-            node.addChild(label)
-        }
-
-        // Add a few small silkscreen lines/boxes (component outlines)
+        // Batched component outline boxes (1 node for all)
         let outlinePath = CGMutablePath()
-
-        // Small component outline boxes
         let outlines: [(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat)] = [
             (160, 210, 30, 15),
             (1210, 190, 25, 12),

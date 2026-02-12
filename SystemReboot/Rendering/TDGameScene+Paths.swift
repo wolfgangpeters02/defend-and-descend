@@ -28,7 +28,7 @@ extension TDGameScene {
 
         // Circuit trace dimensions - thinner for tech aesthetic
         let traceWidth: CGFloat = DesignLayout.pathWidth         // Main trace width
-        let glowWidth: CGFloat = traceWidth + 8                  // Glow extends beyond trace
+        let glowWidth: CGFloat = 0                  // PERF: was traceWidth + 8 (GPU Gaussian blur)
 
         // Draw each path as a glowing circuit trace
         for path in state.paths {
@@ -50,7 +50,7 @@ extension TDGameScene {
             glowNode.lineCap = .round
             glowNode.lineJoin = .round
             glowNode.zPosition = 0
-            glowNode.glowWidth = 10  // Enhanced glow width
+            glowNode.glowWidth = 0  // PERF: was 10 (GPU Gaussian blur)
             glowNode.blendMode = .add  // Additive blending for brighter glow
             pathLayer.addChild(glowNode)
 
@@ -61,7 +61,7 @@ extension TDGameScene {
             borderNode.lineWidth = traceWidth + 4
             borderNode.lineCap = .round
             borderNode.lineJoin = .round
-            borderNode.zPosition = 1
+            borderNode.zPosition = 0.2
             pathLayer.addChild(borderNode)
 
             // Main circuit trace - bright cyan
@@ -71,7 +71,7 @@ extension TDGameScene {
             pathNode.lineWidth = traceWidth
             pathNode.lineCap = .round
             pathNode.lineJoin = .round
-            pathNode.zPosition = 2
+            pathNode.zPosition = 0.4
             pathLayer.addChild(pathNode)
 
             // Inner highlight for 3D effect
@@ -81,7 +81,7 @@ extension TDGameScene {
             highlightNode.lineWidth = traceWidth * 0.3
             highlightNode.lineCap = .round
             highlightNode.lineJoin = .round
-            highlightNode.zPosition = 3
+            highlightNode.zPosition = 0.6
             pathLayer.addChild(highlightNode)
 
             // Add data flow direction indicators (chevrons)
@@ -107,8 +107,13 @@ extension TDGameScene {
 
         for lane in allLanes {
             let isUnlocked = lane.isStarterLane || unlockedSectorIds.contains(lane.sectorId)
-            let canUnlock = !isUnlocked && MegaBoardSystem.shared.canUnlockSector(lane.sectorId, profile: playerProfile).canUnlock
-            let dimAlpha: CGFloat = isUnlocked ? 1.0 : (canUnlock ? 0.5 : 0.25)
+            let renderMode: SectorRenderMode = isUnlocked ? .unlocked : MegaBoardSystem.shared.getRenderMode(for: lane.sectorId, profile: playerProfile)
+            let dimAlpha: CGFloat
+            switch renderMode {
+            case .unlocked: dimAlpha = 1.0
+            case .unlockable: dimAlpha = 0.5
+            case .locked: dimAlpha = 0.2
+            }
 
             // Create Manhattan-style path (straight lines, 90° turns)
             let bezierPath = UIBezierPath()
@@ -129,67 +134,91 @@ extension TDGameScene {
             borderNode.lineWidth = traceWidth + 6
             borderNode.lineCap = .square  // Manhattan geometry - square caps
             borderNode.lineJoin = .miter  // Sharp 90° corners
-            borderNode.zPosition = 1
+            borderNode.zPosition = 0.2
             borderNode.name = "lane_border_\(lane.id)"
             pathLayer.addChild(borderNode)
 
-            // Main copper trace - dimmed gray for locked, copper for active
+            // Main copper trace color based on render mode
             let pathNode = SKShapeNode()
             pathNode.path = bezierPath.cgPath
-            if isUnlocked {
+            switch renderMode {
+            case .unlocked:
                 pathNode.strokeColor = copperColor
-            } else {
-                // Desaturated gray-copper for locked
+            case .unlockable:
+                // Theme-tinted copper for blueprint-found sectors
+                let themeColor = UIColor(hex: lane.themeColorHex) ?? UIColor.yellow
+                pathNode.strokeColor = themeColor.withAlphaComponent(dimAlpha)
+            case .locked:
+                // Desaturated gray-copper for locked (no blueprints)
                 pathNode.strokeColor = UIColor(red: 0.45, green: 0.40, blue: 0.35, alpha: dimAlpha)
             }
             pathNode.lineWidth = traceWidth
             pathNode.lineCap = .square
             pathNode.lineJoin = .miter
-            pathNode.zPosition = 2
+            pathNode.zPosition = 0.4
             pathNode.name = "lane_path_\(lane.id)"
             pathLayer.addChild(pathNode)
 
-            // Inner highlight for 3D copper effect
+            // Inner highlight for 3D copper effect with subtle powered glow
             let highlightNode = SKShapeNode()
             highlightNode.path = bezierPath.cgPath
-            highlightNode.strokeColor = copperHighlight.withAlphaComponent(isUnlocked ? 0.6 : 0.1)
+            let highlightAlpha: CGFloat = renderMode == .unlocked ? 0.6 : (renderMode == .unlockable ? 0.25 : 0.1)
+            highlightNode.strokeColor = copperHighlight.withAlphaComponent(highlightAlpha)
             highlightNode.lineWidth = traceWidth * 0.4
             highlightNode.lineCap = .square
             highlightNode.lineJoin = .miter
-            highlightNode.zPosition = 3
+            highlightNode.glowWidth = renderMode == .unlocked ? 3 : 0  // Powered-trace glow for active lanes only
+            highlightNode.zPosition = 0.6
             highlightNode.name = "lane_highlight_\(lane.id)"
             pathLayer.addChild(highlightNode)
+            if renderMode == .unlocked { glowNodes.append((highlightNode, 3)) }
 
-            // Add data flow indicators only for active lanes
-            if isUnlocked {
-                addMotherboardPathChevrons(for: path, pathWidth: traceWidth)
+            // Add animated data flow dash overlay for active lanes
+            if renderMode == .unlocked {
+                let flowNode = SKShapeNode()
+                let dashLengths: [CGFloat] = [6, 14]  // Short dash, long gap = data packet look
+                flowNode.path = bezierPath.cgPath.copy(dashingWithPhase: 0, lengths: dashLengths)
+                let themeColor = UIColor(hex: lane.themeColorHex) ?? UIColor.yellow
+                flowNode.strokeColor = themeColor.withAlphaComponent(0.6)
+                flowNode.lineWidth = 3
+                flowNode.lineCap = .round
+                flowNode.glowWidth = 2  // Small glow for data packets (only 8 lanes)
+                flowNode.zPosition = 0.8
+                flowNode.name = "lane_flow_\(lane.id)"
+                pathLayer.addChild(flowNode)
+                glowNodes.append((flowNode, 2))
+                // Store ref for animation: (node, original bezier path, dash lengths)
+                laneFlowNodes[lane.id] = (flowNode, bezierPath.cgPath, dashLengths)
 
                 // Create power LEDs along the lane for visual feedback
                 createLEDsForLane(lane)
             }
 
             // Add spawn point visual
-            renderSpawnPoint(for: lane, isUnlocked: isUnlocked, canUnlock: canUnlock)
+            renderSpawnPoint(for: lane, renderMode: renderMode)
         }
     }
 
-    /// Render spawn point for a lane - pulsing for active, highlighted for unlockable, dimmed for locked
-    func renderSpawnPoint(for lane: SectorLane, isUnlocked: Bool, canUnlock: Bool = false) {
+    /// Render spawn point for a lane based on sector render mode
+    /// - `.unlocked`: Pulsing themed circle with direction arrow
+    /// - `.unlockable`: Highlighted with theme color, lock icon, cost label
+    /// - `.locked`: Dim gray circle with lock icon
+    func renderSpawnPoint(for lane: SectorLane, renderMode: SectorRenderMode) {
         let themeColor = UIColor(hex: lane.themeColorHex) ?? UIColor.yellow
         let spawnPos = convertToScene(lane.spawnPoint)
 
         let container = SKNode()
         container.position = spawnPos
         container.name = "spawn_\(lane.id)"
-        container.zPosition = 10
+        container.zPosition = 1.5  // Above path elements, below enemies (effective: 3+1.5=4.5 < enemy 5)
 
-        if isUnlocked {
+        if renderMode == .unlocked {
             // Active spawn point: Pulsing themed circle
             let outerRing = SKShapeNode(circleOfRadius: 50)
             outerRing.fillColor = themeColor.withAlphaComponent(0.2)
             outerRing.strokeColor = themeColor
             outerRing.lineWidth = 3
-            outerRing.glowWidth = 10
+            outerRing.glowWidth = 0  // PERF: was 10 (GPU Gaussian blur)
             container.addChild(outerRing)
 
             let innerCircle = SKShapeNode(circleOfRadius: 30)
@@ -208,13 +237,13 @@ extension TDGameScene {
                 SKAction.scale(to: 1.0, duration: 1.0)
             ])
             outerRing.run(SKAction.repeatForever(pulse))
-        } else if canUnlock {
+        } else if renderMode == .unlockable {
             // Unlockable spawn point: Highlighted with theme color and pulsing animation
             let outerRing = SKShapeNode(circleOfRadius: 55)
             outerRing.fillColor = themeColor.withAlphaComponent(0.15)
             outerRing.strokeColor = themeColor.withAlphaComponent(0.8)
             outerRing.lineWidth = 3
-            outerRing.glowWidth = 8
+            outerRing.glowWidth = 0  // PERF: was 8 (GPU Gaussian blur)
             container.addChild(outerRing)
 
             // Pulsing animation to draw attention
@@ -358,11 +387,14 @@ extension TDGameScene {
     }
 
     /// Add data flow chevrons for motherboard paths
+    /// Performance: Single compound path per route instead of individual dot nodes
     func addMotherboardPathChevrons(for path: EnemyPath, pathWidth: CGFloat) {
         guard path.waypoints.count >= 2 else { return }
 
         let chevronSpacing: CGFloat = 150
         let glowColor = UIColor(hex: MotherboardColors.activeGlow) ?? UIColor.green
+        let compoundPath = CGMutablePath()
+        let dotRadius: CGFloat = 4
 
         for i in 0..<(path.waypoints.count - 1) {
             let start = convertToScene(path.waypoints[i])
@@ -371,7 +403,6 @@ extension TDGameScene {
             let dx = end.x - start.x
             let dy = end.y - start.y
             let segmentLength = sqrt(dx*dx + dy*dy)
-            let angle = atan2(dy, dx)
 
             let chevronCount = Int(segmentLength / chevronSpacing)
 
@@ -379,25 +410,21 @@ extension TDGameScene {
                 let t = CGFloat(j) / CGFloat(chevronCount + 1)
                 let x = start.x + dx * t
                 let y = start.y + dy * t
-
-                // Small glowing dot instead of chevron for PCB aesthetic
-                let dot = SKShapeNode(circleOfRadius: 4)
-                dot.position = CGPoint(x: x, y: y)
-                dot.fillColor = glowColor.withAlphaComponent(0.8)
-                dot.strokeColor = .clear
-                dot.zPosition = 4
-                dot.glowWidth = 3
-                dot.blendMode = .add
-                pathLayer.addChild(dot)
-
-                // Pulse animation
-                let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: 0.8)
-                let fadeIn = SKAction.fadeAlpha(to: 0.9, duration: 0.8)
-                let delay = SKAction.wait(forDuration: Double(j) * 0.15)
-                let pulse = SKAction.sequence([delay, SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn]))])
-                dot.run(pulse)
+                compoundPath.addEllipse(in: CGRect(x: x - dotRadius, y: y - dotRadius, width: dotRadius * 2, height: dotRadius * 2))
             }
         }
+
+        let batchedDots = SKShapeNode(path: compoundPath)
+        batchedDots.fillColor = glowColor.withAlphaComponent(0.8)
+        batchedDots.strokeColor = .clear
+        batchedDots.zPosition = 0.7  // Above path trace, below enemies (effective: 3+0.7=3.7)
+        batchedDots.blendMode = .add
+        pathLayer.addChild(batchedDots)
+
+        // Single shared pulse animation for the entire batch
+        let fadeOut = SKAction.fadeAlpha(to: 0.3, duration: 0.8)
+        let fadeIn = SKAction.fadeAlpha(to: 0.9, duration: 0.8)
+        batchedDots.run(SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn])))
     }
 
     // MARK: - Path LED System
@@ -408,7 +435,7 @@ extension TDGameScene {
         let path = lane.path
         guard path.waypoints.count >= 2 else { return }
 
-        let ledSpacing: CGFloat = 60  // LED every 60 points
+        let ledSpacing: CGFloat = 100  // LED every 100 points (reduced from 60 for performance)
         var leds: [SKShapeNode] = []
 
         // Get theme color for this lane's sector
@@ -432,13 +459,13 @@ extension TDGameScene {
                 let y = start.y + dy * t
 
                 // Create LED node
-                let led = SKShapeNode(circleOfRadius: 3)
+                let led = SKShapeNode(circleOfRadius: 4.5)
                 led.position = CGPoint(x: x, y: y)
-                led.fillColor = themeColor.withAlphaComponent(0.3)  // Dim idle state
-                led.strokeColor = themeColor.withAlphaComponent(0.5)
-                led.lineWidth = 1
-                led.glowWidth = 2  // Subtle glow
-                led.zPosition = 5  // Above path, below enemies
+                led.fillColor = themeColor.withAlphaComponent(0.5)  // Visible idle state
+                led.strokeColor = themeColor.withAlphaComponent(0.7)
+                led.lineWidth = 1.5
+                led.glowWidth = 0  // Managed dynamically by updateLEDGlow()
+                led.zPosition = 0.9  // Above path highlight, below enemies (effective: 3+0.9=3.9 < enemy 5)
                 led.blendMode = .add
                 led.name = "led_\(lane.id)_\(leds.count)"
 
@@ -453,47 +480,18 @@ extension TDGameScene {
         startLEDIdleAnimation(for: lane.id, themeColor: themeColor)
     }
 
-    /// Start the idle heartbeat pulse animation for LEDs
+    /// Initialize LEDs to dim idle state (animation driven by updatePathLEDs shared loop)
     func startLEDIdleAnimation(for laneId: String, themeColor: UIColor) {
         guard let leds = pathLEDNodes[laneId] else { return }
-
-        // Heartbeat pulse: dim -> bright -> dim (1.2s cycle)
-        let dimColor = themeColor.withAlphaComponent(0.2)
-        let brightColor = themeColor.withAlphaComponent(0.5)
-
-        for (index, led) in leds.enumerated() {
-            // Stagger the animation start by LED position
-            let delay = Double(index) * 0.05
-
-            let pulse = SKAction.sequence([
-                SKAction.wait(forDuration: delay),
-                SKAction.repeatForever(SKAction.sequence([
-                    SKAction.group([
-                        SKAction.customAction(withDuration: 0.3) { node, elapsed in
-                            let shape = node as? SKShapeNode
-                            let progress = elapsed / 0.3
-                            shape?.glowWidth = 2 + 2 * progress  // 2 -> 4
-                            shape?.fillColor = dimColor.interpolate(to: brightColor, progress: progress)
-                        },
-                    ]),
-                    SKAction.group([
-                        SKAction.customAction(withDuration: 0.9) { node, elapsed in
-                            let shape = node as? SKShapeNode
-                            let progress = elapsed / 0.9
-                            shape?.glowWidth = 4 - 2 * progress  // 4 -> 2
-                            shape?.fillColor = brightColor.interpolate(to: dimColor, progress: progress)
-                        },
-                    ]),
-                ]))
-            ])
-
-            led.run(pulse, withKey: "idlePulse")
+        let dimColor = themeColor.withAlphaComponent(0.35)
+        for led in leds {
+            led.fillColor = dimColor
         }
     }
 
-    /// Update LED states based on enemy proximity
+    /// Update LED states based on enemy proximity + shared idle animation
     /// Called from update loop (every 3 frames for performance)
-    func updatePathLEDs(enemies: [TDEnemy]) {
+    func updatePathLEDs(enemies: [TDEnemy], currentTime: TimeInterval) {
         // Performance: only update every 3 frames
         ledUpdateCounter += 1
         guard ledUpdateCounter % 3 == 0 else { return }
@@ -513,17 +511,22 @@ extension TDGameScene {
             }
         }
 
+        // Zoom-gated glow: enable LED glow only when zoomed in (few on screen)
+        let enableGlow = currentScale < 0.6
+        let targetGlow: CGFloat = enableGlow ? 2.5 : 0
+
         // Update each lane's LEDs
         for (laneId, leds) in pathLEDNodes {
             let laneEnemies = enemiesByLane[laneId] ?? []
-
-            // Get lane theme color from cache
             let themeColor = laneColorCache[laneId] ?? UIColor.yellow
+            let dimColor = themeColor.withAlphaComponent(0.35)
+            let brightColor = themeColor.withAlphaComponent(0.7)
 
-            for led in leds {
+            for (ledIndex, led) in leds.enumerated() {
                 // Skip LEDs outside visible area
                 guard paddedRect.contains(led.position) else { continue }
-                // Find nearest enemy to this LED (squared distance avoids sqrt in inner loop)
+
+                // Find nearest enemy to this LED
                 let ledPosition = led.position
                 var minDistanceSq: CGFloat = .infinity
                 var nearestEnemy: TDEnemy?
@@ -541,99 +544,62 @@ extension TDGameScene {
                 }
 
                 // Calculate intensity based on proximity (100pt range)
-                // Only compute sqrt for the single nearest enemy
                 let proximityRange: CGFloat = 100
                 let minDistance = sqrt(minDistanceSq)
                 let intensity = max(0, 1 - minDistance / proximityRange)
 
                 if intensity > 0.1, let enemy = nearestEnemy {
-                    // Enemy nearby - override idle animation with active state
-                    led.removeAction(forKey: "idlePulse")
-
-                    // Determine color based on enemy type
+                    // Enemy nearby - show active state with boosted glow
                     let activeColor: UIColor
-                    let activeGlow: CGFloat
-
                     switch enemy.type {
                     case "boss":
-                        // Boss: white pulsing, extra wide glow
                         activeColor = UIColor.white
-                        activeGlow = 8 + intensity * 4
-                    case "tank":
-                        // Tank: brighter, wider glow
-                        activeColor = themeColor
-                        activeGlow = 5 + intensity * 4
                     case "fast":
-                        // Fast: orange tint
                         activeColor = UIColor(red: 1.0, green: 0.6, blue: 0.2, alpha: 1.0)
-                        activeGlow = 3 + intensity * 3
                     default:
-                        // Basic: lane theme color
                         activeColor = themeColor
-                        activeGlow = 2 + intensity * 4
                     }
-
-                    // Apply active state
-                    led.fillColor = activeColor.withAlphaComponent(0.4 + intensity * 0.6)
-                    led.strokeColor = activeColor.withAlphaComponent(0.7 + intensity * 0.3)
-                    led.glowWidth = activeGlow
-
-                    // Boss special: rapid flicker
-                    if enemy.type == "boss" || enemy.isBoss {
-                        let flicker = SKAction.sequence([
-                            SKAction.run { led.glowWidth = activeGlow * 1.3 },
-                            SKAction.wait(forDuration: 0.05),
-                            SKAction.run { led.glowWidth = activeGlow * 0.7 },
-                            SKAction.wait(forDuration: 0.05),
-                        ])
-                        led.run(SKAction.repeatForever(flicker), withKey: "bossFlicker")
-                    } else {
-                        led.removeAction(forKey: "bossFlicker")
-                    }
+                    led.fillColor = activeColor.withAlphaComponent(0.5 + intensity * 0.5)
+                    led.strokeColor = activeColor.withAlphaComponent(0.8 + intensity * 0.2)
+                    led.glowWidth = enableGlow ? 2.5 + intensity * 3.0 : 0
                 } else {
-                    // No enemy nearby - restore idle animation if not running
-                    led.removeAction(forKey: "bossFlicker")
-                    if led.action(forKey: "idlePulse") == nil {
-                        startLEDIdleAnimationForSingleLED(led, themeColor: themeColor)
-                    }
+                    // No enemy nearby - shared idle heartbeat via sine wave
+                    // 1.2s cycle with per-LED stagger based on index
+                    let phase = currentTime * (2.0 * .pi / 1.2) + Double(ledIndex) * 0.3
+                    let pulse = CGFloat((sin(phase) + 1.0) * 0.5)  // 0..1
+                    led.fillColor = dimColor.interpolate(to: brightColor, progress: pulse)
+                    led.strokeColor = themeColor.withAlphaComponent(0.4 + 0.3 * pulse)
+                    led.glowWidth = targetGlow * (0.5 + 0.5 * pulse)
                 }
             }
         }
     }
 
-    /// Start idle animation for a single LED (when returning from active state)
-    func startLEDIdleAnimationForSingleLED(_ led: SKShapeNode, themeColor: UIColor) {
-        let dimColor = themeColor.withAlphaComponent(0.2)
-        let brightColor = themeColor.withAlphaComponent(0.5)
+    /// Animate dashed flow overlays — advances the dash phase to create flowing data effect
+    /// Called from update loop every 6 frames (low frequency is fine for this visual)
+    func updateLaneFlowAnimation(deltaTime: TimeInterval) {
+        // Advance phase (20 points/second = smooth flow speed)
+        laneFlowPhase += CGFloat(deltaTime) * 20.0
+        // Wrap phase to prevent floating point growth
+        let dashCycleLength: CGFloat = 20  // 6 (dash) + 14 (gap)
+        if laneFlowPhase > dashCycleLength {
+            laneFlowPhase -= dashCycleLength
+        }
 
-        let pulse = SKAction.repeatForever(SKAction.sequence([
-            SKAction.group([
-                SKAction.customAction(withDuration: 0.3) { node, elapsed in
-                    let shape = node as? SKShapeNode
-                    let progress = elapsed / 0.3
-                    shape?.glowWidth = 2 + 2 * progress
-                    shape?.fillColor = dimColor.interpolate(to: brightColor, progress: progress)
-                },
-            ]),
-            SKAction.group([
-                SKAction.customAction(withDuration: 0.9) { node, elapsed in
-                    let shape = node as? SKShapeNode
-                    let progress = elapsed / 0.9
-                    shape?.glowWidth = 4 - 2 * progress
-                    shape?.fillColor = brightColor.interpolate(to: dimColor, progress: progress)
-                },
-            ]),
-        ]))
-
-        led.run(pulse, withKey: "idlePulse")
+        for (_, flowData) in laneFlowNodes {
+            let dashLengths = flowData.dashLengths
+            flowData.node.path = flowData.path.copy(dashingWithPhase: laneFlowPhase, lengths: dashLengths)
+        }
     }
 
     /// Add direction indicator chevrons along the path
+    /// Performance: Single compound path per route instead of individual chevron nodes
     func addPathChevrons(for path: EnemyPath, pathWidth: CGFloat) {
         guard path.waypoints.count >= 2 else { return }
 
-        // Place chevrons every ~100pt along the path
         let chevronSpacing: CGFloat = 100
+        let chevronSize: CGFloat = 10
+        let compoundPath = CGMutablePath()
 
         for i in 0..<(path.waypoints.count - 1) {
             let start = convertToScene(path.waypoints[i])
@@ -644,7 +610,6 @@ extension TDGameScene {
             let segmentLength = sqrt(dx*dx + dy*dy)
             let angle = atan2(dy, dx)
 
-            // Number of chevrons for this segment
             let chevronCount = Int(segmentLength / chevronSpacing)
 
             for j in 1...max(1, chevronCount) {
@@ -652,37 +617,33 @@ extension TDGameScene {
                 let x = start.x + dx * t
                 let y = start.y + dy * t
 
-                let chevron = createChevron()
-                chevron.position = CGPoint(x: x, y: y)
-                chevron.zRotation = angle
-                chevron.zPosition = 2
-                pathLayer.addChild(chevron)
-
-                // Subtle fade animation for movement indication
-                let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 1.0)
-                let fadeIn = SKAction.fadeAlpha(to: 0.6, duration: 1.0)
-                let delay = SKAction.wait(forDuration: Double(j) * 0.3)
-                let sequence = SKAction.sequence([delay, fadeOut, fadeIn])
-                chevron.run(SKAction.repeatForever(sequence))
+                // Add rotated chevron shape to compound path
+                let cosA = cos(angle)
+                let sinA = sin(angle)
+                let p1 = CGPoint(x: x + (-chevronSize * cosA - chevronSize * 0.6 * sinA),
+                                 y: y + (-chevronSize * sinA + chevronSize * 0.6 * cosA))
+                let p2 = CGPoint(x: x, y: y)
+                let p3 = CGPoint(x: x + (-chevronSize * cosA + chevronSize * 0.6 * sinA),
+                                 y: y + (-chevronSize * sinA - chevronSize * 0.6 * cosA))
+                compoundPath.move(to: p1)
+                compoundPath.addLine(to: p2)
+                compoundPath.addLine(to: p3)
             }
         }
-    }
 
-    /// Create a path direction chevron
-    func createChevron() -> SKShapeNode {
-        let path = UIBezierPath()
-        let size: CGFloat = 10
-        path.move(to: CGPoint(x: -size, y: size * 0.6))
-        path.addLine(to: CGPoint(x: 0, y: 0))
-        path.addLine(to: CGPoint(x: -size, y: -size * 0.6))
+        let batchedChevrons = SKShapeNode(path: compoundPath)
+        batchedChevrons.strokeColor = DesignColors.pathBorderUI.withAlphaComponent(0.6)
+        batchedChevrons.fillColor = .clear
+        batchedChevrons.lineWidth = 3
+        batchedChevrons.lineCap = .round
+        batchedChevrons.alpha = 0.5
+        batchedChevrons.zPosition = 0.7  // Above path trace, below enemies (effective: 3+0.7=3.7)
+        pathLayer.addChild(batchedChevrons)
 
-        let chevron = SKShapeNode(path: path.cgPath)
-        chevron.strokeColor = DesignColors.pathBorderUI.withAlphaComponent(0.6)
-        chevron.fillColor = .clear
-        chevron.lineWidth = 3
-        chevron.lineCap = .round
-        chevron.alpha = 0.5
-        return chevron
+        // Single shared pulse animation
+        let fadeOut = SKAction.fadeAlpha(to: 0.2, duration: 1.0)
+        let fadeIn = SKAction.fadeAlpha(to: 0.6, duration: 1.0)
+        batchedChevrons.run(SKAction.repeatForever(SKAction.sequence([fadeOut, fadeIn])))
     }
 
 }
