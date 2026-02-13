@@ -1712,9 +1712,6 @@ struct BalanceConfig {
         /// Fire rate scaling per level (+3%)
         static let fireRatePerLevel: CGFloat = 0.03
 
-        /// Attack speed scaling per level (+5%) - used by WeaponTower
-        static let attackSpeedPerLevel: CGFloat = 0.05
-
         /// Ricochet ability chain targets
         static let ricochetChainTargets: Int = 3
 
@@ -1723,12 +1720,6 @@ struct BalanceConfig {
 
         /// Weapon range for boss arena conversion
         static let bossArenaWeaponRange: CGFloat = 600
-
-        /// Legacy WeaponTower upgrade cost base
-        static let legacyUpgradeCostBase: Int = 100
-
-        /// Legacy WeaponTower upgrade cost per level
-        static let legacyUpgradeCostPerLevel: Int = 50
     }
 
     // MARK: - Pillar System (Boss Fight Cover)
@@ -2303,7 +2294,6 @@ extension BalanceConfig {
         let protocolScalingDict: [String: Any] = [
             "rangePerLevel": Double(ProtocolScaling.rangePerLevel),
             "fireRatePerLevel": Double(ProtocolScaling.fireRatePerLevel),
-            "attackSpeedPerLevel": Double(ProtocolScaling.attackSpeedPerLevel),
             "maxUpgradeLevel": maxUpgradeLevel
         ]
 

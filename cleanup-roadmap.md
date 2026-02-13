@@ -129,7 +129,8 @@ Five overlapping map/level concepts use "sector" or similar terms for different 
 ---
 
 ## Stage 5: Upgrade Cost Formula Unification
-**Status:** OPEN
+**Status:** DONE
+**Summary:** WeaponTower (and its linear cost formula) was already removed in Stage 1; deleted the three orphaned constants from BalanceConfig.ProtocolScaling (legacyUpgradeCostBase, legacyUpgradeCostPerLevel, attackSpeedPerLevel) and their exportJSON entry. Exponential formula via `BalanceConfig.exponentialUpgradeCost()` is now the sole upgrade cost path.
 **Priority:** Low-Medium (balance inconsistency, not a crash bug)
 **Estimated scope:** ~3 files
 
