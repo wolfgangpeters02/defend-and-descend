@@ -26,12 +26,6 @@ final class MegaBoardSystem {
         config = MegaBoardConfig.createDefault()
     }
 
-    /// Load mega-board configuration from JSON data
-    func loadConfig(from data: Data) throws {
-        let decoder = JSONDecoder()
-        config = try decoder.decode(MegaBoardConfig.self, from: data)
-    }
-
     // MARK: - Sector Queries
 
     /// Get all sectors in the mega-board
@@ -187,32 +181,6 @@ final class MegaBoardSystem {
         }
 
         return (locked, unlockable)
-    }
-
-    // MARK: - Gate Queries
-
-    /// Get the encryption gate for a sector
-    func gate(forSectorId sectorId: String) -> EncryptionGate? {
-        config?.gate(forSectorId: sectorId)
-    }
-
-    /// Get all gates that should be visible (adjacent to unlocked sectors)
-    func visibleGates(for profile: PlayerProfile) -> [EncryptionGate] {
-        let lockedSectors = visibleLockedSectors(for: profile)
-        return lockedSectors.compactMap { gate(forSectorId: $0.id) }
-    }
-
-    // MARK: - Connection Queries
-
-    /// Get all data bus connections
-    var connections: [DataBusConnection] {
-        config?.connections ?? []
-    }
-
-    /// Get active connections (both sectors unlocked)
-    func activeConnections(for profile: PlayerProfile) -> [DataBusConnection] {
-        let unlocked = Set(profile.unlockedTDSectors)
-        return connections.filter { $0.isActive(unlockedSectorIds: unlocked) }
     }
 
     // MARK: - Camera Bounds

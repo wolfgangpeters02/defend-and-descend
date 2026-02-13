@@ -25,7 +25,6 @@
 		44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */; };
 		MNOVSCVSBLD /* ManualOverrideScene+Visuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */; };
 		469B93F994E728C789F86031 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F896AC2E9B27982965DBAF /* Protocol.swift */; };
-		47C2EC65CDFEE77D87E73F93 /* TDConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = 31EF22FB9EBD5242CFCD38DD /* TDConfig.json */; };
 		50A8B0A9C7780F96391DAD35 /* BlueprintDropSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */; };
 		594042117873415AD5954A69 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */; };
 		6C248F4AC18463B47DE591BF /* SectorSchematics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0730EB976BE58FD41672919 /* SectorSchematics.swift */; };
@@ -177,7 +176,6 @@
 		1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorUnlockSystem.swift; sourceTree = "<group>"; };
 		1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SharedTypes.swift; sourceTree = "<group>"; };
 		260E703394574A0E21D9E82C /* WaveSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveSystem.swift; sourceTree = "<group>"; };
-		31EF22FB9EBD5242CFCD38DD /* TDConfig.json */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.json; path = TDConfig.json; sourceTree = "<group>"; };
 		3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeBackModal.swift; sourceTree = "<group>"; };
 		524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideView.swift; sourceTree = "<group>"; };
 		MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ManualOverrideScene+Visuals.swift"; sourceTree = "<group>"; };
@@ -470,7 +468,6 @@
 			children = (
 				AA100015 /* GameConfig.json */,
 				AA400019 /* ParticleEffects */,
-				31EF22FB9EBD5242CFCD38DD /* TDConfig.json */,
 				LOCSTRSREF /* Localizable.xcstrings */,
 			);
 			path = Resources;
@@ -729,7 +726,6 @@
 			files = (
 				AA000014 /* Assets.xcassets in Resources */,
 				AA000015 /* GameConfig.json in Resources */,
-				47C2EC65CDFEE77D87E73F93 /* TDConfig.json in Resources */,
 				LOCSTRSBLD /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

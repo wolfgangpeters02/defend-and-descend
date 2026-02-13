@@ -206,37 +206,6 @@ class StorageService {
         userDefaults.set(id, forKey: Keys.currentPlayerId)
     }
 
-    // MARK: - Run Statistics
-
-    /// Save survivor run result (arena or dungeon)
-    func saveRunResult(time: TimeInterval, kills: Int, coinsCollected: Int, victory: Bool, gameMode: GameMode = .arena) {
-        var profile = getOrCreateDefaultPlayer()
-        GameRewardService.applySurvivorResult(
-            to: &profile,
-            time: time,
-            kills: kills,
-            gameMode: gameMode,
-            victory: victory,
-            hashEarned: coinsCollected,
-            extracted: false
-        )
-        savePlayer(profile)
-    }
-
-    /// Save TD game result
-    func saveTDResult(wavesCompleted: Int, enemiesKilled: Int, hashEarned: Int, towersPlaced: Int, victory: Bool) {
-        var profile = getOrCreateDefaultPlayer()
-        GameRewardService.applyTDResult(
-            to: &profile,
-            wavesCompleted: wavesCompleted,
-            enemiesKilled: enemiesKilled,
-            towersPlaced: towersPlaced,
-            hashEarned: hashEarned,
-            victory: victory
-        )
-        savePlayer(profile)
-    }
-
     // MARK: - System: Reboot - Offline Earnings
 
     /// Save timestamp and game state when app goes to background

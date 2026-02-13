@@ -3,13 +3,9 @@ import SwiftUI
 
 extension TDGameScene {
 
-    /// Setup mega-board overlays: locked (corrupted data), unlockable (blueprint schematic),
-    /// encryption gates, and data bus connections
+    /// Setup mega-board overlays: locked (corrupted data) and unlockable (blueprint schematic)
     func setupMegaBoardVisuals() {
         guard isMotherboardMap else { return }
-
-        // Clear existing gate nodes
-        gateNodes.removeAll()
 
         let profile = AppState.shared.currentPlayer
 
@@ -26,26 +22,6 @@ extension TDGameScene {
 
         for sector in unlockableSectors {
             renderer.renderUnlockableSector(sector, in: backgroundLayer)
-        }
-
-        // Render encryption gates and store references for hit testing
-        let gates = MegaBoardSystem.shared.visibleGates(for: profile)
-        for gate in gates {
-            if let sector = MegaBoardSystem.shared.sector(id: gate.sectorId) {
-                renderer.renderEncryptionGate(gate, sector: sector, in: uiLayer)
-
-                // Store gate node for hit testing (find by name)
-                if let gateNode = uiLayer.childNode(withName: "gate_\(gate.id)") {
-                    gateNodes[gate.sectorId] = gateNode
-                }
-            }
-        }
-
-        // Render data bus connections
-        let connections = MegaBoardSystem.shared.connections
-        for connection in connections {
-            let isActive = connection.isActive(unlockedSectorIds: Set(profile.unlockedTDSectors))
-            renderer.renderDataBus(connection, isActive: isActive, in: pathLayer)
         }
     }
 
@@ -69,9 +45,6 @@ extension TDGameScene {
 
         // Clear existing overlays
         megaBoardRenderer?.removeAllGhostSectors()
-        megaBoardRenderer?.removeAllEncryptionGates()
-        megaBoardRenderer?.removeAllDataBuses()
-        gateNodes.removeAll()
 
         // Rebuild sector decorations to reflect new render modes
         // (e.g. unlockable → unlocked needs full-color components instead of wireframe)

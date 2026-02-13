@@ -6,7 +6,6 @@ import CoreGraphics
 // Players unlock sectors by spending Hash to decrypt encryption gates
 //
 // Dependencies:
-// - BusDirection from MotherboardTypes.swift
 // - SectorID from EntityIDs.swift
 
 // MARK: - Sector Render Mode
@@ -107,55 +106,6 @@ struct MegaBoardSector: Identifiable, Codable, Equatable {
     }
 }
 
-// MARK: - Data Bus Connection
-// TODO: Stage 6 — remove DataBusConnection, EncryptionGate types and all rendering code
-// (always empty since lane system replaced connections/gates)
-
-/// Connection between two sectors (enemy path)
-struct DataBusConnection: Identifiable, Codable {
-    var id: String
-    var fromSectorId: String
-    var toSectorId: String
-    var direction: BusDirection             // Uses existing BusDirection from MotherboardTypes
-
-    // Path segments (waypoints in world coordinates)
-    var waypoints: [CGPoint]
-
-    // Visual properties
-    var busWidth: CGFloat = 32              // Width of the data bus trace
-
-    /// Whether this connection is active (both sectors unlocked)
-    func isActive(unlockedSectorIds: Set<String>) -> Bool {
-        unlockedSectorIds.contains(fromSectorId) && unlockedSectorIds.contains(toSectorId)
-    }
-}
-
-// MARK: - Encryption Gate
-
-/// Gate that blocks access to a locked sector
-/// Player must spend Hash to decrypt and unlock the sector
-struct EncryptionGate: Identifiable, Codable {
-    var id: String
-    var sectorId: String                    // The sector this gate protects
-    var position: CGPoint                   // World position of the gate
-
-    // Gate state (computed at runtime, not persisted)
-    var isDecrypted: Bool = false
-
-    // Visual properties
-    var gateWidth: CGFloat = 80
-    var gateHeight: CGFloat = 120
-
-    var bounds: CGRect {
-        CGRect(
-            x: position.x - gateWidth / 2,
-            y: position.y - gateHeight / 2,
-            width: gateWidth,
-            height: gateHeight
-        )
-    }
-}
-
 // MARK: - Mega-Board Configuration
 
 /// Complete configuration for the mega-board system
@@ -180,12 +130,6 @@ struct MegaBoardConfig: Codable {
     // Sectors in the grid
     var sectors: [MegaBoardSector]
 
-    // Connections between sectors
-    var connections: [DataBusConnection]
-
-    // Encryption gates
-    var gates: [EncryptionGate]
-
     // MARK: - Lookup Methods
 
     /// Get sector by ID
@@ -196,11 +140,6 @@ struct MegaBoardConfig: Codable {
     /// Get sector at grid position
     func sector(atGridX x: Int, gridY y: Int) -> MegaBoardSector? {
         sectors.first { $0.gridX == x && $0.gridY == y }
-    }
-
-    /// Get gate for a sector
-    func gate(forSectorId sectorId: String) -> EncryptionGate? {
-        gates.first { $0.sectorId == sectorId }
     }
 
     /// Get all sectors adjacent to a given sector
@@ -379,21 +318,12 @@ extension MegaBoardConfig {
             )
         ]
 
-        // Data bus connections - simplified for new 8-lane system
-        // Each non-CPU sector has a lane to the CPU, connections are visual only
-        let connections: [DataBusConnection] = []
-
-        // Gates are replaced by lock icons at spawn points in the new lane system
-        let gates: [EncryptionGate] = []
-
         return MegaBoardConfig(
             gridColumns: 3,
             gridRows: 3,
             sectorWidth: sectorWidth,
             sectorHeight: sectorHeight,
-            sectors: sectors,
-            connections: connections,
-            gates: gates
+            sectors: sectors
         )
     }
 }

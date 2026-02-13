@@ -80,7 +80,7 @@ enum EnemyID: String, CaseIterable, Codable {
 
 // MARK: - TD Map IDs
 
-/// Tower Defense map IDs from TDConfig.json
+/// Tower Defense map IDs
 enum TDMapID: String, CaseIterable, Codable {
     case grasslands
     case volcano

@@ -45,7 +45,6 @@ class TDGameScene: SKScene {
     var enemyLastHealth: [String: CGFloat] = [:]  // Track health for hit flash
     var projectileNodes: [String: SKNode] = [:]
     // slotNodes removed — hit testing uses distance-based math now
-    var gateNodes: [String: SKNode] = [:]  // Mega-board encryption gates
 
     // Cached tower child node refs (avoids per-frame childNode(withName:) lookups)
     struct TowerNodeRefs {

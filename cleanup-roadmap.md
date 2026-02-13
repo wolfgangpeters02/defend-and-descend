@@ -154,7 +154,8 @@ Two different upgrade cost formulas coexist. `SharedTypes.swift` (WeaponTower) u
 ---
 
 ## Stage 6: Dead Config and State Cleanup
-**Status:** OPEN
+**Status:** DONE
+**Summary:** Deleted TDConfig.json (bundled but never loaded); removed DataBusConnection/EncryptionGate types and all gate/connection/decrypt rendering+query code (~350 lines) from MegaBoardTypes, MegaBoardSystem, MegaBoardRenderer, TDGameScene; removed unused StorageService.saveRunResult/saveTDResult wrappers; removed orphaned decryptAnimationDuration constant. Wave fields, legacy hash fallback, and playerWeaponDamage confirmed alive and kept.
 **Priority:** Low (no bugs, just cruft)
 **Estimated scope:** ~5 files
 

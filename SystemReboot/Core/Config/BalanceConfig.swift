@@ -1930,9 +1930,6 @@ struct BalanceConfig {
 
         /// Enemy portal spawn animation duration
         static let portalAnimationDuration: TimeInterval = 0.8
-
-        /// Decrypt animation duration (when unlocking sectors)
-        static let decryptAnimationDuration: TimeInterval = 1.5
     }
 
 }

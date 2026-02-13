@@ -179,14 +179,6 @@ extension TDGameScene {
                 }
             }
 
-            // Check for encryption gate tap (mega-board sector unlock)
-            for (sectorId, gateNode) in gateNodes {
-                if gateNode.contains(location) {
-                    HapticsService.shared.play(.light)
-                    gameStateDelegate?.gateSelected(sectorId)
-                    return
-                }
-            }
         }
 
         // Check for boss tap (to engage boss fight)
