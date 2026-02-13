@@ -492,8 +492,8 @@ struct HTMLGenerator {
         for lv in 1...BalanceConfig.Leveling.maxWeaponLevel {
             let xp = BalanceConfig.xpRequired(level: lv)
             cumXP += xp
-            let dmg = Double(BalanceConfig.Leveling.baseDamageMultiplier) + Double(lv) * Double(BalanceConfig.Leveling.damagePerLevel)
-            s += td(["\(lv)", "\(xp)", "\(cumXP)", String(format: "%.0fx", dmg)])
+            let dmg = Double(BalanceConfig.levelStatMultiplier(level: lv))
+            s += td(["\(lv)", "\(xp)", "\(cumXP)", String(format: "%.2fx", dmg)])
         }
         s += "</tbody></table>"
 

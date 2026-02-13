@@ -80,10 +80,10 @@ struct PlayerProfile: Codable {
     /// Boss kill tracking for blueprint drop calculations
     var bossKillRecords: [String: BossKillRecord] = [:]
 
-    // MARK: - Global Upgrades (Legacy - being replaced by Component system)
+    // MARK: - Global Upgrades (Legacy - kept for save backward compat only)
 
-    /// CPU, RAM, Cooling upgrades (LEGACY - use componentLevels instead)
-    var globalUpgrades: GlobalUpgrades = GlobalUpgrades()
+    /// DEPRECATED: Use componentLevels. Kept for Codable backward compat.
+    var globalUpgrades: LegacyGlobalUpgrades = LegacyGlobalUpgrades()
 
     // MARK: - Component Upgrade System (New)
 
@@ -174,7 +174,7 @@ struct TDModeStats: Codable {
 
     // System: Reboot - Offline/Idle Earnings
     var lastActiveTimestamp: TimeInterval = 0  // Last time player was active
-    var baseHashPerSecond: CGFloat = 1.0       // Base Hash income rate (must match GlobalUpgrades)
+    var baseHashPerSecond: CGFloat = 1.0       // Base Hash income rate (must match ComponentLevels)
     var averageEfficiency: CGFloat = 100       // Rolling average efficiency for offline calc
 
     // Offline Simulation State
@@ -236,7 +236,6 @@ extension PlayerProfile {
             equippedProtocolId: defaultProtocolId,
             protocolBlueprints: [],
             bossKillRecords: [:],  // Blueprint system tracking
-            globalUpgrades: GlobalUpgrades(),
             unlockedExpansions: [],
             motherboardEfficiency: 1.0,
             unlockedSectors: [defaultSectorId, "cathedral"],  // RAM + Cathedral unlocked by default
@@ -286,6 +285,13 @@ extension PlayerProfile {
                 profile.unlocks.arenas.append(arena)
             }
         }
+
+        // Migrate legacy globalUpgrades → componentLevels (take max of each)
+        profile.componentLevels.psu = max(profile.componentLevels.psu, profile.globalUpgrades.psuLevel)
+        profile.componentLevels.cpu = max(profile.componentLevels.cpu, profile.globalUpgrades.cpuLevel)
+        profile.componentLevels.ram = max(profile.componentLevels.ram, profile.globalUpgrades.ramLevel)
+        profile.componentLevels.cache = max(profile.componentLevels.cache, profile.globalUpgrades.coolingLevel)
+        profile.componentLevels.storage = max(profile.componentLevels.storage, profile.globalUpgrades.hddLevel)
 
         // Migrate legacy weapon data → protocol system
         // Old saves may only have weaponLevels/unlocks.weapons; copy to canonical protocol fields

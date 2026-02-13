@@ -10,7 +10,7 @@ struct SimulationConfig {
     var maxGameTime: TimeInterval = BalanceConfig.Simulation.defaultMaxGameTime
     var compiledProtocols: [String] = ["kernel_pulse"]
     var unlockedSectors: Set<String> = [SectorID.power.rawValue]
-    var componentLevels: GlobalUpgrades = BalanceConfig.Simulation.earlyGame
+    var componentLevels: ComponentLevels = BalanceConfig.Simulation.earlyGame
     var startingHash: Int = 100
     var startingEfficiency: CGFloat = 100
 }
@@ -224,7 +224,7 @@ class SimulationRunner {
 
         for psuLevel in [1, 3, 5, 7, 10] {
             var levels = BalanceConfig.Simulation.earlyGame
-            levels.psuLevel = psuLevel
+            levels.psu = psuLevel
 
             let config = SimulationConfig(
                 seed: 42,
@@ -237,7 +237,7 @@ class SimulationRunner {
                 startingEfficiency: 100
             )
             let result = run(config: config)
-            let watts = GlobalUpgrades.powerCapacity(at: psuLevel)
+            let watts = BalanceConfig.Components.psuCapacity(at: psuLevel)
             let powerWall = result.powerUsedPercent > 90 ? "YES" : "-"
 
             log(String(format: "Lv %-5d %6dW %8d %7.0f%% %-8@ %5.1f%%",
@@ -264,7 +264,7 @@ class SimulationRunner {
 
         for hddLevel in [1, 3, 5, 7, 10] {
             var levels = BalanceConfig.Simulation.earlyGame
-            levels.hddLevel = hddLevel
+            levels.storage = hddLevel
 
             let config = SimulationConfig(
                 seed: 42,
@@ -277,7 +277,7 @@ class SimulationRunner {
                 startingEfficiency: 100
             )
             let result = run(config: config)
-            let capacity = GlobalUpgrades.hashStorageCapacity(at: hddLevel)
+            let capacity = BalanceConfig.Components.storageCapacity(at: hddLevel)
             let storageWall = result.totalHashEarned > capacity ? "YES" : "-"
 
             log(String(format: "Lv %-5d %12d %8d %-8@ %@",
@@ -304,7 +304,7 @@ class SimulationRunner {
         let baseCpuResult: SimulationResult? = nil
         for cpuLevel in [1, 3, 5, 7, 10] {
             var levels = BalanceConfig.Simulation.earlyGame
-            levels.cpuLevel = cpuLevel
+            levels.cpu = cpuLevel
 
             let config = SimulationConfig(
                 seed: 42,
@@ -317,8 +317,8 @@ class SimulationRunner {
                 startingEfficiency: 100
             )
             let result = run(config: config)
-            let hashPerSec = GlobalUpgrades.hashPerSecond(at: cpuLevel)
-            let multiplier = hashPerSec / max(1, GlobalUpgrades.hashPerSecond(at: 1))
+            let hashPerSec = BalanceConfig.HashEconomy.hashPerSecond(at: cpuLevel)
+            let multiplier = hashPerSec / max(1, BalanceConfig.HashEconomy.hashPerSecond(at: 1))
 
             log(String(format: "Lv %-5d %8.1f %8d %8.1f %8.1fx",
                        cpuLevel,
@@ -385,7 +385,7 @@ class SimulationRunner {
 
         // Scenario C: PSU constraint
         var levelsC = BalanceConfig.Simulation.earlyGame
-        levelsC.psuLevel = 1
+        levelsC.psu = 1
         let configC = SimulationConfig(
             seed: 42,
             bot: SpreadBot(),
@@ -435,12 +435,12 @@ class SimulationRunner {
                    "Upgraded", "Eff%", "Earned", "Towers", "Impact"))
         log(String(repeating: "─", count: 55))
 
-        let componentTests: [(String, (inout GlobalUpgrades) -> Void)] = [
-            ("PSU→5", { $0.psuLevel = 5 }),
-            ("CPU→5", { $0.cpuLevel = 5 }),
-            ("RAM→5", { $0.ramLevel = 5 }),
-            ("Cool→5", { $0.coolingLevel = 5 }),
-            ("HDD→5", { $0.hddLevel = 5 })
+        let componentTests: [(String, (inout ComponentLevels) -> Void)] = [
+            ("PSU→5", { $0.psu = 5 }),
+            ("CPU→5", { $0.cpu = 5 }),
+            ("RAM→5", { $0.ram = 5 }),
+            ("Cache→5", { $0.cache = 5 }),
+            ("Store→5", { $0.storage = 5 })
         ]
 
         for (name, modifier) in componentTests {
@@ -786,9 +786,9 @@ class SimulationRunner {
         for (name, psuDesc, protocols) in testCases {
             var levels = BalanceConfig.Simulation.earlyGame
             if psuDesc.contains("3") {
-                levels.psuLevel = 3
+                levels.psu = 3
             } else if psuDesc.contains("5") {
-                levels.psuLevel = 5
+                levels.psu = 5
             }
 
             let config = SimulationConfig(

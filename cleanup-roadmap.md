@@ -42,7 +42,8 @@ The game renamed "weapons" to "protocols" but the migration is half-done. The sa
 ---
 
 ## Stage 2: GlobalUpgrades → ComponentLevels Migration
-**Status:** OPEN
+**Status:** DONE
+**Summary:** Deleted GlobalUpgrades struct and GlobalUpgradeType enum; migrated all 35+ references across 13 files to use ComponentLevels as the single source of truth; added healthBonus/tierName/color helpers to ComponentLevels/UpgradeableComponent; rewrote UpgradesView; kept minimal LegacyGlobalUpgrades for save-file backward compatibility with auto-migration.
 **Priority:** High (already marked deprecated, blocking clean architecture)
 **Estimated scope:** ~10 files
 

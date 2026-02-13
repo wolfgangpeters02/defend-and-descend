@@ -62,8 +62,8 @@ class TowerSystem {
         // Create and place tower from protocol
         var tower = Tower.from(protocol: proto, at: slot)
 
-        // Apply global upgrade bonuses (Cooling = fire rate, GPU = damage)
-        let fireRateMultiplier = playerProfile.globalUpgrades.fireRateMultiplier
+        // Apply component upgrade bonuses (Cache = attack speed, GPU = damage)
+        let fireRateMultiplier = playerProfile.componentLevels.attackSpeedMultiplier
         tower.attackSpeed *= fireRateMultiplier
         let gpuDamageMultiplier = playerProfile.componentLevels.towerDamageMultiplier
         tower.damage *= gpuDamageMultiplier

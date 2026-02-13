@@ -28,8 +28,10 @@ struct UpgradesView: View {
 
             ScrollView {
                 VStack(spacing: 16) {
-                    ForEach(GlobalUpgradeType.allCases, id: \.self) { upgradeType in
-                        UpgradeCard(upgradeType: upgradeType)
+                    ForEach(UpgradeableComponent.allCases) { component in
+                        if appState.currentPlayer.unlockedComponents.isUnlocked(component) {
+                            UpgradeCard(component: component)
+                        }
                     }
                 }
                 .padding()
@@ -41,23 +43,23 @@ struct UpgradesView: View {
 // MARK: - Upgrade Card
 
 struct UpgradeCard: View {
-    let upgradeType: GlobalUpgradeType
+    let component: UpgradeableComponent
     @ObservedObject var appState = AppState.shared
 
-    private var upgrades: GlobalUpgrades {
-        appState.currentPlayer.globalUpgrades
+    private var levels: ComponentLevels {
+        appState.currentPlayer.componentLevels
     }
 
     private var level: Int {
-        upgrades.level(for: upgradeType)
+        levels[component]
     }
 
     private var cost: Int? {
-        upgrades.upgradeCost(for: upgradeType)
+        levels.upgradeCost(for: component)
     }
 
     private var isMaxed: Bool {
-        upgrades.isMaxed(upgradeType)
+        !levels.canUpgrade(component)
     }
 
     private var canAfford: Bool {
@@ -69,16 +71,16 @@ struct UpgradeCard: View {
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack {
-                Image(systemName: upgradeType.icon)
+                Image(systemName: component.sfSymbol)
                     .font(.system(size: 28))
-                    .foregroundColor(Color(hex: upgradeType.color) ?? .cyan)
+                    .foregroundColor(Color(hex: component.color) ?? .cyan)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(upgradeType.rawValue)
+                    Text(component.displayName)
                         .font(DesignTypography.headline(18))
                         .foregroundColor(.white)
 
-                    Text(upgradeType.description)
+                    Text(component.effectDescription)
                         .font(DesignTypography.caption(12))
                         .foregroundColor(DesignColors.muted)
                 }
@@ -87,7 +89,7 @@ struct UpgradeCard: View {
 
                 Text(L10n.Common.lv(level))
                     .font(DesignTypography.headline(20))
-                    .foregroundColor(Color(hex: upgradeType.color) ?? .cyan)
+                    .foregroundColor(Color(hex: component.color) ?? .cyan)
             }
 
             // Progress bar
@@ -96,14 +98,14 @@ struct UpgradeCard: View {
                     RoundedRectangle(cornerRadius: 4)
                         .fill(Color.gray.opacity(0.3))
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color(hex: upgradeType.color) ?? .cyan)
-                        .frame(width: geo.size.width * (CGFloat(level) / CGFloat(GlobalUpgrades.maxLevel)))
+                        .fill(Color(hex: component.color) ?? .cyan)
+                        .frame(width: geo.size.width * (CGFloat(level) / CGFloat(ComponentLevels.maxLevel)))
                 }
             }
             .frame(height: 8)
 
             // Current value
-            Text(upgradeType.valueDescription(at: level))
+            Text(component.effectValue(at: level))
                 .font(DesignTypography.body(14))
                 .foregroundColor(.white)
 
@@ -121,7 +123,7 @@ struct UpgradeCard: View {
                     performUpgrade()
                 } label: {
                     HStack {
-                        if let nextValue = upgradeType.nextValueDescription(at: level) {
+                        if let nextValue = nextValueDescription() {
                             Text(L10n.Common.next(nextValue))
                                 .foregroundColor(.white)
                         }
@@ -146,12 +148,17 @@ struct UpgradeCard: View {
         .cornerRadius(16)
     }
 
+    private func nextValueDescription() -> String? {
+        guard level < ComponentLevels.maxLevel else { return nil }
+        return component.effectValue(at: level + 1)
+    }
+
     private func performUpgrade() {
         guard let upgradeCost = cost, canAfford else { return }
         HapticsService.shared.play(.medium)
         appState.updatePlayer { profile in
             profile.hash -= upgradeCost
-            profile.globalUpgrades.upgrade(upgradeType)
+            profile.componentLevels.upgrade(component)
         }
     }
 }

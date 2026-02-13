@@ -812,17 +812,17 @@ class TDGameStateFactory {
             basePaths: paths  // Store original paths for rerouting
         )
 
-        // Apply Global Upgrades
+        // Apply Component Upgrades
         // PSU level determines power capacity
-        state.powerCapacity = playerProfile.globalUpgrades.powerCapacity
-        // HDD level determines hash storage capacity
-        state.hashStorageCapacity = playerProfile.globalUpgrades.hashStorageCapacity
+        state.powerCapacity = playerProfile.componentLevels.powerCapacity
+        // Storage level determines hash storage capacity
+        state.hashStorageCapacity = playerProfile.componentLevels.hashStorageCapacity
         // CPU level determines base Hash generation rate
-        state.baseHashPerSecond = playerProfile.globalUpgrades.hashPerSecond
+        state.baseHashPerSecond = playerProfile.componentLevels.hashPerSecond
         state.cpuMultiplier = 1.0  // Level scaling is now in baseHashPerSecond
-        state.cpuTier = playerProfile.globalUpgrades.cpuLevel
+        state.cpuTier = playerProfile.componentLevels.cpu
         // RAM level determines efficiency recovery speed
-        state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
+        state.efficiencyRegenMultiplier = playerProfile.componentLevels.efficiencyRegenMultiplier
 
         return state
     }
@@ -1079,15 +1079,15 @@ class TDGameStateFactory {
             basePaths: activePaths
         )
 
-        // Apply Global Upgrades
-        state.baseHashPerSecond = playerProfile.globalUpgrades.hashPerSecond
+        // Apply Component Upgrades
+        state.baseHashPerSecond = playerProfile.componentLevels.hashPerSecond
         state.cpuMultiplier = 1.0
-        state.cpuTier = playerProfile.globalUpgrades.cpuLevel
-        state.efficiencyRegenMultiplier = playerProfile.globalUpgrades.efficiencyRegenMultiplier
-        state.hashStorageCapacity = playerProfile.globalUpgrades.hashStorageCapacity
-        state.powerCapacity = playerProfile.globalUpgrades.powerCapacity
+        state.cpuTier = playerProfile.componentLevels.cpu
+        state.efficiencyRegenMultiplier = playerProfile.componentLevels.efficiencyRegenMultiplier
+        state.hashStorageCapacity = playerProfile.componentLevels.hashStorageCapacity
+        state.powerCapacity = playerProfile.componentLevels.powerCapacity
         // Initialize hash from player profile (allows spending earned hash on towers)
-        state.hash = min(playerProfile.hash, playerProfile.globalUpgrades.hashStorageCapacity)
+        state.hash = min(playerProfile.hash, playerProfile.componentLevels.hashStorageCapacity)
 
         return state
     }

@@ -49,13 +49,13 @@ class GameStateFactory {
             weapon: weapon
         )
 
-        // Apply RAM upgrade (health bonus) from global upgrades
+        // Apply RAM upgrade (health bonus) from component levels
         // healthBonus returns absolute value (100, 120, 140...) so we use it directly
-        player.maxHealth = playerProfile.globalUpgrades.healthBonus
+        player.maxHealth = playerProfile.componentLevels.healthBonus
         player.health = player.maxHealth
 
-        // Apply Cooling upgrade (fire rate bonus) to weapon
-        let fireRateMultiplier = playerProfile.globalUpgrades.fireRateMultiplier
+        // Apply Cache upgrade (attack speed bonus) to weapon
+        let fireRateMultiplier = playerProfile.componentLevels.attackSpeedMultiplier
         player.weapons[0].attackSpeed *= fireRateMultiplier
 
         let now = Date().timeIntervalSince1970
@@ -142,11 +142,11 @@ class GameStateFactory {
         // Apply player damage multiplier to weapon
         player.weapons[0].damage *= difficulty.playerDamageMultiplier
 
-        // Apply global upgrades from profile
+        // Apply component upgrades from profile
         if let profile = playerProfile {
-            player.maxHealth = profile.globalUpgrades.healthBonus * (player.maxHealth / 100)
+            player.maxHealth = profile.componentLevels.healthBonus * (player.maxHealth / 100)
             player.health = player.maxHealth
-            let fireRateMultiplier = profile.globalUpgrades.fireRateMultiplier
+            let fireRateMultiplier = profile.componentLevels.attackSpeedMultiplier
             player.weapons[0].attackSpeed *= fireRateMultiplier
         }
 

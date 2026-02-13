@@ -173,9 +173,9 @@ extension TDGameContainerView {
     // MARK: - CPU Upgrade Action
 
     private func upgradeCpu() {
-        // Use GlobalUpgrades system for CPU upgrades
+        // Use ComponentLevels system for CPU upgrades
         let profile = appState.currentPlayer
-        guard let cost = profile.globalUpgrades.cpuUpgradeCost,
+        guard let cost = profile.componentLevels.upgradeCost(for: .cpu),
               profile.hash >= cost else {
             HapticsService.shared.play(.warning)
             return
@@ -184,14 +184,14 @@ extension TDGameContainerView {
         // Deduct cost and apply upgrade
         var updatedProfile = profile
         updatedProfile.hash -= cost
-        updatedProfile.globalUpgrades.upgrade(.cpu)
+        updatedProfile.componentLevels.upgrade(.cpu)
         StorageService.shared.savePlayer(updatedProfile)
         appState.refreshPlayer()
 
         // Update game state's Hash generation
         if var state = gameState {
-            state.baseHashPerSecond = appState.currentPlayer.globalUpgrades.hashPerSecond
-            state.cpuTier = appState.currentPlayer.globalUpgrades.cpuLevel
+            state.baseHashPerSecond = appState.currentPlayer.componentLevels.hashPerSecond
+            state.cpuTier = appState.currentPlayer.componentLevels.cpu
             gameState = state
         }
 

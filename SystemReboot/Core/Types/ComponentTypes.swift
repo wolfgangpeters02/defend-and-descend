@@ -68,6 +68,21 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
         }
     }
 
+    /// UI color hex for this component
+    var color: String {
+        switch self {
+        case .psu: return "#f59e0b"       // Amber (power)
+        case .storage: return "#6366f1"   // Indigo
+        case .ram: return "#22c55e"       // Green
+        case .gpu: return "#ef4444"       // Red
+        case .cache: return "#8b5cf6"     // Purple
+        case .expansion: return "#14b8a6" // Teal
+        case .io: return "#f97316"        // Orange
+        case .network: return "#3b82f6"   // Blue
+        case .cpu: return "#00d4ff"       // Cyan
+        }
+    }
+
     /// SF Symbol for this component
     var sfSymbol: String {
         switch self {
@@ -274,6 +289,25 @@ struct ComponentLevels: Codable, Equatable {
     /// Hash per second from CPU level
     var hashPerSecond: CGFloat {
         BalanceConfig.Components.cpuHashPerSecond(at: cpu)
+    }
+
+    /// Health bonus from RAM level (for Active/Boss mode)
+    var healthBonus: CGFloat {
+        BalanceConfig.Components.ramBaseHealth + CGFloat(ram - 1) * BalanceConfig.Components.ramHealthPerLevel
+    }
+
+    // MARK: - Tier Name Helpers
+
+    /// PSU tier display name
+    static func psuTierName(at level: Int) -> String {
+        let names = ["Basic", "Bronze", "Bronze+", "Silver", "Silver+", "Gold", "Gold+", "Platinum", "Platinum+", "Titanium"]
+        return names[min(level - 1, names.count - 1)]
+    }
+
+    /// Storage tier display name
+    static func storageTierName(at level: Int) -> String {
+        let names = ["500GB HDD", "1TB HDD", "2TB HDD", "500GB SSD", "1TB SSD", "2TB SSD", "1TB NVMe", "2TB NVMe", "4TB NVMe", "8TB NVMe"]
+        return names[min(level - 1, names.count - 1)]
     }
 
     // MARK: - Upgrade Helpers

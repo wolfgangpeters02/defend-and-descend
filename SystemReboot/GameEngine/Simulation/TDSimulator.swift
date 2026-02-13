@@ -102,7 +102,7 @@ class TDSimulator {
         // Create player profile
         var simProfile = PlayerProfile.defaultProfile
         simProfile.compiledProtocols = config.compiledProtocols
-        simProfile.globalUpgrades = config.componentLevels
+        simProfile.componentLevels = config.componentLevels
 
         // Create initial game state
         guard var gameState = TDGameStateFactory.createMotherboardGameState(playerProfile: simProfile) else {

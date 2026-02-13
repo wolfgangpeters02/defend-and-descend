@@ -1,6 +1,6 @@
 // TypeShims.swift
 // Minimal type definitions required by BalanceConfig.swift
-// These match the interfaces used in the app (GameTypes.swift, GlobalUpgrades.swift)
+// These match the interfaces used in the app (GameTypes.swift, ComponentTypes.swift)
 // but contain only what BalanceConfig needs to compile.
 
 import Foundation
@@ -24,13 +24,17 @@ enum BossDifficulty: String, Codable, CaseIterable, Hashable {
     case nightmare = "Nightmare"
 }
 
-// MARK: - GlobalUpgrades (from GlobalUpgrades.swift)
+// MARK: - ComponentLevels (from ComponentTypes.swift)
 // Only stored properties needed — BalanceConfig.Simulation uses the memberwise init.
 
-struct GlobalUpgrades: Codable, Equatable {
-    var psuLevel: Int = 1
-    var cpuLevel: Int = 1
-    var ramLevel: Int = 1
-    var coolingLevel: Int = 1
-    var hddLevel: Int = 1
+struct ComponentLevels: Codable, Equatable {
+    var psu: Int = 1
+    var storage: Int = 1
+    var ram: Int = 1
+    var gpu: Int = 1
+    var cache: Int = 1
+    var expansion: Int = 1
+    var io: Int = 1
+    var network: Int = 1
+    var cpu: Int = 1
 }

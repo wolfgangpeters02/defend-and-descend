@@ -2117,39 +2117,27 @@ extension BalanceConfig {
         // MARK: - Component Level Presets
 
         /// Early game: all components at level 1
-        static let earlyGame = GlobalUpgrades(
-            psuLevel: 1,
-            cpuLevel: 1,
-            ramLevel: 1,
-            coolingLevel: 1,
-            hddLevel: 1
+        static let earlyGame = ComponentLevels(
+            psu: 1, storage: 1, ram: 1, gpu: 1, cache: 1,
+            expansion: 1, io: 1, network: 1, cpu: 1
         )
 
         /// Mid game: some upgrades done
-        static let midGame = GlobalUpgrades(
-            psuLevel: 3,
-            cpuLevel: 3,
-            ramLevel: 2,
-            coolingLevel: 2,
-            hddLevel: 2
+        static let midGame = ComponentLevels(
+            psu: 3, storage: 2, ram: 2, gpu: 1, cache: 2,
+            expansion: 1, io: 1, network: 1, cpu: 3
         )
 
         /// Late game: significant upgrades
-        static let lateGame = GlobalUpgrades(
-            psuLevel: 5,
-            cpuLevel: 5,
-            ramLevel: 4,
-            coolingLevel: 4,
-            hddLevel: 4
+        static let lateGame = ComponentLevels(
+            psu: 5, storage: 4, ram: 4, gpu: 3, cache: 4,
+            expansion: 2, io: 2, network: 2, cpu: 5
         )
 
         /// End game: near max components
-        static let endGame = GlobalUpgrades(
-            psuLevel: 8,
-            cpuLevel: 8,
-            ramLevel: 6,
-            coolingLevel: 6,
-            hddLevel: 6
+        static let endGame = ComponentLevels(
+            psu: 8, storage: 6, ram: 6, gpu: 5, cache: 6,
+            expansion: 4, io: 4, network: 4, cpu: 8
         )
     }
 
