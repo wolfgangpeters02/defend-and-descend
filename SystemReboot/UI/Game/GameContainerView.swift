@@ -522,26 +522,6 @@ struct GameOverOverlay: View {
                                     .foregroundColor(didExtract ? .green : .orange)
                             }
 
-                            // Blueprint reward (boss mode only)
-                            if let protocolName = awardedProtocolName {
-                                Divider().background(Color.white.opacity(0.3))
-
-                                HStack {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "doc.badge.plus")
-                                            .foregroundColor(.purple)
-                                        Text(L10n.GameOver.blueprintAcquired)
-                                    }
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.purple)
-
-                                    Spacer()
-
-                                    Text(protocolName.uppercased())
-                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                        .foregroundColor(.purple)
-                                }
-                            }
                         }
                     }
                     .padding()

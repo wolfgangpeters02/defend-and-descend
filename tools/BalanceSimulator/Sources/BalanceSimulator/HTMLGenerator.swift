@@ -116,7 +116,6 @@ struct HTMLGenerator {
         s += "<tbody>"
         for lv in 1...BalanceConfig.Components.maxLevel {
             let r = hps(lv)
-            let t1k = 1000.0 / r, t10k = 10000.0 / r, t100k = 100000.0 / r
             s += "<tr><td>\(lv)</td><td>\(String(format: "%.2f", r))</td>"
             s += "<td>\(fNum(r * 60))</td><td>\(fNum(r * 3600))</td>"
             s += timeTd(1000, r) + timeTd(10000, r) + timeTd(100000, r)
@@ -386,7 +385,7 @@ struct HTMLGenerator {
         // Difficulty scaling
         s += h3("Difficulty Scaling")
         s += "<table>" + th(["Difficulty", "Boss HP &times;", "Boss DMG &times;", "Player HP &times;",
-                              "Player DMG &times;", "Hash Reward", "Boss Hash Bonus", "Loot &times;"])
+                              "Player DMG &times;", "Hash Reward", "Boss Hash Bonus", "Threat Reduction"])
         s += "<tbody>"
         let diffs: [(String, BossDifficulty)] = [("Easy", .easy), ("Normal", .normal), ("Hard", .hard), ("Nightmare", .nightmare)]
         for (name, diff) in diffs {
@@ -396,32 +395,20 @@ struct HTMLGenerator {
             let pDMG = BalanceConfig.BossDifficultyConfig.playerDamageMultipliers[name] ?? 1
             let hash = BalanceConfig.BossDifficultyConfig.hashRewards[name] ?? 0
             let bonus = BalanceConfig.BossRewards.difficultyHashBonus[diff] ?? 0
-            let loot = BalanceConfig.BossLoot.difficultyMultipliers[diff] ?? 1
+            let threatReduction = BalanceConfig.TDBoss.threatReduction[name] ?? 0
             s += td([name, "\(Double(bHP))x", "\(Double(bDMG))x", "\(Double(pHP))x",
                       "\(Double(pDMG))x", "\(fNum(Double(hash))) &#x210E;",
-                      "\(fNum(Double(bonus))) &#x210E;", "\(loot)x"])
+                      "\(fNum(Double(bonus))) &#x210E;", pct(Double(threatReduction))])
         }
-        s += "</tbody></table>"
-
-        // Zero-Day
-        s += h3("Zero-Day Virus (TD Boss)")
-        s += "<table>" + th(["Parameter", "Value"])
-        s += "<tbody>"
-        s += td(["Base HP", fNum(Double(BalanceConfig.ZeroDay.baseHealth))])
-        s += td(["Speed", "\(Int(Double(BalanceConfig.ZeroDay.speed)))"])
-        s += td(["Efficiency Drain", "\(Double(BalanceConfig.ZeroDay.efficiencyDrainRate))/sec"])
-        s += td(["Defeat Hash Bonus", "\(BalanceConfig.ZeroDay.defeatHashBonus) &#x210E;"])
-        s += td(["Defeat Efficiency Restore", "+\(BalanceConfig.ZeroDay.defeatEfficiencyRestore)%"])
-        s += td(["Spawn Window", "\(Int(BalanceConfig.ZeroDay.minSpawnTime))s - \(Int(BalanceConfig.ZeroDay.maxSpawnTime))s"])
-        s += td(["Min Waves Before Spawn", "\(BalanceConfig.ZeroDay.minWavesBeforeSpawn)"])
         s += "</tbody></table>"
 
         // TD Boss milestones
         s += h3("TD Boss Spawn Milestones")
-        s += note("Bosses spawn every \(BalanceConfig.TDBoss.threatMilestoneInterval) threat levels. Immune to towers, player must engage manually.")
+        s += note("Bosses spawn every \(BalanceConfig.TDBoss.threatMilestoneInterval) threat levels. Immune to towers, player must engage manually. After victory, \(Int(BalanceConfig.TDBoss.cooldownAfterVictory))s cooldown before next boss can spawn.")
         s += "<table>" + th(["Parameter", "Value"])
         s += "<tbody>"
         s += td(["Spawn Interval", "Every \(BalanceConfig.TDBoss.threatMilestoneInterval) threat"])
+        s += td(["Post-Victory Cooldown", "\(Int(BalanceConfig.TDBoss.cooldownAfterVictory))s"])
         s += td(["Walk Speed", "\(Int(Double(BalanceConfig.TDBoss.walkSpeed)))"])
         s += td(["Path Duration", "\(Int(BalanceConfig.TDBoss.pathDuration))s"])
         s += td(["Efficiency Loss (ignored)", "\(BalanceConfig.TDBoss.efficiencyLossOnIgnore) leaks"])
@@ -435,17 +422,26 @@ struct HTMLGenerator {
     static func lootHTML() -> String {
         var s = h2("Loot & Drop System")
 
-        // Base drop rates
-        s += h3("Blueprint Base Drop Rates")
-        s += "<table>" + th(["Rarity", "Base Rate", "Easy (0.5x)", "Normal (1x)", "Hard (1.5x)", "Nightmare (2.5x)"])
-        s += "<tbody>"
+        // Per-difficulty drop rates
+        s += h3("Blueprint Drop Rates by Difficulty")
         let lootRarities: [(Rarity, String)] = [(.common, "Common"), (.rare, "Rare"), (.epic, "Epic"), (.legendary, "Legendary")]
+        s += "<table>" + th(["Rarity", "Easy", "Normal", "Hard", "Nightmare"])
+        s += "<tbody>"
         for (r, name) in lootRarities {
-            let base = BalanceConfig.BossLoot.rarityBaseRates[r] ?? 0
-            s += td([name, pct(base), pct(base * 0.5), pct(base * 1.0), pct(base * 1.5), pct(base * 2.5)])
+            let easy = BalanceConfig.BossLoot.dropRates["Easy"]?[r] ?? 0
+            let normal = BalanceConfig.BossLoot.dropRates["Normal"]?[r] ?? 0
+            let hard = BalanceConfig.BossLoot.dropRates["Hard"]?[r] ?? 0
+            let nightmare = BalanceConfig.BossLoot.dropRates["Nightmare"]?[r] ?? 0
+            s += td([name, pct(easy), pct(normal), pct(hard), pct(nightmare)])
         }
+        // Totals row
+        let easyTotal = lootRarities.reduce(0.0) { $0 + (BalanceConfig.BossLoot.dropRates["Easy"]?[$1.0] ?? 0) }
+        let normalTotal = lootRarities.reduce(0.0) { $0 + (BalanceConfig.BossLoot.dropRates["Normal"]?[$1.0] ?? 0) }
+        let hardTotal = lootRarities.reduce(0.0) { $0 + (BalanceConfig.BossLoot.dropRates["Hard"]?[$1.0] ?? 0) }
+        let nightmareTotal = lootRarities.reduce(0.0) { $0 + (BalanceConfig.BossLoot.dropRates["Nightmare"]?[$1.0] ?? 0) }
+        s += "<tr style=\"font-weight:bold\"><td>Total</td><td>\(pct(easyTotal))</td><td>\(pct(normalTotal))</td><td>\(pct(hardTotal))</td><td>\(pct(nightmareTotal))</td></tr>"
         s += "</tbody></table>"
-        s += note("Legendary protocols only drop on Normal+ difficulty. Pity system: guaranteed drop every \(BalanceConfig.BossLoot.pityThreshold) kills without a drop. Diminishing factor: \(BalanceConfig.BossLoot.diminishingFactor).")
+        s += note("Pity system: guaranteed drop every \(BalanceConfig.BossLoot.pityThreshold) kills without a drop. Diminishing factor: \(BalanceConfig.BossLoot.diminishingFactor).")
 
         // Boss loot tables
         s += h3("Boss Loot Tables")
@@ -702,7 +698,7 @@ struct HTMLGenerator {
         s += "<tbody>"
         s += td(["TD Wave Completion", "\(BalanceConfig.Waves.hashBonusPerWave) &times; wave# &#x210E;", "Wave 20 = \(20 * BalanceConfig.Waves.hashBonusPerWave) &#x210E;"])
         s += td(["TD Victory", "\(BalanceConfig.TDRewards.victoryHashPerWave) &times; waves &#x210E; + \(BalanceConfig.TDRewards.victoryXPBonus) XP", "20 waves = \(20 * BalanceConfig.TDRewards.victoryHashPerWave) &#x210E;"])
-        s += td(["Zero-Day Kill", "\(BalanceConfig.ZeroDay.defeatHashBonus) &#x210E; + \(BalanceConfig.ZeroDay.defeatEfficiencyRestore)% eff", ""])
+        // ZeroDay removed from BalanceConfig
         s += td(["Boss (Easy)", "\(fNum(Double(BalanceConfig.BossDifficultyConfig.hashRewards["Easy"] ?? 0))) &#x210E;", ""])
         s += td(["Boss (Normal)", "\(fNum(Double(BalanceConfig.BossDifficultyConfig.hashRewards["Normal"] ?? 0))) &#x210E;", ""])
         s += td(["Boss (Hard)", "\(fNum(Double(BalanceConfig.BossDifficultyConfig.hashRewards["Hard"] ?? 0))) &#x210E;", ""])

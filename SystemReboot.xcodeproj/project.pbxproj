@@ -7,16 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BSSGMVWBL0 /* BossGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSGMVWRF0 /* BossGameView.swift */; };
 		BSSENCRBL0 /* BossEncounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSENCRRF0 /* BossEncounter.swift */; };
 		CRINFTYBL0 /* CurrencyInfoType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRINFTYRF0 /* CurrencyInfoType.swift */; };
 		BSSSTTSBL0 /* BossStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSSTTSRF0 /* BossStates.swift */; };
 		TDSESSTBL0 /* TDSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSESSTRF0 /* TDSessionState.swift */; };
 		WAVTYPBL01 /* WaveTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAVTYPRF01 /* WaveTypes.swift */; };
 		BSSLTRWBL0 /* BossLootReward.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSLTRWRF0 /* BossLootReward.swift */; };
-		MBCFGDTBL0 /* MotherboardConfigData.swift in Sources */ = {isa = PBXBuildFile; fileRef = MBCFGDTRF0 /* MotherboardConfigData.swift */; };
 		01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */; };
-		04461EF9164A14B078C039DF /* BlueprintDiscoveryModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */; };
-		05461EF9164A14B078C039E0 /* BlueprintRevealModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */; };
 		06461EF9164A14B078C039E1 /* BossLootModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */; };
 		132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */; };
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
@@ -80,7 +78,6 @@
 		AA00003B /* TrojanWyrmAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = TROJANWYRM1 /* TrojanWyrmAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
 		AA000042 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* NotificationService.swift */; };
-		AA000043 /* NotificationSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100043 /* NotificationSettingsSheet.swift */; };
 		AA000044 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100044 /* SettingsSheet.swift */; };
 		BALCFGBLD /* BalanceConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BALCFGREF /* BalanceConfig.swift */; };
 		D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */; };
@@ -101,7 +98,6 @@
 		SURVARBLD /* SurvivalArenaSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = SURVARENA /* SurvivalArenaSystem.swift */; };
 		TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */; };
 		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
-		TWRGALBLD /* TowerGalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERGAL1 /* TowerGalleryView.swift */; };
 		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
 		AAC10001 /* TowerVisualFactory+Bodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00001 /* TowerVisualFactory+Bodies.swift */; };
 		AAC10002 /* TowerVisualFactory+Platforms.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00002 /* TowerVisualFactory+Platforms.swift */; };
@@ -153,7 +149,6 @@
 		SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SYSFRZOVRF0 /* SystemFreezeOverlay.swift */; };
 		ARSNLVWBL0 /* ArsenalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ARSNLVWRF0 /* ArsenalView.swift */; };
 		UPGRDVWBL0 /* UpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPGRDVWRF0 /* UpgradesView.swift */; };
-		BSSENCVWBL0 /* BossEncountersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSENCVWRF0 /* BossEncountersView.swift */; };
 		DBGGMVWBL0 /* DebugGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBGGMVWRF0 /* DebugGameView.swift */; };
 		OFLNSMBLD0 /* OfflineSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OFLNSMREF0 /* OfflineSimulator.swift */; };
 		FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRZRCVREF0 /* FreezeRecoveryService.swift */; };
@@ -174,7 +169,6 @@
 		TDSESSTRF0 /* TDSessionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSessionState.swift; sourceTree = "<group>"; };
 		WAVTYPRF01 /* WaveTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveTypes.swift; sourceTree = "<group>"; };
 		BSSLTRWRF0 /* BossLootReward.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootReward.swift; sourceTree = "<group>"; };
-		MBCFGDTRF0 /* MotherboardConfigData.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardConfigData.swift; sourceTree = "<group>"; };
 		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardSystem.swift; sourceTree = "<group>"; };
 		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		COMPTYPREF /* ComponentTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComponentTypes.swift; sourceTree = "<group>"; };
@@ -191,8 +185,6 @@
 		642FC35778370BD58869415C /* MegaBoardTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardTypes.swift; sourceTree = "<group>"; };
 		651BD9A10095829CA07C1FDB /* OverclockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverclockSystem.swift; sourceTree = "<group>"; };
 		652706E4D090EB81125BDB8E /* TowerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerSystem.swift; sourceTree = "<group>"; };
-		7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintDiscoveryModal.swift; sourceTree = "<group>"; };
-		8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintRevealModal.swift; sourceTree = "<group>"; };
 		9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootModal.swift; sourceTree = "<group>"; };
 		9BC456BE2F341A8C1006B747 /* CoreSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreSystem.swift; sourceTree = "<group>"; };
 		A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemTabView.swift; sourceTree = "<group>"; };
@@ -208,6 +200,7 @@
 		AA100011 /* EntityRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntityRenderer.swift; sourceTree = "<group>"; };
 		ENTRNEDRF01 /* EntityRenderer+EnemyDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntityRenderer+EnemyDetails.swift"; sourceTree = "<group>"; };
 		ENTRNBDRF01 /* EntityRenderer+BossDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntityRenderer+BossDetails.swift"; sourceTree = "<group>"; };
+		BSSGMVWRF0 /* BossGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossGameView.swift; sourceTree = "<group>"; };
 		AA100012 /* GameContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameContainerView.swift; sourceTree = "<group>"; };
 		AA100013 /* VirtualJoystick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualJoystick.swift; sourceTree = "<group>"; };
 		AA100014 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -241,7 +234,6 @@
 		MNLOVRSYSRF /* ManualOverrideSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideSystem.swift; sourceTree = "<group>"; };
 		AA100041 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
 		AA100042 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
-		AA100043 /* NotificationSettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettingsSheet.swift; sourceTree = "<group>"; };
 		AA100044 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		AA200001 /* SystemReboot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SystemReboot.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBossSystem.swift; sourceTree = "<group>"; };
@@ -273,7 +265,6 @@
 		SPTGRID01 /* SpatialGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialGrid.swift; sourceTree = "<group>"; };
 		SURVARENA /* SurvivalArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurvivalArenaSystem.swift; sourceTree = "<group>"; };
 		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
-		TOWERGAL1 /* TowerGalleryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerGalleryView.swift; sourceTree = "<group>"; };
 		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
 		AAC00001 /* TowerVisualFactory+Bodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Bodies.swift"; sourceTree = "<group>"; };
 		AAC00002 /* TowerVisualFactory+Platforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Platforms.swift"; sourceTree = "<group>"; };
@@ -326,7 +317,6 @@
 		SYSFRZOVRF0 /* SystemFreezeOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemFreezeOverlay.swift; sourceTree = "<group>"; };
 		ARSNLVWRF0 /* ArsenalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArsenalView.swift; sourceTree = "<group>"; };
 		UPGRDVWRF0 /* UpgradesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UpgradesView.swift; sourceTree = "<group>"; };
-		BSSENCVWRF0 /* BossEncountersView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossEncountersView.swift; sourceTree = "<group>"; };
 		DBGGMVWRF0 /* DebugGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugGameView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -522,7 +512,6 @@
 				BALCFGREF /* BalanceConfig.swift */,
 				E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */,
 				D0730EB976BE58FD41672919 /* SectorSchematics.swift */,
-				MBCFGDTRF0 /* MotherboardConfigData.swift */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -602,12 +591,9 @@
 			isa = PBXGroup;
 			children = (
 				3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */,
-				7B9E64D9B78CFAD391735AC3 /* BlueprintDiscoveryModal.swift */,
-				8B9E64D9B78CFAD391735AC4 /* BlueprintRevealModal.swift */,
 				9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */,
 				INTROREF01234567890ABCDEF /* IntroSequenceView.swift */,
 				TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */,
-				AA100043 /* NotificationSettingsSheet.swift */,
 				AA100044 /* SettingsSheet.swift */,
 			);
 			path = Components;
@@ -616,6 +602,7 @@
 		AA400018 /* Game */ = {
 			isa = PBXGroup;
 			children = (
+				BSSGMVWRF0 /* BossGameView.swift */,
 				AA100012 /* GameContainerView.swift */,
 				AA100013 /* VirtualJoystick.swift */,
 				AA100030 /* UpgradeModalView.swift */,
@@ -651,7 +638,6 @@
 				SYSFRZOVRF0 /* SystemFreezeOverlay.swift */,
 				ARSNLVWRF0 /* ArsenalView.swift */,
 				UPGRDVWRF0 /* UpgradesView.swift */,
-				BSSENCVWRF0 /* BossEncountersView.swift */,
 				DBGGMVWRF0 /* DebugGameView.swift */,
 			);
 			path = Tabs;
@@ -670,7 +656,6 @@
 		DBGGRP001 /* Debug */ = {
 			isa = PBXGroup;
 			children = (
-				TOWERGAL1 /* TowerGalleryView.swift */,
 			);
 			path = Debug;
 			sourceTree = "<group>";
@@ -773,6 +758,7 @@
 				AA000011 /* EntityRenderer.swift in Sources */,
 				ENTRNEDBL01 /* EntityRenderer+EnemyDetails.swift in Sources */,
 				ENTRNBDBL01 /* EntityRenderer+BossDetails.swift in Sources */,
+				BSSGMVWBL0 /* BossGameView.swift in Sources */,
 				AA000012 /* GameContainerView.swift in Sources */,
 				AA000013 /* VirtualJoystick.swift in Sources */,
 				AA000016 /* EnemySystem.swift in Sources */,
@@ -797,7 +783,6 @@
 				AA00003B /* TrojanWyrmAI.swift in Sources */,
 				AA000040 /* HapticsService.swift in Sources */,
 				AA000042 /* NotificationService.swift in Sources */,
-				AA000043 /* NotificationSettingsSheet.swift in Sources */,
 				AA000044 /* SettingsSheet.swift in Sources */,
 				41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */,
 				9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */,
@@ -841,14 +826,11 @@
 				AAC10002 /* TowerVisualFactory+Platforms.swift in Sources */,
 				AAC10003 /* TowerVisualFactory+Details.swift in Sources */,
 				AAC10004 /* TowerVisualFactory+Indicators.swift in Sources */,
-				TWRGALBLD /* TowerGalleryView.swift in Sources */,
 				01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */,
 				21C537CEC27D011FCFC30E1B /* IdleSpawnSystem.swift in Sources */,
 				6C248F4AC18463B47DE591BF /* SectorSchematics.swift in Sources */,
 				50A8B0A9C7780F96391DAD35 /* BlueprintDropSystem.swift in Sources */,
 				BALCFGBLD /* BalanceConfig.swift in Sources */,
-				04461EF9164A14B078C039DF /* BlueprintDiscoveryModal.swift in Sources */,
-				05461EF9164A14B078C039E0 /* BlueprintRevealModal.swift in Sources */,
 				06461EF9164A14B078C039E1 /* BossLootModal.swift in Sources */,
 				INTROBLD01234567890ABCDEF /* IntroSequenceView.swift in Sources */,
 				TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */,
@@ -893,7 +875,6 @@
 				TDSESSTBL0 /* TDSessionState.swift in Sources */,
 				WAVTYPBL01 /* WaveTypes.swift in Sources */,
 				BSSLTRWBL0 /* BossLootReward.swift in Sources */,
-				MBCFGDTBL0 /* MotherboardConfigData.swift in Sources */,
 				MTHRBRDVBL0 /* MotherboardView.swift in Sources */,
 				EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */,
 				EMBTDCDBL0 /* EmbeddedTDGameController+Drag.swift in Sources */,
@@ -902,7 +883,6 @@
 				SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */,
 				ARSNLVWBL0 /* ArsenalView.swift in Sources */,
 				UPGRDVWBL0 /* UpgradesView.swift in Sources */,
-				BSSENCVWBL0 /* BossEncountersView.swift in Sources */,
 				DBGGMVWBL0 /* DebugGameView.swift in Sources */,
 				OFLNSMBLD0 /* OfflineSimulator.swift in Sources */,
 				FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */,

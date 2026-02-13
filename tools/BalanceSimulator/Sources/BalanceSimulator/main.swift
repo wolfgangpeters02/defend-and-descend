@@ -408,7 +408,7 @@ case "all":
     runAll()
 case "reference", "ref", "html":
     let html = HTMLGenerator.generate()
-    let outputPath = args.count > 2 ? args[2] : "../../balance-reference.html"
+    let outputPath = args.count > 2 ? args[2] : "../balance-reference.html"
     do {
         try html.write(toFile: outputPath, atomically: true, encoding: .utf8)
         print("Generated: \(outputPath)")

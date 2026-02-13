@@ -107,35 +107,30 @@ final class BlueprintDropSystem {
         killCount: Int,
         isFirstKill: Bool
     ) -> DropResult {
-        // Get difficulty multiplier
-        let difficultyMult = BalanceConfig.BossLoot.difficultyMultipliers[difficulty] ?? 1.0
-
         // Calculate diminishing returns based on kill count
         let diminishingMult = 1.0 / (1.0 + BalanceConfig.BossLoot.diminishingFactor * Double(killCount))
 
         // Roll the dice
         let roll = Double.random(in: 0..<1)
 
-        // Group entries by rarity and calculate effective rates
+        // Look up per-difficulty-per-rarity drop rates and apply diminishing returns
         var drops: [(protocolId: String, effectiveRate: Double)] = []
 
         for entry in entries {
             guard let proto = ProtocolLibrary.get(entry.protocolId) else { continue }
-            let baseRate = BalanceConfig.BossLoot.rarityBaseRates[proto.rarity] ?? 0.0
+            let baseRate = BalanceConfig.BossLoot.dropRates[difficulty.rawValue]?[proto.rarity] ?? 0.0
 
-            // Legendary protocols only drop on minimum difficulty or higher
-            if proto.rarity == .legendary && !meetsMinimumDifficulty(difficulty, minimum: BalanceConfig.BossLoot.legendaryMinDifficulty) {
-                continue
-            }
+            // Skip if this rarity has 0% drop rate on this difficulty
+            guard baseRate > 0 else { continue }
 
-            let effectiveRate = baseRate * difficultyMult * diminishingMult
+            let effectiveRate = baseRate * diminishingMult
             drops.append((entry.protocolId, effectiveRate))
         }
 
         // Sort by rate descending (more common first)
         drops.sort { $0.effectiveRate > $1.effectiveRate }
 
-        // Normalize rates if they exceed 1.0 (can happen at high difficulty multipliers)
+        // Safety: normalize if rates somehow exceed 1.0
         let totalRate = drops.reduce(0.0) { $0 + $1.effectiveRate }
         let normalizedDrops: [(protocolId: String, effectiveRate: Double)]
         if totalRate > 1.0 {
@@ -165,15 +160,5 @@ final class BlueprintDropSystem {
             wasGuaranteed: false,
             rollValue: roll
         )
-    }
-
-    /// Check if difficulty meets or exceeds the minimum required
-    private func meetsMinimumDifficulty(_ difficulty: BossDifficulty, minimum: BossDifficulty) -> Bool {
-        let allCases = BossDifficulty.allCases
-        guard let diffIndex = allCases.firstIndex(of: difficulty),
-              let minIndex = allCases.firstIndex(of: minimum) else {
-            return false
-        }
-        return diffIndex >= minIndex
     }
 }

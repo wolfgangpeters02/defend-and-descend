@@ -394,9 +394,6 @@ struct SectorLibrary {
         voidRaid
     ]
 
-    static let arenaSectors: [Sector] = [theRam, theDrive, theGpu, theBios]
-    static let dungeonSectors: [Sector] = [cathedral, frostCaverns, volcanicCore, heistVault, voidRaid]
-
     static func get(_ id: String) -> Sector? {
         return all.first { $0.id == id }
     }

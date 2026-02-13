@@ -43,11 +43,11 @@ struct BalanceConfig {
         return baseCost * Int(pow(2.0, Double(currentLevel - 1)))
     }
 
-    /// Level damage/stat multiplier: each level = level number as multiplier
-    /// Level 1 = 1.0x, Level 5 = 5.0x, Level 10 = 10.0x
+    /// Level damage/stat multiplier: diminishing returns curve
+    /// Level 1 = 1.0x, Level 5 ≈ 2.6x, Level 10 ≈ 4.0x
     /// Used by Protocol and Tower damage scaling
     static func levelStatMultiplier(level: Int) -> CGFloat {
-        return CGFloat(level)
+        return pow(CGFloat(level), 0.6)
     }
 
     // MARK: - Player Stats
@@ -897,6 +897,18 @@ struct BalanceConfig {
 
         /// TD Boss health (immune to towers anyway)
         static let health: CGFloat = 99999
+
+        /// Threat reduction on boss victory (% of current threat removed)
+        /// Easy gives no relief (threat keeps climbing), Nightmare fully resets
+        static let threatReduction: [String: CGFloat] = [
+            "Easy": 0.0,        // No relief — threat stays, enemies keep scaling
+            "Normal": 0.33,     // Moderate relief
+            "Hard": 0.66,       // Major relief
+            "Nightmare": 1.0    // Full reset (current behavior)
+        ]
+
+        /// Minimum seconds between boss victory and next boss spawn
+        static let cooldownAfterVictory: TimeInterval = 180
     }
 
     // MARK: - TD Session Defaults
@@ -942,11 +954,11 @@ struct BalanceConfig {
         /// Bonus XP for victory
         static let victoryXPBonus: Int = 50
 
-        /// Hash reward divisor (earn 10% of session hash)
-        static let hashRewardDivisor: Int = 10
+        /// Hash reward divisor (earn 20% of session hash — was 10% at divisor 10)
+        static let hashRewardDivisor: Int = 5
 
-        /// Victory hash bonus per wave
-        static let victoryHashPerWave: Int = 5
+        /// Victory hash bonus per wave (20 waves = 1,000 Ħ — was 100 Ħ)
+        static let victoryHashPerWave: Int = 50
 
         /// Death penalty: fraction of hash kept (0.5 = 50%)
         static let deathHashPenalty: CGFloat = 0.5
@@ -982,43 +994,45 @@ struct BalanceConfig {
 
     struct BossDifficultyConfig {
         /// Boss health multipliers by difficulty
+        /// Scaled up to counter weapon mastery (Level 10 = 10x damage)
         static let healthMultipliers: [String: CGFloat] = [
-            "Easy": 1.0,
-            "Normal": 1.0,
-            "Hard": 1.5,
-            "Nightmare": 2.5
+            "Easy": 1.0,       // Learning mode — forgiving
+            "Normal": 1.5,     // A real fight even with mid-level weapons
+            "Hard": 3.0,       // Level 5 weapon (5x) still needs good play
+            "Nightmare": 6.0   // Level 10 weapon (10x) → TTK still 60% of base
         ]
 
         /// Boss damage multipliers by difficulty
         static let damageMultipliers: [String: CGFloat] = [
-            "Easy": 0.5,
+            "Easy": 0.7,       // Forgiving but not trivial (was 0.5)
             "Normal": 1.0,
-            "Hard": 1.3,
-            "Nightmare": 1.8
+            "Hard": 1.5,       // Mistakes punished (was 1.3)
+            "Nightmare": 2.5   // Unforgiving (was 1.8)
         ]
 
         /// Player health multipliers by difficulty
         static let playerHealthMultipliers: [String: CGFloat] = [
-            "Easy": 2.0,
+            "Easy": 1.5,       // Safety net (was 2.0)
             "Normal": 1.0,
             "Hard": 1.0,
-            "Nightmare": 1.0
+            "Nightmare": 0.8   // Glass cannon pressure (was 1.0)
         ]
 
         /// Player damage multipliers by difficulty
         static let playerDamageMultipliers: [String: CGFloat] = [
-            "Easy": 4.0,
-            "Normal": 1.5,
+            "Easy": 2.0,       // Helpful but not steamroll (was 4.0)
+            "Normal": 1.0,     // No training wheels (was 1.5)
             "Hard": 1.0,
             "Nightmare": 1.0
         ]
 
         /// Hash rewards by difficulty
+        /// Steep scaling rewards skill: Easy:Normal:Hard:Nightmare ≈ 1:6:20:50
         static let hashRewards: [String: Int] = [
-            "Easy": 1000,
-            "Normal": 3000,
-            "Hard": 8000,
-            "Nightmare": 20000
+            "Easy": 500,       // Training mode (was 1000)
+            "Normal": 3000,    // Standard progression
+            "Hard": 10000,     // Big paydays (was 8000)
+            "Nightmare": 25000 // Jackpot (was 20000)
         ]
 
     }
@@ -1047,7 +1061,8 @@ struct BalanceConfig {
         static let tierMultipliers: [CGFloat] = [1.0, 2.0, 4.0, 8.0, 16.0]
 
         /// Cost in Hash to upgrade to next tier (tier 1→2, 2→3, 3→4, 4→5)
-        static let upgradeCosts: [Int] = [1000, 5000, 25000, 100000]
+        /// Tier 5 (16x) is a late-game investment (was 100K)
+        static let upgradeCosts: [Int] = [1000, 5000, 25000, 500000]
 
         /// Maximum CPU tier
         static let maxTier: Int = 5
@@ -1091,16 +1106,16 @@ struct BalanceConfig {
 
     struct Overclock {
         /// Duration of overclock effect
-        static let duration: TimeInterval = 60
+        static let duration: TimeInterval = 45  // Shorter burst (was 60)
 
         /// Hash generation multiplier during overclock
-        static let hashMultiplier: CGFloat = 2.0
+        static let hashMultiplier: CGFloat = 4.0  // Meaningful boost (was 2.0)
 
         /// Threat growth multiplier during overclock
-        static let threatMultiplier: CGFloat = 10.0
+        static let threatMultiplier: CGFloat = 3.0  // Fair trade (was 10.0)
 
         /// Power demand multiplier during overclock
-        static let powerDemandMultiplier: CGFloat = 2.0
+        static let powerDemandMultiplier: CGFloat = 1.5  // Less punishing (was 2.0)
     }
 
     // MARK: - Boss Loot Modal
@@ -1108,11 +1123,12 @@ struct BalanceConfig {
 
     struct BossRewards {
         /// Difficulty-based Hash bonus for defeating a boss
+        /// Scales steeply to reward higher difficulty
         static let difficultyHashBonus: [BossDifficulty: Int] = [
-            .easy: 250,
+            .easy: 100,        // Training mode (was 250)
             .normal: 500,
-            .hard: 1500,
-            .nightmare: 3000
+            .hard: 2000,       // Worth the risk (was 1500)
+            .nightmare: 5000   // Major reward (was 3000)
         ]
     }
 
@@ -1275,24 +1291,15 @@ struct BalanceConfig {
 
         // MARK: - Drop Rate Constants
 
-        /// Base drop rates by rarity
-        static let rarityBaseRates: [Rarity: Double] = [
-            .common: 0.60,      // 60% base
-            .rare: 0.30,        // 30% base
-            .epic: 0.08,        // 8% base
-            .legendary: 0.02    // 2% base
+        /// Drop rates per difficulty per rarity
+        /// Each row sums to < 1.0 — remainder = no drop
+        /// Replaces the old rarityBaseRates × difficultyMultipliers system
+        static let dropRates: [String: [Rarity: Double]] = [
+            "Easy":      [.common: 0.35, .rare: 0.12, .epic: 0.00, .legendary: 0.00],  // 47% total
+            "Normal":    [.common: 0.40, .rare: 0.20, .epic: 0.06, .legendary: 0.02],  // 68% total
+            "Hard":      [.common: 0.35, .rare: 0.25, .epic: 0.12, .legendary: 0.05],  // 77% total
+            "Nightmare": [.common: 0.30, .rare: 0.25, .epic: 0.18, .legendary: 0.10]   // 83% total
         ]
-
-        /// Difficulty multipliers for drop rates
-        static let difficultyMultipliers: [BossDifficulty: Double] = [
-            .easy: 0.5,         // 50% - practice mode
-            .normal: 1.0,       // 100% - standard
-            .hard: 1.5,         // 150% - rewarding
-            .nightmare: 2.5     // 250% - very rewarding
-        ]
-
-        /// Legendary protocols only drop on this difficulty or higher
-        static let legendaryMinDifficulty: BossDifficulty = .normal
 
         /// Pity system: guaranteed drop every N kills without a drop
         static let pityThreshold: Int = 10
@@ -1552,8 +1559,8 @@ struct BalanceConfig {
 
         // MARK: - Storage (SSD) - Hash Capacity + Offline Rate
         /// Hash storage capacity: base × 2^(level-1)
-        static let storageBaseCapacity: Int = 25000
-        static let storageCapacityMultiplier: Double = 2.0
+        static let storageBaseCapacity: Int = 15000     // Was 25000
+        static let storageCapacityMultiplier: Double = 1.8  // Was 2.0 — Lv10 ≈ 3.2M (was 12.8M)
         /// Offline earning rate: 20% at Lv1, scales to 60% at Lv10
         static let storageBaseOfflineRate: CGFloat = 0.20
         static let storageOfflineRatePerLevel: CGFloat = 0.044  // (0.60 - 0.20) / 9
@@ -1602,13 +1609,14 @@ struct BalanceConfig {
         }
 
         // MARK: - Expansion (Expansion Card) - Extra Tower Slots
-        /// Extra slots per sector: 0 at Lv1, +2 at Lv10
-        /// Lv1-3: 0, Lv4-6: +1, Lv7-10: +2
+        /// Extra slots: Lv1=0, Lv2-4=+1, Lv5-7=+2, Lv8-10=+3
+        /// First upgrade immediately gives benefit (no dead zone)
         static let expansionBaseCost: Int = 800
 
         static func expansionExtraSlots(at level: Int) -> Int {
-            if level >= 7 { return 2 }
-            if level >= 4 { return 1 }
+            if level >= 8 { return 3 }
+            if level >= 5 { return 2 }
+            if level >= 2 { return 1 }
             return 0
         }
 
@@ -2257,14 +2265,12 @@ extension BalanceConfig {
         ]
 
         let dropsDict: [String: Any] = [
-            "common": BossLoot.rarityBaseRates[.common] ?? 0.60,
-            "rare": BossLoot.rarityBaseRates[.rare] ?? 0.30,
-            "epic": BossLoot.rarityBaseRates[.epic] ?? 0.08,
-            "legendary": BossLoot.rarityBaseRates[.legendary] ?? 0.02,
-            "easyMultiplier": BossLoot.difficultyMultipliers[.easy] ?? 0.5,
-            "normalMultiplier": BossLoot.difficultyMultipliers[.normal] ?? 1.0,
-            "hardMultiplier": BossLoot.difficultyMultipliers[.hard] ?? 1.5,
-            "nightmareMultiplier": BossLoot.difficultyMultipliers[.nightmare] ?? 2.5,
+            "dropRates": [
+                "Easy": BossLoot.dropRates["Easy"] ?? [:],
+                "Normal": BossLoot.dropRates["Normal"] ?? [:],
+                "Hard": BossLoot.dropRates["Hard"] ?? [:],
+                "Nightmare": BossLoot.dropRates["Nightmare"] ?? [:]
+            ],
             "pityThreshold": BossLoot.pityThreshold,
             "diminishingFactor": BossLoot.diminishingFactor
         ]

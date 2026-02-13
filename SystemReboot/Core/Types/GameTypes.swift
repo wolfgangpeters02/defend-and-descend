@@ -101,9 +101,6 @@ struct GameState {
     // Session stats
     var stats: SessionStats = SessionStats()
 
-    // Combat text
-    var combatTexts: [CombatText]?
-
     // Scrolling combat text events (damage numbers, healing, etc.)
     var damageEvents: [DamageEvent] = []
 
@@ -276,11 +273,6 @@ struct PlayerAbilities {
     var timeFreeze: CGFloat?
     var timeFreezeLastUsed: TimeInterval?
 
-    /// Check if this ability set contains any dungeon-only abilities
-    var hasDungeonOnlyAbilities: Bool {
-        return lifesteal != nil || revive != nil || thorns != nil ||
-               explosionOnKill != nil || orbitalStrike != nil || timeFreeze != nil
-    }
 }
 
 struct TrailEffect {
@@ -496,22 +488,6 @@ struct Enemy: Identifiable {
     var inactive: Bool?
     var activationRadius: CGFloat?
 
-    // Boss-specific
-    var bossMode: BossMode?
-    var bossModeTimer: TimeInterval?
-    var bossPhase2Spawned: Bool?
-    var bossLastAttackTime: TimeInterval?
-    var bossLaserAngle: CGFloat?
-
-    // Void Harbinger
-    var voidPhase2Active: Bool?
-    var voidLastVolleyTime: TimeInterval?
-    var voidLastAddTime: TimeInterval?
-    var voidLastVoidZoneTime: TimeInterval?
-    var voidLastMeteorTime: TimeInterval?
-    var voidLastTeleportTime: TimeInterval?
-    var voidInvulnerable: Bool?
-
     // Pylon linkage (for void_pylon enemy type)
     var pylonId: String?
 
@@ -519,11 +495,6 @@ struct Enemy: Identifiable {
     var milestones: BossMilestones?
 
     var shape: String?
-}
-
-enum BossMode: String {
-    case melee
-    case ranged
 }
 
 // MARK: - Upgrades

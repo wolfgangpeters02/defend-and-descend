@@ -141,29 +141,6 @@ enum ParticleShape: String {
     case circle, star, spark, square, plus, heart, diamond
 }
 
-// MARK: - Combat Text
-
-enum CombatTextType: String {
-    case phaseAnnouncement = "phase-announcement"
-    case warning
-    case mechanic
-    case achievement
-    case milestone
-}
-
-struct CombatText {
-    var id: String
-    var type: CombatTextType
-    var text: String
-    var createdAt: TimeInterval
-    var duration: TimeInterval
-    var priority: Int
-
-    var progress: (current: Int, total: Int)?
-    var color: String?
-    var icon: String?
-}
-
 // MARK: - Scrolling Combat Text Events
 
 enum DamageEventType: String, Codable {

@@ -65,6 +65,11 @@ struct TDBossSystem {
         // Don't update if game is paused or over
         guard !state.isPaused && !state.isGameOver else { return result }
 
+        // Tick down boss cooldown (post-victory timer)
+        if state.bossCooldownRemaining > 0 {
+            state.bossCooldownRemaining -= deltaTime
+        }
+
         // Check if we should spawn a boss
         if state.shouldSpawnBoss {
             spawnBoss(state: &state)
@@ -290,10 +295,18 @@ struct TDBossSystem {
         // Add hash reward
         let _ = state.addHash(hashReward)
 
-        // Reset threat level - defeating the boss clears the board pressure
-        // This is the reward for engaging with bosses and prevents runaway difficulty
-        state.idleThreatLevel = 0
-        state.lastBossThreatMilestone = 0  // Reset milestone so next boss spawns at threat 6
+        // Apply difficulty-scaled threat reduction (Easy=0%, Normal=33%, Hard=66%, Nightmare=100%)
+        // Higher difficulty rewards more threat relief; Easy gives no relief at all
+        let reductionPct = BalanceConfig.TDBoss.threatReduction[difficulty.rawValue] ?? 0.0
+        let newThreat = max(0, state.idleThreatLevel * (1.0 - reductionPct))
+        state.idleThreatLevel = newThreat
+
+        // Recalculate milestone tracker to align with new threat level
+        let interval = BalanceConfig.TDBoss.threatMilestoneInterval
+        state.lastBossThreatMilestone = (Int(newThreat) / interval) * interval
+
+        // Start post-victory cooldown before next boss can spawn
+        state.bossCooldownRemaining = BalanceConfig.TDBoss.cooldownAfterVictory
 
         // Reset efficiency - boss victory clears all system stress
         state.leakCounter = 0
