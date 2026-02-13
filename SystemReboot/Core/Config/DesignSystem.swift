@@ -284,7 +284,7 @@ enum DesignLayout {
 
 enum TDPlacementState {
     case idle                           // Clean map, no grid visible
-    case dragging(weaponType: String)   // Grid visible, showing preview
+    case dragging(protocolId: String)   // Grid visible, showing preview
     case placed                         // Brief placement animation
 }
 
@@ -525,10 +525,10 @@ enum TowerColors {
     static let execute = UIColor(hex: "ef4444") ?? .red
     static let executeAccent = UIColor(hex: "fecaca") ?? .systemPink
 
-    // MARK: - Get Color for Weapon Type
+    // MARK: - Get Color for Protocol Type
 
-    static func color(for weaponType: String) -> UIColor {
-        switch weaponType.lowercased() {
+    static func color(for protocolId: String) -> UIColor {
+        switch protocolId.lowercased() {
         case "bow", "crossbow", "trace_route", "kernel_pulse":
             return projectile
         case "cannon", "bomb", "burst_protocol":
@@ -554,8 +554,8 @@ enum TowerColors {
         }
     }
 
-    static func accentColor(for weaponType: String) -> UIColor {
-        switch weaponType.lowercased() {
+    static func accentColor(for protocolId: String) -> UIColor {
+        switch protocolId.lowercased() {
         case "bow", "crossbow", "trace_route", "kernel_pulse":
             return projectileAccent
         case "cannon", "bomb", "burst_protocol":
@@ -644,9 +644,9 @@ enum DesignHelpers {
         }
     }
 
-    /// SF Symbol name for a weapon/protocol type
-    static func iconForWeapon(_ weaponType: String) -> String {
-        switch weaponType.lowercased() {
+    /// SF Symbol name for a protocol type
+    static func iconForProtocol(_ protocolId: String) -> String {
+        switch protocolId.lowercased() {
         case "bow", "crossbow":
             return "scope"
         case "trace_route":

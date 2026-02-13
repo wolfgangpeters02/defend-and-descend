@@ -27,7 +27,7 @@ struct TDGameContainerView: View {
 
     // Drag-from-deck state (progressive disclosure - grid only visible during drag)
     @State var isDraggingFromDeck = false
-    @State var draggedWeaponType: String?
+    @State var draggedProtocolId: String?
     @State var dragPosition: CGPoint = .zero
     @State var nearestValidSlot: TowerSlot?
     @State var canAffordDraggedTower = false
@@ -90,8 +90,8 @@ struct TDGameContainerView: View {
                 }
 
                 // Drag preview overlay
-                if isDraggingFromDeck, let weaponType = draggedWeaponType {
-                    dragPreviewOverlay(weaponType: weaponType, geometry: geometry)
+                if isDraggingFromDeck, let protocolId = draggedProtocolId {
+                    dragPreviewOverlay(protocolId: protocolId, geometry: geometry)
                 }
 
                 // TD Boss Alert overlay (threat milestone boss)
@@ -308,8 +308,8 @@ struct TDGameContainerView: View {
         scene?.startWave()
     }
 
-    func placeTower(weaponType: String, slotId: String) {
-        scene?.placeTower(weaponType: weaponType, slotId: slotId, profile: appState.currentPlayer)
+    func placeTower(protocolId: String, slotId: String) {
+        scene?.placeTower(protocolId: protocolId, slotId: slotId, profile: appState.currentPlayer)
         showTowerMenu = false
         selectedSlotId = nil
     }

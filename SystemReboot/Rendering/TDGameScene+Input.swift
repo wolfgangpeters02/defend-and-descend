@@ -6,11 +6,11 @@ extension TDGameScene {
     // MARK: - Placement Mode (Progressive Disclosure)
 
     /// Enter placement mode - brighten grid dots
-    func enterPlacementMode(weaponType: String) {
+    func enterPlacementMode(protocolId: String) {
         guard !isInPlacementMode else { return }
 
         isInPlacementMode = true
-        placementWeaponType = weaponType
+        placementProtocolId = protocolId
 
         // Brighten grid dots during placement (from ambient 0.3 to full visibility)
         gridDotsLayer.run(SKAction.fadeAlpha(to: 1.0, duration: DesignAnimations.Timing.quick))
@@ -32,7 +32,7 @@ extension TDGameScene {
         guard isInPlacementMode else { return }
 
         isInPlacementMode = false
-        placementWeaponType = nil
+        placementProtocolId = nil
 
         // Stop placement pulse and dim grid dots back to ambient visibility
         gridDotsLayer.removeAction(forKey: "placementPulse")

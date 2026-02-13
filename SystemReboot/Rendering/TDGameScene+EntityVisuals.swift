@@ -184,7 +184,7 @@ extension TDGameScene {
     /// Trigger tower firing animation (recoil + muzzle flash)
     func triggerTowerFireAnimation(node: SKNode, tower: Tower) {
         let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
-        let archetype = TowerVisualFactory.TowerArchetype.from(weaponType: tower.protocolId)
+        let archetype = TowerVisualFactory.TowerArchetype.from(protocolId: tower.protocolId)
 
         // Use enhanced archetype-specific muzzle flash
         TowerAnimations.playEnhancedMuzzleFlash(node: node, archetype: archetype, color: towerColor)
@@ -336,7 +336,7 @@ extension TDGameScene {
         }
 
         return TowerVisualFactory.createTowerNode(
-            weaponType: tower.protocolId,
+            protocolId: tower.protocolId,
             color: towerColor,
             range: tower.range,
             level: tower.level,

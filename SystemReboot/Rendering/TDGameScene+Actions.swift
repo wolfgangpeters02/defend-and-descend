@@ -144,12 +144,12 @@ extension TDGameScene {
         HapticsService.shared.play(.defeat)
     }
 
-    func placeTower(weaponType: String, slotId: String, profile: PlayerProfile) {
+    func placeTower(protocolId: String, slotId: String, profile: PlayerProfile) {
         guard var state = state else {
             return
         }
 
-        let result = TowerSystem.placeTowerFromProtocol(state: &state, protocolId: weaponType, slotId: slotId, playerProfile: profile)
+        let result = TowerSystem.placeTowerFromProtocol(state: &state, protocolId: protocolId, slotId: slotId, playerProfile: profile)
 
         switch result {
         case .success(_):
@@ -164,7 +164,7 @@ extension TDGameScene {
             StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
             HapticsService.shared.play(.towerPlace)
 
-        case .insufficientGold:
+        case .insufficientHash:
             HapticsService.shared.play(.warning)
             gameStateDelegate?.placementFailed(result)
 
@@ -176,7 +176,7 @@ extension TDGameScene {
             HapticsService.shared.play(.warning)
             gameStateDelegate?.placementFailed(result)
 
-        case .weaponLocked:
+        case .protocolLocked:
             HapticsService.shared.play(.warning)
             gameStateDelegate?.placementFailed(result)
 

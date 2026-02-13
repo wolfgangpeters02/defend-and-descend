@@ -7,7 +7,7 @@ extension TowerVisualFactory {
 
     // MARK: - Archetype Detail Elements
 
-    static func createDetailElements(archetype: TowerArchetype, weaponType: String, color: UIColor, rarity: RarityTier) -> SKNode {
+    static func createDetailElements(archetype: TowerArchetype, protocolId: String, color: UIColor, rarity: RarityTier) -> SKNode {
         let container = SKNode()
 
         switch archetype {

@@ -21,8 +21,8 @@ final class TowerVisualFactory {
         case multishot      // ForkBomb - Replication array
         case execute        // NullPointer - System exception
 
-        static func from(weaponType: String) -> TowerArchetype {
-            switch weaponType.lowercased() {
+        static func from(protocolId: String) -> TowerArchetype {
+            switch protocolId.lowercased() {
             case "bow", "crossbow", "trace_route", "kernel_pulse":
                 return .projectile
             case "cannon", "bomb", "burst_protocol":
@@ -52,7 +52,7 @@ final class TowerVisualFactory {
     // MARK: - Main Factory Method
 
     static func createTowerNode(
-        weaponType: String,
+        protocolId: String,
         color: UIColor,
         range: CGFloat,
         level: Int,
@@ -62,7 +62,7 @@ final class TowerVisualFactory {
         rarity: String
     ) -> SKNode {
         let container = SKNode()
-        let archetype = TowerArchetype.from(weaponType: weaponType)
+        let archetype = TowerArchetype.from(protocolId: protocolId)
         let rarityTier = RarityTier.from(rarity)
 
         // Single glow layer (Performance: collapsed from 3 layers to 1)
@@ -96,13 +96,13 @@ final class TowerVisualFactory {
         container.addChild(basePlatform)
 
         // Layer 5: Main body (archetype-specific)
-        let body = createTowerBody(archetype: archetype, weaponType: weaponType, color: color, rarity: rarityTier)
+        let body = createTowerBody(archetype: archetype, protocolId: protocolId, color: color, rarity: rarityTier)
         body.name = "body"
         body.zPosition = 1
         container.addChild(body)
 
         // Layer 6: Barrel/Emitter (archetype-specific)
-        let barrel = createTowerBarrel(archetype: archetype, weaponType: weaponType, color: color)
+        let barrel = createTowerBarrel(archetype: archetype, protocolId: protocolId, color: color)
         barrel.name = "barrel"
         barrel.anchorPoint = CGPoint(x: 0.5, y: 0)
         barrel.zPosition = 2
@@ -117,7 +117,7 @@ final class TowerVisualFactory {
         barrel.addChild(muzzleFlash)
 
         // Layer 8: Archetype-specific detail elements
-        let detailElements = createDetailElements(archetype: archetype, weaponType: weaponType, color: color, rarity: rarityTier)
+        let detailElements = createDetailElements(archetype: archetype, protocolId: protocolId, color: color, rarity: rarityTier)
         detailElements.name = "details"
         detailElements.zPosition = 3
         container.addChild(detailElements)
@@ -278,7 +278,7 @@ final class TowerVisualFactory {
 
     // MARK: - Tower Barrels
 
-    private static func createTowerBarrel(archetype: TowerArchetype, weaponType: String, color: UIColor) -> SKSpriteNode {
+    private static func createTowerBarrel(archetype: TowerArchetype, protocolId: String, color: UIColor) -> SKSpriteNode {
         switch archetype {
         case .projectile:
             return createPrecisionBarrel(color: color)

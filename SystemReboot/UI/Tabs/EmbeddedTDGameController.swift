@@ -8,7 +8,7 @@ class EmbeddedTDGameController: ObservableObject {
     @Published var scene: TDGameScene?
     @Published var gameState: TDGameState?
     @Published var isDraggingFromDeck = false
-    @Published var draggedWeaponType: String?
+    @Published var draggedProtocolId: String?
     @Published var dragPosition: CGPoint = .zero
     @Published var nearestValidSlot: TowerSlot?
     @Published var canAffordDraggedTower = false
@@ -75,7 +75,7 @@ class EmbeddedTDGameController: ObservableObject {
         gameState = nil
         delegateHandler = nil
         isDraggingFromDeck = false
-        draggedWeaponType = nil
+        draggedProtocolId = nil
         nearestValidSlot = nil
         isSystemFrozen = false
         isBossActive = false

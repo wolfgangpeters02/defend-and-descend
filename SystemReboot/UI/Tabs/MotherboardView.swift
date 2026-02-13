@@ -35,8 +35,8 @@ struct MotherboardView: View {
 
                 // Drag preview overlay
                 if embeddedGameController.isDraggingFromDeck,
-                   let weaponType = embeddedGameController.draggedWeaponType {
-                    dragPreviewOverlay(weaponType: weaponType, geometry: geometry)
+                   let protocolId = embeddedGameController.draggedProtocolId {
+                    dragPreviewOverlay(protocolId: protocolId, geometry: geometry)
                 }
 
                 // System Freeze overlay (0% efficiency)
@@ -447,7 +447,7 @@ struct MotherboardView: View {
                             EmbeddedProtocolDeckCard(
                                 protocol: proto,
                                 hash: embeddedGameController.gameState?.hash ?? 0,
-                                onDragStart: { embeddedGameController.startDrag(weaponType: proto.id) },
+                                onDragStart: { embeddedGameController.startDrag(protocolId: proto.id) },
                                 onDragChanged: { value in embeddedGameController.updateDrag(value, geometry: geometry) },
                                 onDragEnded: { embeddedGameController.endDrag(profile: appState.currentPlayer) }
                             )
@@ -461,9 +461,9 @@ struct MotherboardView: View {
         .background(DesignColors.surface.opacity(0.85))
     }
 
-    private func dragPreviewOverlay(weaponType: String, geometry: GeometryProxy) -> some View {
+    private func dragPreviewOverlay(protocolId: String, geometry: GeometryProxy) -> some View {
         ZStack {
-            if let proto = ProtocolLibrary.get(weaponType) {
+            if let proto = ProtocolLibrary.get(protocolId) {
                 let displayPosition = embeddedGameController.nearestValidSlot != nil && embeddedGameController.canAffordDraggedTower
                     ? embeddedGameController.convertGameToScreen(embeddedGameController.nearestValidSlot!.position, geometry: geometry)
                     : embeddedGameController.dragPosition

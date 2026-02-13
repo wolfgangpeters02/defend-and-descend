@@ -51,7 +51,7 @@ class ProjectileSystem {
                         state: &state,
                         x: state.projectiles[i].x,
                         y: state.projectiles[i].y,
-                        weaponType: state.projectiles[i].sourceType ?? "default"
+                        protocolId: state.projectiles[i].sourceType ?? "default"
                     )
                     break
                 }
@@ -64,11 +64,11 @@ class ProjectileSystem {
 
             // Add trail particles
             if state.projectiles[i].trail == true {
-                ParticleFactory.createWeaponTrail(
+                ParticleFactory.createProjectileTrail(
                     state: &state,
                     x: state.projectiles[i].x,
                     y: state.projectiles[i].y,
-                    weaponType: state.projectiles[i].sourceType ?? "default"
+                    protocolId: state.projectiles[i].sourceType ?? "default"
                 )
             }
 
@@ -102,7 +102,7 @@ class ProjectileSystem {
                             state: &state,
                             x: state.projectiles[i].x,
                             y: state.projectiles[i].y,
-                            weaponType: "enemy"
+                            protocolId: "enemy"
                         )
 
                         // Brief invulnerability after hit
@@ -220,7 +220,7 @@ class ProjectileSystem {
             state: &state,
             x: proj.x,
             y: proj.y,
-            weaponType: proj.sourceType ?? "default"
+            protocolId: proj.sourceType ?? "default"
         )
 
         // Lifesteal

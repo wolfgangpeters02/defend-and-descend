@@ -245,7 +245,7 @@ struct TDGameState {
 struct TowerDragState {
     enum DragSource {
         case existingTower(towerId: String, slotId: String)
-        case deckWeapon(weaponType: String)
+        case deckProtocol(protocolId: String)
     }
 
     var source: DragSource
@@ -748,10 +748,10 @@ struct TDEnemy: Identifiable {
 
 enum TowerPlacementResult {
     case success(tower: Tower)
-    case insufficientGold(required: Int, available: Int)
+    case insufficientHash(required: Int, available: Int)
     case insufficientPower(required: Int, available: Int)
     case slotOccupied
-    case weaponLocked
+    case protocolLocked
     case invalidSlot
 }
 

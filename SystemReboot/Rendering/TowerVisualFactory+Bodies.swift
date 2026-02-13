@@ -7,7 +7,7 @@ extension TowerVisualFactory {
 
     // MARK: - Tower Bodies
 
-    static func createTowerBody(archetype: TowerArchetype, weaponType: String, color: UIColor, rarity: RarityTier) -> SKShapeNode {
+    static func createTowerBody(archetype: TowerArchetype, protocolId: String, color: UIColor, rarity: RarityTier) -> SKShapeNode {
         switch archetype {
         case .projectile:
             return createReticleBody(color: color, rarity: rarity)

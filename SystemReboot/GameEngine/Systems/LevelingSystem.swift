@@ -9,14 +9,14 @@ class LevelingSystem {
     static var levelBonusPercent: CGFloat { BalanceConfig.ThreatLevel.levelBonusPercent }
 
     /// Get protocol level from player profile
-    static func getWeaponLevel(profile: PlayerProfile, weaponId: String) -> Int {
-        return profile.protocolLevels[weaponId] ?? 1
+    static func getProtocolLevel(profile: PlayerProfile, protocolId: String) -> Int {
+        return profile.protocolLevels[protocolId] ?? 1
     }
 
     /// Check if item is unlocked
     static func isItemUnlocked(profile: PlayerProfile, category: String, id: String) -> Bool {
         switch category {
-        case "weapon":
+        case "protocol":
             return profile.compiledProtocols.contains(id)
         case "arena":
             return profile.unlocks.arenas.contains(id)
@@ -49,14 +49,10 @@ class LevelingSystem {
     /// Unlock a new item
     static func unlockItem(profile: inout PlayerProfile, category: String, id: String) -> Bool {
         switch category {
-        case "weapon":
+        case "protocol":
             if !profile.compiledProtocols.contains(id) {
-                // Canonical protocol system
                 profile.compiledProtocols.append(id)
                 profile.protocolLevels[id] = 1
-                // Legacy fields (kept for backward compat)
-                profile.unlocks.weapons.append(id)
-                profile.weaponLevels[id] = 1
                 return true
             }
         case "arena":
@@ -73,13 +69,10 @@ class LevelingSystem {
     /// Level up an item
     static func levelUpItem(profile: inout PlayerProfile, category: String, id: String) -> Bool {
         switch category {
-        case "weapon":
+        case "protocol":
             let currentLevel = profile.protocolLevels[id] ?? 1
             if currentLevel < maxLevel {
-                // Canonical protocol system
                 profile.protocolLevels[id] = currentLevel + 1
-                // Legacy field (kept for backward compat)
-                profile.weaponLevels[id] = currentLevel + 1
                 return true
             }
         default:

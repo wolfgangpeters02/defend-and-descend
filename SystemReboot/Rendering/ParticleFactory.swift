@@ -126,10 +126,10 @@ class ParticleFactory {
         x: CGFloat,
         y: CGFloat,
         angle: CGFloat,
-        weaponType: String
+        protocolId: String
     ) {
         let now = timestamp(from: state)
-        let color = getWeaponColor(weaponType)
+        let color = getProtocolColor(protocolId)
 
         for i in 0..<3 {
             let spread = CGFloat.random(in: -0.3...0.3)
@@ -158,10 +158,10 @@ class ParticleFactory {
         state: inout GameState,
         x: CGFloat,
         y: CGFloat,
-        weaponType: String
+        protocolId: String
     ) {
         let now = timestamp(from: state)
-        let color = getWeaponColor(weaponType)
+        let color = getProtocolColor(protocolId)
 
         for i in 0..<5 {
             let angle = CGFloat.random(in: 0...(2 * .pi))
@@ -181,18 +181,18 @@ class ParticleFactory {
         }
     }
 
-    /// Create weapon trail particles
-    static func createWeaponTrail(
+    /// Create projectile trail particles
+    static func createProjectileTrail(
         state: inout GameState,
         x: CGFloat,
         y: CGFloat,
-        weaponType: String
+        protocolId: String
     ) {
         // Only spawn trail particles occasionally
         guard RandomUtils.randomBool(probability: 0.3) else { return }
 
         let now = timestamp(from: state)
-        let color = getWeaponColor(weaponType)
+        let color = getProtocolColor(protocolId)
 
         state.particles.append(Particle(
             id: "\(RandomUtils.generateId())-trail",
@@ -207,9 +207,9 @@ class ParticleFactory {
         ))
     }
 
-    /// Get weapon-themed color
-    private static func getWeaponColor(_ weaponType: String) -> String {
-        switch weaponType {
+    /// Get protocol-themed color
+    private static func getProtocolColor(_ protocolId: String) -> String {
+        switch protocolId {
         case "sword", "katana", "axe", "spear", "hammer":
             return "#c0c0c0" // Silver
         case "bow", "crossbow":

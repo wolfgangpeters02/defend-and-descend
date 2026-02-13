@@ -9,12 +9,12 @@ extension EmbeddedTDGameController {
 
     // MARK: - Drag Handling
 
-    func startDrag(weaponType: String) {
+    func startDrag(protocolId: String) {
         isDraggingFromDeck = true
-        draggedWeaponType = weaponType
-        canAffordDraggedTower = TowerPlacementService.canAfford(weaponType: weaponType, hash: gameState?.hash ?? 0)
+        draggedProtocolId = protocolId
+        canAffordDraggedTower = TowerPlacementService.canAfford(protocolId: protocolId, hash: gameState?.hash ?? 0)
 
-        scene?.enterPlacementMode(weaponType: weaponType)
+        scene?.enterPlacementMode(protocolId: protocolId)
         HapticsService.shared.play(.selection)
     }
 
@@ -43,14 +43,14 @@ extension EmbeddedTDGameController {
 
         defer {
             isDraggingFromDeck = false
-            draggedWeaponType = nil
+            draggedProtocolId = nil
             nearestValidSlot = nil
         }
 
-        if let weaponType = draggedWeaponType,
+        if let protocolId = draggedProtocolId,
            let slot = nearestValidSlot,
            canAffordDraggedTower {
-            scene?.placeTower(weaponType: weaponType, slotId: slot.id, profile: profile)
+            scene?.placeTower(protocolId: protocolId, slotId: slot.id, profile: profile)
             HapticsService.shared.play(.towerPlace)
         }
     }

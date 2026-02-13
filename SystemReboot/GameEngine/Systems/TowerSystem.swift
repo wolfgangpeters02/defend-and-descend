@@ -34,7 +34,7 @@ class TowerSystem {
 
         // Check if protocol is compiled (unlocked)
         guard playerProfile.isProtocolCompiled(protocolId) else {
-            return .weaponLocked
+            return .protocolLocked
         }
 
         // Get protocol from library
@@ -48,9 +48,9 @@ class TowerSystem {
         // Calculate placement cost based on rarity
         let placementCost = towerPlacementCost(rarity: proto.rarity)
 
-        // Check gold (Hash)
+        // Check hash (currency)
         if state.hash < placementCost {
-            return .insufficientGold(required: placementCost, available: state.hash)
+            return .insufficientHash(required: placementCost, available: state.hash)
         }
 
         // Check power capacity (System: Reboot)
@@ -62,9 +62,11 @@ class TowerSystem {
         // Create and place tower from protocol
         var tower = Tower.from(protocol: proto, at: slot)
 
-        // Apply global upgrade bonuses (Cooling = fire rate)
+        // Apply global upgrade bonuses (Cooling = fire rate, GPU = damage)
         let fireRateMultiplier = playerProfile.globalUpgrades.fireRateMultiplier
         tower.attackSpeed *= fireRateMultiplier
+        let gpuDamageMultiplier = playerProfile.componentLevels.towerDamageMultiplier
+        tower.damage *= gpuDamageMultiplier
 
         // Update state
         state.towers.append(tower)

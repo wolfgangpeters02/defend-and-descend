@@ -37,7 +37,7 @@ class TDGameScene: SKScene {
 
     // Placement state (for progressive disclosure)
     var isInPlacementMode: Bool = false
-    var placementWeaponType: String?
+    var placementProtocolId: String?
 
     // Cached nodes for performance
     var towerNodes: [String: SKNode] = [:]

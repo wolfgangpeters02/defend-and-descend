@@ -90,8 +90,8 @@ struct TowerPlacementService {
     // MARK: - Affordability
 
     /// Check whether the player can afford to place a tower of the given protocol type
-    static func canAfford(weaponType: String, hash: Int) -> Bool {
-        guard let proto = ProtocolLibrary.get(weaponType) else { return false }
+    static func canAfford(protocolId: String, hash: Int) -> Bool {
+        guard let proto = ProtocolLibrary.get(protocolId) else { return false }
         let cost = TowerSystem.towerPlacementCost(rarity: proto.rarity)
         return hash >= cost
     }

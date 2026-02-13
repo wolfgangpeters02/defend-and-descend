@@ -7,7 +7,7 @@ Each stage should be tackled in plan mode to map dependencies before making chan
 
 ## Stage 1: Weapon → Protocol Migration
 **Status:** DONE
-**Summary:** Made `protocolLevels`/`compiledProtocols` the canonical system; fixed LevelingSystem level-sync bug; removed legacy `TowerSystem.placeTower()`, `WeaponTower`, `TowerDeckCard`, dead AppState/StorageService methods; renamed `Tower.weaponType` → `protocolId` (with CodingKeys save compat); added `PlayerProfile.migrate()` for old saves.
+**Summary:** Removed LevelingSystem legacy dual-writes to weaponLevels/unlocks.weapons; renamed all TD-mode weapon→protocol identifiers across 20 files (weaponType→protocolId params, .weaponLocked→.protocolLocked, .insufficientGold→.insufficientHash, draggedWeaponType→draggedProtocolId, getWeaponLevel→getProtocolLevel, createWeaponTrail→createProjectileTrail, getWeaponColor→getProtocolColor).
 **Priority:** Critical (has an actual level-sync bug)
 **Estimated scope:** ~15 files
 

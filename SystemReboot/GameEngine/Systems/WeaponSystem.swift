@@ -132,7 +132,7 @@ class WeaponSystem {
             x: player.x,
             y: player.y,
             angle: atan2(target.y - player.y, target.x - player.x),
-            weaponType: weapon.type
+            protocolId: weapon.type
         )
     }
 }

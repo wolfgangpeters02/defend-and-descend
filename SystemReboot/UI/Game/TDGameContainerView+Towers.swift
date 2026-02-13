@@ -23,7 +23,7 @@ extension TDGameContainerView {
                         ProtocolDeckCard(
                             protocol: proto,
                             hash: gameState?.hash ?? 0,
-                            onDragStart: { startDragFromDeck(weaponType: proto.id) },
+                            onDragStart: { startDragFromDeck(protocolId: proto.id) },
                             onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
                             onDragEnded: { endDragFromDeck() }
                         )
@@ -54,9 +54,9 @@ extension TDGameContainerView {
     // Note: Grid dots are now shown in the SpriteKit scene, not here
     // This overlay only shows the dragged tower preview
 
-    func dragPreviewOverlay(weaponType: String, geometry: GeometryProxy) -> some View {
+    func dragPreviewOverlay(protocolId: String, geometry: GeometryProxy) -> some View {
         ZStack {
-            if let proto = ProtocolLibrary.get(weaponType) {
+            if let proto = ProtocolLibrary.get(protocolId) {
                 let displayPosition = nearestValidSlot != nil && canAffordDraggedTower
                     ? convertGameToScreen(nearestValidSlot!.position, geometry: geometry)
                     : dragPosition
@@ -118,14 +118,14 @@ extension TDGameContainerView {
 
     // MARK: - Drag Handling (Progressive Disclosure)
 
-    func startDragFromDeck(weaponType: String) {
+    func startDragFromDeck(protocolId: String) {
         isDraggingFromDeck = true
-        draggedWeaponType = weaponType
+        draggedProtocolId = protocolId
         previousNearestSlot = nil
-        canAffordDraggedTower = TowerPlacementService.canAfford(weaponType: weaponType, hash: gameState?.hash ?? 0)
+        canAffordDraggedTower = TowerPlacementService.canAfford(protocolId: protocolId, hash: gameState?.hash ?? 0)
 
         // Enter placement mode - shows grid dots (progressive disclosure)
-        scene?.enterPlacementMode(weaponType: weaponType)
+        scene?.enterPlacementMode(protocolId: protocolId)
 
         HapticsService.shared.play(.selection)
     }
@@ -158,16 +158,16 @@ extension TDGameContainerView {
 
         defer {
             isDraggingFromDeck = false
-            draggedWeaponType = nil
+            draggedProtocolId = nil
             nearestValidSlot = nil
             previousNearestSlot = nil
         }
 
         // Place tower if valid
-        if let weaponType = draggedWeaponType,
+        if let protocolId = draggedProtocolId,
            let slot = nearestValidSlot,
            canAffordDraggedTower {
-            scene?.placeTower(weaponType: weaponType, slotId: slot.id, profile: appState.currentPlayer)
+            scene?.placeTower(protocolId: protocolId, slotId: slot.id, profile: appState.currentPlayer)
             HapticsService.shared.play(.towerPlace)
 
             // FTUE: Track first tower placement
@@ -211,7 +211,7 @@ extension TDGameContainerView {
                 let canAfford = (gameState?.hash ?? 0) >= cost
 
                 Button(action: {
-                    placeTower(weaponType: proto.id, slotId: slotId)
+                    placeTower(protocolId: proto.id, slotId: slotId)
                 }) {
                     HStack {
                         VStack(alignment: .leading) {
