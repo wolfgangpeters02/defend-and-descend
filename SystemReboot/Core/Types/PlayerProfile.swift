@@ -202,11 +202,6 @@ struct TDModeStats: Codable {
         return "CPU \(cpuTier).0"
     }
 
-    /// Check if CPU can be upgraded (not max tier and has enough Hash)
-    func canUpgradeCpu(hash: Int) -> Bool {
-        guard let cost = nextCpuUpgradeCost else { return false }
-        return hash >= cost
-    }
 }
 
 // MARK: - Default Profile

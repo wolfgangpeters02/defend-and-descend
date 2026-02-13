@@ -4,43 +4,6 @@ import CoreGraphics
 // MARK: - Shared Types for Survivor + TD Unified Progression
 // These types work identically in both modes
 
-// MARK: - ArenaMap (Unified Arena/TD Map Definition)
-// In Survivor mode: Fight in the arena
-// In TD mode: Defend the same map with paths
-
-struct ArenaMap: Codable, Identifiable {
-    var id: String
-    var name: String
-    var rarity: Rarity
-
-    // Dimensions
-    var width: CGFloat
-    var height: CGFloat
-
-    // Visual
-    var backgroundColor: String
-    var theme: String
-    var particleEffect: String?
-
-    // Shared elements
-    var obstacles: [MapObstacle]
-    var hazards: [MapHazard]
-    var effectZones: [MapEffectZone]
-
-    // TD-specific (nil in Survivor mode)
-    var paths: [EnemyPath]?
-    var corePosition: CGPoint?
-    var towerSlots: [TowerSlot]?
-
-    // Arena modifier (affects both modes)
-    var globalModifier: MapModifier?
-
-    /// Check if this map supports TD mode
-    var supportsTD: Bool {
-        return paths != nil && !paths!.isEmpty && corePosition != nil
-    }
-}
-
 struct MapObstacle: Codable, Identifiable {
     var id: String
     var x: CGFloat

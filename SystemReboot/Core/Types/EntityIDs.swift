@@ -230,7 +230,6 @@ enum UpgradeTargetType: String, Codable, CaseIterable {
 enum HazardDamageType: String, Codable, CaseIterable {
     case fire
     case ice
-    case cold       // Alias for ice effects
     case poison
     case physical
     case void
@@ -296,18 +295,3 @@ enum PickupType: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Validation Extension
-
-#if DEBUG
-extension EntityIDs {
-    /// Validates that all enum cases match the JSON config keys
-    /// Call this during app launch in debug builds
-    static func validateAgainstConfig() {
-        // This would compare enum cases against GameConfigLoader
-        // For now, this is a placeholder for future validation
-    }
-}
-
-/// Namespace for validation
-enum EntityIDs {}
-#endif

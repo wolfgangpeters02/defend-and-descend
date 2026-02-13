@@ -59,7 +59,7 @@ GameMode enum has 5 cases: `.survival`, `.boss`, `.towerDefense`, `.arena` (lega
 ---
 
 ## Stage 3: Dead Code Removal (ArenaMap, canUpgradeCpu, etc.)
-**Status:** OPEN
+**Status:** DONE — Removed ArenaMap struct (36 lines), canUpgradeCpu() method, HazardDamageType.cold alias, and EntityIDs.validateAgainstConfig() stub across 3 files.
 **Priority:** Medium (dead weight, no bugs)
 **Estimated scope:** ~4 files
 
