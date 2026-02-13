@@ -108,9 +108,9 @@ class XPSystem {
     /// Get tier color
     static func getTierColor(_ tier: Int) -> String {
         switch tier {
-        case 3: return "#ffd700"
-        case 2: return "#c0c0c0"
-        default: return "#8b4513"
+        case 3: return TierColors.gold
+        case 2: return TierColors.silver
+        default: return TierColors.bronze
         }
     }
 }

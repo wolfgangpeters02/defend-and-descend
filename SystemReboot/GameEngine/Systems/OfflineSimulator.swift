@@ -80,8 +80,8 @@ struct OfflineSimulator {
         // 5. Calculate new efficiency
         let startLeakCounter = tdStats.lastLeakCounter
         let newLeakCounter = startLeakCounter + totalLeaks
-        let startEfficiency = max(0, min(100, 100 - CGFloat(startLeakCounter) * BalanceConfig.TDSession.efficiencyLossPerLeak))
-        let newEfficiency = max(0, min(100, 100 - CGFloat(newLeakCounter) * BalanceConfig.TDSession.efficiencyLossPerLeak))
+        let startEfficiency = BalanceConfig.TDSession.efficiencyForLeakCount(startLeakCounter)
+        let newEfficiency = BalanceConfig.TDSession.efficiencyForLeakCount(newLeakCounter)
 
         // 6. Calculate average efficiency during offline period
         let avgEfficiency = (startEfficiency + newEfficiency) / 2

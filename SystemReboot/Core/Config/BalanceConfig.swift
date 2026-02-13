@@ -901,6 +901,16 @@ struct BalanceConfig {
         /// Efficiency loss per leaked virus (percentage points)
         static let efficiencyLossPerLeak: CGFloat = 5
 
+        /// Calculate efficiency percentage from leak count
+        static func efficiencyForLeakCount(_ leakCount: Int) -> CGFloat {
+            max(0, min(100, 100 - CGFloat(leakCount) * efficiencyLossPerLeak))
+        }
+
+        /// Calculate leak count needed for a target efficiency percentage
+        static func leakCountForEfficiency(_ efficiency: CGFloat) -> Int {
+            max(0, Int((100 - efficiency) / efficiencyLossPerLeak))
+        }
+
         /// Starting blocker slots
         static let startingBlockerSlots: Int = 3
 

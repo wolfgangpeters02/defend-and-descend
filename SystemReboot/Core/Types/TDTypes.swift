@@ -99,9 +99,7 @@ struct TDGameState: HashStorable {
     var leakCounter: Int = 0           // Increments when virus reaches CPU
     var leakDecayTimer: TimeInterval = 0  // Timer for leak counter decay
     var efficiency: CGFloat {
-        // efficiency = max(0, 100 - leakCounter * 5)
-        // Each leaked virus reduces efficiency by 5%
-        return max(0, min(100, 100 - CGFloat(leakCounter) * BalanceConfig.TDSession.efficiencyLossPerLeak))
+        BalanceConfig.TDSession.efficiencyForLeakCount(leakCounter)
     }
     var baseHashPerSecond: CGFloat = 1.0  // Base income rate at 100% efficiency (set from CPU level)
     var cpuMultiplier: CGFloat = 1.0      // CPU tier multiplier (1x, 2x, 4x, 8x, 16x)

@@ -57,7 +57,7 @@ class CoreSystem {
             velocityY: sin(angle) * speed,
             damage: state.core.damage,
             radius: BalanceConfig.TDCore.projectileRadius,
-            color: "#ffd700",  // Gold color for Core auto-attack
+            color: TierColors.gold,
             lifetime: BalanceConfig.TDCore.projectileLifetime,
             piercing: 0,
             hitEnemies: [],

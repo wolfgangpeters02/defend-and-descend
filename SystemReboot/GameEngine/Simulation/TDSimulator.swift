@@ -119,9 +119,8 @@ class TDSimulator {
         gameState.networkHashMultiplier = components.hashMultiplier
 
         // Set starting efficiency via leakCounter
-        // efficiency = 100 - leakCounter * efficiencyLossPerLeak
         let targetEfficiency = config.startingEfficiency
-        gameState.leakCounter = Int((100 - targetEfficiency) / BalanceConfig.TDSession.efficiencyLossPerLeak)
+        gameState.leakCounter = BalanceConfig.TDSession.leakCountForEfficiency(targetEfficiency)
 
         self.init(
             state: gameState,
@@ -146,7 +145,7 @@ class TDSimulator {
                 timeToFirstFreeze = elapsedTime
             }
             // Reset for recovery (reduce leak counter to 50% efficiency)
-            state.leakCounter = Int(50 / BalanceConfig.TDSession.efficiencyLossPerLeak)
+            state.leakCounter = BalanceConfig.TDSession.leakCountForEfficiency(50)
             hasFrozen = false
         }
 

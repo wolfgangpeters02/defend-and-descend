@@ -61,15 +61,12 @@ struct FreezeRecoveryService {
     // MARK: - Helpers
 
     /// Convert an efficiency percentage to the corresponding leak count
-    /// efficiency = 100 - leakCounter * efficiencyLossPerLeak
     static func leakCountForEfficiency(_ efficiency: CGFloat) -> Int {
-        let lossPerLeak = BalanceConfig.TDSession.efficiencyLossPerLeak
-        return max(0, Int((100 - efficiency) / lossPerLeak))
+        BalanceConfig.TDSession.leakCountForEfficiency(efficiency)
     }
 
     /// Convert a leak count to efficiency percentage
     static func efficiencyForLeakCount(_ leakCount: Int) -> CGFloat {
-        let lossPerLeak = BalanceConfig.TDSession.efficiencyLossPerLeak
-        return max(0, min(100, 100 - CGFloat(leakCount) * lossPerLeak))
+        BalanceConfig.TDSession.efficiencyForLeakCount(leakCount)
     }
 }

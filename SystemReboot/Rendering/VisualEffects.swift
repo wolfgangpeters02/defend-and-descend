@@ -144,7 +144,7 @@ extension ParticleFactory {
                 y: y,
                 lifetime: Double.random(in: 0.5...1.0),
                 createdAt: now,
-                color: "#ffd700",
+                color: TierColors.gold,
                 size: CGFloat.random(in: 4...8),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
                 shape: .star
@@ -192,7 +192,7 @@ extension ParticleFactory {
                 y: y,
                 lifetime: Double.random(in: 0.5...1.5),
                 createdAt: now,
-                color: ["#ffd700", "#ff6600", "#ff0000"].randomElement() ?? "#ffd700",
+                color: [TierColors.gold, "#ff6600", "#ff0000"].randomElement() ?? TierColors.gold,
                 size: CGFloat.random(in: 3...10),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
                 rotation: CGFloat.random(in: 0...(2 * .pi)),

@@ -61,7 +61,7 @@ class TDParticleFactory {
                 y: y,
                 lifetime: 0.8,
                 createdAt: now + Double(i) * 0.1,
-                color: "#ffd700",
+                color: TierColors.gold,
                 size: 10,
                 velocity: CGPoint(x: CGFloat.random(in: -20...20), y: -50),
                 shape: .star
@@ -141,7 +141,7 @@ class TDParticleFactory {
     ) {
         let now = Date().timeIntervalSince1970
         let count = Int.random(in: 35...65)
-        let colors = [color, "#ffd700", "#ff8800", "#ffffff"]
+        let colors = [color, TierColors.gold, "#ff8800", "#ffffff"]
 
         for i in 0..<count {
             let angle = CGFloat.random(in: 0...(2 * .pi))

@@ -131,9 +131,21 @@ Comments that reference removed systems, label active code as "deprecated"/"lega
 ---
 
 ## Stage 4: DRY Violations — Tier Colors + Efficiency Formula
-**Status:** OPEN
+**Status:** DONE
 **Priority:** Medium (sync risk, scattered magic numbers)
 **Estimated scope:** ~8 files
+
+### Summary of Changes
+- **DesignSystem.swift**: Added `TierColors` enum with `.gold` (`#ffd700`), `.silver` (`#c0c0c0`), `.bronze` (`#8b4513`) hex string constants for particle/projectile systems
+- **BalanceConfig.swift**: Added `efficiencyForLeakCount(_:)` and `leakCountForEfficiency(_:)` helper functions to `TDSession` struct, next to the `efficiencyLossPerLeak` constant
+- **XPSystem.swift**: Replaced 3 hardcoded hex strings in `getTierColor()` with `TierColors` constants
+- **CoreSystem.swift**: Replaced hardcoded `"#ffd700"` in core auto-attack projectile with `TierColors.gold`
+- **TDParticleFactory.swift**: Replaced 2 hardcoded `"#ffd700"` in hash floaties and merge celebration with `TierColors.gold`
+- **VisualEffects.swift**: Replaced 3 hardcoded `"#ffd700"` in level-up and legendary explosion effects with `TierColors.gold`
+- **FreezeRecoveryService.swift**: Replaced local formula implementations with delegation to `BalanceConfig.TDSession` helpers
+- **TDTypes.swift**: Replaced inline efficiency formula in computed property with `BalanceConfig.TDSession.efficiencyForLeakCount()`
+- **TDSimulator.swift**: Replaced 2 inline inverse formula derivations with `BalanceConfig.TDSession.leakCountForEfficiency()`
+- **OfflineSimulator.swift**: Replaced 2 inline forward formula derivations with `BalanceConfig.TDSession.efficiencyForLeakCount()`
 
 ### Problem A — Tier Colors as Hardcoded Hex Strings
 The same tier/rarity colors appear as raw hex strings in 5+ rendering files:

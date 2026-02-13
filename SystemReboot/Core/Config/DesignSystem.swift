@@ -181,6 +181,14 @@ enum RarityColors {
     }
 }
 
+// MARK: - Tier Colors (XP/Loot Box tiers as hex strings for particle systems)
+
+enum TierColors {
+    static let gold = "#ffd700"
+    static let silver = "#c0c0c0"
+    static let bronze = "#8b4513"
+}
+
 // MARK: - Typography (Terminal/Monospace Theme)
 
 enum DesignTypography {
