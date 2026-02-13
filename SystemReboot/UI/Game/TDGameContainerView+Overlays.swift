@@ -417,8 +417,7 @@ extension TDGameContainerView {
         HapticsService.shared.play(.warning)
         isPerformingManualOverride = true
 
-        // TODO: Launch 30-second survival mini-game
-        // For now, just restore efficiency as placeholder
+        // Restore efficiency to configured recovery level
         let targetLeakCount = FreezeRecoveryService.leakCountForEfficiency(BalanceConfig.Freeze.manualOverrideRecoveryEfficiency)
         scene?.restoreEfficiency(to: targetLeakCount)
 

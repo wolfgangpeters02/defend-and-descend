@@ -195,11 +195,11 @@ extension EntityRenderer {
         return body
     }
 
-    // MARK: - 3D. Elite Virus — "Zero-Day Exploit"
+    // MARK: - 3D. Elite Virus
     // Theme: Glitchy, unstable, dangerous. Corrupted data visualization.
     // Nodes: aura ring, body (irregular hex), crosshair, glitch overlay, data fragments = 5
 
-    /// Creates the full "Zero-Day Exploit" composition for elite virus enemies.
+    /// Creates the full elite virus composition for elite virus enemies.
     @discardableResult
     static func createEliteVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
         // Aura ring — outer threat indicator

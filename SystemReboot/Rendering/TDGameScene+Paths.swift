@@ -12,9 +12,6 @@ extension TDGameScene {
         if isMotherboardMap {
             setupMotherboardPaths()
 
-            // NOTE: Power flow particles removed - lanes should only have LEDs
-            // startPowerFlowParticles()
-
             // Start ambient voltage arc effects for PSU sector (reduced frequency)
             startVoltageArcSystem()
         } else {
@@ -632,7 +629,7 @@ extension TDGameScene {
         }
 
         let batchedChevrons = SKShapeNode(path: compoundPath)
-        batchedChevrons.strokeColor = DesignColors.pathBorderUI.withAlphaComponent(0.6)
+        batchedChevrons.strokeColor = DesignColors.traceBorderUI.withAlphaComponent(0.6)
         batchedChevrons.fillColor = .clear
         batchedChevrons.lineWidth = 3
         batchedChevrons.lineCap = .round

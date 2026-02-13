@@ -14,9 +14,6 @@ extension TDGameScene {
         self.state = state
     }
 
-    // MARK: - Motherboard City (placeholder for new system)
-    // Will implement: setupMotherboard(), updateComponentVisibility(), playInstallAnimation()
-
     /// Restore efficiency by setting the leak counter
     /// - Parameter leakCount: The new leak count (0 = 100%, 10 = 50%, 20 = 0%)
     func restoreEfficiency(to leakCount: Int) {

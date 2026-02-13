@@ -286,7 +286,7 @@ struct TrailEffect {
     var createdAt: TimeInterval
 }
 
-// MARK: - Weapon (Also represents Towers in TD mode)
+// MARK: - Weapon
 
 struct Weapon {
     var type: String
@@ -301,17 +301,17 @@ struct Weapon {
     var splash: CGFloat?
     var homing: Bool?
 
-    // Slow effect (for Ice weapons/towers)
+    // Slow effect (Ice weapons)
     var slow: CGFloat?
     var slowDuration: TimeInterval?
 
-    // Chain effect (for Lightning weapons/towers)
+    // Chain effect (Lightning weapons)
     var chain: Int?
 
     var color: String
     var particleEffect: String?
 
-    // Tower name for TD mode (e.g., "Archer Tower" for bow)
+    // Display name
     var towerName: String?
 
 }

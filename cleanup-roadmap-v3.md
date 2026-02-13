@@ -75,9 +75,21 @@ Structs and enum cases that survived previous cleanups but have zero references:
 ---
 
 ## Stage 3: Stale Comments + Misleading Labels
-**Status:** OPEN
+**Status:** DONE
 **Priority:** Medium (developer confusion, misleading documentation)
 **Estimated scope:** ~10 files
+
+### Summary of Changes
+- **EntityRenderer+EnemyDetails.swift**: Renamed "Zero-Day Exploit" references to "Elite Virus" (MARK header + doc comment)
+- **TDGameScene+EntityVisuals.swift**: Renamed "Zero-Day Exploit" comment to "Elite virus"; replaced misleading "Deprecated Tower Methods" MARK with "Enemy Shape Paths" (methods are actively used for enemy nodes); removed commented-out `spawnTracePulse()` code + NOTE
+- **MegaBoardRenderer.swift**: Deleted dead `renderGhostSector()` function (0 callers) along with its "Legacy Support" MARK
+- **TDGameContainerView+Overlays.swift**: Replaced TODO mini-game placeholder with factual "Restore efficiency to configured recovery level" comment
+- **TDGameScene+Actions.swift**: Deleted orphaned "Motherboard City" placeholder comment referencing unimplemented methods
+- **DesignSystem.swift**: Removed 7 unused legacy path color aliases (`pathFillLight/Dark/Border` + UI variants) and their "Legacy" comment
+- **TDGameScene+Paths.swift**: Replaced `pathBorderUI` usage with `traceBorderUI`; removed commented-out `startPowerFlowParticles()` + NOTE
+- **GameTypes.swift**: Removed stale "Also represents Towers in TD mode" from Weapon MARK; updated inline comments to drop tower references
+- **TDTypes.swift**: Removed misleading "legacy" label from active wave progress tracking fields
+- **SharedTypes.swift**: Skipped — `case weapon // Also unlocks tower` was already removed in a prior cleanup
 
 ### Problem
 Comments that reference removed systems, label active code as "deprecated"/"legacy", or contain unimplemented placeholder promises.

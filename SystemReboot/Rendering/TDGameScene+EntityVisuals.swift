@@ -229,9 +229,6 @@ extension TDGameScene {
             // Trigger capacitor discharge if tower is in PSU sector area
             triggerCapacitorDischarge(near: convertToScene(towerPos))
 
-            // NOTE: Trace pulses removed - lanes should only have LEDs
-            // let towerColor = UIColor(hex: tower.color) ?? UIColor.yellow
-            // spawnTracePulse(at: towerPos, color: towerColor)
         }
     }
 
@@ -591,11 +588,7 @@ extension TDGameScene {
         }
     }
 
-    // MARK: - Deprecated Tower Methods (Now handled by TowerVisualFactory)
-    // The following methods have been replaced by TowerVisualFactory.swift:
-    // - createWeaponBody() -> TowerVisualFactory.createTowerBody()
-    // - createWeaponBarrel() -> TowerVisualFactory.createTowerBarrel()
-    // - createMergeStars() -> TowerVisualFactory.createMergeIndicator()
+    // MARK: - Enemy Shape Paths
 
     /// Create hexagon path (used by enemy nodes)
     func createHexagonPath(radius: CGFloat) -> CGPath {
@@ -814,7 +807,7 @@ extension TDGameScene {
                 body.run(SKAction.repeatForever(breathe))
 
             case "hexagon":
-                // Elite virus — "Zero-Day Exploit"
+                // Elite virus
                 body = EntityRenderer.createEliteVirusComposition(in: container, size: enemy.size, color: virusColor)
                 let flicker = SKAction.sequence([
                     SKAction.fadeAlpha(to: 0.9, duration: 0.15),

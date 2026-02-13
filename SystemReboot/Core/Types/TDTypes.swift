@@ -37,7 +37,7 @@ struct TDGameState: HashStorable {
     var currentWave: Int = 0
     var wavesCompleted: Int = 0
 
-    // Wave progress tracking (legacy wave fields, used for stats)
+    // Wave progress tracking
     var waveInProgress: Bool = false
     var waveEnemiesRemaining: Int = 0
     var waveEnemiesSpawned: Int = 0

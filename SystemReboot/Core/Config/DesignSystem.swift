@@ -54,15 +54,6 @@ enum DesignColors {
     static let traceBorderUI = UIColor(hex: "8b5a2b") ?? .brown
     static let traceGlowUI = UIColor(hex: "d4a84b") ?? .systemYellow
 
-    // Legacy path colors (kept for compatibility, now mapped to traces)
-    static let pathFillLight = tracePrimary
-    static let pathFillDark = traceSecondary
-    static let pathBorder = traceBorder
-
-    static let pathFillLightUI = tracePrimaryUI
-    static let pathFillDarkUI = traceSecondaryUI
-    static let pathBorderUI = traceBorderUI
-
     // Grid colors for circuit board pattern
     static let gridLine = Color(hex: "1a2332") ?? Color.gray          // Subtle grid lines
     static let gridDot = Color(hex: "2a3a4a") ?? Color.gray           // Grid intersection dots

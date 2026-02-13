@@ -313,14 +313,6 @@ final class MegaBoardRenderer {
         return container
     }
 
-    // MARK: - Legacy Support
-
-    /// Render a ghost sector (routes to locked or unlockable based on mode)
-    func renderGhostSector(_ sector: MegaBoardSector, in parentNode: SKNode) {
-        // Default to locked for backward compatibility
-        renderLockedSector(sector, in: parentNode)
-    }
-
     // MARK: - Node Removal
 
     /// Remove a locked sector overlay
