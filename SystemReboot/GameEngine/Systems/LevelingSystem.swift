@@ -27,7 +27,7 @@ class LevelingSystem {
 
     /// Get level damage/effect multiplier
     static func getLevelMultiplier(level: Int) -> CGFloat {
-        return 1.0 + CGFloat(level - 1) * levelBonusPercent
+        return BalanceConfig.linearLevelBonus(level: level, bonusRate: levelBonusPercent)
     }
 
     /// Get level bonus text for display

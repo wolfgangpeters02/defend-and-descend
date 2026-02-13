@@ -22,7 +22,7 @@ class CoreSystem {
         )
 
         // Apply player level bonuses
-        let levelBonus: CGFloat = 1.0 + CGFloat(playerProfile.level - 1) * BalanceConfig.TDCore.levelBonusPercent
+        let levelBonus = BalanceConfig.linearLevelBonus(level: playerProfile.level, bonusRate: BalanceConfig.TDCore.levelBonusPercent)
         core.maxHealth *= levelBonus
         core.health = core.maxHealth
 

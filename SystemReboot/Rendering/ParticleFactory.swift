@@ -207,33 +207,8 @@ class ParticleFactory {
         ))
     }
 
-    /// Get protocol-themed color
+    /// Get protocol-themed color from Protocol definitions
     private static func getProtocolColor(_ protocolId: String) -> String {
-        switch protocolId {
-        case "sword", "katana", "axe", "spear", "hammer":
-            return "#c0c0c0" // Silver
-        case "bow", "crossbow":
-            return "#8b4513" // Brown
-        case "wand", "staff":
-            return "#9370db" // Purple magic
-        case "flamethrower":
-            return "#ff4500" // Orange fire
-        case "ice_shard":
-            return "#00ffff" // Cyan ice
-        case "lightning":
-            return "#00ffff" // Cyan lightning
-        case "laser":
-            return "#ff0000" // Red laser
-        case "bomb", "cannon":
-            return "#ff8800" // Orange explosion
-        case "dual_guns":
-            return "#ffd700" // Gold
-        case "excalibur":
-            return "#ffd700" // Golden legendary
-        case "scythe":
-            return "#000000" // Dark
-        default:
-            return "#ffffff" // White fallback
-        }
+        return ProtocolLibrary.get(protocolId)?.color ?? "#ffffff"
     }
 }

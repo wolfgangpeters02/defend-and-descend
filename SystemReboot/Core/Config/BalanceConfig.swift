@@ -1976,9 +1976,10 @@ extension BalanceConfig {
         return Leveling.baseXPRequired + (level - 1) * Leveling.xpPerLevel
     }
 
-    /// Calculate level bonus multiplier
-    static func levelMultiplier(level: Int) -> CGFloat {
-        return 1.0 + CGFloat(level - 1) * Leveling.bonusPerLevel
+    /// Linear level bonus: 1.0 + (level-1) × bonusRate
+    /// Used by CoreSystem (TDCore.levelBonusPercent) and LevelingSystem (ThreatLevel.levelBonusPercent)
+    static func linearLevelBonus(level: Int, bonusRate: CGFloat) -> CGFloat {
+        return 1.0 + CGFloat(level - 1) * bonusRate
     }
 
     /// Get tower placement cost
