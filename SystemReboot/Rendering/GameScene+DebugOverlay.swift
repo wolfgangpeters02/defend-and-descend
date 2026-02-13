@@ -181,13 +181,13 @@ extension GameScene {
             }
             if let voidState = gameState.voidHarbingerState {
                 lines.append(DebugLine(
-                    text: "  Phase: \(voidState.phase)  Rifts: \(gameState.voidRifts?.count ?? 0)",
+                    text: "  Phase: \(voidState.phase)  Rifts: \(voidState.voidRifts.count)",
                     color: .orange
                 ))
             }
             if let ocState = gameState.overclockerState {
                 lines.append(DebugLine(
-                    text: "  Phase: \(ocState.phase)  Pylons: \(gameState.pylons?.count ?? 0)",
+                    text: "  Phase: \(ocState.phase)  Steam: \(ocState.steamTrail.count)",
                     color: .orange
                 ))
             }

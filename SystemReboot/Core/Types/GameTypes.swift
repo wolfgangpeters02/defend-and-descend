@@ -79,21 +79,11 @@ struct GameState {
 
     // Boss encounter
     var bossDifficulty: BossDifficulty?
-    var bossPuddles: [DamagePuddle]?
-    var bossLasers: [BossLaser]?
 
     // Survival mode events
     var activeEvent: SurvivalEventType?
     var eventEndTime: TimeInterval?
     var eventData: SurvivalEventData?
-
-    // WoW raid mechanics
-    var voidZones: [VoidZone]?
-    var pylons: [Pylon]?
-    var voidRifts: [VoidRift]?
-    var gravityWells: [GravityWell]?
-    var meteorStrikes: [MeteorStrike]?
-    var arenaWalls: ArenaWall?
 
     // Camera
     var camera: Camera?
@@ -490,9 +480,6 @@ struct Enemy: Identifiable {
 
     // Pylon linkage (for void_pylon enemy type)
     var pylonId: String?
-
-    // Milestones
-    var milestones: BossMilestones?
 
     var shape: String?
 }
