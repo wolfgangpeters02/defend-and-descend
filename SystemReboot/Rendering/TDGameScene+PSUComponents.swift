@@ -3,8 +3,8 @@ import SwiftUI
 
 extension TDGameScene {
 
-    // MARK: - PSU District Components ("Zoomed-In PSU City")
-    // Creates realistic PSU internal components as district background
+    // MARK: - PSU Sector Components ("Zoomed-In PSU City")
+    // Creates realistic PSU internal components as sector background
     // Sector coordinates: 0-1400 range (sector size is 1400x1400)
 
     /// Cached colors for PSU components - parsed once, reused everywhere
@@ -26,7 +26,7 @@ extension TDGameScene {
         static let theme = UIColor(hex: "#ffdd00") ?? .yellow
     }
 
-    /// Main entry point for PSU district decorations
+    /// Main entry point for PSU sector decorations
     func addCapacitorSymbols(to node: SKNode, in sector: MegaBoardSector, color: UIColor) {
         drawPSUComponents(to: node, in: sector, themeColor: color)
     }

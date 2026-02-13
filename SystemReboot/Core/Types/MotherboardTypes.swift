@@ -172,9 +172,9 @@ struct SystemBus: Identifiable, Codable {
     }
 }
 
-// MARK: - District
+// MARK: - Sector
 
-struct MotherboardDistrict: Identifiable, Codable {
+struct MotherboardSector: Identifiable, Codable {
     var id: String
     var name: String
     var description: String
@@ -185,7 +185,7 @@ struct MotherboardDistrict: Identifiable, Codable {
     var width: CGFloat
     var height: CGFloat
 
-    // Components in this district
+    // Components in this sector
     var componentIds: [String]
 
     // Visual theme
@@ -207,7 +207,7 @@ struct MotherboardConfig: Codable {
     var canvasWidth: CGFloat = 4200  // 3 sectors × 1400
     var canvasHeight: CGFloat = 4200
 
-    var districts: [MotherboardDistrict]
+    var sectors: [MotherboardSector]
     var components: [MotherboardComponent]
     var buses: [SystemBus]
 
@@ -248,4 +248,3 @@ struct MotherboardColors {
     static let silkscreen = "#ffffff"     // White
 }
 
-// Factory method createDefault() is in MotherboardConfigData.swift

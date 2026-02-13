@@ -191,7 +191,9 @@ extension TDGameContainerView {
         // Update game state's Hash generation
         if var state = gameState {
             state.baseHashPerSecond = appState.currentPlayer.componentLevels.hashPerSecond
+            state.cpuMultiplier = appState.currentPlayer.tdStats.cpuMultiplier
             state.cpuTier = appState.currentPlayer.componentLevels.cpu
+            state.networkHashMultiplier = appState.currentPlayer.componentLevels.hashMultiplier
             gameState = state
         }
 

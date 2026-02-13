@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // MARK: - Core System
-// Handles the Core (Guardian in TD mode) - health, auto-attack, and defense
+// Handles the Core — health, auto-attack, and defense
 
 class CoreSystem {
 
@@ -57,7 +57,7 @@ class CoreSystem {
             velocityY: sin(angle) * speed,
             damage: state.core.damage,
             radius: BalanceConfig.TDCore.projectileRadius,
-            color: "#ffd700",  // Gold color for Guardian
+            color: "#ffd700",  // Gold color for Core auto-attack
             lifetime: BalanceConfig.TDCore.projectileLifetime,
             piercing: 0,
             hitEnemies: [],

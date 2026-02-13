@@ -96,12 +96,6 @@ class GameStateFactory {
         )
     }
 
-    /// Get level damage multiplier
-    private func getLevelMultiplier(level: Int) -> CGFloat {
-        return BalanceConfig.Leveling.baseDamageMultiplier +
-               CGFloat(level - 1) * BalanceConfig.Leveling.damagePerLevel
-    }
-
     /// Create a new game state for boss encounter mode
     func createBossGameState(
         gameProtocol: Protocol,

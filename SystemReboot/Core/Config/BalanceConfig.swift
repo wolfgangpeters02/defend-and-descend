@@ -74,8 +74,8 @@ struct BalanceConfig {
         /// Duration of invulnerability after revive
         static let reviveInvulnerabilityDuration: TimeInterval = 3.0
 
-        /// Speed of coins/pickups being magnetized toward player
-        static let coinMagnetSpeed: CGFloat = 400
+        /// Speed of pickups being magnetized toward player
+        static let pickupMagnetSpeed: CGFloat = 400
 
         /// Player weapon projectile speed (survivor/boss mode)
         static let weaponProjectileSpeed: CGFloat = 500
@@ -91,34 +91,9 @@ struct BalanceConfig {
         static let damageScalingPerMinute: CGFloat = 0.05
     }
 
-    // MARK: - Dungeon Mode Scaling
-
-    struct DungeonMode {
-        /// Base health multiplier for dungeon enemies
-        static let healthMultiplier: CGFloat = 3.0
-
-        /// Base speed multiplier for dungeon enemies
-        static let speedMultiplier: CGFloat = 1.5
-
-        /// Base damage multiplier for dungeon enemies
-        static let damageMultiplier: CGFloat = 2.0
-
-        /// Additional health multiplier for boss/tank enemies
-        static let bossHealthMultiplier: CGFloat = 2.0
-
-        /// Additional damage multiplier for boss/tank enemies
-        static let bossDamageMultiplier: CGFloat = 1.5
-    }
-
     // MARK: - Spawn System
 
     struct Spawn {
-        /// Dungeon spawn center margin (ratio of arena size)
-        static let dungeonCenterMarginRatio: CGFloat = 0.25
-
-        /// Dungeon safe spawn zone (ratio of arena size)
-        static let dungeonSafeZoneRatio: CGFloat = 0.5
-
         /// Edge spawn margin (distance from arena edge)
         static let edgeMargin: CGFloat = 50
 
@@ -146,8 +121,8 @@ struct BalanceConfig {
         /// Default collision size for enemy interactions (CGFloat for game logic)
         static let collisionSize: CGFloat = 20
 
-        /// Default coin/xp value when config is missing
-        static let coinValue: Int = 1
+        /// Default hash/xp value when config is missing
+        static let hashValue: Int = 1
 
         /// Default boss size when config is missing
         static let bossSize: CGFloat = 60
@@ -830,7 +805,7 @@ struct BalanceConfig {
         static let upgradeInterval: TimeInterval = 60  // 1 minute
     }
 
-    // MARK: - TD Core (Guardian)
+    // MARK: - TD Core
 
     struct TDCore {
         /// Core initial health
@@ -938,7 +913,7 @@ struct BalanceConfig {
         /// Virus kills required to generate 1 Data (soft-lock prevention)
         static let virusKillsPerData: Int = 1000
 
-        /// Total waves in a wave-based TD session
+        /// Total waves per session (legacy, used by simulation)
         static let totalWaves: Int = 20
 
         /// Hash sync throttle interval (seconds between profile saves)
@@ -1275,10 +1250,6 @@ struct BalanceConfig {
         /// Weapon mastery max level
         static let maxWeaponLevel: Int = 10
 
-        /// Weapon mastery damage formula: base + (level × perLevel)
-        static let baseDamageMultiplier: CGFloat = 1.0
-        static let damagePerLevel: CGFloat = 1.0  // Level 10 = 10x damage
-
         /// Max player level (survivor mode)
         static let maxPlayerLevel: Int = 20
     }
@@ -1531,8 +1502,8 @@ struct BalanceConfig {
         }
     }
 
-    // MARK: - Component Upgrades (District-based system)
-    // Each district has a component that can be upgraded (Lv 1-10)
+    // MARK: - Component Upgrades (Sector-based system)
+    // Each sector has a component that can be upgraded (Lv 1-10)
     // Component unlock order matches sector unlock order from SectorUnlock
 
     struct Components {

@@ -109,9 +109,13 @@ struct HTMLGenerator {
     static func economyHTML() -> String {
         var s = h2("Hash Economy")
 
+        // Hash rate formula
+        s += h3("Active Hash Rate Formula")
+        s += note("&#x210E;/sec = CPU_base(level) &times; CPU_Tier &times; Network(level) &times; (Efficiency / 100) [&times; Overclock if active]")
+
         // Hash generation table
         s += h3("Hash Generation by CPU Level")
-        s += note("Formula: \(fNum(Double(BalanceConfig.HashEconomy.baseHashPerSecond))) &times; \(Double(BalanceConfig.HashEconomy.cpuLevelScaling))^(level-1)")
+        s += note("CPU base formula: \(fNum(Double(BalanceConfig.HashEconomy.baseHashPerSecond))) &times; \(Double(BalanceConfig.HashEconomy.cpuLevelScaling))^(level-1). Network and CPU Tier stack multiplicatively.")
         s += "<table>" + th(["CPU Lv", "&#x210E;/sec", "&#x210E;/min", "&#x210E;/hour", "Time to 1K", "Time to 10K", "Time to 100K"])
         s += "<tbody>"
         for lv in 1...BalanceConfig.Components.maxLevel {
@@ -168,6 +172,7 @@ struct HTMLGenerator {
 
         // Offline
         s += h3("Offline Earnings")
+        s += note("Offline &#x210E;/s = CPU_base &times; CPU_Tier &times; Network &times; (Efficiency/100) &times; \(Double(BalanceConfig.HashEconomy.offlineEarningsRate))")
         s += "<table>" + th(["CPU Level", "Online &#x210E;/s", "Offline &#x210E;/s", "Max \(Int(Double(BalanceConfig.HashEconomy.maxOfflineHours)))h Earnings"])
         s += "<tbody>"
         let offRate = Double(BalanceConfig.HashEconomy.offlineEarningsRate)
@@ -179,6 +184,7 @@ struct HTMLGenerator {
             s += td(["\(lv)", String(format: "%.2f", online), String(format: "%.2f", offline), fNum(maxEarnings)])
         }
         s += "</tbody></table>"
+        s += note("Above rates assume CPU Tier 1 (1.0x) and Network Lv1 (1.0x). Multiply by CPU Tier and Network level for actual rates.")
 
         return s
     }
@@ -703,7 +709,6 @@ struct HTMLGenerator {
         s += td(["Boss (Normal)", "\(fNum(Double(BalanceConfig.BossDifficultyConfig.hashRewards["Normal"] ?? 0))) &#x210E;", ""])
         s += td(["Boss (Hard)", "\(fNum(Double(BalanceConfig.BossDifficultyConfig.hashRewards["Hard"] ?? 0))) &#x210E;", ""])
         s += td(["Boss (Nightmare)", "\(fNum(Double(BalanceConfig.BossDifficultyConfig.hashRewards["Nightmare"] ?? 0))) &#x210E;", ""])
-        s += td(["Survival Hash/sec", "\(Double(BalanceConfig.SurvivalEconomy.hashPerSecond)) &#x210E;/s base", "+\(Double(BalanceConfig.SurvivalEconomy.hashBonusPerMinute))/min bonus"])
         s += "</tbody></table>"
 
         return s

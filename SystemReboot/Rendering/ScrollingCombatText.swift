@@ -16,7 +16,7 @@ enum SCTType {
     case xp                  // Purple, XP gained
     case currency            // Gold, currency/hash gained
     case miss                // Gray, missed/dodged
-    case levelUp             // Rainbow/gold, level up
+    case levelUp             // Rainbow/golden, level up
     case immune              // Purple/magenta, immune to damage
 
     var color: UIColor {

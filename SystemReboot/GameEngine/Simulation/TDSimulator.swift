@@ -116,6 +116,7 @@ class TDSimulator {
         gameState.powerCapacity = components.powerCapacity
         gameState.hashStorageCapacity = components.hashStorageCapacity
         gameState.baseHashPerSecond = CGFloat(components.hashPerSecond)
+        gameState.networkHashMultiplier = components.hashMultiplier
 
         // Set starting efficiency via leakCounter
         // efficiency = 100 - leakCounter * efficiencyLossPerLeak
@@ -310,8 +311,8 @@ class TDSimulator {
                         enemy.isDead = true
                         totalKills += 1
 
-                        // Hash reward (use goldValue as hash reward)
-                        var hashReward = enemy.goldValue
+                        // Hash reward
+                        var hashReward = enemy.hashValue
                         if let effects = enemyStatusEffects[enemy.id], effects.isMarkedForDeletion {
                             hashReward += BalanceConfig.GarbageCollector.hashBonus
                         }
@@ -462,7 +463,7 @@ class TDSimulator {
                     if updatedEnemy.health <= 0 {
                         updatedEnemy.isDead = true
                         totalKills += 1
-                        var hashReward = updatedEnemy.goldValue
+                        var hashReward = updatedEnemy.hashValue
                         if effects.isMarkedForDeletion {
                             hashReward += BalanceConfig.GarbageCollector.hashBonus
                         }
@@ -502,7 +503,7 @@ class TDSimulator {
                 if enemy.health <= 0 {
                     enemy.isDead = true
                     totalKills += 1
-                    var hashReward = enemy.goldValue
+                    var hashReward = enemy.hashValue
                     if let effects = enemyStatusEffects[enemy.id], effects.isMarkedForDeletion {
                         hashReward += BalanceConfig.GarbageCollector.hashBonus
                     }
@@ -593,7 +594,11 @@ class TDSimulator {
 
         // Create tower using the existing Tower.from(protocol:at:) factory
         let slot = state.towerSlots[slotIndex]
-        let tower = Tower.from(protocol: proto, at: slot)
+        var tower = Tower.from(protocol: proto, at: slot)
+
+        // Apply component bonuses (matches TowerSystem.swift:65-69)
+        tower.attackSpeed *= profile.componentLevels.attackSpeedMultiplier
+        tower.damage *= profile.componentLevels.towerDamageMultiplier
 
         state.towers.append(tower)
         state.towerSlots[slotIndex].occupied = true

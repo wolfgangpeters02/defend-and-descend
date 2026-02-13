@@ -473,7 +473,7 @@ struct Enemy: Identifiable {
     var velocityY: CGFloat = 0
 
     var currentSpeed: CGFloat?
-    var coinValue: Int?
+    var hashValue: Int?
 
     var targetX: CGFloat?
     var targetY: CGFloat?

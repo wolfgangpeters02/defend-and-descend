@@ -35,18 +35,6 @@ class EnemySystem {
         var enemySpeed = CGFloat(config.speed)
         var enemyDamage = CGFloat(config.damage) * CGFloat(damageScaling)
 
-        // Dungeon mode scaling
-        if state.gameMode == .dungeon {
-            enemyHealth *= BalanceConfig.DungeonMode.healthMultiplier
-            enemySpeed *= BalanceConfig.DungeonMode.speedMultiplier
-            enemyDamage *= BalanceConfig.DungeonMode.damageMultiplier
-
-            if type == "boss" || type == "tank" {
-                enemyHealth *= BalanceConfig.DungeonMode.bossHealthMultiplier
-                enemyDamage *= BalanceConfig.DungeonMode.bossDamageMultiplier
-            }
-        }
-
         // Apply arena global modifiers
         if let modifier = arena.globalModifier {
             if let speedMult = modifier.enemySpeedMultiplier {
@@ -66,12 +54,12 @@ class EnemySystem {
             maxHealth: enemyHealth,
             damage: enemyDamage,
             speed: enemySpeed,
-            xpValue: config.coinValue, // Use coinValue as XP
+            xpValue: config.hashValue, // Use hashValue as XP
             color: config.color,
             velocityX: 0,
             velocityY: 0,
             currentSpeed: enemySpeed,
-            coinValue: config.coinValue,
+            hashValue: config.hashValue,
             targetX: player.x,
             targetY: player.y,
             size: CGFloat(config.size),
@@ -104,13 +92,6 @@ class EnemySystem {
             if attempt == 0, let x = preferredX, let y = preferredY {
                 testX = x
                 testY = y
-            } else if state.gameMode == .dungeon {
-                let centerMarginX = arena.width * BalanceConfig.Spawn.dungeonCenterMarginRatio
-                let centerMarginY = arena.height * BalanceConfig.Spawn.dungeonCenterMarginRatio
-                let safeWidth = arena.width * BalanceConfig.Spawn.dungeonSafeZoneRatio
-                let safeHeight = arena.height * BalanceConfig.Spawn.dungeonSafeZoneRatio
-                testX = centerMarginX + CGFloat.random(in: 0...safeWidth)
-                testY = centerMarginY + CGFloat.random(in: 0...safeHeight)
             } else {
                 // Arena mode - spawn at edges
                 let edge = Int.random(in: 0...3)
@@ -365,7 +346,7 @@ class EnemySystem {
 
         // Survival mode: Earn Hash for kills
         if state.gameMode == .survival || state.gameMode == .arena {
-            let hashValue = enemy.isBoss ? BalanceConfig.XPSystem.bossKillHashValue : (enemy.coinValue ?? BalanceConfig.EnemyDefaults.coinValue)
+            let hashValue = enemy.isBoss ? BalanceConfig.XPSystem.bossKillHashValue : (enemy.hashValue ?? BalanceConfig.EnemyDefaults.hashValue)
             state.stats.hashEarned += hashValue
         }
 
@@ -388,7 +369,7 @@ class EnemySystem {
         )
 
         // Drop Hash pickup
-        PickupSystem.dropHash(state: &state, x: enemy.x, y: enemy.y, value: enemy.coinValue ?? BalanceConfig.EnemyDefaults.coinValue)
+        PickupSystem.dropHash(state: &state, x: enemy.x, y: enemy.y, value: enemy.hashValue ?? BalanceConfig.EnemyDefaults.hashValue)
 
         // Explosion on kill ability
         if let explosionRadius = state.player.abilities?.explosionOnKill {

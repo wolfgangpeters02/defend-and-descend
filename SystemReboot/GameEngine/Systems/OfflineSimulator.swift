@@ -89,9 +89,10 @@ struct OfflineSimulator {
         // 7. Calculate hash earned based on average efficiency
         let baseRate = tdStats.baseHashPerSecond
         let cpuMultiplier = tdStats.cpuMultiplier
+        let networkMultiplier = tdStats.networkHashMultiplier
         let offlineMultiplier: CGFloat = BalanceConfig.HashEconomy.offlineEarningsRate
 
-        let hashEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * (avgEfficiency / 100) * offlineMultiplier))
+        let hashEarned = Int(cappedTime * Double(baseRate * cpuMultiplier * networkMultiplier * (avgEfficiency / 100) * offlineMultiplier))
 
         return OfflineEarningsResult(
             hashEarned: hashEarned,

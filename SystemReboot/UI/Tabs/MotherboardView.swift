@@ -150,29 +150,29 @@ struct MotherboardView: View {
 
     /// Configure the boss fight coordinator with embedded-mode callbacks
     private func setupBossCoordinator() {
-        bossCoordinator.onVictory = { [self] districtId, difficulty in
-            let isFirstKill = !appState.currentPlayer.defeatedDistrictBosses.contains(districtId)
+        bossCoordinator.onVictory = { [self] sectorId, difficulty in
+            let isFirstKill = !appState.currentPlayer.defeatedSectorBosses.contains(sectorId)
 
             // Reset boss state on VICTORY only
             embeddedGameController.isBossActive = false
             embeddedGameController.activeBossType = nil
 
             // Notify the TD scene that boss was defeated (cleans up boss, resets threat level)
-            embeddedGameController.scene?.onBossFightWon(districtId: districtId)
+            embeddedGameController.scene?.onBossFightWon(sectorId: sectorId)
             embeddedGameController.scene?.isPaused = false
 
             let hashReward = difficulty.hashReward
 
             // Determine next sector from BalanceConfig (embedded uses BalanceConfig directly)
-            var nextDistrictUnlocked: String?
+            var nextSectorUnlocked: String?
             if isFirstKill {
-                nextDistrictUnlocked = BalanceConfig.SectorUnlock.nextSector(after: districtId)
+                nextSectorUnlocked = BalanceConfig.SectorUnlock.nextSector(after: sectorId)
             }
 
             return BossFightVictoryContext(
                 hashReward: hashReward,
                 isFirstKill: isFirstKill,
-                nextDistrictUnlocked: nextDistrictUnlocked
+                nextSectorUnlocked: nextSectorUnlocked
             )
         }
 
@@ -642,7 +642,7 @@ struct MotherboardView: View {
             // Configure coordinator for this fight
             bossCoordinator.selectedBossDifficulty = difficulty
             bossCoordinator.activeBossType = embeddedGameController.activeBossType
-            bossCoordinator.currentBossDistrictId = embeddedGameController.gameState?.activeBossDistrictId
+            bossCoordinator.currentBossSectorId = embeddedGameController.gameState?.activeBossSectorId
 
             // Pause TD scene before starting boss fight
             embeddedGameController.scene?.isPaused = true

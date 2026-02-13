@@ -262,6 +262,9 @@ class StorageService {
         profile.tdStats.towerDefenseStrength = towerDefenseStrength
         profile.tdStats.activeLaneCount = max(1, activeLaneCount)
         profile.tdStats.averageEfficiency = efficiency
+        // Sync component-derived values for accurate offline simulation
+        profile.tdStats.baseHashPerSecond = profile.componentLevels.hashPerSecond
+        profile.tdStats.networkHashMultiplier = profile.componentLevels.hashMultiplier
         savePlayer(profile)
 
         // Schedule efficiency notification if enabled

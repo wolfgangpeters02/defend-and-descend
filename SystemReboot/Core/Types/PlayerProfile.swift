@@ -52,7 +52,7 @@ struct PlayerProfile: Codable {
         case globalUpgrades, componentLevels, unlockedComponents  // Upgrade systems
         case unlockedExpansions, motherboardEfficiency
         case unlockedSectors, sectorBestTimes, tdSectorUnlockProgress, unlockedTDSectors
-        case defeatedDistrictBosses
+        case defeatedSectorBosses = "defeatedDistrictBosses"  // Preserved key for save compat
         // lastActiveTimestamp and offlineEfficiencySnapshot removed from CodingKeys:
         // Source of truth is tdStats.lastActiveTimestamp / tdStats.averageEfficiency.
         // Old saves may contain a Date-formatted lastActiveTimestamp which would fail
@@ -90,7 +90,7 @@ struct PlayerProfile: Codable {
     /// Levels for each upgradable component (PSU, Storage, RAM, GPU, Cache, Expansion, I/O, Network, CPU)
     var componentLevels: ComponentLevels = ComponentLevels()
 
-    /// Tracks which components are unlocked via district boss defeats
+    /// Tracks which components are unlocked via sector boss defeats
     var unlockedComponents: UnlockedComponents = UnlockedComponents()
 
     // MARK: - Motherboard Progress (New)
@@ -115,9 +115,9 @@ struct PlayerProfile: Codable {
     /// IDs of unlocked TD Mega-Board sectors (default: starter sector)
     var unlockedTDSectors: [String] = [SectorID.starter.rawValue]
 
-    /// IDs of districts where boss has been defeated for first time
-    /// Defeating a district boss unlocks visibility of the next district
-    var defeatedDistrictBosses: [String] = []
+    /// IDs of sectors where boss has been defeated for first time
+    /// Defeating a sector boss unlocks visibility of the next sector
+    var defeatedSectorBosses: [String] = []
 
     // MARK: - Offline State (Legacy - actual state lives in tdStats)
 
@@ -174,7 +174,8 @@ struct TDModeStats: Codable {
 
     // System: Reboot - Offline/Idle Earnings
     var lastActiveTimestamp: TimeInterval = 0  // Last time player was active
-    var baseHashPerSecond: CGFloat = 1.0       // Base Hash income rate (must match ComponentLevels)
+    var baseHashPerSecond: CGFloat = 1.0       // Base Hash income rate (synced from ComponentLevels)
+    var networkHashMultiplier: CGFloat = 1.0   // Network component bonus (synced from ComponentLevels)
     var averageEfficiency: CGFloat = 100       // Rolling average efficiency for offline calc
 
     // Offline Simulation State

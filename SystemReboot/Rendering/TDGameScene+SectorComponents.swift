@@ -5,7 +5,7 @@ extension TDGameScene {
 
     /// Add heat sink pattern for GPU sector
     func addHeatSinkPattern(to node: SKNode, in sector: MegaBoardSector, color: UIColor) {
-        // PERFORMANCE OPTIMIZED: Batched paths for GPU district
+        // PERFORMANCE OPTIMIZED: Batched paths for GPU sector
         let baseX = sector.worldX
         let baseY = sector.worldY
         let width = sector.width

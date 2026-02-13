@@ -110,12 +110,12 @@ extension TDGameScene {
         }
     }
 
-    // MARK: - District Foundation System
-    // Shared visual elements for all districts: street grids, vias, labels, shadows
+    // MARK: - Sector Foundation System
+    // Shared visual elements for all sectors: street grids, vias, labels, shadows
     // Creates the cohesive "motherboard city" feel across all sectors
 
-    /// Shared colors used across all districts
-    private struct DistrictFoundationColors {
+    /// Shared colors used across all sectors
+    private struct SectorFoundationColors {
         // PCB base colors
         static let copper = UIColor(hex: "#b87333") ?? .orange
         static let copperPad = UIColor(hex: "#c48940") ?? .orange
@@ -169,7 +169,7 @@ extension TDGameScene {
         }
 
         let arteryNode = SKShapeNode(path: arteryPath)
-        arteryNode.strokeColor = DistrictFoundationColors.copper.withAlphaComponent(arteryAlpha)
+        arteryNode.strokeColor = SectorFoundationColors.copper.withAlphaComponent(arteryAlpha)
         arteryNode.lineWidth = arteryWidth
         arteryNode.lineCap = .round
         arteryNode.lineJoin = .round
@@ -201,7 +201,7 @@ extension TDGameScene {
         }
 
         let streetNode = SKShapeNode(path: streetPath)
-        streetNode.strokeColor = DistrictFoundationColors.copper.withAlphaComponent(streetAlpha)
+        streetNode.strokeColor = SectorFoundationColors.copper.withAlphaComponent(streetAlpha)
         streetNode.lineWidth = streetWidth
         streetNode.lineCap = .round
         streetNode.zPosition = zPos - 0.1
@@ -262,14 +262,14 @@ extension TDGameScene {
         // Pad layer (behind holes) - copper pads around vias
         let padNode = SKShapeNode(path: viaPadPath)
         padNode.fillColor = .clear
-        padNode.strokeColor = DistrictFoundationColors.copperPad.withAlphaComponent(0.50)
+        padNode.strokeColor = SectorFoundationColors.copperPad.withAlphaComponent(0.50)
         padNode.lineWidth = 4
         padNode.zPosition = zPos - 0.1
         node.addChild(padNode)
 
         // Via holes (dark centers with theme accent ring)
         let holeNode = SKShapeNode(path: viaHolePath)
-        holeNode.fillColor = DistrictFoundationColors.via
+        holeNode.fillColor = SectorFoundationColors.via
         holeNode.strokeColor = themeColor.withAlphaComponent(0.60)
         holeNode.lineWidth = 2
         holeNode.zPosition = zPos
@@ -305,7 +305,7 @@ extension TDGameScene {
 
         let outlineNode = SKShapeNode(path: outlinePath)
         outlineNode.fillColor = .clear
-        outlineNode.strokeColor = DistrictFoundationColors.silkscreen.withAlphaComponent(labelAlpha * 0.8)
+        outlineNode.strokeColor = SectorFoundationColors.silkscreen.withAlphaComponent(labelAlpha * 0.8)
         outlineNode.lineWidth = 1
         outlineNode.zPosition = zPos
         node.addChild(outlineNode)
@@ -315,7 +315,7 @@ extension TDGameScene {
     /// Creates subtle "building" shadow effect
     func addComponentShadow(to parent: SKNode, shape: CGPath, offset: CGPoint = CGPoint(x: 3, y: -3), alpha: CGFloat = 0.15) {
         let shadow = SKShapeNode(path: shape)
-        shadow.fillColor = DistrictFoundationColors.shadow.withAlphaComponent(alpha)
+        shadow.fillColor = SectorFoundationColors.shadow.withAlphaComponent(alpha)
         shadow.strokeColor = .clear
         shadow.position = offset
         shadow.zPosition = -0.5  // Behind the component

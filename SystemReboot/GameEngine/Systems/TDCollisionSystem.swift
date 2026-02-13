@@ -15,7 +15,7 @@ struct TDCollisionSystem {
     struct VisualEvent {
         enum Kind {
             case impact(color: String)
-            case kill(color: String, goldValue: Int, isBoss: Bool)
+            case kill(color: String, hashValue: Int, isBoss: Bool)
         }
         let position: CGPoint  // Game-space coordinates
         let kind: Kind
@@ -113,16 +113,16 @@ struct TDCollisionSystem {
                     // Check enemy death
                     if enemy.health <= 0 {
                         enemy.isDead = true
-                        let actualGold = state.addHash(enemy.goldValue)
-                        state.stats.hashEarned += actualGold
+                        let actualHash = state.addHash(enemy.hashValue)
+                        state.stats.hashEarned += actualHash
                         state.stats.enemiesKilled += 1
                         state.virusesKilledTotal += 1  // For passive Data generation
                         state.waveEnemiesRemaining -= 1
 
-                        // Visual: death particles + gold floaties + boss effects
+                        // Visual: death particles + hash floaties + boss effects
                         events.append(VisualEvent(
                             position: CGPoint(x: enemy.x, y: enemy.y),
-                            kind: .kill(color: enemy.color, goldValue: enemy.goldValue, isBoss: enemy.isBoss)
+                            kind: .kill(color: enemy.color, hashValue: enemy.hashValue, isBoss: enemy.isBoss)
                         ))
                     }
 
@@ -244,8 +244,8 @@ struct TDCollisionSystem {
 
                 if enemy.health <= 0 {
                     enemy.isDead = true
-                    let actualGold = state.addHash(enemy.goldValue)
-                    state.stats.hashEarned += actualGold
+                    let actualHash = state.addHash(enemy.hashValue)
+                    state.stats.hashEarned += actualHash
                     state.stats.enemiesKilled += 1
                     state.virusesKilledTotal += 1
                     state.waveEnemiesRemaining -= 1

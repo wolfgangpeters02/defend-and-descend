@@ -41,22 +41,22 @@ class TDParticleFactory {
         }
     }
 
-    // MARK: - Gold Floaties
+    // MARK: - Hash Floaties
 
-    /// Create gold floating particles on enemy kill
-    static func createGoldFloaties(
+    /// Create hash floating particles on enemy kill
+    static func createHashFloaties(
         state: inout TDGameState,
         x: CGFloat,
         y: CGFloat,
-        goldValue: Int
+        hashValue: Int
     ) {
         let now = Date().timeIntervalSince1970
-        let count = min(5, max(1, goldValue / 5))
+        let count = min(5, max(1, hashValue / 5))
 
         for i in 0..<count {
             state.particles.append(Particle(
-                id: "\(RandomUtils.generateId())-gold-\(i)",
-                type: "gold",
+                id: "\(RandomUtils.generateId())-hash-\(i)",
+                type: "hash",
                 x: x + CGFloat.random(in: -10...10),
                 y: y,
                 lifetime: 0.8,

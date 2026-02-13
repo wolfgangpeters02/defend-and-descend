@@ -469,7 +469,7 @@ enum L10n {
         }
     }
 
-    // MARK: - Components (District Upgrades)
+    // MARK: - Components (Component Upgrades)
     enum Component {
         // Section title
         static let title = String(localized: "component.title")

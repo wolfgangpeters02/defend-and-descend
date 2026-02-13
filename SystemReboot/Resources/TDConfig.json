@@ -1,9 +1,9 @@
 {
   "tdSettings": {
-    "startingGold": 100,
+    "startingHash": 100,
     "startingLives": 20,
-    "goldPerKill": 1,
-    "goldPerWave": 10,
+    "hashPerKill": 1,
+    "hashPerWave": 10,
     "waveCountdown": 10.0,
     "maxTowers": 20,
     "totalWaves": 20

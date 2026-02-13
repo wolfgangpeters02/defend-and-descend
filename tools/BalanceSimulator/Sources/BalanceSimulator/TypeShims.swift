@@ -37,4 +37,9 @@ struct ComponentLevels: Codable, Equatable {
     var io: Int = 1
     var network: Int = 1
     var cpu: Int = 1
+
+    /// Network hash multiplier (mirrors ComponentTypes.swift computed property)
+    var hashMultiplier: CGFloat {
+        BalanceConfig.Components.networkHashMultiplier(at: network)
+    }
 }

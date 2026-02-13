@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // MARK: - Component Types
-// District-based upgrade system - each district has an upgradable component
+// Sector-based upgrade system - each sector has an upgradable component
 // Fixed unlock order: PSU → Storage → RAM → GPU → Cache → Expansion → I/O → Network → CPU
 
 // MARK: - Component Type Enum
@@ -101,32 +101,34 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     // MARK: - Unlock Order
 
     /// Fixed unlock order index (0 = starter, always unlocked)
+    /// Must match BalanceConfig.SectorUnlock.unlockOrder
     var unlockOrder: Int {
         switch self {
         case .psu: return 0
-        case .storage: return 1
-        case .ram: return 2
-        case .gpu: return 3
-        case .cache: return 4
+        case .ram: return 1
+        case .gpu: return 2
+        case .cache: return 3
+        case .storage: return 4
         case .expansion: return 5
-        case .io: return 6
-        case .network: return 7
+        case .network: return 6
+        case .io: return 7
         case .cpu: return 8
         }
     }
 
     /// Component that must be defeated to unlock this one (nil for starter)
+    /// Must match BalanceConfig.SectorUnlock.unlockOrder
     var prerequisiteComponent: UpgradeableComponent? {
         switch self {
-        case .psu: return nil  // Starter
-        case .storage: return .psu
-        case .ram: return .storage
+        case .psu: return nil        // Starter
+        case .ram: return .psu
         case .gpu: return .ram
         case .cache: return .gpu
-        case .expansion: return .cache
-        case .io: return .expansion
-        case .network: return .io
-        case .cpu: return .network
+        case .storage: return .cache
+        case .expansion: return .storage
+        case .network: return .expansion
+        case .io: return .network
+        case .cpu: return .io
         }
     }
 
@@ -333,7 +335,7 @@ struct ComponentLevels: Codable, Equatable {
 
 /// Tracks which components have been unlocked via boss defeats
 struct UnlockedComponents: Codable, Equatable {
-    /// Number of district bosses defeated (determines unlock progress)
+    /// Number of sector bosses defeated (determines unlock progress)
     var defeatedBossCount: Int = 0
 
     /// Check if a component is unlocked

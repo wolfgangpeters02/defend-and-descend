@@ -178,16 +178,16 @@ struct TDGameContainerView: View {
 
     /// Configure the boss fight coordinator with context-specific callbacks
     private func setupBossCoordinator() {
-        bossCoordinator.onVictory = { [self] districtId, difficulty in
+        bossCoordinator.onVictory = { [self] sectorId, difficulty in
             guard var state = gameState else {
-                return BossFightVictoryContext(hashReward: difficulty.hashReward, isFirstKill: false, nextDistrictUnlocked: nil)
+                return BossFightVictoryContext(hashReward: difficulty.hashReward, isFirstKill: false, nextSectorUnlocked: nil)
             }
-            let baseReward = TDBossSystem.onBossFightWon(state: &state, districtId: districtId)
+            let baseReward = TDBossSystem.onBossFightWon(state: &state, sectorId: sectorId)
             gameState = state
             return BossFightVictoryContext(
                 hashReward: baseReward.hashReward,
-                isFirstKill: baseReward.nextDistrictUnlocked != nil,
-                nextDistrictUnlocked: baseReward.nextDistrictUnlocked
+                isFirstKill: baseReward.nextSectorUnlocked != nil,
+                nextSectorUnlocked: baseReward.nextSectorUnlocked
             )
         }
 
@@ -196,7 +196,7 @@ struct TDGameContainerView: View {
             TDBossSystem.onBossFightLostLetPass(state: &state)
             gameState = state
             isPaused = false
-            bossCoordinator.currentBossDistrictId = nil
+            bossCoordinator.currentBossSectorId = nil
         }
 
         bossCoordinator.onLootApplied = { [self] reward in
@@ -254,7 +254,7 @@ struct TDGameContainerView: View {
         }
 
         // Sync persisted boss defeats to game state
-        state.defeatedDistrictBosses = Set(appState.currentPlayer.defeatedDistrictBosses)
+        state.defeatedSectorBosses = Set(appState.currentPlayer.defeatedSectorBosses)
 
         let waves = WaveSystem.generateWaves(totalWaves: 20)
 

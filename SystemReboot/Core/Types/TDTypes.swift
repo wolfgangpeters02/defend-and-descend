@@ -16,11 +16,7 @@ struct TDGameState {
     var map: TDMap
     var paths: [EnemyPath]
 
-    // Motherboard City (component-based map system)
-    // Will be implemented in MotherboardTypes.swift
-    // var motherboardConfig: MotherboardConfig?
-
-    // Core (The Guardian in TD mode)
+    // Core (central defense target)
     var core: TDCore
 
     // Towers (placed by player)
@@ -41,7 +37,7 @@ struct TDGameState {
     var currentWave: Int = 0
     var wavesCompleted: Int = 0
 
-    // Wave progress tracking (for wave-based TD mode)
+    // Wave progress tracking (legacy wave fields, used for stats)
     var waveInProgress: Bool = false
     var waveEnemiesRemaining: Int = 0
     var waveEnemiesSpawned: Int = 0
@@ -121,8 +117,9 @@ struct TDGameState {
     var cpuMultiplier: CGFloat = 1.0      // CPU tier multiplier (1x, 2x, 4x, 8x, 16x)
     var cpuTier: Int = 1                  // Current CPU tier for display
     var efficiencyRegenMultiplier: CGFloat = 1.0  // RAM upgrade bonus to efficiency recovery
+    var networkHashMultiplier: CGFloat = 1.0     // Network component bonus to hash income
     var hashPerSecond: CGFloat {
-        let baseRate = baseHashPerSecond * cpuMultiplier * (efficiency / 100)
+        let baseRate = baseHashPerSecond * cpuMultiplier * networkHashMultiplier * (efficiency / 100)
         return overclockActive ? baseRate * overclockHashMultiplier : baseRate
     }
     var hashAccumulator: CGFloat = 0  // Accumulates fractional hash
@@ -179,7 +176,7 @@ struct TDGameState {
     var bossActive: Bool = false              // Is a boss currently on the board
     var activeBossId: String?                 // ID of the active boss enemy
     var activeBossType: String?               // "cyberboss" or "void_harbinger"
-    var activeBossDistrictId: String?         // Which sector/district the boss spawned from
+    var activeBossSectorId: String?            // Which sector the boss spawned from
     var lastBossThreatMilestone: Int = 0      // Last threat milestone that triggered a boss
     var bossEngaged: Bool = false             // Player has tapped to engage this boss
     var bossSelectedDifficulty: BossDifficulty? // Selected difficulty for current boss
@@ -229,14 +226,14 @@ struct TDGameState {
         return !overclockActive && !bossActive
     }
 
-    // MARK: - District Boss Tracking
-    // Track first defeat per district for progression unlocks
+    // MARK: - Sector Boss Tracking
+    // Track first defeat per sector for progression unlocks
 
-    var defeatedDistrictBosses: Set<String> = []  // District IDs where boss was defeated
+    var defeatedSectorBosses: Set<String> = []  // Sector IDs where boss was defeated
 
-    /// Check if a district boss has been defeated for the first time
-    func hasDefeatedDistrictBoss(_ districtId: String) -> Bool {
-        return defeatedDistrictBosses.contains(districtId)
+    /// Check if a sector boss has been defeated for the first time
+    func hasDefeatedSectorBoss(_ sectorId: String) -> Bool {
+        return defeatedSectorBosses.contains(sectorId)
     }
 }
 
@@ -644,7 +641,7 @@ struct Tower: Identifiable, Codable {
     }
 }
 
-// MARK: - TD Core (The Guardian)
+// MARK: - TD Core
 
 struct TDCore {
     var x: CGFloat
@@ -653,7 +650,7 @@ struct TDCore {
     var maxHealth: CGFloat
     var armor: CGFloat = 0
 
-    // Core can auto-attack (Guardian firing)
+    // Core can auto-attack
     var canAttack: Bool = true
     var damage: CGFloat = 10
     var range: CGFloat = 150
@@ -693,7 +690,7 @@ struct TDEnemy: Identifiable {
     var damage: CGFloat         // Damage to core on arrival
 
     // Rewards
-    var goldValue: Int
+    var hashValue: Int
     var xpValue: Int
 
     // Visual
@@ -819,10 +816,12 @@ class TDGameStateFactory {
         state.hashStorageCapacity = playerProfile.componentLevels.hashStorageCapacity
         // CPU level determines base Hash generation rate
         state.baseHashPerSecond = playerProfile.componentLevels.hashPerSecond
-        state.cpuMultiplier = 1.0  // Level scaling is now in baseHashPerSecond
+        state.cpuMultiplier = playerProfile.tdStats.cpuMultiplier
         state.cpuTier = playerProfile.componentLevels.cpu
         // RAM level determines efficiency recovery speed
         state.efficiencyRegenMultiplier = playerProfile.componentLevels.efficiencyRegenMultiplier
+        // Network level determines hash income multiplier
+        state.networkHashMultiplier = playerProfile.componentLevels.hashMultiplier
 
         return state
     }
@@ -1081,9 +1080,10 @@ class TDGameStateFactory {
 
         // Apply Component Upgrades
         state.baseHashPerSecond = playerProfile.componentLevels.hashPerSecond
-        state.cpuMultiplier = 1.0
+        state.cpuMultiplier = playerProfile.tdStats.cpuMultiplier
         state.cpuTier = playerProfile.componentLevels.cpu
         state.efficiencyRegenMultiplier = playerProfile.componentLevels.efficiencyRegenMultiplier
+        state.networkHashMultiplier = playerProfile.componentLevels.hashMultiplier
         state.hashStorageCapacity = playerProfile.componentLevels.hashStorageCapacity
         state.powerCapacity = playerProfile.componentLevels.powerCapacity
         // Initialize hash from player profile (allows spending earned hash on towers)

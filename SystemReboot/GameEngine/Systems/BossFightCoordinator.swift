@@ -17,8 +17,8 @@ class BossFightCoordinator: ObservableObject {
 
     // MARK: - Fight Context
 
-    /// The district where the current boss spawned (used for sector unlock on first-kill)
-    var currentBossDistrictId: String?
+    /// The sector where the current boss spawned (used for sector unlock on first-kill)
+    var currentBossSectorId: String?
 
     /// Selected difficulty for the current fight
     var selectedBossDifficulty: BossDifficulty = .normal
@@ -30,10 +30,10 @@ class BossFightCoordinator: ObservableObject {
     // These allow the coordinator to apply context-specific side effects
     // without depending on UI layer types.
 
-    /// Called on victory before building the loot reward. Returns the district ID and whether it's a first kill.
+    /// Called on victory before building the loot reward. Returns the sector ID and whether it's a first kill.
     /// For embedded (MotherboardView): resets boss state on controller, calls scene.onBossFightWon, unpauses.
     /// For standalone (TDGameContainerView): calls TDBossSystem.onBossFightWon on local state.
-    var onVictory: ((_ districtId: String, _ difficulty: BossDifficulty) -> BossFightVictoryContext)?
+    var onVictory: ((_ sectorId: String, _ difficulty: BossDifficulty) -> BossFightVictoryContext)?
 
     /// Called on defeat. The hosting view handles its own state cleanup (unpause, reset engaged, etc.)
     var onDefeat: (() -> Void)?
@@ -51,15 +51,15 @@ class BossFightCoordinator: ObservableObject {
         showBossFight = false
 
         if victory {
-            let districtId = currentBossDistrictId ?? SectorID.power.rawValue
+            let sectorId = currentBossSectorId ?? SectorID.power.rawValue
             let difficulty = selectedBossDifficulty
             let bossId = activeBossType ?? "cyberboss"
 
             // Let the hosting view do context-specific victory handling (scene cleanup, state reset)
-            let context = onVictory?(districtId, difficulty) ?? BossFightVictoryContext(
+            let context = onVictory?(sectorId, difficulty) ?? BossFightVictoryContext(
                 hashReward: difficulty.hashReward,
                 isFirstKill: false,
-                nextDistrictUnlocked: nil
+                nextSectorUnlocked: nil
             )
 
             // Calculate protocol drop
@@ -78,7 +78,7 @@ class BossFightCoordinator: ObservableObject {
 
             // Get sector info if first kill unlocked a new sector
             var sectorInfo: (id: String, name: String, themeColor: String)?
-            if let nextSectorId = context.nextDistrictUnlocked,
+            if let nextSectorId = context.nextSectorUnlocked,
                let lane = MotherboardLaneConfig.getLane(forSectorId: nextSectorId) {
                 sectorInfo = (nextSectorId, lane.displayName, lane.themeColorHex)
             }
@@ -109,7 +109,7 @@ class BossFightCoordinator: ObservableObject {
             return
         }
 
-        let districtId = currentBossDistrictId ?? SectorID.power.rawValue
+        let sectorId = currentBossSectorId ?? SectorID.power.rawValue
         let bossId = activeBossType ?? "cyberboss"
         let difficulty = selectedBossDifficulty
 
@@ -123,7 +123,7 @@ class BossFightCoordinator: ObservableObject {
 
             // Record boss defeat for progression (first-time only)
             if reward.unlockedSectorId != nil {
-                _ = SectorUnlockSystem.shared.recordBossDefeat(districtId, profile: &profile)
+                _ = SectorUnlockSystem.shared.recordBossDefeat(sectorId, profile: &profile)
             }
 
             // Add protocol blueprint if dropped + record for pity tracking
@@ -140,7 +140,7 @@ class BossFightCoordinator: ObservableObject {
         // Dismiss modal and clean up
         pendingBossLootReward = nil
         showBossLootModal = false
-        currentBossDistrictId = nil
+        currentBossSectorId = nil
     }
 }
 
@@ -150,5 +150,5 @@ class BossFightCoordinator: ObservableObject {
 struct BossFightVictoryContext {
     let hashReward: Int
     let isFirstKill: Bool
-    let nextDistrictUnlocked: String?
+    let nextSectorUnlocked: String?
 }

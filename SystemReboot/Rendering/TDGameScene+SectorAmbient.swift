@@ -5,7 +5,7 @@ extension TDGameScene {
 
     // MARK: - Sector Ambient Effects System
 
-    /// Start ambient effects for each sector to make districts feel alive
+    /// Start ambient effects for each sector to make them feel alive
     /// Only applies to unlocked sectors — unlockable/locked sectors are static
     func startSectorAmbientEffects() {
         let megaConfig = cachedMegaBoardConfig

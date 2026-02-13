@@ -178,7 +178,7 @@ extension TDGameContainerView {
         }
 
         gameState = state
-        bossCoordinator.currentBossDistrictId = engagement.districtId
+        bossCoordinator.currentBossSectorId = engagement.sectorId
         bossCoordinator.selectedBossDifficulty = difficulty
         bossCoordinator.activeBossType = state.activeBossType
 

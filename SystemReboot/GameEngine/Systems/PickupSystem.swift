@@ -27,7 +27,7 @@ class PickupSystem {
             if dist <= player.pickupRange {
                 // Magnetize toward player
                 state.pickups[i].magnetized = true
-                let speed: CGFloat = BalanceConfig.Player.coinMagnetSpeed
+                let speed: CGFloat = BalanceConfig.Player.pickupMagnetSpeed
                 state.pickups[i].x += (dx / dist) * speed * CGFloat(context.deltaTime)
                 state.pickups[i].y += (dy / dist) * speed * CGFloat(context.deltaTime)
 

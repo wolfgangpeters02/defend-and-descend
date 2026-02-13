@@ -43,7 +43,7 @@ extension GameScene {
             health: 5000,
             speed: 80,
             damage: 50,
-            coinValue: 100,
+            hashValue: 100,
             size: 60,
             color: "#ff0000",
             shape: "hexagon",

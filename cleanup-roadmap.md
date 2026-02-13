@@ -73,7 +73,8 @@ The game renamed "weapons" to "protocols" but the migration is half-done. The sa
 ---
 
 ## Stage 3: Terminology Cleanup (gold/coins, Guardian, district, waves)
-**Status:** OPEN
+**Status:** DONE
+**Summary:** Renamed gold/coins→hash across ~25 files (goldValue→hashValue, coinValue→hashValue, spawnGoldFloaties→spawnHashFloaties, coinMagnetSpeed→pickupMagnetSpeed, JSON keys); renamed Guardian→Core (deleted dead GuardianStats struct, updated L10n welcome subtitle); renamed district→sector throughout (defeatedDistrictBosses→defeatedSectorBosses with CodingKey backward compat, bossTypeForDistrict→bossTypeForSector, DistrictFoundationColors→SectorFoundationColors, file rename); updated wave-based comments; deleted stale comments.
 **Priority:** Medium (no runtime bugs, but actively misleading)
 **Estimated scope:** ~12 files, mostly comments and parameter names
 
@@ -111,8 +112,8 @@ Five overlapping map/level concepts use "sector" or similar terms for different 
 - Remove `selectedTDMap` from AppState (dead property)
 - Rename `Sector` struct (debug arenas) to something unambiguous — e.g., `DebugArena` or `ActiveModeSector`
 - Clean up `MegaBoardConfig.createDefault()`: Remove empty `connections`/`gates` arrays or document why they're empty
-- Remove stale `TDTypes.swift` comment about MotherboardConfig (lines 20-21)
-- Rename `districtId` parameters to `sectorId` in TDBossSystem and related code
+- ~~Remove stale `TDTypes.swift` comment about MotherboardConfig (lines 20-21)~~ (done in Stage 3)
+- ~~Rename `districtId` parameters to `sectorId` in TDBossSystem and related code~~ (done in Stage 3)
 - Decide if `TDGameStateFactory.createTDGameState()` (non-motherboard path) is still needed or can be removed
 - Verify `TDConfig.json` wave definitions are actually loaded somewhere
 

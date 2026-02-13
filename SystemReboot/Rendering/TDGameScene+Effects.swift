@@ -163,8 +163,8 @@ extension TDGameScene {
         particleEffectService.spawnDeathParticles(at: position, color: color, isBoss: isBoss)
     }
 
-    func spawnGoldFloaties(at position: CGPoint, goldValue: Int) {
-        particleEffectService.spawnGoldFloaties(at: position, goldValue: goldValue)
+    func spawnHashFloaties(at position: CGPoint, hashValue: Int) {
+        particleEffectService.spawnHashFloaties(at: position, hashValue: hashValue)
     }
 
     func spawnImpactSparks(at position: CGPoint, color: UIColor) {

@@ -262,9 +262,9 @@ final class SectorUnlockSystem {
 
     // MARK: - Boss Defeat & Visibility
 
-    /// Check if a district's boss has been defeated (visibility unlocked for next district)
-    func isDistrictBossDefeated(_ districtId: String, profile: PlayerProfile) -> Bool {
-        return profile.defeatedDistrictBosses.contains(districtId)
+    /// Check if a sector's boss has been defeated (visibility unlocked for next sector)
+    func isSectorBossDefeated(_ sectorId: String, profile: PlayerProfile) -> Bool {
+        return profile.defeatedSectorBosses.contains(sectorId)
     }
 
     /// Check if a sector is visible (boss was defeated in previous sector or it's the starter)
@@ -275,27 +275,27 @@ final class SectorUnlockSystem {
         }
 
         // Check if the previous sector's boss was defeated
-        if let previousDistrictId = TDBossSystem.previousDistrict(forDistrict: sectorId) {
-            return isDistrictBossDefeated(previousDistrictId, profile: profile)
+        if let previousSectorId = TDBossSystem.previousSector(forSector: sectorId) {
+            return isSectorBossDefeated(previousSectorId, profile: profile)
         }
 
         return false
     }
 
-    /// Record a district boss defeat (makes next district visible)
-    /// Returns the next district that became visible, if any
+    /// Record a sector boss defeat (makes next sector visible)
+    /// Returns the next sector that became visible, if any
     @discardableResult
-    func recordBossDefeat(_ districtId: String, profile: inout PlayerProfile) -> String? {
-        guard !profile.defeatedDistrictBosses.contains(districtId) else {
+    func recordBossDefeat(_ sectorId: String, profile: inout PlayerProfile) -> String? {
+        guard !profile.defeatedSectorBosses.contains(sectorId) else {
             return nil  // Already defeated
         }
 
-        profile.defeatedDistrictBosses.append(districtId)
+        profile.defeatedSectorBosses.append(sectorId)
 
-        // Get the next district that should become visible
-        let nextDistrict = TDBossSystem.nextDistrictAfterDefeat(districtId)
+        // Get the next sector that should become visible
+        let nextSector = TDBossSystem.nextSectorAfterDefeat(sectorId)
 
-        return nextDistrict
+        return nextSector
     }
 
     /// Get all sectors that are visible (can be seen but may not be unlocked)

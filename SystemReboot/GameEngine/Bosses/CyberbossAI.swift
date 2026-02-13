@@ -454,7 +454,7 @@ class CyberbossAI {
                     maxHealth: config.health,
                     damage: config.damage,
                     speed: config.speed,
-                    xpValue: config.coinValue,
+                    xpValue: config.hashValue,
                     color: config.color,
                     velocityX: 0,
                     velocityY: 0
@@ -474,7 +474,7 @@ class CyberbossAI {
             maxHealth: config.health,
             damage: config.damage,
             speed: config.speed,
-            xpValue: config.coinValue,
+            xpValue: config.hashValue,
             color: config.color,
             velocityX: 0,
             velocityY: 0

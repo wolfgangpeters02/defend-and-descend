@@ -19,12 +19,12 @@ struct TDBossSystem {
     /// Time for boss to reach CPU (gives player time to engage)
     static var bossPathDuration: TimeInterval { BalanceConfig.TDBoss.pathDuration }
 
-    // MARK: - District Boss Mapping
+    // MARK: - Sector Boss Mapping
 
-    /// Get the boss type for a given district
+    /// Get the boss type for a given sector
     /// Cycles through all 4 bosses: Cyberboss, Void Harbinger, Overclocker, Trojan Wyrm
-    static func bossTypeForDistrict(_ districtId: String) -> String {
-        guard let index = BalanceConfig.SectorUnlock.unlockIndex(for: districtId) else {
+    static func bossTypeForSector(_ sectorId: String) -> String {
+        guard let index = BalanceConfig.SectorUnlock.unlockIndex(for: sectorId) else {
             return "cyberboss"
         }
         // 4-boss rotation cycle
@@ -43,16 +43,16 @@ struct TDBossSystem {
         }
     }
 
-    /// Get the next district to unlock after defeating a boss
+    /// Get the next sector to unlock after defeating a boss
     /// Uses centralized order from BalanceConfig.SectorUnlock
-    static func nextDistrictAfterDefeat(_ currentDistrictId: String) -> String? {
-        return BalanceConfig.SectorUnlock.nextSector(after: currentDistrictId)
+    static func nextSectorAfterDefeat(_ currentSectorId: String) -> String? {
+        return BalanceConfig.SectorUnlock.nextSector(after: currentSectorId)
     }
 
-    /// Get the previous district (the one whose boss must be defeated to make this visible)
+    /// Get the previous sector (the one whose boss must be defeated to make this visible)
     /// Uses centralized order from BalanceConfig.SectorUnlock
-    static func previousDistrict(forDistrict districtId: String) -> String? {
-        return BalanceConfig.SectorUnlock.previousSector(for: districtId)
+    static func previousSector(forSector sectorId: String) -> String? {
+        return BalanceConfig.SectorUnlock.previousSector(for: sectorId)
     }
 
     // MARK: - Update
@@ -105,7 +105,7 @@ struct TDBossSystem {
 
     /// Spawn a boss at the current threat milestone
     static func spawnBoss(state: inout TDGameState) {
-        // Pick the lane/district with highest threat or random
+        // Pick the lane/sector with highest threat or random
         let activeLanes = state.paths
         guard let lane = activeLanes.randomElement(), !lane.waypoints.isEmpty else {
             return
@@ -113,9 +113,9 @@ struct TDBossSystem {
 
         let startPos = lane.waypoints[0]
 
-        // Determine boss type based on which district spawned it
-        let districtId = lane.sectorId ?? SectorID.power.rawValue  // Fallback to PSU if not set
-        let bossType = bossTypeForDistrict(districtId)
+        // Determine boss type based on which sector spawned it
+        let sectorId = lane.sectorId ?? SectorID.power.rawValue  // Fallback to PSU if not set
+        let bossType = bossTypeForSector(sectorId)
 
         // Create boss enemy
         var boss = TDEnemy(
@@ -129,7 +129,7 @@ struct TDBossSystem {
             maxHealth: BalanceConfig.TDBoss.health,
             speed: bossWalkSpeed,
             damage: 0,              // No direct damage - just efficiency loss on reach
-            goldValue: 0,           // Reward comes from boss fight
+            hashValue: 0,           // Reward comes from boss fight
             xpValue: 0,
             size: BalanceConfig.TDBoss.bossSize,
             color: bossColorForType(bossType),
@@ -141,7 +141,7 @@ struct TDBossSystem {
         state.enemies.append(boss)
         state.activeBossId = boss.id
         state.activeBossType = bossType
-        state.activeBossDistrictId = districtId
+        state.activeBossSectorId = sectorId
         state.bossActive = true
         state.bossEngaged = false
         state.bossSelectedDifficulty = nil
@@ -265,26 +265,26 @@ struct TDBossSystem {
         return TDBossEngagement(
             bossType: bossType,
             difficulty: difficulty,
-            districtId: state.activeBossDistrictId ?? SectorID.power.rawValue
+            sectorId: state.activeBossSectorId ?? SectorID.power.rawValue
         )
     }
 
     // MARK: - Boss Fight Results
 
     /// Called when boss fight is won
-    static func onBossFightWon(state: inout TDGameState, districtId: String) -> TDBossFightReward {
+    static func onBossFightWon(state: inout TDGameState, sectorId: String) -> TDBossFightReward {
         guard let difficulty = state.bossSelectedDifficulty else {
-            return TDBossFightReward(hashReward: 0, nextDistrictUnlocked: nil)
+            return TDBossFightReward(hashReward: 0, nextSectorUnlocked: nil)
         }
 
         // Calculate rewards
         let hashReward = difficulty.hashReward
 
-        // Check for first defeat of this district's boss
-        var nextDistrictUnlocked: String?
-        if !state.defeatedDistrictBosses.contains(districtId) {
-            state.defeatedDistrictBosses.insert(districtId)
-            nextDistrictUnlocked = nextDistrictAfterDefeat(districtId)
+        // Check for first defeat of this sector's boss
+        var nextSectorUnlocked: String?
+        if !state.defeatedSectorBosses.contains(sectorId) {
+            state.defeatedSectorBosses.insert(sectorId)
+            nextSectorUnlocked = nextSectorAfterDefeat(sectorId)
         }
 
         // Remove boss from enemies
@@ -315,7 +315,7 @@ struct TDBossSystem {
 
         return TDBossFightReward(
             hashReward: hashReward,
-            nextDistrictUnlocked: nextDistrictUnlocked
+            nextSectorUnlocked: nextSectorUnlocked
         )
     }
 
@@ -339,7 +339,7 @@ struct TDBossSystem {
         state.bossActive = false
         state.activeBossId = nil
         state.activeBossType = nil
-        state.activeBossDistrictId = nil
+        state.activeBossSectorId = nil
         state.bossEngaged = false
         state.bossSelectedDifficulty = nil
     }
@@ -363,10 +363,10 @@ struct TDBossUpdateResult {
 struct TDBossEngagement {
     let bossType: String
     let difficulty: BossDifficulty
-    let districtId: String
+    let sectorId: String
 }
 
 struct TDBossFightReward {
     let hashReward: Int
-    let nextDistrictUnlocked: String?  // District ID that became visible (for first defeat)
+    let nextSectorUnlocked: String?  // Sector ID that became visible (for first defeat)
 }

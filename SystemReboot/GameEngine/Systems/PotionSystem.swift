@@ -13,9 +13,9 @@ class PotionSystem {
         "shield": BalanceConfig.Potions.shieldMaxCharge
     ]
 
-    /// Charge potions from collected coins
-    static func chargePotions(state: inout GameState, coins: Int) {
-        let chargeAmount = CGFloat(coins)
+    /// Charge potions from collected hash
+    static func chargePotions(state: inout GameState, hash: Int) {
+        let chargeAmount = CGFloat(hash)
 
         // Health potion
         let healthNeeded = maxCharges["health"]! - state.potions.health
@@ -149,7 +149,7 @@ class PotionSystem {
                     state: &state,
                     x: state.enemies[i].x,
                     y: state.enemies[i].y,
-                    value: state.enemies[i].coinValue ?? BalanceConfig.EnemyDefaults.coinValue
+                    value: state.enemies[i].hashValue ?? BalanceConfig.EnemyDefaults.hashValue
                 )
             }
         }

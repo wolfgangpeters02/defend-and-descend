@@ -168,7 +168,7 @@ extension TDGameScene {
         // 4. Draw sector decorations (ICs, vias, traces, labels)
         drawSectorDecorations()
 
-        // 5. Start sector ambient effects (makes districts feel alive)
+        // 5. Start sector ambient effects (makes sectors feel alive)
         startSectorAmbientEffects()
 
         // 6. Draw silkscreen labels
@@ -354,7 +354,7 @@ extension TDGameScene {
         backgroundLayer.addChild(brandLabel)
     }
 
-    // PERF: Removed drawMotherboardDistricts() — dead code, replaced by MegaBoard system.
+    // PERF: Removed drawMotherboardSectors() — dead code, replaced by MegaBoard system.
     // PERF: Removed drawCPUCore() — dead code, CPU rendered by setupCore() in TDGameScene.swift.
 
     /// Setup parallax background layers for depth effect

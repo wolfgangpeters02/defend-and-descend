@@ -5,6 +5,13 @@ import CoreGraphics
 // Persists towers and slots across app restarts
 
 struct TDSessionState: Codable {
+    // Preserved key for save backward compat
+    enum CodingKeys: String, CodingKey {
+        case towers, towerSlots, hash, wavesCompleted, efficiency, leakCounter, lastSaveTime
+        case idleThreatLevel, idleEnemiesSpawned, pausedSectorIds, lastBossThreatMilestone
+        case defeatedSectorBosses = "defeatedDistrictBosses"
+    }
+
     var towers: [Tower]
     var towerSlots: [TowerSlot]
     var hash: Int
@@ -22,7 +29,7 @@ struct TDSessionState: Codable {
 
     // Boss progression state
     var lastBossThreatMilestone: Int?    // Last threat milestone that triggered a boss
-    var defeatedDistrictBosses: Set<String>?  // Districts where boss was defeated
+    var defeatedSectorBosses: Set<String>?  // Sectors where boss was defeated
 
     /// Create session state from current game state
     static func from(gameState: TDGameState) -> TDSessionState {
@@ -38,7 +45,7 @@ struct TDSessionState: Codable {
             idleEnemiesSpawned: gameState.idleEnemiesSpawned,
             pausedSectorIds: gameState.pausedSectorIds.isEmpty ? nil : gameState.pausedSectorIds,
             lastBossThreatMilestone: gameState.lastBossThreatMilestone > 0 ? gameState.lastBossThreatMilestone : nil,
-            defeatedDistrictBosses: gameState.defeatedDistrictBosses.isEmpty ? nil : gameState.defeatedDistrictBosses
+            defeatedSectorBosses: gameState.defeatedSectorBosses.isEmpty ? nil : gameState.defeatedSectorBosses
         )
     }
 
@@ -120,8 +127,8 @@ struct TDSessionState: Codable {
         if let milestone = lastBossThreatMilestone {
             state.lastBossThreatMilestone = milestone
         }
-        if let defeated = defeatedDistrictBosses {
-            state.defeatedDistrictBosses = defeated
+        if let defeated = defeatedSectorBosses {
+            state.defeatedSectorBosses = defeated
         }
     }
 }

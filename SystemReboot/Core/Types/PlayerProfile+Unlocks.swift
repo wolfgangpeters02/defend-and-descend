@@ -58,11 +58,11 @@ extension PlayerProfile {
         return true
     }
 
-    /// Record a district boss defeat (unlocks next component)
-    mutating func recordDistrictBossDefeat(_ sectorId: SectorID) {
+    /// Record a sector boss defeat (unlocks next component)
+    mutating func recordSectorBossDefeat(_ sectorId: SectorID) {
         let sectorIdString = sectorId.rawValue
-        if !defeatedDistrictBosses.contains(sectorIdString) {
-            defeatedDistrictBosses.append(sectorIdString)
+        if !defeatedSectorBosses.contains(sectorIdString) {
+            defeatedSectorBosses.append(sectorIdString)
             unlockedComponents.recordBossDefeat()
         }
     }

@@ -810,20 +810,20 @@ class ParticleEffectService {
         }
     }
 
-    /// Spawn gold floaties when enemy is killed.
-    func spawnGoldFloaties(at position: CGPoint, goldValue: Int) {
+    /// Spawn hash floaties when enemy is killed.
+    func spawnHashFloaties(at position: CGPoint, hashValue: Int) {
         guard let particleLayer = particleLayer else { return }
 
-        let floatCount = min(5, max(1, goldValue / 5))
+        let floatCount = min(5, max(1, hashValue / 5))
 
         for i in 0..<floatCount {
-            let goldStar = SKLabelNode(text: "⭐")
-            goldStar.fontSize = 14
-            goldStar.position = CGPoint(
+            let hashStar = SKLabelNode(text: "⭐")
+            hashStar.fontSize = 14
+            hashStar.position = CGPoint(
                 x: position.x + CGFloat.random(in: -10...10),
                 y: position.y + CGFloat.random(in: -5...5)
             )
-            goldStar.zPosition = 60
+            hashStar.zPosition = 60
 
             let delay = SKAction.wait(forDuration: Double(i) * 0.1)
             let moveUp = SKAction.moveBy(x: CGFloat.random(in: -20...20), y: 50, duration: 0.8)
@@ -833,24 +833,24 @@ class ParticleEffectService {
             let group = SKAction.group([moveUp, fade, scale])
             let sequence = SKAction.sequence([delay, group, SKAction.removeFromParent()])
 
-            goldStar.run(sequence)
-            particleLayer.addChild(goldStar)
+            hashStar.run(sequence)
+            particleLayer.addChild(hashStar)
         }
 
-        let goldLabel = SKLabelNode(text: "+\(goldValue)")
-        goldLabel.fontName = "Helvetica-Bold"
-        goldLabel.fontSize = 16
-        goldLabel.fontColor = .yellow
-        goldLabel.position = position
-        goldLabel.zPosition = 61
+        let hashLabel = SKLabelNode(text: "+\(hashValue)")
+        hashLabel.fontName = "Helvetica-Bold"
+        hashLabel.fontSize = 16
+        hashLabel.fontColor = .yellow
+        hashLabel.position = position
+        hashLabel.zPosition = 61
 
         let moveUp = SKAction.moveBy(x: 0, y: 40, duration: 0.6)
         let fade = SKAction.fadeOut(withDuration: 0.6)
         let group = SKAction.group([moveUp, fade])
         let sequence = SKAction.sequence([group, SKAction.removeFromParent()])
 
-        goldLabel.run(sequence)
-        particleLayer.addChild(goldLabel)
+        hashLabel.run(sequence)
+        particleLayer.addChild(hashLabel)
     }
 
     /// Spawn impact sparks when projectile hits.

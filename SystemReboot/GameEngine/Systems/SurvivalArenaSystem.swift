@@ -338,7 +338,7 @@ class SurvivalArenaSystem {
             health: BalanceConfig.SurvivalEvents.swarmVirusHealth,
             speed: BalanceConfig.SurvivalEvents.swarmVirusSpeed,
             damage: BalanceConfig.SurvivalEvents.swarmVirusDamage,
-            coinValue: 1,
+            hashValue: 1,
             size: 8,
             color: "#ff00ff",
             shape: "diamond",

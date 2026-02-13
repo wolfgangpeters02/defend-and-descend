@@ -113,7 +113,7 @@ struct EnemyConfig: Codable {
     var health: Double
     var speed: Double
     var damage: Double
-    var coinValue: Int
+    var hashValue: Int
     var size: Double
     var color: String
     var shape: String
@@ -125,7 +125,7 @@ struct EnemyConfig: Codable {
         health: Double,
         speed: Double,
         damage: Double,
-        coinValue: Int,
+        hashValue: Int,
         size: Double,
         color: String,
         shape: String,
@@ -136,7 +136,7 @@ struct EnemyConfig: Codable {
         self.health = health
         self.speed = speed
         self.damage = damage
-        self.coinValue = coinValue
+        self.hashValue = hashValue
         self.size = size
         self.color = color
         self.shape = shape

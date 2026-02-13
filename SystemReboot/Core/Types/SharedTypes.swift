@@ -169,7 +169,7 @@ struct SharedEnemy: Codable, Identifiable {
     var baseDamage: CGFloat
 
     // Rewards
-    var coinValue: Int
+    var hashValue: Int
     var xpValue: Int
 
     // Visual
@@ -187,29 +187,6 @@ struct SharedEnemy: Codable, Identifiable {
         enemy.baseDamage *= damageMultiplier
         return enemy
     }
-}
-
-// MARK: - Guardian Stats (Shared Player/Core stats)
-// In Survivor: These are player stats
-// In TD: These affect core and global tower bonuses
-
-struct GuardianStats: Codable {
-    // Shared stats (affect both modes)
-    var damage: CGFloat = 1.0        // Damage multiplier for weapons/towers
-    var attackSpeed: CGFloat = 1.0   // Attack speed multiplier
-    var range: CGFloat = 1.0         // Range multiplier
-    var health: CGFloat = 100        // Player HP / Core HP
-
-    // Survivor-only stats
-    var speed: CGFloat = 200         // Movement speed (Survivor only)
-    var armor: CGFloat = 0           // Damage reduction (Survivor only)
-    var regen: CGFloat = 1.5         // HP regen per second (Survivor only)
-    var pickupRange: CGFloat = 50    // Data/XP pickup range (Survivor only)
-
-    // TD-only stats
-    var maxTowers: Int = 5           // Max towers placeable (TD only)
-    var goldGeneration: CGFloat = 0  // Passive gold per second (TD only)
-    var coreArmor: CGFloat = 0       // Core damage reduction (TD only)
 }
 
 // MARK: - Collection Item (Generic unlockable)

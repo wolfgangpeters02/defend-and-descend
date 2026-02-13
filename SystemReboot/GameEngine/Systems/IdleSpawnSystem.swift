@@ -184,9 +184,9 @@ class IdleSpawnSystem {
         let damageMultiplier = BalanceConfig.threatDamageMultiplier(threatLevel: threatLevel)
 
         // Apply sector hash bonus - later sectors give more hash (risk/reward)
-        let baseGoldValue = enemyConfig?.coinValue ?? BalanceConfig.EnemyDefaults.coinValue
+        let baseHashValue = enemyConfig?.hashValue ?? BalanceConfig.EnemyDefaults.hashValue
         let sectorMultiplier = BalanceConfig.SectorHashBonus.multiplier(for: lane.sectorId)
-        let adjustedGoldValue = Int(CGFloat(baseGoldValue) * sectorMultiplier)
+        let adjustedHashValue = Int(CGFloat(baseHashValue) * sectorMultiplier)
 
         return TDEnemy(
             id: RandomUtils.generateId(),
@@ -199,8 +199,8 @@ class IdleSpawnSystem {
             maxHealth: baseHealth * healthMultiplier,
             speed: baseSpeed * speedMultiplier,
             damage: baseDamage * damageMultiplier,
-            goldValue: adjustedGoldValue,
-            xpValue: adjustedGoldValue,  // XP also scales with sector
+            hashValue: adjustedHashValue,
+            xpValue: adjustedHashValue,  // XP also scales with sector
             size: CGFloat(enemyConfig?.size ?? BalanceConfig.EnemyDefaults.size),
             color: enemyConfig?.color ?? BalanceConfig.EnemyDefaults.color,
             shape: enemyConfig?.shape ?? BalanceConfig.EnemyDefaults.shape,

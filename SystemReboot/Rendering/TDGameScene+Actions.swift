@@ -119,11 +119,11 @@ extension TDGameScene {
 
     /// Called when boss fight is won - handle game state cleanup
     /// Profile rewards (hash, blueprints, sector unlock) are applied by BossFightCoordinator.onLootCollected()
-    func onBossFightWon(districtId: String) {
+    func onBossFightWon(sectorId: String) {
         guard var state = state else { return }
 
         // Process the boss fight win through TDBossSystem (threat reset, efficiency reset, boss removal)
-        let reward = TDBossSystem.onBossFightWon(state: &state, districtId: districtId)
+        let reward = TDBossSystem.onBossFightWon(state: &state, sectorId: sectorId)
 
         // Apply hash reward to game state
         state.hash += reward.hashReward

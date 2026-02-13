@@ -722,10 +722,10 @@ class TDGameScene: SKScene {
             switch event.kind {
             case .impact(let color):
                 spawnImpactSparks(at: scenePos, color: UIColor(hex: color) ?? .yellow)
-            case .kill(let color, let goldValue, let isBoss):
+            case .kill(let color, let hashValue, let isBoss):
                 let enemyColor = UIColor(hex: color) ?? .red
                 spawnDeathParticles(at: scenePos, color: enemyColor, isBoss: isBoss)
-                spawnGoldFloaties(at: scenePos, goldValue: goldValue)
+                spawnHashFloaties(at: scenePos, hashValue: hashValue)
                 if isBoss {
                     triggerBossDeathEffect(at: event.position, bossColor: enemyColor)
                 }
