@@ -156,7 +156,7 @@ extension GameScene {
     // MARK: - Survival Event Rendering
 
     func renderSurvivalEvents() {
-        guard gameState.gameMode == .survival || gameState.gameMode == .arena else {
+        guard gameState.gameMode == .survival else {
             // Hide all survival elements if not in survival mode
             eventBorderNode?.alpha = 0
             eventAnnouncementLabel?.alpha = 0

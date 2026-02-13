@@ -113,7 +113,7 @@ class AppState: ObservableObject {
 
     func recordRun(kills: Int, time: TimeInterval, sessionHash: Int) {
         // Use the full survivor run recording with Hash rewards
-        recordSurvivorRun(time: time, kills: kills, sessionHash: sessionHash, gameMode: .arena, victory: false)
+        recordSurvivorRun(time: time, kills: kills, sessionHash: sessionHash, gameMode: .survival, victory: false)
     }
 
     func unlockItem(category: String, id: String, rarity: Rarity) {

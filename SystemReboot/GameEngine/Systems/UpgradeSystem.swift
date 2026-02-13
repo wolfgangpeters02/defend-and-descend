@@ -23,7 +23,7 @@ class UpgradeSystem {
         var attempts = 0
         let maxAttempts = 50
 
-        let includeDungeonUpgrades = state.gameMode == .dungeon
+        let includeDungeonUpgrades = state.gameMode == .boss
 
         while choices.count < count && attempts < maxAttempts {
             attempts += 1
@@ -252,7 +252,7 @@ class UpgradeSystem {
     /// Check if upgrade should trigger
     static func shouldTriggerUpgrade(state: GameState) -> Bool {
         // Arena mode: every 60 seconds
-        if state.gameMode == .arena {
+        if state.gameMode == .survival {
             let expectedLevel = Int(state.timeElapsed / BalanceConfig.Timing.upgradeInterval)
             return expectedLevel > state.upgradeLevel && !state.pendingUpgrade
         }

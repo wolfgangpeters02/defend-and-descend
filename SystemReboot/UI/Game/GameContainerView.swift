@@ -158,7 +158,7 @@ struct GameContainerView: View {
                     )
 
                     // Boss Health Bar (boss mode only)
-                    if gameMode == .boss || gameMode == .dungeon,
+                    if gameMode == .boss,
                        let state = gameState,
                        let boss = state.enemies.first(where: { $0.isBoss && !$0.isDead }) {
                         VStack(spacing: 4) {
@@ -236,7 +236,7 @@ struct GameContainerView: View {
                             }
 
                             // Extraction button (survival mode only, after 3 min)
-                            if (gameMode == .survival || gameMode == .arena) && state.stats.extractionAvailable {
+                            if gameMode == .survival && state.stats.extractionAvailable {
                                 Button(action: {
                                     HapticsService.shared.play(.medium)
                                     gameScene?.triggerExtraction()
@@ -358,7 +358,7 @@ struct GameContainerView: View {
         scene.configure(gameState: state, screenSize: screenSize)
 
         // Initialize boss for boss mode
-        if gameMode == .boss || gameMode == .dungeon, let bossId = state.activeBossId {
+        if gameMode == .boss, let bossId = state.activeBossId {
             scene.initializeBoss(bossId: bossId)
         }
 
@@ -684,5 +684,5 @@ struct GlitchEffectOverlay: View {
 }
 
 #Preview {
-    GameContainerView(gameMode: .arena, onExit: {})
+    GameContainerView(gameMode: .survival, onExit: {})
 }

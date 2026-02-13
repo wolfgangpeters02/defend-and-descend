@@ -8,9 +8,23 @@ enum GameMode: String, Codable {
     case boss          // Direct boss encounter
     case towerDefense  // Motherboard tower defense
 
-    // Legacy support
-    case arena         // Maps to survival
-    case dungeon       // Maps to boss
+    /// Backward compatibility: old saves may contain "arena" or "dungeon" raw values
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self)
+        switch rawValue {
+        case "arena": self = .survival
+        case "dungeon": self = .boss
+        default:
+            guard let mode = GameMode(rawValue: rawValue) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container,
+                    debugDescription: "Unknown GameMode: \(rawValue)"
+                )
+            }
+            self = mode
+        }
+    }
 }
 
 // MARK: - Rarity

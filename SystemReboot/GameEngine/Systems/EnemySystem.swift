@@ -345,7 +345,7 @@ class EnemySystem {
         }
 
         // Survival mode: Earn Hash for kills
-        if state.gameMode == .survival || state.gameMode == .arena {
+        if state.gameMode == .survival {
             let hashValue = enemy.isBoss ? BalanceConfig.XPSystem.bossKillHashValue : (enemy.hashValue ?? BalanceConfig.EnemyDefaults.hashValue)
             state.stats.hashEarned += hashValue
         }

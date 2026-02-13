@@ -34,7 +34,7 @@ GameState in GameTypes.swift has 8 optional arrays (`bossPuddles`, `bossLasers`,
 ---
 
 ## Stage 2: GameMode Legacy Cases (.arena/.dungeon)
-**Status:** OPEN
+**Status:** DONE — Removed `.arena`/`.dungeon` enum cases, replaced all 14 `||` checks across 10 files with direct `.survival`/`.boss`, added custom Codable init for backward-compatible save decoding.
 **Priority:** High (forces || checks everywhere, new code still creates legacy cases)
 **Estimated scope:** ~8-10 files
 

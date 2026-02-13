@@ -53,7 +53,7 @@ class SurvivalArenaSystem {
 
     func update(state: inout GameState, deltaTime: TimeInterval) {
         // Only run in survival mode
-        guard state.gameMode == .survival || state.gameMode == .arena else { return }
+        guard state.gameMode == .survival else { return }
 
         eventTimer = state.timeElapsed
 

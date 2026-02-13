@@ -123,7 +123,7 @@ struct DebugArenaCard: View {
     @ObservedObject var appState = AppState.shared
 
     private var isDungeon: Bool {
-        arena.gameMode == .dungeon
+        arena.gameMode == .boss
     }
 
     var body: some View {
@@ -568,7 +568,7 @@ struct DebugGameView: View {
     private func setupDebugGame(screenSize: CGSize) {
         // Create game state based on arena's game mode
         var state: GameState
-        if debugArena.gameMode == .dungeon, let bossType = debugArena.dungeonType {
+        if debugArena.gameMode == .boss, let bossType = debugArena.dungeonType {
             // Use boss mode - direct boss encounter
             state = GameStateFactory.shared.createBossGameState(
                 gameProtocol: `protocol`,

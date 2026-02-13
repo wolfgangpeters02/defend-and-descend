@@ -31,7 +31,7 @@ struct DebugArena: Identifiable, Codable, Equatable {
 
     let duration: TimeInterval      // How long to survive (180s = 3 min)
 
-    let gameMode: GameMode          // .arena or .dungeon
+    let gameMode: GameMode          // .survival or .boss
     let dungeonType: String?        // For dungeons: "cathedral", "frozen", "volcanic", "heist", "void_raid"
 
     /// Whether this sector is unlocked for a given Hash balance
@@ -43,7 +43,7 @@ struct DebugArena: Identifiable, Codable, Equatable {
     init(id: String, name: String, subtitle: String, description: String,
          difficulty: ArenaDifficulty, hashMultiplier: CGFloat, unlockCost: Int,
          layout: ArenaLayout, visualTheme: String, duration: TimeInterval,
-         gameMode: GameMode = .arena, dungeonType: String? = nil) {
+         gameMode: GameMode = .survival, dungeonType: String? = nil) {
         self.id = id
         self.name = name
         self.subtitle = subtitle
@@ -177,7 +177,7 @@ struct DebugArenaLibrary {
         layout: .corridors,
         visualTheme: "drive",
         duration: 0,  // Dungeons don't have time limits
-        gameMode: .dungeon,
+        gameMode: .boss,
         dungeonType: "cathedral"
     )
 
@@ -192,7 +192,7 @@ struct DebugArenaLibrary {
         layout: .corridors,
         visualTheme: "ram",
         duration: 0,
-        gameMode: .dungeon,
+        gameMode: .boss,
         dungeonType: "frozen"
     )
 
@@ -207,7 +207,7 @@ struct DebugArenaLibrary {
         layout: .mixed,
         visualTheme: "gpu",
         duration: 0,
-        gameMode: .dungeon,
+        gameMode: .boss,
         dungeonType: "volcanic"
     )
 
@@ -222,7 +222,7 @@ struct DebugArenaLibrary {
         layout: .mixed,
         visualTheme: "bios",
         duration: 0,
-        gameMode: .dungeon,
+        gameMode: .boss,
         dungeonType: "heist"
     )
 
@@ -237,7 +237,7 @@ struct DebugArenaLibrary {
         layout: .arena,
         visualTheme: "bios",
         duration: 0,
-        gameMode: .dungeon,
+        gameMode: .boss,
         dungeonType: "void_raid"
     )
 }

@@ -410,7 +410,7 @@ class GameScene: SKScene {
         ArenaSystem.constrainPlayerToArena(state: &gameState)
 
         // Spawn enemies in survival mode (boss mode has boss already spawned)
-        if gameState.gameMode == .survival || gameState.gameMode == .arena {
+        if gameState.gameMode == .survival {
             SpawnSystem.update(state: &gameState, context: context)
 
             // Spawn boss every 2 minutes in survival mode
@@ -445,7 +445,7 @@ class GameScene: SKScene {
         updateParticles(context: context)
 
         // Survival mode: Update event system
-        if gameState.gameMode == .survival || gameState.gameMode == .arena {
+        if gameState.gameMode == .survival {
             survivalSystem.update(state: &gameState, deltaTime: context.deltaTime)
         }
 
