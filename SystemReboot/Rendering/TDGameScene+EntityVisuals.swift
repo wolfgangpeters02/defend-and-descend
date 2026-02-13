@@ -678,7 +678,7 @@ extension TDGameScene {
                 innerNode = nil
 
             } else {
-                // Other bosses (Void Harbinger, Trojan Wyrm, generic): legacy shapes
+                // Other bosses (Void Harbinger, Trojan Wyrm, generic): shape-based rendering
                 switch enemy.shape {
                 case "triangle":
                     let path = UIBezierPath()

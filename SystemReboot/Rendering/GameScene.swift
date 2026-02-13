@@ -427,7 +427,7 @@ class GameScene: SKScene {
             ArenaSystem.processEnemyObstacleCollisions(state: &gameState)
         }
 
-        // Update weapons - auto-fire
+        // Update protocols - auto-fire
         WeaponSystem.update(state: &gameState, context: context)
 
         // Update projectiles

@@ -18,14 +18,14 @@ class GameStateFactory {
     ) -> GameState {
         let config = GameConfigLoader.shared
 
-        // Use debug arena's visual theme to determine arena config, falling back to "grasslands"
+        // Use debug arena's visual theme to determine arena config, falling back to starter arena
         let themeToArena: [String: String] = [
             "ram": "ice_cave",      // RAM = cool blue memory banks
             "drive": "castle",      // Drive = structured storage
             "gpu": "volcano",       // GPU = hot processing
             "bios": "space"         // BIOS = deep system space
         ]
-        let arenaType = themeToArena[debugArena.visualTheme] ?? "grasslands"
+        let arenaType = themeToArena[debugArena.visualTheme] ?? ArenaID.starter.rawValue
         guard let arenaConfig = config.getArena(arenaType) else {
             fatalError("Arena \(arenaType) not found in config")
         }
@@ -105,7 +105,7 @@ class GameStateFactory {
         let config = GameConfigLoader.shared
 
         // Boss arenas are simple circular arenas
-        let arenaConfig = config.getArena("memory_core") ?? config.getArena("grasslands")!
+        let arenaConfig = config.getArena("memory_core") ?? config.getArena(ArenaID.starter.rawValue)!
         var arena = config.createArenaData(from: arenaConfig)
 
         // Boss arena is larger for strategic movement

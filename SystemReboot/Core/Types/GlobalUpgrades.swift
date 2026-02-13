@@ -107,7 +107,6 @@ struct DebugArenaLibrary {
     }
 
     /// Starting arena (always unlocked)
-    /// Note: Must match PlayerProfile.defaultSectorId
     static let starterArenaId = "ram"
 
     // MARK: - Arena Definitions

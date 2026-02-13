@@ -7,7 +7,7 @@ class AppState: ObservableObject {
     static let shared = AppState()
 
     @Published var currentPlayer: PlayerProfile
-    @Published var selectedArena: String = "grasslands"
+    @Published var selectedArena: String = ArenaID.starter.rawValue
     @Published var gameMode: GameMode = .boss
 
     /// Get the equipped Protocol object from player profile
@@ -100,7 +100,7 @@ class AppState: ObservableObject {
 
     // MARK: - Unlocked Items (Protocol-based unified system)
 
-    /// Compiled (unlocked) Protocol IDs available for use as weapons/towers
+    /// Compiled (unlocked) Protocol IDs available for use in any game mode
     var compiledProtocolIds: [String] {
         currentPlayer.compiledProtocols
     }

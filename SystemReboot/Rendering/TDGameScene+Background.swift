@@ -237,7 +237,7 @@ extension TDGameScene {
             detailContainer.name = "sectorDetails_\(sector.id)"
 
             if renderMode != .locked {
-                // Add vias (small filled circles) - legacy scattered vias
+                // Add vias (small filled circles at trace intersections)
                 addSectorVias(to: detailContainer, in: sector, color: ghostColor)
 
                 // Add IC footprints — wireframe for unlockable, full for unlocked

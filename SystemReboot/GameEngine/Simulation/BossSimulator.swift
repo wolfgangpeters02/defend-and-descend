@@ -119,7 +119,7 @@ struct BossSimulationConfig {
     let difficulty: BossDifficulty
     let bot: BossBot
     let maxFightTime: TimeInterval          // Max fight duration before timeout
-    let playerWeaponDamage: CGFloat         // Base player DPS (legacy, use weapon instead)
+    let playerWeaponDamage: CGFloat         // Base player DPS (fallback when no weapon specified)
     let playerHealth: CGFloat               // Base player health
     let arenaSize: CGFloat                  // Arena width/height
     let weapon: SimulatedWeapon?            // Optional weapon for detailed simulation

@@ -207,13 +207,13 @@ struct TDModeStats: Codable {
 // MARK: - Default Profile
 
 extension PlayerProfile {
-    // MARK: - Constants (to avoid circular dependencies)
+    // MARK: - Constants
 
-    /// Default starter protocol ID
-    static let defaultProtocolId = "kernel_pulse"
+    /// Default starter protocol ID (single source: ProtocolID.starter)
+    static let defaultProtocolId = ProtocolID.starter.rawValue
 
-    /// Default starter sector ID
-    static let defaultSectorId = "ram"
+    /// Default starter sector ID (single source: DebugArenaLibrary.starterArenaId)
+    static let defaultSectorId = DebugArenaLibrary.starterArenaId
 
     /// Create a default profile for new players
     static var defaultProfile: PlayerProfile {
@@ -240,9 +240,9 @@ extension PlayerProfile {
             offlineEfficiencySnapshot: 1.0,
             unlocks: PlayerUnlocks(
                 arenas: ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"],  // All arenas unlocked for testing
-                weapons: ["kernel_pulse"]  // Default Protocol (unified weapon system)
+                weapons: [defaultProtocolId]  // Default Protocol (unified weapon system)
             ),
-            weaponLevels: ["kernel_pulse": 1],  // Default Protocol level
+            weaponLevels: [defaultProtocolId: 1],  // Default Protocol level
             survivorStats: SurvivorModeStats(),
             tdStats: TDModeStats(),
             totalRuns: 0,

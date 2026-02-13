@@ -148,18 +148,18 @@ class IdleSpawnSystem {
         // Fallback for non-motherboard maps
         guard let firstSpawnPoint = state.map.spawnPoints.first else { return [] }
 
-        let legacyLane = SectorLane(
-            id: "legacy",
-            sectorId: "legacy",
+        let fallbackLane = SectorLane(
+            id: "fallback",
+            sectorId: "fallback",
             displayName: "Main",
-            path: EnemyPath(id: "legacy_path", waypoints: [firstSpawnPoint, CGPoint(x: 2100, y: 2100)]),
+            path: EnemyPath(id: "fallback_path", waypoints: [firstSpawnPoint, CGPoint(x: 2100, y: 2100)]),
             spawnPoint: firstSpawnPoint,
             themeColorHex: "#4488ff",
             unlockCost: 0,
             unlockOrder: 0,
             prerequisites: []
         )
-        return [legacyLane]
+        return [fallbackLane]
     }
 
     // MARK: - Enemy Creation

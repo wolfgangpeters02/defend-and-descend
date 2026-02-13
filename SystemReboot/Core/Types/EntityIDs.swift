@@ -149,7 +149,7 @@ enum GlobalUpgradeID: String, CaseIterable, Codable {
 
 // MARK: - Core Upgrade IDs
 
-/// Upgrades for the core/guardian in TD mode
+/// Upgrades for the core (CPU) in TD mode
 enum CoreUpgradeID: String, CaseIterable, Codable {
     case health
     case damage

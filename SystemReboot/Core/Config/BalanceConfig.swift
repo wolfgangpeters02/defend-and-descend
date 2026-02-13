@@ -2162,7 +2162,11 @@ extension BalanceConfig {
 
     struct TDMaps {
         /// Maps that support tower defense mode
-        static let supportedMaps: [String] = ["grasslands", "volcano", "ice_cave", "castle", "space", "temple"]
+        static let supportedMaps: [String] = [
+            TDMapID.grasslands.rawValue, TDMapID.volcano.rawValue,
+            TDMapID.iceCave.rawValue, TDMapID.castle.rawValue,
+            TDMapID.space.rawValue, TDMapID.temple.rawValue
+        ]
     }
 }
 

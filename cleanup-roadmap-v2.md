@@ -105,7 +105,7 @@ Two pieces of logic are copy-pasted across files:
 ---
 
 ## Stage 5: Default ID Consolidation + Stale Comments
-**Status:** OPEN
+**Status:** DONE — Consolidated default IDs (kernel_pulse/ram/grasslands) to reference single-source enum constants across 7 files, fixed 8 stale comments/variable names (legacy→fallback, weapons→protocols, guardian→core) across 5 files.
 **Priority:** Low (no bugs, sync risk and misleading comments)
 **Estimated scope:** ~10 files
 
