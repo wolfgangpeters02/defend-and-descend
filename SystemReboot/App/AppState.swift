@@ -15,9 +15,6 @@ class AppState: ObservableObject {
         ProtocolLibrary.all.first { $0.id == currentPlayer.equippedProtocolId } ?? ProtocolLibrary.kernelPulse
     }
 
-    // TD-specific selections
-    @Published var selectedTDMap: String = "grasslands"
-
     // Offline earnings
     @Published var pendingOfflineEarnings: OfflineEarningsResult?
     @Published var showWelcomeBack: Bool = false

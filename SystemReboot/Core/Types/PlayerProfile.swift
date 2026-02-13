@@ -101,12 +101,12 @@ struct PlayerProfile: Codable {
     /// Current efficiency (0.0 to 1.0)
     var motherboardEfficiency: CGFloat = 1.0
 
-    // MARK: - Sector Progress (New)
+    // MARK: - Debug Arena Progress
 
-    /// IDs of unlocked Active mode sectors
-    var unlockedSectors: [String] = [SectorLibrary.starterSectorId, "cathedral"]  // RAM + Cathedral unlocked by default
+    /// IDs of unlocked debug arenas (CodingKey: "unlockedSectors" for save compat)
+    var unlockedSectors: [String] = [DebugArenaLibrary.starterArenaId, "cathedral"]  // RAM + Cathedral unlocked by default
 
-    /// Sector ID -> Best survival time
+    /// Arena ID -> Best survival time (CodingKey: "sectorBestTimes" for save compat)
     var sectorBestTimes: [String: TimeInterval] = [:]
 
     /// TD Mega-Board sector unlock progress (partial payments)
@@ -271,7 +271,7 @@ extension PlayerProfile {
             profile.protocolLevels[defaultProtocolId] = 1
         }
 
-        // Ensure starter sectors are unlocked (RAM + Cathedral)
+        // Ensure starter debug arenas are unlocked (RAM + Cathedral)
         if !profile.unlockedSectors.contains(defaultSectorId) {
             profile.unlockedSectors.append(defaultSectorId)
         }

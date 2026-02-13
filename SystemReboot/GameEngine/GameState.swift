@@ -13,27 +13,26 @@ class GameStateFactory {
     /// Create a game state for Debug mode using a Protocol as the weapon
     func createDebugGameState(
         gameProtocol: Protocol,
-        sector: Sector,
+        debugArena: DebugArena,
         playerProfile: PlayerProfile
     ) -> GameState {
         let config = GameConfigLoader.shared
 
-        // Use sector's visual theme to determine arena (or use a default debug arena)
-        // Map sector themes to actual arena configs, falling back to "grasslands"
+        // Use debug arena's visual theme to determine arena config, falling back to "grasslands"
         let themeToArena: [String: String] = [
             "ram": "ice_cave",      // RAM = cool blue memory banks
             "drive": "castle",      // Drive = structured storage
             "gpu": "volcano",       // GPU = hot processing
             "bios": "space"         // BIOS = deep system space
         ]
-        let arenaType = themeToArena[sector.visualTheme] ?? "grasslands"
+        let arenaType = themeToArena[debugArena.visualTheme] ?? "grasslands"
         guard let arenaConfig = config.getArena(arenaType) else {
             fatalError("Arena \(arenaType) not found in config")
         }
 
         // Create arena data
         var arena = config.createArenaData(from: arenaConfig)
-        arena.name = sector.name
+        arena.name = debugArena.name
 
         // Apply player's protocol level before converting to weapon
         var leveledProtocol = gameProtocol
@@ -69,7 +68,7 @@ class GameStateFactory {
             player: player,
             currentWeaponType: gameProtocol.id,
             runStartTime: now,
-            hashMultiplier: sector.hashMultiplier  // Apply sector's hash multiplier
+            hashMultiplier: debugArena.hashMultiplier  // Apply arena's hash multiplier
         )
     }
 

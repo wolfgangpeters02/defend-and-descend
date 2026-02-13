@@ -5,7 +5,7 @@ import SpriteKit
 
 struct DebugView: View {
     @ObservedObject var appState = AppState.shared
-    let onLaunch: (Sector) -> Void
+    let onLaunch: (DebugArena) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,13 +48,13 @@ struct DebugView: View {
                         GridItem(.flexible()),
                         GridItem(.flexible())
                     ], spacing: 12) {
-                        ForEach(SectorLibrary.all) { sector in
-                            SectorCard(
-                                sector: sector,
-                                isUnlocked: appState.currentPlayer.isSectorUnlocked(sector.id),
-                                bestTime: appState.currentPlayer.sectorBestTime(sector.id),
-                                onSelect: { onLaunch(sector) },
-                                onUnlock: { unlockSector(sector) }
+                        ForEach(DebugArenaLibrary.all) { arena in
+                            DebugArenaCard(
+                                arena: arena,
+                                isUnlocked: appState.currentPlayer.isDebugArenaUnlocked(arena.id),
+                                bestTime: appState.currentPlayer.debugArenaBestTime(arena.id),
+                                onSelect: { onLaunch(arena) },
+                                onUnlock: { unlockArena(arena) }
                             )
                         }
                     }
@@ -101,20 +101,20 @@ struct DebugView: View {
         .padding()
     }
 
-    private func unlockSector(_ sector: Sector) {
-        guard appState.currentPlayer.hash >= sector.unlockCost else { return }
+    private func unlockArena(_ arena: DebugArena) {
+        guard appState.currentPlayer.hash >= arena.unlockCost else { return }
         HapticsService.shared.play(.medium)
         appState.updatePlayer { profile in
-            profile.hash -= sector.unlockCost
-            profile.unlockedSectors.append(sector.id)
+            profile.hash -= arena.unlockCost
+            profile.unlockedSectors.append(arena.id)
         }
     }
 }
 
-// MARK: - Sector Card
+// MARK: - Debug Arena Card
 
-struct SectorCard: View {
-    let sector: Sector
+struct DebugArenaCard: View {
+    let arena: DebugArena
     let isUnlocked: Bool
     var bestTime: TimeInterval?
     let onSelect: () -> Void
@@ -123,18 +123,18 @@ struct SectorCard: View {
     @ObservedObject var appState = AppState.shared
 
     private var isDungeon: Bool {
-        sector.gameMode == .dungeon
+        arena.gameMode == .dungeon
     }
 
     var body: some View {
         VStack(spacing: 12) {
             // Header
             VStack(spacing: 4) {
-                Text(sector.name)
+                Text(arena.name)
                     .font(DesignTypography.headline(16))
                     .foregroundColor(isUnlocked ? .white : DesignColors.muted)
 
-                Text(sector.subtitle)
+                Text(arena.subtitle)
                     .font(DesignTypography.caption(11))
                     .foregroundColor(DesignColors.muted)
             }
@@ -153,16 +153,16 @@ struct SectorCard: View {
             .cornerRadius(4)
 
             // Difficulty badge
-            Text(sector.difficulty.displayName)
+            Text(arena.difficulty.displayName)
                 .font(DesignTypography.caption(10))
-                .foregroundColor(Color(hex: sector.difficulty.color) ?? .green)
+                .foregroundColor(Color(hex: arena.difficulty.color) ?? .green)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color(hex: sector.difficulty.color)?.opacity(0.2) ?? .green.opacity(0.2))
+                .background(Color(hex: arena.difficulty.color)?.opacity(0.2) ?? .green.opacity(0.2))
                 .cornerRadius(4)
 
             // Hash multiplier
-            Text("Ħ x\(String(format: "%.1f", sector.hashMultiplier))")
+            Text("Ħ x\(String(format: "%.1f", arena.hashMultiplier))")
                 .font(DesignTypography.caption(11))
                 .foregroundColor(DesignColors.success)
 
@@ -184,11 +184,11 @@ struct SectorCard: View {
                         .cornerRadius(8)
                 }
             } else {
-                let canAfford = appState.currentPlayer.hash >= sector.unlockCost
+                let canAfford = appState.currentPlayer.hash >= arena.unlockCost
                 Button(action: onUnlock) {
                     HStack {
                         Image(systemName: "lock.fill")
-                        Text("Ħ\(sector.unlockCost)")
+                        Text("Ħ\(arena.unlockCost)")
                     }
                     .font(DesignTypography.headline(14))
                     .foregroundColor(canAfford ? .white : DesignColors.muted)
@@ -220,7 +220,7 @@ struct SectorCard: View {
 // MARK: - Debug Game View (Full Active Mode with Protocol Weapon)
 
 struct DebugGameView: View {
-    let sector: Sector
+    let debugArena: DebugArena
     let `protocol`: Protocol
     let onExit: () -> Void
 
@@ -332,8 +332,8 @@ struct DebugGameView: View {
 
             Spacer()
 
-            // Sector name
-            Text(sector.name)
+            // Arena name
+            Text(debugArena.name)
                 .font(DesignTypography.headline(16))
                 .foregroundColor(DesignColors.success)
 
@@ -341,7 +341,7 @@ struct DebugGameView: View {
 
             // Hash collected
             if let state = gameState {
-                let hashAmount = Int(CGFloat(state.stats.enemiesKilled) * sector.hashMultiplier)
+                let hashAmount = Int(CGFloat(state.stats.enemiesKilled) * debugArena.hashMultiplier)
                 HStack(spacing: 4) {
                     Text("Ħ")
                         .font(.system(size: 14, weight: .bold))
@@ -385,7 +385,7 @@ struct DebugGameView: View {
                 // Current hash
                 if let state = gameState {
                     let baseHash = state.stats.enemiesKilled
-                    let multipliedHash = Int(CGFloat(baseHash) * sector.hashMultiplier)
+                    let multipliedHash = Int(CGFloat(baseHash) * debugArena.hashMultiplier)
 
                     HStack(spacing: 4) {
                         Text("Ħ")
@@ -472,7 +472,7 @@ struct DebugGameView: View {
                 if let state = gameState {
                     VStack(spacing: 12) {
                         let baseHash = state.stats.enemiesKilled
-                        let multipliedHash = Int(CGFloat(baseHash) * sector.hashMultiplier)
+                        let multipliedHash = Int(CGFloat(baseHash) * debugArena.hashMultiplier)
                         let finalHash = showVictory ? multipliedHash : multipliedHash / 2
 
                         HStack {
@@ -540,7 +540,7 @@ struct DebugGameView: View {
                         // Award Hash before exiting
                         if let state = gameState {
                             let baseHash = state.stats.enemiesKilled
-                            let multipliedHash = Int(CGFloat(baseHash) * sector.hashMultiplier)
+                            let multipliedHash = Int(CGFloat(baseHash) * debugArena.hashMultiplier)
                             let finalHash = showVictory ? multipliedHash : multipliedHash / 2
                             appState.updatePlayer { profile in
                                 profile.addHash(max(1, finalHash))
@@ -566,9 +566,9 @@ struct DebugGameView: View {
     }
 
     private func setupDebugGame(screenSize: CGSize) {
-        // Create game state based on sector's game mode
+        // Create game state based on arena's game mode
         var state: GameState
-        if sector.gameMode == .dungeon, let bossType = sector.dungeonType {
+        if debugArena.gameMode == .dungeon, let bossType = debugArena.dungeonType {
             // Use boss mode - direct boss encounter
             state = GameStateFactory.shared.createBossGameState(
                 gameProtocol: `protocol`,
@@ -580,7 +580,7 @@ struct DebugGameView: View {
             // Use survival mode (survival waves)
             state = GameStateFactory.shared.createDebugGameState(
                 gameProtocol: `protocol`,
-                sector: sector,
+                debugArena: debugArena,
                 playerProfile: appState.currentPlayer
             )
         }

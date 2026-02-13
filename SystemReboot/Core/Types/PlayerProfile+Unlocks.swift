@@ -1,19 +1,19 @@
 import Foundation
 
-// MARK: - Unlocks (Sectors, Components, Boss Kills)
+// MARK: - Unlocks (Debug Arenas, Components, Boss Kills)
 
 extension PlayerProfile {
 
-    // MARK: - Sector Helpers (Active Mode)
+    // MARK: - Debug Arena Helpers (Active Mode)
 
-    /// Check if a sector is unlocked
-    func isSectorUnlocked(_ sectorId: String) -> Bool {
-        return unlockedSectors.contains(sectorId)
+    /// Check if a debug arena is unlocked
+    func isDebugArenaUnlocked(_ arenaId: String) -> Bool {
+        return unlockedSectors.contains(arenaId)
     }
 
-    /// Get best time for a sector
-    func sectorBestTime(_ sectorId: String) -> TimeInterval? {
-        return sectorBestTimes[sectorId]
+    /// Get best time for a debug arena
+    func debugArenaBestTime(_ arenaId: String) -> TimeInterval? {
+        return sectorBestTimes[arenaId]
     }
 
     // MARK: - TD Sector Helpers (Motherboard Map)

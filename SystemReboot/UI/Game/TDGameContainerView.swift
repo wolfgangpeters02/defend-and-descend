@@ -59,8 +59,6 @@ struct TDGameContainerView: View {
     // Overclock state
     @State var overclockTimeRemaining: TimeInterval = 0
 
-    let mapId: String
-
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -243,7 +241,7 @@ struct TDGameContainerView: View {
     // MARK: - Game Setup
 
     private func setupGame() {
-        guard var state = TDGameStateFactory.createTDGameState(mapId: mapId, playerProfile: appState.currentPlayer) else {
+        guard var state = TDGameStateFactory.createTDGameState(playerProfile: appState.currentPlayer) else {
             return
         }
 
@@ -537,7 +535,7 @@ private class TDGameSceneDelegateHandler: TDGameSceneDelegate {
 
 struct TDGameContainerView_Previews: PreviewProvider {
     static var previews: some View {
-        TDGameContainerView(mapId: "grasslands")
+        TDGameContainerView()
             .environmentObject(AppState.shared)
     }
 }

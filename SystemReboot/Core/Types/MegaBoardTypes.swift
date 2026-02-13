@@ -108,6 +108,8 @@ struct MegaBoardSector: Identifiable, Codable, Equatable {
 }
 
 // MARK: - Data Bus Connection
+// TODO: Stage 6 — remove DataBusConnection, EncryptionGate types and all rendering code
+// (always empty since lane system replaced connections/gates)
 
 /// Connection between two sectors (enemy path)
 struct DataBusConnection: Identifiable, Codable {

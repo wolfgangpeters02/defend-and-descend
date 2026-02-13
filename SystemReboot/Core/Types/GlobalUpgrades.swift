@@ -13,20 +13,20 @@ struct LegacyGlobalUpgrades: Codable, Equatable {
     var hddLevel: Int = 1
 }
 
-// MARK: - Sector (Debug Mode Levels)
+// MARK: - Debug Arena (Active Mode Levels)
 
-struct Sector: Identifiable, Codable, Equatable {
+struct DebugArena: Identifiable, Codable, Equatable {
     let id: String                  // "ram", "drive", "gpu"
     let name: String                // "The RAM"
     let subtitle: String            // "Memory Banks"
     let description: String         // "Open arena, swarm survival"
 
-    let difficulty: SectorDifficulty
+    let difficulty: ArenaDifficulty
     let hashMultiplier: CGFloat     // 1.0, 1.5, 2.0, 3.0
 
     let unlockCost: Int             // Hash to unlock (0 = free)
 
-    let layout: SectorLayout
+    let layout: ArenaLayout
     let visualTheme: String         // "ram", "drive", "gpu"
 
     let duration: TimeInterval      // How long to survive (180s = 3 min)
@@ -41,8 +41,8 @@ struct Sector: Identifiable, Codable, Equatable {
 
     /// Backwards compatible initializer (defaults to arena mode)
     init(id: String, name: String, subtitle: String, description: String,
-         difficulty: SectorDifficulty, hashMultiplier: CGFloat, unlockCost: Int,
-         layout: SectorLayout, visualTheme: String, duration: TimeInterval,
+         difficulty: ArenaDifficulty, hashMultiplier: CGFloat, unlockCost: Int,
+         layout: ArenaLayout, visualTheme: String, duration: TimeInterval,
          gameMode: GameMode = .arena, dungeonType: String? = nil) {
         self.id = id
         self.name = name
@@ -59,7 +59,7 @@ struct Sector: Identifiable, Codable, Equatable {
     }
 }
 
-enum SectorDifficulty: String, Codable {
+enum ArenaDifficulty: String, Codable {
     case easy
     case medium
     case hard
@@ -79,16 +79,16 @@ enum SectorDifficulty: String, Codable {
     }
 }
 
-enum SectorLayout: String, Codable {
+enum ArenaLayout: String, Codable {
     case arena                      // Open space, no walls
     case corridors                  // Narrow passages
     case mixed                      // Rooms connected by corridors
 }
 
-// MARK: - Sector Library
+// MARK: - Debug Arena Library
 
-struct SectorLibrary {
-    static let all: [Sector] = [
+struct DebugArenaLibrary {
+    static let all: [DebugArena] = [
         // Arena sectors
         theRam,
         theDrive,
@@ -102,17 +102,17 @@ struct SectorLibrary {
         voidRaid
     ]
 
-    static func get(_ id: String) -> Sector? {
+    static func get(_ id: String) -> DebugArena? {
         return all.first { $0.id == id }
     }
 
-    /// Starting sector (always unlocked)
+    /// Starting arena (always unlocked)
     /// Note: Must match PlayerProfile.defaultSectorId
-    static let starterSectorId = "ram"
+    static let starterArenaId = "ram"
 
-    // MARK: - Sector Definitions
+    // MARK: - Arena Definitions
 
-    static let theRam = Sector(
+    static let theRam = DebugArena(
         id: "ram",
         name: "The RAM",
         subtitle: "Memory Banks",
@@ -125,7 +125,7 @@ struct SectorLibrary {
         duration: 180
     )
 
-    static let theDrive = Sector(
+    static let theDrive = DebugArena(
         id: "drive",
         name: "The Drive",
         subtitle: "Data Storage",
@@ -138,7 +138,7 @@ struct SectorLibrary {
         duration: 180
     )
 
-    static let theGpu = Sector(
+    static let theGpu = DebugArena(
         id: "gpu",
         name: "The GPU",
         subtitle: "Graphics Core",
@@ -151,7 +151,7 @@ struct SectorLibrary {
         duration: 180
     )
 
-    static let theBios = Sector(
+    static let theBios = DebugArena(
         id: "bios",
         name: "The BIOS",
         subtitle: "System Core",
@@ -164,9 +164,9 @@ struct SectorLibrary {
         duration: 180
     )
 
-    // MARK: - Dungeon Sectors (Room-based progression with boss fights)
+    // MARK: - Dungeon Arenas (Room-based progression with boss fights)
 
-    static let cathedral = Sector(
+    static let cathedral = DebugArena(
         id: "cathedral",
         name: "The Cathedral",
         subtitle: "Corrupted Sanctuary",
@@ -181,7 +181,7 @@ struct SectorLibrary {
         dungeonType: "cathedral"
     )
 
-    static let frostCaverns = Sector(
+    static let frostCaverns = DebugArena(
         id: "frost_caverns",
         name: "Frost Caverns",
         subtitle: "Frozen Depths",
@@ -196,7 +196,7 @@ struct SectorLibrary {
         dungeonType: "frozen"
     )
 
-    static let volcanicCore = Sector(
+    static let volcanicCore = DebugArena(
         id: "volcanic_core",
         name: "Volcanic Core",
         subtitle: "Molten Depths",
@@ -211,7 +211,7 @@ struct SectorLibrary {
         dungeonType: "volcanic"
     )
 
-    static let heistVault = Sector(
+    static let heistVault = DebugArena(
         id: "heist_vault",
         name: "The Vault",
         subtitle: "High Security",
@@ -226,7 +226,7 @@ struct SectorLibrary {
         dungeonType: "heist"
     )
 
-    static let voidRaid = Sector(
+    static let voidRaid = DebugArena(
         id: "void_raid",
         name: "Void Raid",
         subtitle: "Direct Assault",

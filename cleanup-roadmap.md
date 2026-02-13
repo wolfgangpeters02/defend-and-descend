@@ -101,7 +101,8 @@ Stale terminology from earlier design iterations persists in comments, parameter
 ---
 
 ## Stage 4: Map/Level System Consolidation
-**Status:** OPEN
+**Status:** DONE
+**Summary:** Removed dead `selectedTDMap` from AppState; renamed `Sector`→`DebugArena` (and SectorDifficulty→ArenaDifficulty, SectorLayout→ArenaLayout, SectorLibrary→DebugArenaLibrary) across 5 files to disambiguate from TD sector types; renamed PlayerProfile `isSectorUnlocked`→`isDebugArenaUnlocked`; removed dead non-motherboard path from TDGameStateFactory (~150 lines) and `mapId` from TDGameContainerView; added Stage 6 TODO for DataBusConnection/EncryptionGate removal; confirmed TDConfig.json is bundled but never loaded (deferred to Stage 6).
 **Priority:** Medium (confusing but functional)
 **Estimated scope:** ~8 files
 
@@ -160,6 +161,8 @@ Two different upgrade cost formulas coexist. `SharedTypes.swift` (WeaponTower) u
 Leftover config data, unused state, and stale JSON. `TDConfig.json` uses "gold" naming and may not even be loaded. Wave-based fields on TDGameState (`waveInProgress`, `waveEnemiesRemaining`, etc.) may be vestigial now that the game uses continuous idle spawning. Legacy reward fallback paths in GameRewardService may be unreachable.
 
 ### What needs untangling
+- **`TDConfig.json` is confirmed dead** (Stage 4 verified: bundled but never loaded; only `GameConfig.json` is loaded by `GameConfigLoader`) — safe to delete
+- **`DataBusConnection` and `EncryptionGate` types are dead infrastructure** (Stage 4 added TODO: always-empty arrays, rendering code never produces output) — remove types, query methods, and rendering code
 - Verify which `TDConfig.json` fields are actually loaded by `GameConfigLoader`
 - Check if wave-tracking fields on TDGameState are read anywhere or are dead
 - Check if `GameRewardService` legacy fallback (`legacyHashPerKills` etc.) is ever reached
