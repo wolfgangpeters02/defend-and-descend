@@ -80,7 +80,7 @@ Scattered dead code that survived previous cleanup rounds.
 ---
 
 ## Stage 4: DRY Violations (Duplicate Hash Cap + Efficiency Color)
-**Status:** OPEN
+**Status:** DONE — Extracted efficiencyColor/powerColor to DesignHelpers (3+2 copies → 1 each, fixed MotherboardView missing orange threshold), added HashStorable protocol for shared addHash cap logic (TDGameState + PlayerProfile).
 **Priority:** Medium (identical logic in 2 places each — sync risk)
 **Estimated scope:** ~4 files
 

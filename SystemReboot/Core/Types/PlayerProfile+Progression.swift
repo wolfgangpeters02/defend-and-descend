@@ -17,17 +17,6 @@ extension PlayerProfile {
         return componentLevels.hashStorageCapacity
     }
 
-    /// Add hash with storage cap enforcement
-    /// Returns the actual amount added (may be less if hitting cap)
-    @discardableResult
-    mutating func addHash(_ amount: Int) -> Int {
-        let cap = hashStorageCapacity
-        let spaceAvailable = max(0, cap - hash)
-        let actualAdded = min(amount, spaceAvailable)
-        hash += actualAdded
-        return actualAdded
-    }
-
     /// Check if hash storage is full
     var isHashStorageFull: Bool {
         return hash >= hashStorageCapacity

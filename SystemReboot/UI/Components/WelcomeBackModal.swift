@@ -12,12 +12,7 @@ struct WelcomeBackModal: View {
     @State private var showStats = false
 
     private var efficiencyColor: Color {
-        switch earnings.newEfficiency {
-        case 0.7...: return .green
-        case 0.4..<0.7: return .yellow
-        case 0.2..<0.4: return .orange
-        default: return .red
-        }
+        DesignHelpers.efficiencyColor(CGFloat(earnings.newEfficiency) * 100)
     }
 
     private var threatColor: Color {

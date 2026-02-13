@@ -287,10 +287,7 @@ struct MotherboardView: View {
     }
 
     private var efficiencyColor: Color {
-        let eff = (embeddedGameController.gameState?.efficiency ?? 100) / 100.0
-        if eff >= 0.7 { return DesignColors.success }
-        if eff >= 0.4 { return DesignColors.warning }
-        return DesignColors.danger
+        DesignHelpers.efficiencyColor(embeddedGameController.gameState?.efficiency ?? 100)
     }
 
     /// Format hash with compact notation for large numbers (1.2K, 3.4M, etc.)
@@ -307,12 +304,9 @@ struct MotherboardView: View {
     }
 
     private var powerColor: Color {
-        guard let state = embeddedGameController.gameState else { return DesignColors.success }
-        let usage = Double(state.powerUsed) / Double(max(1, state.powerCapacity))
-        if usage >= 0.95 { return DesignColors.danger }    // At capacity
-        if usage >= 0.75 { return DesignColors.warning }   // Getting full
-        if usage >= 0.50 { return .yellow }                 // Half used
-        return DesignColors.success                         // Plenty available
+        guard let state = embeddedGameController.gameState else { return DesignHelpers.powerColor(usage: 0) }
+        let usage = CGFloat(state.powerUsed) / CGFloat(max(1, state.powerCapacity))
+        return DesignHelpers.powerColor(usage: usage)
     }
 
     @ViewBuilder

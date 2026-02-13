@@ -644,6 +644,22 @@ enum DesignHelpers {
         }
     }
 
+    /// Color for system efficiency percentage (0–100 scale)
+    static func efficiencyColor(_ percentage: CGFloat) -> Color {
+        if percentage >= 70 { return DesignColors.success }
+        if percentage >= 40 { return .yellow }
+        if percentage >= 20 { return DesignColors.warning }
+        return DesignColors.danger
+    }
+
+    /// Color for power usage ratio (0.0–1.0 scale)
+    static func powerColor(usage: CGFloat) -> Color {
+        if usage >= 0.95 { return DesignColors.danger }
+        if usage >= 0.75 { return DesignColors.warning }
+        if usage >= 0.50 { return .yellow }
+        return DesignColors.success
+    }
+
     /// SF Symbol name for a protocol type
     static func iconForProtocol(_ protocolId: String) -> String {
         switch protocolId.lowercased() {

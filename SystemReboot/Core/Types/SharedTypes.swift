@@ -1,6 +1,26 @@
 import Foundation
 import CoreGraphics
 
+// MARK: - Hash Storage Protocol
+
+/// Shared cap-enforcement logic for hash currency storage.
+/// Conformed by TDGameState (session) and PlayerProfile (persistent).
+protocol HashStorable {
+    var hash: Int { get set }
+    var hashStorageCapacity: Int { get }
+}
+
+extension HashStorable {
+    /// Add hash with storage cap enforcement. Returns actual amount added.
+    @discardableResult
+    mutating func addHash(_ amount: Int) -> Int {
+        let spaceAvailable = max(0, hashStorageCapacity - hash)
+        let actualAdded = min(amount, spaceAvailable)
+        hash += actualAdded
+        return actualAdded
+    }
+}
+
 // MARK: - Shared Types for Survivor + TD Unified Progression
 // These types work identically in both modes
 

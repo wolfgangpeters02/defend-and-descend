@@ -379,21 +379,14 @@ struct TDGameContainerView: View {
 
     /// Color for efficiency display
     var efficiencyColor: Color {
-        let efficiency = calculateEfficiency()
-        if efficiency >= 70 { return .green }
-        if efficiency >= 40 { return .yellow }
-        if efficiency >= 20 { return .orange }
-        return .red
+        DesignHelpers.efficiencyColor(calculateEfficiency())
     }
 
     /// Color for power usage display
     var powerColor: Color {
-        guard let state = gameState else { return .green }
-        let usage = Double(state.powerUsed) / Double(max(1, state.powerCapacity))
-        if usage >= 0.95 { return .red }      // At capacity
-        if usage >= 0.75 { return .orange }   // Getting full
-        if usage >= 0.50 { return .yellow }   // Half used
-        return .green                          // Plenty available
+        guard let state = gameState else { return DesignHelpers.powerColor(usage: 0) }
+        let usage = CGFloat(state.powerUsed) / CGFloat(max(1, state.powerCapacity))
+        return DesignHelpers.powerColor(usage: usage)
     }
 
     /// Current Hash per second income rate

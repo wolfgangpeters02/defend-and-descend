@@ -14,7 +14,7 @@ struct BossKillRecord: Codable {
 
 // MARK: - Player Profile (Unified Progression)
 
-struct PlayerProfile: Codable {
+struct PlayerProfile: Codable, HashStorable {
     var id: String
     var displayName: String
     var createdAt: String

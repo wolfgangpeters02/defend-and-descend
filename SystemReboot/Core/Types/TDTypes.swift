@@ -5,7 +5,7 @@ import CoreGraphics
 
 // MARK: - TD Game State
 
-struct TDGameState {
+struct TDGameState: HashStorable {
     // Session
     var sessionId: String
     var playerId: String
@@ -93,16 +93,6 @@ struct TDGameState {
 
     // Hash Storage Cap (System: Reboot)
     var hashStorageCapacity: Int = BalanceConfig.TDSession.defaultHashStorageCapacity  // Set from player's HDD level
-
-    /// Add hash with storage cap enforcement
-    /// Returns the actual amount added
-    @discardableResult
-    mutating func addHash(_ amount: Int) -> Int {
-        let spaceAvailable = max(0, hashStorageCapacity - hash)
-        let actualAdded = min(amount, spaceAvailable)
-        hash += actualAdded
-        return actualAdded
-    }
 
     // Efficiency System (System: Reboot core mechanic)
     // Efficiency determines Hash income rate - no death, just reduced income
