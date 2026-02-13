@@ -70,10 +70,10 @@ struct TDGameState: HashStorable {
 
     /// Enemy types available at current threat level (thresholds from BalanceConfig)
     var idleAvailableEnemyTypes: [String] {
-        var types = ["basic"]
-        if idleThreatLevel >= BalanceConfig.ThreatLevel.fastEnemyThreshold { types.append("fast") }
-        if idleThreatLevel >= BalanceConfig.ThreatLevel.tankEnemyThreshold { types.append("tank") }
-        if idleThreatLevel >= BalanceConfig.ThreatLevel.bossEnemyThreshold { types.append("boss") }
+        var types = [EnemyID.basic.rawValue]
+        if idleThreatLevel >= BalanceConfig.ThreatLevel.fastEnemyThreshold { types.append(EnemyID.fast.rawValue) }
+        if idleThreatLevel >= BalanceConfig.ThreatLevel.tankEnemyThreshold { types.append(EnemyID.tank.rawValue) }
+        if idleThreatLevel >= BalanceConfig.ThreatLevel.bossEnemyThreshold { types.append(EnemyID.boss.rawValue) }
         return types
     }
 

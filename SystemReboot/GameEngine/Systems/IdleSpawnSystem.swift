@@ -67,7 +67,7 @@ class IdleSpawnSystem {
     /// Select enemy type based on threat level with weighted probability
     private static func selectEnemyType(threatLevel: CGFloat) -> String {
         // Build weighted probability list
-        var weights: [(type: String, weight: Int)] = [("basic", 100)]
+        var weights: [(type: String, weight: Int)] = [(EnemyID.basic.rawValue, 100)]
 
         // Fast enemies - quick and moderately dangerous
         if threatLevel >= BalanceConfig.ThreatLevel.fastEnemyThreshold {
@@ -75,16 +75,16 @@ class IdleSpawnSystem {
                 BalanceConfig.ThreatLevel.fastEnemyMaxWeight,
                 Int((threatLevel - BalanceConfig.ThreatLevel.fastEnemyThreshold) * BalanceConfig.ThreatLevel.fastEnemyWeightPerThreat)
             )
-            weights.append(("fast", fastWeight))
+            weights.append((EnemyID.fast.rawValue, fastWeight))
         }
 
-        // Swarm enemies - weak but fast, come in groups (uses voidminion)
+        // Swarm enemies - weak but fast, come in groups (uses voidminion config)
         if threatLevel >= BalanceConfig.ThreatLevel.swarmEnemyThreshold {
             let swarmWeight = min(
                 BalanceConfig.ThreatLevel.swarmEnemyMaxWeight,
                 Int((threatLevel - BalanceConfig.ThreatLevel.swarmEnemyThreshold) * BalanceConfig.ThreatLevel.swarmEnemyWeightPerThreat)
             )
-            weights.append(("voidminion", swarmWeight))
+            weights.append((EnemyID.voidminion.rawValue, swarmWeight))
         }
 
         // Tank enemies - slow but tough
@@ -93,7 +93,7 @@ class IdleSpawnSystem {
                 BalanceConfig.ThreatLevel.tankEnemyMaxWeight,
                 Int((threatLevel - BalanceConfig.ThreatLevel.tankEnemyThreshold) * BalanceConfig.ThreatLevel.tankEnemyWeightPerThreat)
             )
-            weights.append(("tank", tankWeight))
+            weights.append((EnemyID.tank.rawValue, tankWeight))
         }
 
         // Elite enemies - fast and tanky hybrid (uses fast enemy with boosted stats)
@@ -102,7 +102,7 @@ class IdleSpawnSystem {
                 BalanceConfig.ThreatLevel.eliteEnemyMaxWeight,
                 Int((threatLevel - BalanceConfig.ThreatLevel.eliteEnemyThreshold) * BalanceConfig.ThreatLevel.eliteEnemyWeightPerThreat)
             )
-            weights.append(("elite", eliteWeight))
+            weights.append((EnemyID.elite.rawValue, eliteWeight))
         }
 
         // Boss enemies - rare and powerful
@@ -111,7 +111,7 @@ class IdleSpawnSystem {
                 BalanceConfig.ThreatLevel.bossEnemyMaxWeight,
                 Int((threatLevel - BalanceConfig.ThreatLevel.bossEnemyThreshold) * BalanceConfig.ThreatLevel.bossEnemyWeightPerThreat)
             )
-            weights.append(("boss", bossWeight))
+            weights.append((EnemyID.boss.rawValue, bossWeight))
         }
 
         // Calculate total weight and pick randomly
@@ -125,7 +125,7 @@ class IdleSpawnSystem {
             }
         }
 
-        return "basic"
+        return EnemyID.basic.rawValue
     }
 
     // MARK: - Lane Selection
@@ -229,12 +229,12 @@ class IdleSpawnSystem {
 
     /// Get enemy types available at a threat level (for UI display)
     static func getAvailableEnemyTypes(threatLevel: CGFloat) -> [String] {
-        var types = ["basic"]
-        if threatLevel >= BalanceConfig.ThreatLevel.fastEnemyThreshold { types.append("fast") }
-        if threatLevel >= BalanceConfig.ThreatLevel.swarmEnemyThreshold { types.append("swarm") }
-        if threatLevel >= BalanceConfig.ThreatLevel.tankEnemyThreshold { types.append("tank") }
-        if threatLevel >= BalanceConfig.ThreatLevel.eliteEnemyThreshold { types.append("elite") }
-        if threatLevel >= BalanceConfig.ThreatLevel.bossEnemyThreshold { types.append("boss") }
+        var types = [EnemyID.basic.rawValue]
+        if threatLevel >= BalanceConfig.ThreatLevel.fastEnemyThreshold { types.append(EnemyID.fast.rawValue) }
+        if threatLevel >= BalanceConfig.ThreatLevel.swarmEnemyThreshold { types.append(EnemyID.voidminion.rawValue) }
+        if threatLevel >= BalanceConfig.ThreatLevel.tankEnemyThreshold { types.append(EnemyID.tank.rawValue) }
+        if threatLevel >= BalanceConfig.ThreatLevel.eliteEnemyThreshold { types.append(EnemyID.elite.rawValue) }
+        if threatLevel >= BalanceConfig.ThreatLevel.bossEnemyThreshold { types.append(EnemyID.boss.rawValue) }
         return types
     }
 }

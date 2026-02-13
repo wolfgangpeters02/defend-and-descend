@@ -224,7 +224,7 @@ class SimulationRunner {
 
         for psuLevel in [1, 3, 5, 7, 10] {
             var levels = BalanceConfig.Simulation.earlyGame
-            levels.psu = psuLevel
+            levels.power = psuLevel
 
             let config = SimulationConfig(
                 seed: 42,
@@ -385,7 +385,7 @@ class SimulationRunner {
 
         // Scenario C: PSU constraint
         var levelsC = BalanceConfig.Simulation.earlyGame
-        levelsC.psu = 1
+        levelsC.power = 1
         let configC = SimulationConfig(
             seed: 42,
             bot: SpreadBot(),
@@ -436,7 +436,7 @@ class SimulationRunner {
         log(String(repeating: "─", count: 55))
 
         let componentTests: [(String, (inout ComponentLevels) -> Void)] = [
-            ("PSU→5", { $0.psu = 5 }),
+            ("PSU→5", { $0.power = 5 }),
             ("CPU→5", { $0.cpu = 5 }),
             ("RAM→5", { $0.ram = 5 }),
             ("Cache→5", { $0.cache = 5 }),
@@ -786,9 +786,9 @@ class SimulationRunner {
         for (name, psuDesc, protocols) in testCases {
             var levels = BalanceConfig.Simulation.earlyGame
             if psuDesc.contains("3") {
-                levels.psu = 3
+                levels.power = 3
             } else if psuDesc.contains("5") {
-                levels.psu = 5
+                levels.power = 5
             }
 
             let config = SimulationConfig(

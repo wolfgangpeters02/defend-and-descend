@@ -405,11 +405,11 @@ class CyberbossAI {
         let tankCount = min(Int.random(in: BalanceConfig.Cyberboss.tankMinionCountMin...BalanceConfig.Cyberboss.tankMinionCountMax), remainingSlots)
 
         for _ in 0..<fastCount {
-            spawnMinion(type: "fast", near: boss, gameState: &gameState)
+            spawnMinion(type: EnemyID.fast.rawValue, near: boss, gameState: &gameState)
         }
 
         for _ in 0..<tankCount {
-            spawnMinion(type: "tank", near: boss, gameState: &gameState)
+            spawnMinion(type: EnemyID.tank.rawValue, near: boss, gameState: &gameState)
         }
     }
 

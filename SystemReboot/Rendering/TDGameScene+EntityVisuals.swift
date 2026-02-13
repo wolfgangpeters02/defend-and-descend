@@ -630,11 +630,11 @@ extension TDGameScene {
             virusColor = DesignColors.enemyBossUI
         } else {
             switch enemy.type {
-            case "fast":
+            case EnemyID.fast.rawValue:
                 virusColor = DesignColors.enemyTier2UI  // Orange
-            case "tank":
+            case EnemyID.tank.rawValue:
                 virusColor = DesignColors.enemyTier3UI  // Purple
-            case "elite":
+            case EnemyID.elite.rawValue:
                 virusColor = DesignColors.enemyTier4UI  // Magenta
             default:
                 virusColor = DesignColors.enemyTier1UI  // Red (basic)
@@ -648,7 +648,7 @@ extension TDGameScene {
             // Boss-specific compositions based on type
             let innerNode: SKShapeNode?
 
-            if enemy.type == "cyberboss" {
+            if enemy.type == EnemyID.cyberboss.rawValue {
                 // Cyberboss — full 8-node "Corporate AI" composition
                 let _ = EntityRenderer.createCyberbossComposition(in: container, size: enemy.size)
                 body = (container.childNode(withName: "body") as? SKShapeNode)
@@ -659,7 +659,7 @@ extension TDGameScene {
                 }
                 innerNode = nil  // Cyberboss has its own inner nodes
 
-            } else if enemy.type == "overclocker" {
+            } else if enemy.type == EnemyID.overclocker.rawValue {
                 // Overclocker — 7-node "CPU Overheat" composition
                 let _ = EntityRenderer.createOverclockerComposition(in: container, size: enemy.size)
                 body = (container.childNode(withName: "body") as? SKShapeNode)
@@ -760,7 +760,7 @@ extension TDGameScene {
                 let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 5.0)
                 innerNode?.run(SKAction.repeatForever(rotate))
 
-            } else if enemy.isBoss && enemy.type != "cyberboss" && enemy.type != "overclocker" {
+            } else if enemy.isBoss && enemy.type != EnemyID.cyberboss.rawValue && enemy.type != EnemyID.overclocker.rawValue {
                 // Regular/legacy boss (not handled by archetype compositions)
                 let bossLabel = SKLabelNode(text: L10n.Enemy.bossIndicator)
                 bossLabel.fontName = "Menlo-Bold"

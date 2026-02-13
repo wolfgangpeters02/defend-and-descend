@@ -3,13 +3,13 @@ import CoreGraphics
 
 // MARK: - Component Types
 // Sector-based upgrade system - each sector has an upgradable component
-// Fixed unlock order: PSU → Storage → RAM → GPU → Cache → Expansion → I/O → Network → CPU
+// Fixed unlock order: Power (PSU) → Storage → RAM → GPU → Cache → Expansion → I/O → Network → CPU
 
 // MARK: - Component Type Enum
 
 /// All upgradable components in the game
 enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
-    case psu = "psu"
+    case power = "psu"     // rawValue stays "psu" for serialization compat
     case storage = "storage"
     case ram = "ram"
     case gpu = "gpu"
@@ -26,7 +26,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// Localized display name
     var displayName: String {
         switch self {
-        case .psu: return L10n.Component.psuName
+        case .power: return L10n.Component.psuName
         case .storage: return L10n.Component.storageName
         case .ram: return L10n.Component.ramName
         case .gpu: return L10n.Component.gpuName
@@ -41,7 +41,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// Localized effect description
     var effectDescription: String {
         switch self {
-        case .psu: return L10n.Component.psuEffect
+        case .power: return L10n.Component.psuEffect
         case .storage: return L10n.Component.storageEffect
         case .ram: return L10n.Component.ramEffect
         case .gpu: return L10n.Component.gpuEffect
@@ -56,7 +56,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// Associated sector ID for this component
     var sectorId: SectorID {
         switch self {
-        case .psu: return .power
+        case .power: return .power
         case .storage: return .storage
         case .ram: return .ram
         case .gpu: return .gpu
@@ -71,7 +71,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// UI color hex for this component
     var color: String {
         switch self {
-        case .psu: return "#f59e0b"       // Amber (power)
+        case .power: return "#f59e0b"       // Amber (power)
         case .storage: return "#6366f1"   // Indigo
         case .ram: return "#22c55e"       // Green
         case .gpu: return "#ef4444"       // Red
@@ -86,7 +86,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// SF Symbol for this component
     var sfSymbol: String {
         switch self {
-        case .psu: return "bolt.fill"
+        case .power: return "bolt.fill"
         case .storage: return "internaldrive.fill"
         case .ram: return "memorychip.fill"
         case .gpu: return "rectangle.3.group.fill"
@@ -104,7 +104,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// Must match BalanceConfig.SectorUnlock.unlockOrder
     var unlockOrder: Int {
         switch self {
-        case .psu: return 0
+        case .power: return 0
         case .ram: return 1
         case .gpu: return 2
         case .cache: return 3
@@ -120,8 +120,8 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// Must match BalanceConfig.SectorUnlock.unlockOrder
     var prerequisiteComponent: UpgradeableComponent? {
         switch self {
-        case .psu: return nil        // Starter
-        case .ram: return .psu
+        case .power: return nil        // Starter
+        case .ram: return .power
         case .gpu: return .ram
         case .cache: return .gpu
         case .storage: return .cache
@@ -142,7 +142,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
     /// Get effect value at a given level
     func effectValue(at level: Int) -> String {
         switch self {
-        case .psu:
+        case .power:
             let watts = BalanceConfig.Components.psuCapacity(at: level)
             return L10n.Component.watts(watts)
 
@@ -196,7 +196,7 @@ enum UpgradeableComponent: String, CaseIterable, Codable, Identifiable {
 
 /// Stores all component levels for a player
 struct ComponentLevels: Codable, Equatable {
-    var psu: Int = 1
+    var power: Int = 1
     var storage: Int = 1
     var ram: Int = 1
     var gpu: Int = 1
@@ -206,6 +206,12 @@ struct ComponentLevels: Codable, Equatable {
     var network: Int = 1
     var cpu: Int = 1
 
+    /// Backwards compat: saved data uses "psu" key for the power field
+    enum CodingKeys: String, CodingKey {
+        case power = "psu"
+        case storage, ram, gpu, cache, expansion, io, network, cpu
+    }
+
     static let maxLevel = BalanceConfig.Components.maxLevel
 
     // MARK: - Subscript Access
@@ -214,7 +220,7 @@ struct ComponentLevels: Codable, Equatable {
     subscript(_ type: UpgradeableComponent) -> Int {
         get {
             switch type {
-            case .psu: return psu
+            case .power: return power
             case .storage: return storage
             case .ram: return ram
             case .gpu: return gpu
@@ -228,7 +234,7 @@ struct ComponentLevels: Codable, Equatable {
         set {
             let clamped = min(max(newValue, 1), Self.maxLevel)
             switch type {
-            case .psu: psu = clamped
+            case .power: power = clamped
             case .storage: storage = clamped
             case .ram: ram = clamped
             case .gpu: gpu = clamped
@@ -245,7 +251,7 @@ struct ComponentLevels: Codable, Equatable {
 
     /// Power capacity from PSU level
     var powerCapacity: Int {
-        BalanceConfig.Components.psuCapacity(at: psu)
+        BalanceConfig.Components.psuCapacity(at: power)
     }
 
     /// Hash storage capacity from Storage level
@@ -340,7 +346,7 @@ struct UnlockedComponents: Codable, Equatable {
 
     /// Check if a component is unlocked
     func isUnlocked(_ type: UpgradeableComponent) -> Bool {
-        // PSU (order 0) is always unlocked
+        // Power/PSU (order 0) is always unlocked
         // Each subsequent component unlocks after defeating the previous boss
         return type.unlockOrder <= defeatedBossCount
     }

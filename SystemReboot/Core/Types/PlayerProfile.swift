@@ -283,7 +283,7 @@ extension PlayerProfile {
         }
 
         // Migrate legacy globalUpgrades → componentLevels (take max of each)
-        profile.componentLevels.psu = max(profile.componentLevels.psu, profile.globalUpgrades.psuLevel)
+        profile.componentLevels.power = max(profile.componentLevels.power, profile.globalUpgrades.psuLevel)
         profile.componentLevels.cpu = max(profile.componentLevels.cpu, profile.globalUpgrades.cpuLevel)
         profile.componentLevels.ram = max(profile.componentLevels.ram, profile.globalUpgrades.ramLevel)
         profile.componentLevels.cache = max(profile.componentLevels.cache, profile.globalUpgrades.coolingLevel)

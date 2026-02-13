@@ -7,12 +7,12 @@ class XPSystem {
 
     // XP values by enemy type (from BalanceConfig)
     static let enemyXPValues: [String: Int] = [
-        "basic": BalanceConfig.XPSystem.basicEnemyXP,
-        "fast": BalanceConfig.XPSystem.fastEnemyXP,
-        "tank": BalanceConfig.XPSystem.tankEnemyXP,
-        "boss": BalanceConfig.XPSystem.bossEnemyXP,
-        "cyberboss": BalanceConfig.XPSystem.cyberbossXP,
-        "voidharbinger": BalanceConfig.XPSystem.voidHarbingerXP
+        EnemyID.basic.rawValue: BalanceConfig.XPSystem.basicEnemyXP,
+        EnemyID.fast.rawValue: BalanceConfig.XPSystem.fastEnemyXP,
+        EnemyID.tank.rawValue: BalanceConfig.XPSystem.tankEnemyXP,
+        EnemyID.boss.rawValue: BalanceConfig.XPSystem.bossEnemyXP,
+        EnemyID.cyberboss.rawValue: BalanceConfig.XPSystem.cyberbossXP,
+        EnemyID.voidharbinger.rawValue: BalanceConfig.XPSystem.voidHarbingerXP
     ]
 
     // Loot box thresholds (from BalanceConfig)

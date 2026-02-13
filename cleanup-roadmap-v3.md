@@ -184,9 +184,25 @@ While the computed property exists on TDGameState, other files re-derive the for
 ---
 
 ## Stage 5: Type Safety — Enemy Type Enum + ComponentType/SectorID Alignment
-**Status:** OPEN
+**Status:** DONE
 **Priority:** Medium (no compile-time safety, naming mismatch)
 **Estimated scope:** ~8 files
+
+### Summary of Changes
+- **EntityIDs.swift**: Added 4 missing cases to `EnemyID` enum: `overclocker`, `voidPylon` ("void_pylon"), `voidMinionSpawn` ("void_minion"), `voidElite` ("void_elite"); updated `isBoss` to include `.overclocker`
+- **IdleSpawnSystem.swift**: Replaced all 13 raw enemy type strings with `EnemyID.x.rawValue`; fixed "swarm" vs "voidminion" UI inconsistency (line 234 said "swarm" but spawn system used "voidminion")
+- **WaveSystem.swift**: Replaced all 10 raw enemy type strings with `EnemyID.x.rawValue`
+- **TDTypes.swift**: Replaced 4 raw strings in `idleAvailableEnemyTypes` computed property with `EnemyID.x.rawValue`
+- **XPSystem.swift**: Replaced 6 raw string dictionary keys in `enemyXPValues` with `EnemyID.x.rawValue`
+- **CyberbossAI.swift**: Replaced 2 raw strings in `spawnMinion(type:)` calls with `EnemyID.fast/tank.rawValue`
+- **TDGameScene+EntityVisuals.swift**: Replaced 6 raw strings in enemy color switch and boss type checks with `EnemyID.x.rawValue`
+- **TDGameScene+Paths.swift**: Replaced 2 raw strings in LED color switch with `EnemyID.x.rawValue`
+- **EntityRenderer.swift**: Replaced 5 raw strings in special rendering checks (void_pylon, void_minion, void_elite, boss) with `EnemyID.x.rawValue`
+- **ComponentTypes.swift**: Renamed `UpgradeableComponent.psu` → `.power` (rawValue stays `"psu"` for serialization compat); renamed `ComponentLevels.psu` → `.power` with `CodingKeys` for backwards compat; simplified `sectorId` mapping (`case .power: return .power`)
+- **BalanceConfig.swift**: Updated 4 `ComponentLevels` preset initializers from `psu:` → `power:`
+- **DebugGameView.swift**: Updated 4 `.psu` references → `.power`
+- **SimulationRunner.swift**: Updated 4 `.psu` property accesses → `.power`
+- **PlayerProfile.swift**: Updated 1 `.psu` migration reference → `.power`
 
 ### Problem A — Enemy Types as Raw Strings
 Enemy types are scattered as raw string literals (`"basic"`, `"fast"`, `"tank"`, `"boss"`, `"voidminion"`) across multiple files with no enum. Typos won't be caught at compile time.

@@ -679,11 +679,11 @@ struct CurrencyInfoSheet: View {
 
     @ViewBuilder
     private var psuUpgradeSection: some View {
-        let currentLevel = appState.currentPlayer.componentLevels.psu
+        let currentLevel = appState.currentPlayer.componentLevels.power
         let tierName = ComponentLevels.psuTierName(at: currentLevel)
         let currentCapacity = BalanceConfig.Components.psuCapacity(at: currentLevel)
         let nextCapacity = currentLevel < ComponentLevels.maxLevel ? BalanceConfig.Components.psuCapacity(at: currentLevel + 1) : nil
-        let upgradeCost = appState.currentPlayer.componentLevels.upgradeCost(for: .psu)
+        let upgradeCost = appState.currentPlayer.componentLevels.upgradeCost(for: .power)
         let canAfford = upgradeCost != nil && appState.currentPlayer.hash >= upgradeCost!
 
         VStack(spacing: 16) {
@@ -748,13 +748,13 @@ struct CurrencyInfoSheet: View {
     }
 
     private func upgradePSU() {
-        guard let cost = appState.currentPlayer.componentLevels.upgradeCost(for: .psu),
+        guard let cost = appState.currentPlayer.componentLevels.upgradeCost(for: .power),
               appState.currentPlayer.hash >= cost else { return }
 
         HapticsService.shared.play(.success)
         appState.updatePlayer { profile in
             profile.hash -= cost
-            profile.componentLevels.upgrade(.psu)
+            profile.componentLevels.upgrade(.power)
         }
     }
 }

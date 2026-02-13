@@ -48,18 +48,18 @@ class EntityRenderer {
         let size = enemy.size ?? 20
 
         // Special rendering for Void Harbinger boss
-        if enemy.isBoss && enemy.type == "boss" && color == colorFromHex("#8800ff") {
+        if enemy.isBoss && enemy.type == EnemyID.boss.rawValue && color == colorFromHex("#8800ff") {
             return createVoidHarbingerNode(size: size, color: color)
         }
 
         // Skip void_pylon enemies - they're rendered by boss mechanics in GameScene
-        if enemy.type == "void_pylon" {
+        if enemy.type == EnemyID.voidPylon.rawValue {
             return SKNode()  // Empty node - pylon visuals handled by GameScene
         }
 
         // Special rendering for void minions
-        if enemy.type == "void_minion" || enemy.type == "void_elite" {
-            return createVoidMinionNode(size: size, color: color, isElite: enemy.type == "void_elite")
+        if enemy.type == EnemyID.voidMinionSpawn.rawValue || enemy.type == EnemyID.voidElite.rawValue {
+            return createVoidMinionNode(size: size, color: color, isElite: enemy.type == EnemyID.voidElite.rawValue)
         }
 
         switch enemy.shape ?? "circle" {

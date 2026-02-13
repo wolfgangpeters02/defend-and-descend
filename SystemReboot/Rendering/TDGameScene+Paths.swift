@@ -549,9 +549,9 @@ extension TDGameScene {
                     // Enemy nearby - show active state with boosted glow
                     let activeColor: UIColor
                     switch enemy.type {
-                    case "boss":
+                    case EnemyID.boss.rawValue:
                         activeColor = UIColor.white
-                    case "fast":
+                    case EnemyID.fast.rawValue:
                         activeColor = UIColor(red: 1.0, green: 0.6, blue: 0.2, alpha: 1.0)
                     default:
                         activeColor = themeColor

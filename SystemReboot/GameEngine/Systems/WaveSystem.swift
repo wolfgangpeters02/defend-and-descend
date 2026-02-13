@@ -34,7 +34,7 @@ class WaveSystem {
         if number <= BalanceConfig.Waves.earlyWaveMax {
             // Early waves: only basic enemies
             enemies.append(WaveEnemy(
-                type: "basic",
+                type: EnemyID.basic.rawValue,
                 count: baseCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
@@ -42,13 +42,13 @@ class WaveSystem {
         } else if number <= BalanceConfig.Waves.midEarlyWaveMax {
             // Mid-early: basic + fast
             enemies.append(WaveEnemy(
-                type: "basic",
+                type: EnemyID.basic.rawValue,
                 count: baseCount / 2,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
-                type: "fast",
+                type: EnemyID.fast.rawValue,
                 count: baseCount / 2,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
@@ -59,19 +59,19 @@ class WaveSystem {
             let fastCount = baseCount / 3
             let tankCount = baseCount - basicCount - fastCount
             enemies.append(WaveEnemy(
-                type: "basic",
+                type: EnemyID.basic.rawValue,
                 count: basicCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
-                type: "fast",
+                type: EnemyID.fast.rawValue,
                 count: fastCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
-                type: "tank",
+                type: EnemyID.tank.rawValue,
                 count: tankCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
@@ -82,19 +82,19 @@ class WaveSystem {
             let tankCount = baseCount / 4
             let fastCount = baseCount - basicCount - tankCount
             enemies.append(WaveEnemy(
-                type: "basic",
+                type: EnemyID.basic.rawValue,
                 count: basicCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
-                type: "fast",
+                type: EnemyID.fast.rawValue,
                 count: fastCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
             ))
             enemies.append(WaveEnemy(
-                type: "tank",
+                type: EnemyID.tank.rawValue,
                 count: tankCount,
                 healthMultiplier: healthMult,
                 speedMultiplier: speedMult
@@ -104,7 +104,7 @@ class WaveSystem {
         // Boss waves every N waves
         if number % BalanceConfig.Waves.bossWaveInterval == 0 {
             enemies.append(WaveEnemy(
-                type: "boss",
+                type: EnemyID.boss.rawValue,
                 count: 1,
                 healthMultiplier: healthMult * BalanceConfig.Waves.bossHealthMultiplier,
                 speedMultiplier: speedMult * BalanceConfig.Waves.bossSpeedMultiplier
