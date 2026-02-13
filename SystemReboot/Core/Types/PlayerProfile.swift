@@ -129,11 +129,14 @@ struct PlayerProfile: Codable {
     /// NOTE: Source of truth is tdStats.averageEfficiency
     var offlineEfficiencySnapshot: CGFloat = 1.0
 
-    // MARK: - Legacy Fields (Preserved for migration)
+    // MARK: - Legacy Fields (Preserved for save backward compat — do NOT read from these)
+    // Canonical data lives in compiledProtocols/protocolLevels.
+    // These are kept so old saves decode; migrate() copies them into the protocol system.
 
-    // Collection unlocks (shared between modes) - LEGACY
+    /// DEPRECATED: Use compiledProtocols instead. Kept for Codable backward compat.
     var unlocks: PlayerUnlocks
-    var weaponLevels: [String: Int]  // weapon_id -> level (1-10)
+    /// DEPRECATED: Use protocolLevels instead. Kept for Codable backward compat.
+    var weaponLevels: [String: Int]
 
     // Stats by mode
     var survivorStats: SurvivorModeStats
@@ -284,12 +287,17 @@ extension PlayerProfile {
             }
         }
 
-        // Migrate legacy gold to hash if needed
-        // This happens automatically via StorageService migration
-
-        // Blueprint system: ensure bossKillRecords is initialized
-        // (New field added for tracking boss kills and drop rates)
-        // Note: This is a no-op if already initialized via Codable
+        // Migrate legacy weapon data → protocol system
+        // Old saves may only have weaponLevels/unlocks.weapons; copy to canonical protocol fields
+        for (weaponId, level) in profile.weaponLevels {
+            let existingLevel = profile.protocolLevels[weaponId] ?? 0
+            profile.protocolLevels[weaponId] = max(existingLevel, level)
+        }
+        for weaponId in profile.unlocks.weapons {
+            if !profile.compiledProtocols.contains(weaponId) {
+                profile.compiledProtocols.append(weaponId)
+            }
+        }
 
         return profile
     }

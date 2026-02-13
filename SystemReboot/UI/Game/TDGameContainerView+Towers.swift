@@ -18,36 +18,22 @@ extension TDGameContainerView {
             // Scrollable tower cards - large and touch-friendly
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    // Use Protocol-based deck if player has compiled protocols
                     let protocols = getCompiledProtocols()
-                    if !protocols.isEmpty {
-                        ForEach(Array(protocols.enumerated()), id: \.element.id) { index, proto in
-                            ProtocolDeckCard(
-                                protocol: proto,
-                                hash: gameState?.hash ?? 0,
-                                onDragStart: { startDragFromDeck(weaponType: proto.id) },
-                                onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
-                                onDragEnded: { endDragFromDeck() }
-                            )
-                            // FTUE: Glow on first card for new players
-                            .tutorialGlow(
-                                color: DesignColors.primary,
-                                isActive: index == 0 &&
-                                    !appState.currentPlayer.firstTowerPlaced &&
-                                    TutorialHintManager.shared.shouldShowHint(.deckCard, profile: appState.currentPlayer)
-                            )
-                        }
-                    } else {
-                        // Fallback to legacy weapon system
-                        ForEach(getAvailableTowers(), id: \.id) { weapon in
-                            TowerDeckCard(
-                                weapon: weapon,
-                                gold: gameState?.hash ?? 0,
-                                onDragStart: { startDragFromDeck(weaponType: weapon.id) },
-                                onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
-                                onDragEnded: { endDragFromDeck() }
-                            )
-                        }
+                    ForEach(Array(protocols.enumerated()), id: \.element.id) { index, proto in
+                        ProtocolDeckCard(
+                            protocol: proto,
+                            hash: gameState?.hash ?? 0,
+                            onDragStart: { startDragFromDeck(weaponType: proto.id) },
+                            onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
+                            onDragEnded: { endDragFromDeck() }
+                        )
+                        // FTUE: Glow on first card for new players
+                        .tutorialGlow(
+                            color: DesignColors.primary,
+                            isActive: index == 0 &&
+                                !appState.currentPlayer.firstTowerPlaced &&
+                                TutorialHintManager.shared.shouldShowHint(.deckCard, profile: appState.currentPlayer)
+                        )
                     }
                 }
                 .padding(.horizontal, 16)
@@ -70,12 +56,7 @@ extension TDGameContainerView {
 
     func dragPreviewOverlay(weaponType: String, geometry: GeometryProxy) -> some View {
         ZStack {
-            // The grid dots are rendered in TDGameScene now (progressive disclosure)
-            // Only the dragged tower preview is shown here in SwiftUI
-
-            // Check if this is a Protocol (System: Reboot) or legacy weapon
             if let proto = ProtocolLibrary.get(weaponType) {
-                // Protocol-based preview
                 let displayPosition = nearestValidSlot != nil && canAffordDraggedTower
                     ? convertGameToScreen(nearestValidSlot!.position, geometry: geometry)
                     : dragPosition
@@ -130,84 +111,9 @@ extension TDGameContainerView {
                 }
                 .position(displayPosition)
                 .animation(DesignAnimations.quick, value: nearestValidSlot?.id)
-
-            } else if let weapon = GameConfigLoader.shared.getWeapon(weaponType) {
-                // Legacy weapon preview
-                let displayPosition = nearestValidSlot != nil && canAffordDraggedTower
-                    ? convertGameToScreen(nearestValidSlot!.position, geometry: geometry)
-                    : dragPosition
-
-                ZStack {
-                    // Range preview circle (shown when snapped to valid slot)
-                    if nearestValidSlot != nil && canAffordDraggedTower {
-                        Circle()
-                            .fill(RarityColors.color(for: weapon.rarity).opacity(DesignLayout.rangeCircleFillOpacity))
-                            .frame(width: CGFloat(weapon.range) * 0.6, height: CGFloat(weapon.range) * 0.6)
-
-                        Circle()
-                            .stroke(RarityColors.color(for: weapon.rarity).opacity(DesignLayout.rangeCircleStrokeOpacity), lineWidth: 2)
-                            .frame(width: CGFloat(weapon.range) * 0.6, height: CGFloat(weapon.range) * 0.6)
-                    }
-
-                    // Tower preview body
-                    Circle()
-                        .fill(RarityColors.color(for: weapon.rarity).opacity(DesignLayout.towerPreviewOpacity))
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    canAffordDraggedTower ? Color.white : DesignColors.danger,
-                                    lineWidth: 2
-                                )
-                        )
-                        .shadow(
-                            color: canAffordDraggedTower
-                                ? DesignColors.primary.opacity(0.6)
-                                : DesignColors.danger.opacity(0.4),
-                            radius: canAffordDraggedTower ? 12 : 6
-                        )
-
-                    // Weapon icon
-                    Image(systemName: iconForWeapon(weapon.id))
-                        .font(DesignTypography.headline(18))
-                        .foregroundColor(.white)
-
-                    // Cost indicator (Hash)
-                    Text("Ħ\(TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common))")
-                        .font(DesignTypography.caption(11))
-                        .fontWeight(.bold)
-                        .foregroundColor(canAffordDraggedTower ? DesignColors.primary : DesignColors.danger)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(DesignColors.surface.opacity(0.9))
-                        .cornerRadius(4)
-                        .offset(y: 32)
-                }
-                .position(displayPosition)
-                .animation(DesignAnimations.quick, value: nearestValidSlot?.id)
             }
         }
         .allowsHitTesting(false)
-    }
-
-    /// Get SF Symbol icon for firewall type (System: Reboot themed)
-    private func iconForWeapon(_ weaponType: String) -> String {
-        // Check if this is a Protocol ID first
-        if let proto = ProtocolLibrary.get(weaponType) {
-            return proto.iconName
-        }
-
-        // Legacy weapon icons
-        switch weaponType {
-        case "bow", "crossbow": return "antenna.radiowaves.left.and.right"  // Signal firewall
-        case "wand", "staff": return "wand.and.rays"                        // Magic/scan firewall
-        case "cannon", "bomb": return "burst.fill"                          // Burst firewall
-        case "ice_shard": return "snowflake"                                // Freeze firewall
-        case "laser": return "rays"                                         // Laser firewall
-        case "flamethrower": return "flame.fill"                            // Purge firewall
-        case "sword", "katana": return "bolt.fill"                          // Chain firewall
-        default: return "shield.fill"                                       // Basic firewall
-        }
     }
 
     // MARK: - Drag Handling (Progressive Disclosure)
@@ -300,18 +206,18 @@ extension TDGameContainerView {
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .foregroundColor(.cyan)
 
-            ForEach(getAvailableTowers(), id: \.id) { weapon in
-                let cost = TowerSystem.towerPlacementCost(rarity: Rarity(rawValue: weapon.rarity) ?? .common)
+            ForEach(getCompiledProtocols()) { proto in
+                let cost = TowerSystem.towerPlacementCost(rarity: proto.rarity)
                 let canAfford = (gameState?.hash ?? 0) >= cost
 
                 Button(action: {
-                    placeTower(weaponType: weapon.id, slotId: slotId)
+                    placeTower(weaponType: proto.id, slotId: slotId)
                 }) {
                     HStack {
                         VStack(alignment: .leading) {
-                            Text(weapon.towerName ?? weapon.name)
+                            Text(proto.name)
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            Text(L10n.Stats.dmgRng(Int(weapon.damage), rng: Int(weapon.range)))
+                            Text(L10n.Stats.dmgRng(Int(proto.firewallStats.damage), rng: Int(proto.firewallStats.range)))
                                 .font(.system(size: 11, design: .monospaced))
                                 .foregroundColor(.gray)
                         }
@@ -324,7 +230,7 @@ extension TDGameContainerView {
                             .font(.system(size: 14, design: .monospaced))
                     }
                     .padding(10)
-                    .background(rarityColor(weapon.rarity).opacity(0.3))
+                    .background(RarityColors.color(for: proto.rarity).opacity(0.3))
                     .cornerRadius(8)
                 }
                 .disabled(!canAfford)
@@ -439,10 +345,6 @@ extension TDGameContainerView {
     }
 
     private func rarityColorForTower(_ tower: Tower) -> Color {
-        // Get rarity from weapon config
-        if let weapon = GameConfigLoader.shared.getWeapon(tower.weaponType) {
-            return rarityColor(weapon.rarity)
-        }
-        return .gray
+        return RarityColors.color(for: tower.rarity)
     }
 }

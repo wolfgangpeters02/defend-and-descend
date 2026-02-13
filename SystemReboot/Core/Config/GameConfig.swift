@@ -210,10 +210,6 @@ class GameConfigLoader {
 
     // MARK: - Convenience Methods
 
-    func getWeapon(_ id: String) -> WeaponConfig? {
-        return config?.weapons?[id]
-    }
-
     func getArena(_ id: String) -> ArenaConfig? {
         return config?.arenas[id]
     }

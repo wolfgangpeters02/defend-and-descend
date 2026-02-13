@@ -81,7 +81,7 @@ extension TDGameScene {
                 if shouldShowRange {
                     // Lazily create range indicator on first need
                     if refs.rangeNode == nil {
-                        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
                         let rangeIndicator = TowerVisualFactory.createRangeIndicator(range: tower.range, color: towerColor)
                         rangeIndicator.name = "range"
                         rangeIndicator.isHidden = true
@@ -183,8 +183,8 @@ extension TDGameScene {
 
     /// Trigger tower firing animation (recoil + muzzle flash)
     func triggerTowerFireAnimation(node: SKNode, tower: Tower) {
-        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
-        let archetype = TowerVisualFactory.TowerArchetype.from(weaponType: tower.weaponType)
+        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
+        let archetype = TowerVisualFactory.TowerArchetype.from(weaponType: tower.protocolId)
 
         // Use enhanced archetype-specific muzzle flash
         TowerAnimations.playEnhancedMuzzleFlash(node: node, archetype: archetype, color: towerColor)
@@ -265,7 +265,7 @@ extension TDGameScene {
             // Lazily create cooldown node on first need
             var refs = towerNodeRefs[tower.id] ?? TowerNodeRefs()
             if refs.cooldownNode == nil {
-                let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
                 let cooldownArc = TowerVisualFactory.createCooldownArc(color: towerColor)
                 cooldownArc.name = "cooldown"
                 cooldownArc.isHidden = true
@@ -326,7 +326,7 @@ extension TDGameScene {
 
     func createTowerNode(tower: Tower) -> SKNode {
         // Use the new AAA Tower Visual Factory for rich, multi-layered visuals
-        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
         let rarityString: String
         switch tower.rarity {
         case .common: rarityString = "common"
@@ -336,7 +336,7 @@ extension TDGameScene {
         }
 
         return TowerVisualFactory.createTowerNode(
-            weaponType: tower.weaponType,
+            weaponType: tower.protocolId,
             color: towerColor,
             range: tower.range,
             level: tower.level,
@@ -364,7 +364,7 @@ extension TDGameScene {
                 var refs = towerNodeRefs[towerId] ?? TowerNodeRefs()
                 // Lazily create LOD detail on first zoom-in
                 if refs.lodDetail == nil, let tower = state?.towers.first(where: { $0.id == towerId }) {
-                    let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.weaponType)
+                    let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
                     let lodDetail = TowerVisualFactory.createLODDetail(
                         damage: tower.damage,
                         attackSpeed: tower.attackSpeed,

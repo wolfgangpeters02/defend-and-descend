@@ -149,18 +149,10 @@ extension TDGameScene {
             return
         }
 
-        // Check if this is a Protocol ID (System: Reboot) or a legacy weapon type
-        let result: TowerPlacementResult
-        if ProtocolLibrary.get(weaponType) != nil {
-            // Use Protocol-based placement
-            result = TowerSystem.placeTowerFromProtocol(state: &state, protocolId: weaponType, slotId: slotId, playerProfile: profile)
-        } else {
-            // Legacy weapon placement
-            result = TowerSystem.placeTower(state: &state, weaponType: weaponType, slotId: slotId, playerProfile: profile)
-        }
+        let result = TowerSystem.placeTowerFromProtocol(state: &state, protocolId: weaponType, slotId: slotId, playerProfile: profile)
 
         switch result {
-        case .success(let tower):
+        case .success(_):
             // Update slot visual
             if let slotIndex = state.towerSlots.firstIndex(where: { $0.id == slotId }) {
                 updateSlotVisual(slot: state.towerSlots[slotIndex])
@@ -202,12 +194,10 @@ extension TDGameScene {
             self.state = state
             gameStateDelegate?.gameStateUpdated(state)
 
-            // Blueprint-based: Persist the new level to player profile
-            // Update BOTH protocolLevels (used for tower placement) and weaponLevels (legacy)
-            if let weaponType = result.weaponType, let newLevel = result.newLevel {
+            // Persist the new level to player profile
+            if let protocolId = result.protocolId, let newLevel = result.newLevel {
                 AppState.shared.updatePlayer { profile in
-                    profile.protocolLevels[weaponType] = newLevel
-                    profile.weaponLevels[weaponType] = newLevel  // Legacy support
+                    profile.protocolLevels[protocolId] = newLevel
                 }
             }
 

@@ -107,7 +107,7 @@ struct SpreadBot: TDBot {
             // Count towers per protocol type
             var towerCounts: [String: Int] = [:]
             for protoId in compiled {
-                towerCounts[protoId] = state.towers.filter { $0.weaponType == protoId }.count
+                towerCounts[protoId] = state.towers.filter { $0.protocolId == protoId }.count
             }
 
             // Pick the protocol with fewest placed towers
@@ -225,7 +225,7 @@ struct AdaptiveBot: TDBot {
             let emptySlots = state.towerSlots.filter { !$0.occupied }
 
             // First priority: Place a slow tower if we don't have one
-            let slowTowers = state.towers.filter { $0.weaponType == "ice_shard" }
+            let slowTowers = state.towers.filter { $0.protocolId == "ice_shard" }
             if slowTowers.isEmpty && profile.compiledProtocols.contains("ice_shard") {
                 if let slot = emptySlots.first,
                    let proto = ProtocolLibrary.get("ice_shard") {
@@ -260,8 +260,8 @@ struct AdaptiveBot: TDBot {
                 .filter { $0.canUpgrade }
                 .sorted { tower1, tower2 in
                     // Prioritize slow towers, then by level (upgrade lowest first)
-                    let isSlow1 = tower1.weaponType == "ice_shard"
-                    let isSlow2 = tower2.weaponType == "ice_shard"
+                    let isSlow1 = tower1.protocolId == "ice_shard"
+                    let isSlow2 = tower2.protocolId == "ice_shard"
                     if isSlow1 != isSlow2 { return isSlow1 }
                     return tower1.level < tower2.level
                 }
@@ -363,7 +363,7 @@ struct SingleTowerBot: TDBot {
 
         // Upgrade our towers
         let upgradeable = state.towers
-            .filter { $0.canUpgrade && $0.weaponType == protocolId }
+            .filter { $0.canUpgrade && $0.protocolId == protocolId }
             .sorted { $0.level < $1.level }
 
         if let tower = upgradeable.first, state.hash >= tower.upgradeCost {
@@ -525,7 +525,7 @@ struct SynergyBot: TDBot {
 
         // Place towers from combo in order
         for protoId in combo {
-            let existingCount = state.towers.filter { $0.weaponType == protoId }.count
+            let existingCount = state.towers.filter { $0.protocolId == protoId }.count
             let targetCount = combo.filter { $0 == protoId }.count
 
             if existingCount < targetCount && !emptySlots.isEmpty {
@@ -542,7 +542,7 @@ struct SynergyBot: TDBot {
         // Upgrade towers in combo priority order
         for protoId in combo {
             let upgradeable = state.towers
-                .filter { $0.canUpgrade && $0.weaponType == protoId }
+                .filter { $0.canUpgrade && $0.protocolId == protoId }
                 .sorted { $0.level < $1.level }
 
             if let tower = upgradeable.first, state.hash >= tower.upgradeCost {

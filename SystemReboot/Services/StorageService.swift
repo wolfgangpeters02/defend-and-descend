@@ -237,30 +237,6 @@ class StorageService {
         savePlayer(profile)
     }
 
-    // MARK: - Unlocks
-
-    /// Check if item is unlocked
-    func isUnlocked(category: String, id: String) -> Bool {
-        let profile = getOrCreateDefaultPlayer()
-        return LevelingSystem.isItemUnlocked(profile: profile, category: category, id: id)
-    }
-
-    /// Unlock item
-    func unlockItem(category: String, id: String) {
-        var profile = getOrCreateDefaultPlayer()
-        if LevelingSystem.unlockItem(profile: &profile, category: category, id: id) {
-            savePlayer(profile)
-        }
-    }
-
-    /// Level up item
-    func levelUpItem(category: String, id: String) {
-        var profile = getOrCreateDefaultPlayer()
-        if LevelingSystem.levelUpItem(profile: &profile, category: category, id: id) {
-            savePlayer(profile)
-        }
-    }
-
     // MARK: - System: Reboot - Offline Earnings
 
     /// Save timestamp and game state when app goes to background

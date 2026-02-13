@@ -1,27 +1,6 @@
 import SwiftUI
 import Combine
 
-// MARK: - Main Game Mode Selection
-
-enum MainGameMode: String, CaseIterable {
-    case survivor = "Survivor"
-    case towerDefense = "Tower Defense"
-
-    var description: String {
-        switch self {
-        case .survivor: return "Arena, Dungeon & Boss fights"
-        case .towerDefense: return "Place towers, defend the core"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .survivor: return "figure.run"
-        case .towerDefense: return "building.columns.fill"
-        }
-    }
-}
-
 // MARK: - App State
 
 class AppState: ObservableObject {
@@ -35,9 +14,6 @@ class AppState: ObservableObject {
     var selectedProtocolObject: Protocol {
         ProtocolLibrary.all.first { $0.id == currentPlayer.equippedProtocolId } ?? ProtocolLibrary.kernelPulse
     }
-
-    // Main mode selection (Survivor vs TD)
-    @Published var mainMode: MainGameMode = .survivor
 
     // TD-specific selections
     @Published var selectedTDMap: String = "grasslands"
@@ -132,32 +108,11 @@ class AppState: ObservableObject {
         currentPlayer.compiledProtocols
     }
 
-    /// Legacy support - maps to compiled protocols
-    var unlockedWeapons: [String] {
-        compiledProtocolIds
-    }
-
     var unlockedArenas: [String] {
         currentPlayer.unlocks.arenas
     }
 
-    // MARK: - Item Levels
-
-    func weaponLevel(for id: String) -> Int {
-        currentPlayer.weaponLevels[id] ?? 1
-    }
-
     // MARK: - Stats
-
-    func recordRunEnd(time: TimeInterval, kills: Int, victory: Bool) {
-        updatePlayer { profile in
-            profile.totalRuns += 1
-            profile.totalKills += kills
-            if time > profile.bestTime {
-                profile.bestTime = time
-            }
-        }
-    }
 
     func recordRun(kills: Int, time: TimeInterval, sessionHash: Int) {
         // Use the full survivor run recording with Hash rewards
@@ -203,10 +158,6 @@ class AppState: ObservableObject {
         updatePlayer { $0.equippedProtocolId = protocols[prevIndex] }
     }
 
-    /// Legacy support
-    func selectNextWeapon() { selectNextProtocol() }
-    func selectPreviousWeapon() { selectPreviousProtocol() }
-
     func selectNextArena() {
         guard let currentIndex = unlockedArenas.firstIndex(of: selectedArena) else { return }
         let nextIndex = (currentIndex + 1) % unlockedArenas.count
@@ -220,33 +171,6 @@ class AppState: ObservableObject {
     }
 
     // MARK: - TD Mode Support
-
-    /// Unlocked TD maps (same as arenas)
-    var unlockedTDMaps: [String] {
-        currentPlayer.unlocks.arenas.filter { tdSupportedMaps.contains($0) }
-    }
-
-    /// Maps that support TD mode
-    private var tdSupportedMaps: [String] {
-        BalanceConfig.TDMaps.supportedMaps
-    }
-
-    /// Get unlocked towers (same as weapons)
-    var unlockedTowers: [String] {
-        currentPlayer.unlocks.weapons
-    }
-
-    func selectNextTDMap() {
-        guard let currentIndex = unlockedTDMaps.firstIndex(of: selectedTDMap) else { return }
-        let nextIndex = (currentIndex + 1) % unlockedTDMaps.count
-        selectedTDMap = unlockedTDMaps[nextIndex]
-    }
-
-    func selectPreviousTDMap() {
-        guard let currentIndex = unlockedTDMaps.firstIndex(of: selectedTDMap) else { return }
-        let prevIndex = (currentIndex - 1 + unlockedTDMaps.count) % unlockedTDMaps.count
-        selectedTDMap = unlockedTDMaps[prevIndex]
-    }
 
     /// Record TD game result
     func recordTDResult(wavesCompleted: Int, enemiesKilled: Int, hashEarned: Int, victory: Bool) {

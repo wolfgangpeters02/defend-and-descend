@@ -8,66 +8,10 @@ class TowerSystem {
 
     // MARK: - Tower Placement
 
-    /// Attempt to place a tower
-    static func placeTower(
-        state: inout TDGameState,
-        weaponType: String,
-        slotId: String,
-        playerProfile: PlayerProfile
-    ) -> TowerPlacementResult {
-        // Find the slot
-        guard let slotIndex = state.towerSlots.firstIndex(where: { $0.id == slotId }) else {
-            return .invalidSlot
-        }
-
-        let slot = state.towerSlots[slotIndex]
-
-        // Check if slot is occupied
-        if slot.occupied {
-            return .slotOccupied
-        }
-
-        // Check if weapon is unlocked
-        guard playerProfile.unlocks.weapons.contains(weaponType) else {
-            return .weaponLocked
-        }
-
-        // Get weapon config and create WeaponTower
-        guard let weaponConfig = GameConfigLoader.shared.getWeapon(weaponType) else {
-            return .invalidSlot
-        }
-
-        let weaponLevel = playerProfile.weaponLevels[weaponType] ?? 1
-        let weaponTower = WeaponTower.from(config: weaponConfig, level: weaponLevel)
-
-        // Calculate placement cost
-        let placementCost = towerPlacementCost(rarity: weaponTower.rarity)
-
-        // Check gold
-        if state.hash < placementCost {
-            return .insufficientGold(required: placementCost, available: state.hash)
-        }
-
-        // Create and place tower
-        let tower = Tower.from(weapon: weaponTower, at: slot)
-
-        // Update state
-        state.towers.append(tower)
-        state.towerSlots[slotIndex].occupied = true
-        state.towerSlots[slotIndex].towerId = tower.id
-        state.hash -= placementCost
-        state.stats.towersPlaced += 1
-        state.stats.hashSpent += placementCost
-
-        return .success(tower: tower)
-    }
-
     /// Calculate tower placement cost based on rarity
     static func towerPlacementCost(rarity: Rarity) -> Int {
         return BalanceConfig.towerCost(rarity: rarity)
     }
-
-    // MARK: - Protocol-Based Tower Placement (System: Reboot)
 
     /// Place a tower from a Protocol (Firewall mode)
     static func placeTowerFromProtocol(
@@ -136,7 +80,7 @@ class TowerSystem {
     /// Result of a tower upgrade (for blueprint-based system)
     struct TowerUpgradeResult {
         let success: Bool
-        let weaponType: String?
+        let protocolId: String?
         let newLevel: Int?
         let towersUpgraded: Int  // How many towers were upgraded
     }
@@ -144,21 +88,21 @@ class TowerSystem {
     /// Upgrade a tower (blueprint-based: upgrades ALL towers of the same type)
     static func upgradeTower(state: inout TDGameState, towerId: String) -> TowerUpgradeResult {
         guard let towerIndex = state.towers.firstIndex(where: { $0.id == towerId }) else {
-            return TowerUpgradeResult(success: false, weaponType: nil, newLevel: nil, towersUpgraded: 0)
+            return TowerUpgradeResult(success: false, protocolId: nil, newLevel: nil, towersUpgraded: 0)
         }
 
         let tower = state.towers[towerIndex]
-        let weaponType = tower.weaponType
+        let protocolId = tower.protocolId
 
         // Check if can upgrade
         guard tower.canUpgrade else {
-            return TowerUpgradeResult(success: false, weaponType: weaponType, newLevel: nil, towersUpgraded: 0)
+            return TowerUpgradeResult(success: false, protocolId: protocolId, newLevel: nil, towersUpgraded: 0)
         }
 
         // Check hash (cost is based on original tower's level)
         let cost = tower.upgradeCost
         guard state.hash >= cost else {
-            return TowerUpgradeResult(success: false, weaponType: weaponType, newLevel: nil, towersUpgraded: 0)
+            return TowerUpgradeResult(success: false, protocolId: protocolId, newLevel: nil, towersUpgraded: 0)
         }
 
         // Blueprint-based: Upgrade ALL towers of the same type
@@ -166,7 +110,7 @@ class TowerSystem {
         var newLevel = tower.level + 1
 
         for i in 0..<state.towers.count {
-            if state.towers[i].weaponType == weaponType && state.towers[i].canUpgrade {
+            if state.towers[i].protocolId == protocolId && state.towers[i].canUpgrade {
                 state.towers[i].upgrade()
                 upgradeCount += 1
                 newLevel = state.towers[i].level  // All should be same level now
@@ -180,7 +124,7 @@ class TowerSystem {
 
         return TowerUpgradeResult(
             success: true,
-            weaponType: weaponType,
+            protocolId: protocolId,
             newLevel: newLevel,
             towersUpgraded: upgradeCount
         )
@@ -398,7 +342,7 @@ class TowerSystem {
 
         return Projectile(
             id: RandomUtils.generateId(),
-            weaponId: tower.weaponType,
+            weaponId: tower.protocolId,
             x: tower.x,
             y: tower.y,
             velocityX: velocityX,

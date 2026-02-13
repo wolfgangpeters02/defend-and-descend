@@ -350,11 +350,6 @@ struct TDGameContainerView: View {
 
     // MARK: - Helpers
 
-    func getAvailableTowers() -> [WeaponConfig] {
-        let config = GameConfigLoader.shared
-        return appState.currentPlayer.unlocks.weapons.compactMap { config.getWeapon($0) }
-    }
-
     /// Get compiled Protocols from player profile (System: Reboot - Firewall deck)
     func getCompiledProtocols() -> [Protocol] {
         return appState.currentPlayer.compiledProtocols.compactMap { protocolId in

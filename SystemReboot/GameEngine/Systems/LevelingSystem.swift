@@ -8,16 +8,16 @@ class LevelingSystem {
     static var maxLevel: Int { BalanceConfig.Leveling.maxPlayerLevel }
     static var levelBonusPercent: CGFloat { BalanceConfig.ThreatLevel.levelBonusPercent }
 
-    /// Get weapon level from player profile
+    /// Get protocol level from player profile
     static func getWeaponLevel(profile: PlayerProfile, weaponId: String) -> Int {
-        return profile.weaponLevels[weaponId] ?? 1
+        return profile.protocolLevels[weaponId] ?? 1
     }
 
     /// Check if item is unlocked
     static func isItemUnlocked(profile: PlayerProfile, category: String, id: String) -> Bool {
         switch category {
         case "weapon":
-            return profile.unlocks.weapons.contains(id)
+            return profile.compiledProtocols.contains(id)
         case "arena":
             return profile.unlocks.arenas.contains(id)
         default:
@@ -50,7 +50,11 @@ class LevelingSystem {
     static func unlockItem(profile: inout PlayerProfile, category: String, id: String) -> Bool {
         switch category {
         case "weapon":
-            if !profile.unlocks.weapons.contains(id) {
+            if !profile.compiledProtocols.contains(id) {
+                // Canonical protocol system
+                profile.compiledProtocols.append(id)
+                profile.protocolLevels[id] = 1
+                // Legacy fields (kept for backward compat)
                 profile.unlocks.weapons.append(id)
                 profile.weaponLevels[id] = 1
                 return true
@@ -70,8 +74,11 @@ class LevelingSystem {
     static func levelUpItem(profile: inout PlayerProfile, category: String, id: String) -> Bool {
         switch category {
         case "weapon":
-            let currentLevel = profile.weaponLevels[id] ?? 1
+            let currentLevel = profile.protocolLevels[id] ?? 1
             if currentLevel < maxLevel {
+                // Canonical protocol system
+                profile.protocolLevels[id] = currentLevel + 1
+                // Legacy field (kept for backward compat)
                 profile.weaponLevels[id] = currentLevel + 1
                 return true
             }

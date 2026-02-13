@@ -183,6 +183,7 @@ struct TDGameState {
     var lastBossThreatMilestone: Int = 0      // Last threat milestone that triggered a boss
     var bossEngaged: Bool = false             // Player has tapped to engage this boss
     var bossSelectedDifficulty: BossDifficulty? // Selected difficulty for current boss
+    var bossCooldownRemaining: TimeInterval = 0 // Cooldown after boss victory before next spawn
 
     /// Threat milestone for next boss spawn (6, 12, 18...)
     var nextBossThreatMilestone: Int {
@@ -190,9 +191,9 @@ struct TDGameState {
         return lastBossThreatMilestone == 0 ? interval : lastBossThreatMilestone + interval
     }
 
-    /// Check if threat has reached next boss milestone
+    /// Check if threat has reached next boss milestone (respects post-victory cooldown)
     var shouldSpawnBoss: Bool {
-        return !bossActive && Int(idleThreatLevel) >= nextBossThreatMilestone
+        return !bossActive && bossCooldownRemaining <= 0 && Int(idleThreatLevel) >= nextBossThreatMilestone
     }
 
     /// Check if the active boss is still alive
@@ -541,7 +542,7 @@ struct TDMap {
 
 struct Tower: Identifiable, Codable {
     var id: String
-    var weaponType: String  // Links to WeaponTower
+    var protocolId: String  // Links to Protocol in ProtocolLibrary
     var level: Int = 1
     var rarity: Rarity = .common  // Tower rarity for cost calculations
 
@@ -550,7 +551,7 @@ struct Tower: Identifiable, Codable {
     var y: CGFloat
     var slotId: String
 
-    // Stats (derived from WeaponTower + level)
+    // Stats (derived from Protocol + level)
     var damage: CGFloat
     var range: CGFloat
     var attackSpeed: CGFloat
@@ -579,6 +580,17 @@ struct Tower: Identifiable, Codable {
     // Upgrade cost base (from Protocol's baseUpgradeCost, scales by rarity)
     var baseUpgradeCost: Int = BalanceConfig.Towers.placementCosts[.common] ?? 50
 
+    // Backward-compatible CodingKeys: protocolId is stored as "weaponType" in saved sessions
+    enum CodingKeys: String, CodingKey {
+        case id
+        case protocolId = "weaponType"
+        case level, rarity, x, y, slotId
+        case damage, range, attackSpeed, lastAttackTime
+        case projectileCount, pierce, splash, homing, slow, slowDuration, chain
+        case color, rotation, targetId, towerName
+        case powerDraw, baseUpgradeCost
+    }
+
     var position: CGPoint {
         CGPoint(x: x, y: y)
     }
@@ -594,41 +606,12 @@ struct Tower: Identifiable, Codable {
         return level < 10
     }
 
-    /// Create tower from WeaponTower
-    static func from(weapon: WeaponTower, at slot: TowerSlot) -> Tower {
-        // Base upgrade cost from BalanceConfig
-        let upgradeCostBase = BalanceConfig.Towers.baseUpgradeCost(for: weapon.rarity)
-
-        return Tower(
-            id: RandomUtils.generateId(),
-            weaponType: weapon.id,
-            level: weapon.level,
-            rarity: weapon.rarity,
-            x: slot.x,
-            y: slot.y,
-            slotId: slot.id,
-            damage: weapon.damage,
-            range: weapon.range,
-            attackSpeed: weapon.attackSpeed,
-            projectileCount: weapon.projectileCount,
-            pierce: weapon.pierce,
-            splash: weapon.splash,
-            homing: weapon.homing,
-            slow: weapon.slow,
-            slowDuration: weapon.slowDuration,
-            chain: weapon.chain,
-            color: weapon.color,
-            towerName: weapon.towerName,
-            baseUpgradeCost: upgradeCostBase
-        )
-    }
-
     /// Create tower from Protocol (System: Reboot - Firewall mode)
     static func from(protocol proto: Protocol, at slot: TowerSlot) -> Tower {
         let stats = proto.firewallStats
         return Tower(
             id: RandomUtils.generateId(),
-            weaponType: proto.id,  // Use protocol ID as weapon type
+            protocolId: proto.id,
             level: proto.level,
             rarity: proto.rarity,
             x: slot.x,
@@ -761,19 +744,6 @@ struct TDEnemy: Identifiable {
     }
 }
 
-// MARK: - TD Action Types (for player input)
-
-enum TDAction {
-    case selectSlot(slotId: String)
-    case placeTower(weaponType: String, slotId: String)
-    case selectTower(towerId: String)
-    case upgradeTower(towerId: String)
-    case sellTower(towerId: String)
-    case startWave
-    case pause
-    case resume
-}
-
 // MARK: - Tower Placement Result
 
 enum TowerPlacementResult {
@@ -783,27 +753,6 @@ enum TowerPlacementResult {
     case slotOccupied
     case weaponLocked
     case invalidSlot
-}
-
-// MARK: - TD Game Result
-
-struct TDGameResult {
-    var victory: Bool
-    var wavesCompleted: Int
-    var enemiesKilled: Int
-    var hashEarned: Int
-    var towersPlaced: Int
-    var timePlayed: TimeInterval
-
-    /// Calculate XP reward
-    var xpReward: Int {
-        GameRewardService.calculateTDRewards(wavesCompleted: wavesCompleted, enemiesKilled: enemiesKilled, hashEarned: hashEarned, victory: victory).xpReward
-    }
-
-    /// Calculate hash reward
-    var hashReward: Int {
-        GameRewardService.calculateTDRewards(wavesCompleted: wavesCompleted, enemiesKilled: enemiesKilled, hashEarned: hashEarned, victory: victory).hashReward
-    }
 }
 
 // MARK: - TD State Factory
@@ -1141,17 +1090,6 @@ class TDGameStateFactory {
         state.hash = min(playerProfile.hash, playerProfile.globalUpgrades.hashStorageCapacity)
 
         return state
-    }
-
-    /// Create paths for motherboard using the new lane system
-    /// Returns only unlocked lane paths for active enemy spawning
-    private static func createMotherboardPaths(unlockedSectorIds: Set<String> = [SectorID.power.rawValue]) -> [EnemyPath] {
-        let activeLanes = MotherboardLaneConfig.getUnlockedLanes(unlockedSectorIds: unlockedSectorIds)
-        return activeLanes.map { lane -> EnemyPath in
-            var path = lane.path
-            path.sectorId = lane.sectorId
-            return path
-        }
     }
 
     /// Create tower slots for the motherboard map dynamically along paths
