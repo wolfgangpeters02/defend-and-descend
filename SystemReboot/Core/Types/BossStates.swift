@@ -145,15 +145,6 @@ extension VoidHarbingerAI {
         let pullStrength: CGFloat
     }
 
-    struct MeteorStrike {
-        let id: String
-        var x: CGFloat
-        var y: CGFloat
-        var warningTime: Double
-        var hasImpacted: Bool
-        let impactRadius: CGFloat
-        let damage: CGFloat
-    }
 }
 
 // MARK: - Overclocker State

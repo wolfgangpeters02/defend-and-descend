@@ -138,7 +138,7 @@ struct Particle {
 }
 
 enum ParticleShape: String {
-    case circle, star, spark, square, plus, heart, diamond
+    case circle, star, spark, square, diamond
 }
 
 // MARK: - Scrolling Combat Text Events

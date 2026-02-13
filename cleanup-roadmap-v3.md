@@ -44,9 +44,14 @@ These produce different results for the same level and it's unclear which is "co
 ---
 
 ## Stage 2: Dead Types + Unused Enum Cases
-**Status:** OPEN
+**Status:** DONE
 **Priority:** Medium (dead weight, no bugs)
 **Estimated scope:** ~3 files
+
+### Summary of Changes
+- **SharedTypes.swift**: Deleted `SharedEnemy` struct (~30 lines) and `CollectionItem` struct + nested `CollectionCategory` enum (~18 lines) — zero references outside definitions
+- **BossStates.swift**: Deleted `MeteorStrike` struct from VoidHarbingerAI extension — meteor mechanics use `meteorInterval`/`lastMeteorTime` fields directly
+- **CombatTypes.swift**: Removed `.plus` and `.heart` cases from `ParticleShape` enum — `createParticleNode()` never rendered them (fell through to default circle)
 
 ### Problem
 Structs and enum cases that survived previous cleanups but have zero references:
