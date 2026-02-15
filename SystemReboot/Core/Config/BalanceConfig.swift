@@ -79,6 +79,9 @@ struct BalanceConfig {
 
         /// Player weapon projectile speed (survivor/boss mode)
         static let weaponProjectileSpeed: CGFloat = 500
+
+        /// Maximum player armor (damage reduction cap in boss/survivor mode)
+        static let maxArmor: CGFloat = 0.75
     }
 
     // MARK: - Enemy Time Scaling (Survivor Mode)
@@ -433,7 +436,7 @@ struct BalanceConfig {
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.70
         static let phase3Threshold: CGFloat = 0.40
-        static let phase4Threshold: CGFloat = 0.10
+        static let phase4Threshold: CGFloat = 0.20  // Phase 4 covers 20% HP (was 0.10)
 
         // Boss body color (used for entity identification)
         static let bossColor: String = "#8800ff"
@@ -449,7 +452,7 @@ struct BalanceConfig {
         // Meteor strikes (Phase 3+)
         static let meteorInterval: Double = 6.0
         static let meteorRadius: CGFloat = 100
-        static let meteorDamage: CGFloat = 80
+        static let meteorDamage: CGFloat = 60  // Was 80, highest single-mechanic value
 
         // Shadow bolt volley
         static let volleyInterval: Double = 6.0
@@ -556,7 +559,7 @@ struct BalanceConfig {
         // Phase 2 - Heat Sink (Lava Grid)
         static let tileChangeInterval: Double = 5.0
         static let tileWarningDuration: Double = 2.0
-        static let lavaTileDPS: CGFloat = 60           // DPS while standing on lava
+        static let lavaTileDPS: CGFloat = 40           // DPS while standing on lava (was 60)
         static let phase2BossMoveSpeed: CGFloat = 150  // Phase 2 boss movement speed to safe zone
 
         // Phase 3 - Overheat (Chase + Steam Trail)
@@ -596,7 +599,7 @@ struct BalanceConfig {
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.70
         static let phase3Threshold: CGFloat = 0.40
-        static let phase4Threshold: CGFloat = 0.10
+        static let phase4Threshold: CGFloat = 0.20  // Phase 4 covers 20% HP (was 0.10)
 
         // Body geometry
         static let segmentCount: Int = 24
@@ -610,7 +613,7 @@ struct BalanceConfig {
         static let headContactDamage: CGFloat = 15     // Reduced from 30 (24 segments = lots of hits)
         static let bodyContactDamage: CGFloat = 4      // Reduced from 10 (cumulative damage was too high)
         static let bodyKnockbackStrength: CGFloat = 80 // Reduced to let player escape
-        static let bodyDamageMitigation: CGFloat = 0.80
+        static let bodyDamageMitigation: CGFloat = 0.60  // 40% damage passes through (was 0.80 = 20%)
         static let boundsPadding: CGFloat = 30
 
         // Phase 2 - Firewall (Wall sweep)
@@ -1018,7 +1021,7 @@ struct BalanceConfig {
         /// Boss health multipliers by difficulty
         /// Scaled up to counter weapon mastery (Level 10 = 10x damage)
         static let healthMultipliers: [String: CGFloat] = [
-            "Easy": 1.0,       // Learning mode — forgiving
+            "Easy": 1.2,       // Learning mode — slightly forgiving (was 1.0)
             "Normal": 1.5,     // A real fight even with mid-level weapons
             "Hard": 3.0,       // Level 5 weapon (5x) still needs good play
             "Nightmare": 6.0   // Level 10 weapon (10x) → TTK still 60% of base
@@ -1042,7 +1045,7 @@ struct BalanceConfig {
 
         /// Player damage multipliers by difficulty
         static let playerDamageMultipliers: [String: CGFloat] = [
-            "Easy": 2.0,       // Helpful but not steamroll (was 4.0)
+            "Easy": 1.5,       // Helpful but not steamroll (was 2.0)
             "Normal": 1.0,     // No training wheels (was 1.5)
             "Hard": 1.0,
             "Nightmare": 1.0
@@ -1299,6 +1302,19 @@ struct BalanceConfig {
 
         /// Max player level (survivor mode)
         static let maxPlayerLevel: Int = 20
+    }
+
+    // MARK: - Upgrade Rarity Weights (Survivor Mode)
+
+    struct UpgradeRarity {
+        /// Weight for common upgrades appearing in survivor mode selection
+        static let commonWeight: Double = 60
+        /// Weight for rare upgrades
+        static let rareWeight: Double = 25
+        /// Weight for epic upgrades
+        static let epicWeight: Double = 12
+        /// Weight for legendary upgrades
+        static let legendaryWeight: Double = 3
     }
 
     // MARK: - Boss Loot System

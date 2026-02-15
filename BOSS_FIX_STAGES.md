@@ -78,15 +78,17 @@ Replaced ~30 hardcoded sim values across all 4 bosses with BalanceConfig referen
 
 ---
 
-## Stage 6: Balance Tuning Pass
+## Stage 6: Balance Tuning Pass [DONE]
+
+Narrowed Easy→Normal difficulty cliff (dmg 2.0→1.5, boss HP 1.0→1.2); reduced Trojan Wyrm body mitigation (0.80→0.60), Overclocker lava DPS (60→40), VH meteor damage (80→60); extended VH+TW phase4 to 20% HP; synced balance-reference.html.
 
 **Files:** `BalanceConfig.swift`
 
-- [ ] **Easy→Normal cliff:** Reduce Easy player damage multiplier from 2.0 to 1.5, increase Easy boss health from 1.0 to 1.2. This narrows the gap (effective incoming goes from 0.47x→1.0x to 0.58x→1.0x).
-- [ ] **Trojan Wyrm effective HP:** Reduce `bodyDamageMitigation` from 0.80 to 0.60 (40% damage passes through instead of 20%). Alternatively reduce base HP from 5500 to 4500.
-- [ ] **Overclocker lava DPS:** Reduce `lavaTileDPS` from 60 to 40. Still punishing, but not 6x the Cyberboss puddle rate.
-- [ ] **Phase 4 duration for VH and TW:** Change phase4Threshold from 0.10 to 0.20 so the final phase covers 20% of HP instead of 10%.
-- [ ] **Void Harbinger meteor damage:** Reduce `meteorDamage` from 80 to 60. 80 DPS is the highest single-mechanic value and can one-shot on Nightmare.
-- [ ] Update `tools/balance-simulator.html` if it references any changed values (check for hardcoded duplicates).
+- [x] **Easy→Normal cliff:** Reduce Easy player damage multiplier from 2.0 to 1.5, increase Easy boss health from 1.0 to 1.2. This narrows the gap (effective incoming goes from 0.47x→1.0x to 0.58x→1.0x).
+- [x] **Trojan Wyrm effective HP:** Reduce `bodyDamageMitigation` from 0.80 to 0.60 (40% damage passes through instead of 20%). Alternatively reduce base HP from 5500 to 4500.
+- [x] **Overclocker lava DPS:** Reduce `lavaTileDPS` from 60 to 40. Still punishing, but not 6x the Cyberboss puddle rate.
+- [x] **Phase 4 duration for VH and TW:** Change phase4Threshold from 0.10 to 0.20 so the final phase covers 20% of HP instead of 10%.
+- [x] **Void Harbinger meteor damage:** Reduce `meteorDamage` from 80 to 60. 80 DPS is the highest single-mechanic value and can one-shot on Nightmare.
+- [x] Update `tools/balance-simulator.html` if it references any changed values (check for hardcoded duplicates).
 
 ---
