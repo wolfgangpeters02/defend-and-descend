@@ -63,16 +63,18 @@ Centralized 6 hardcoded values (3 colors, particle count/size, mode colors) into
 
 ---
 
-## Stage 5: BossSimulator — Sync with BalanceConfig
+## Stage 5: BossSimulator — Sync with BalanceConfig [DONE]
+
+Replaced ~30 hardcoded sim values across all 4 bosses with BalanceConfig references; fixes stale drift in blade radius, vacuum strength, steam radius, tile intervals, and more.
 
 **Files:** `BossSimulator.swift`, `BalanceConfig.swift`
 
-- [ ] Replace `getBossBaseHealth()` (line 332) with `BalanceConfig.Cyberboss.baseHealth`, `.VoidHarbinger.baseHealth`, `.Overclocker.baseHealth`, `.TrojanWyrm.baseHealth`
-- [ ] Replace all hardcoded Cyberboss sim values (mode switch 5.0, chase 1.2, volley count 5, spread 0.5, projectile speed 300, damage 25) with BalanceConfig references
-- [ ] Replace all hardcoded Overclocker sim values (blade radius 180→250, blade damage 80→25, tile interval 3.0→5.0, warning 1.0→2.0, chase speed 180→160, steam interval 0.15→0.2, steam radius 40→35, suction durations 4.0/2.0→2.5/1.5, vacuum strength 80→25, shredder radius 80→140)
-- [ ] Replace all hardcoded Trojan Wyrm sim values (segment spacing 45, wall margins 100, sub-worm spawn distance 200, body spacing 20/25) with BalanceConfig references
-- [ ] Replace all hardcoded Void Harbinger sim values (pylon offsets, spawn counts, pylon health) with BalanceConfig references
-- [ ] Verify the simulator still compiles and runs after changes
+- [x] Replace `getBossBaseHealth()` (line 332) with `BalanceConfig.Cyberboss.baseHealth`, `.VoidHarbinger.baseHealth`, `.Overclocker.baseHealth`, `.TrojanWyrm.baseHealth`
+- [x] Replace all hardcoded Cyberboss sim values (mode switch 5.0, chase 1.2, volley count 5, spread 0.5, projectile speed 300, damage 25) with BalanceConfig references
+- [x] Replace all hardcoded Overclocker sim values (blade radius 180→250, blade damage 80→25, tile interval 3.0→5.0, warning 1.0→2.0, chase speed 180→160, steam interval 0.15→0.2, steam radius 40→35, suction durations 4.0/2.0→2.5/1.5, vacuum strength 80→25, shredder radius 80→140)
+- [x] Replace all hardcoded Trojan Wyrm sim values (segment spacing 45, wall margins 100, sub-worm spawn distance 200, body spacing 20/25) with BalanceConfig references
+- [x] Replace all hardcoded Void Harbinger sim values (pylon offsets, spawn counts, pylon health) with BalanceConfig references
+- [x] Verify the simulator still compiles and runs after changes
 
 ---
 

@@ -144,9 +144,9 @@ struct BossSimulationResult {
     let difficulty: BossDifficulty
     let botName: String
 
-    // Weapon info (optional)
-    var weaponType: SimulatedWeaponType?
-    var weaponLevel: Int = 1
+    // Protocol info (optional)
+    var protocolType: SimulatedWeaponType?
+    var protocolLevel: Int = 1
 
     // Outcome
     var victory: Bool = false
@@ -287,8 +287,8 @@ class BossSimulator {
             bossType: config.bossType,
             difficulty: config.difficulty,
             botName: config.bot.name,
-            weaponType: config.weapon?.type,
-            weaponLevel: config.weapon?.level ?? 1
+            protocolType: config.weapon?.type,
+            protocolLevel: config.weapon?.level ?? 1
         )
 
         setupFight()
@@ -331,13 +331,13 @@ class BossSimulator {
     private func getBossBaseHealth() -> CGFloat {
         switch config.bossType {
         case "void_harbinger":
-            return 5000
+            return BalanceConfig.VoidHarbinger.baseHealth
         case "overclocker":
-            return 4500
+            return BalanceConfig.Overclocker.baseHealth
         case "trojan_wyrm":
-            return 5500
+            return BalanceConfig.TrojanWyrm.baseHealth
         default: // cyberboss
-            return 4000
+            return BalanceConfig.Cyberboss.baseHealth
         }
     }
 
@@ -349,14 +349,15 @@ class BossSimulator {
             steamTrail = []
 
         case "trojan_wyrm":
-            // Initialize 24 body segments
-            let spacing: CGFloat = 45
+            // Initialize body segments
+            let spacing = BalanceConfig.TrojanWyrm.segmentSpacing
+            let segCount = BalanceConfig.TrojanWyrm.segmentCount
             wyrmSegments = []
-            for i in 1...24 {
+            for i in 1...segCount {
                 wyrmSegments.append(CGPoint(x: bossX, y: bossY - CGFloat(i) * spacing))
             }
             wyrmHeadAngle = CGFloat.random(in: 0...(2 * .pi))
-            wyrmWallY = arenaHeight - 100
+            wyrmWallY = arenaHeight - BalanceConfig.TrojanWyrm.wallMargin
             wyrmGhostSegmentIndex = Int.random(in: 3..<21)
 
         default:
@@ -498,14 +499,14 @@ class BossSimulator {
     private func updateCyberbossPhase1() {
         // Mode switching
         modeTimer += deltaTime
-        if modeTimer >= 5.0 {
+        if modeTimer >= BalanceConfig.Cyberboss.modeSwitchInterval {
             modeTimer = 0
             cyberbossMode = cyberbossMode == .melee ? .ranged : .melee
         }
 
         if cyberbossMode == .melee {
             // Chase player
-            moveBossTowards(x: playerX, y: playerY, speed: bossSpeed * 1.2)
+            moveBossTowards(x: playerX, y: playerY, speed: bossSpeed * BalanceConfig.Cyberboss.meleeChaseSpeedMultiplier)
         } else {
             // Keep distance and shoot
             let dx = bossX - playerX
@@ -519,7 +520,7 @@ class BossSimulator {
             }
 
             // Fire ranged attack
-            if currentTime - lastRangedAttack >= 1.2 {
+            if currentTime - lastRangedAttack >= BalanceConfig.Cyberboss.rangedAttackCooldown {
                 lastRangedAttack = currentTime
                 fireRangedVolley()
             }
@@ -630,17 +631,19 @@ class BossSimulator {
     private func enterVoidHarbingerPhase2() {
         bossInvulnerable = true
 
-        // Spawn 4 pylons
+        // Spawn pylons
+        let ox = BalanceConfig.VoidHarbinger.pylonOffsetX
+        let oy = BalanceConfig.VoidHarbinger.pylonOffsetY
         let offsets: [(CGFloat, CGFloat)] = [
-            (-300, -300), (300, -300), (-300, 300), (300, 300)
+            (-ox, -oy), (ox, -oy), (-ox, oy), (ox, oy)
         ]
         for (i, offset) in offsets.enumerated() {
             pylons.append(SimPylon(
                 id: "pylon_\(i)",
                 x: arenaCenter.x + offset.0,
                 y: arenaCenter.y + offset.1,
-                health: 500,
-                maxHealth: 500,
+                health: BalanceConfig.VoidHarbinger.pylonHealth,
+                maxHealth: BalanceConfig.VoidHarbinger.pylonHealth,
                 lastBeamTime: 0
             ))
         }
@@ -785,9 +788,9 @@ class BossSimulator {
             playerY = clamp(playerY, min: 30, max: arenaHeight - 30)
         }
 
-        // Check blade collision (3 blades, 180 radius)
-        let bladeRadius: CGFloat = 180
-        let bladeCount = 3
+        // Check blade collision
+        let bladeRadius = BalanceConfig.Overclocker.bladeOrbitRadius
+        let bladeCount = BalanceConfig.Overclocker.bladeCount
         for i in 0..<bladeCount {
             let angleOffset = CGFloat(i) * (2 * .pi / CGFloat(bladeCount))
             let currentAngle = overclockerBladeAngle + angleOffset
@@ -797,8 +800,8 @@ class BossSimulator {
             let bladeDist = pointToLineDistance(px: playerX, py: playerY,
                                                  x1: bossX, y1: bossY,
                                                  x2: bladeTipX, y2: bladeTipY)
-            if bladeDist < 30 {
-                takeDamage(80, source: "blade")
+            if bladeDist < BalanceConfig.Overclocker.bladeWidth {
+                takeDamage(BalanceConfig.Overclocker.bladeDamage, source: "blade")
                 playerInvulnerableUntil = currentTime + 0.5
                 break
             }
@@ -811,8 +814,8 @@ class BossSimulator {
     }
 
     private func updateOverclockerPhase2() {
-        let tileChangeInterval: TimeInterval = 3.0
-        let warningDuration: TimeInterval = 1.0
+        let tileChangeInterval = BalanceConfig.Overclocker.tileChangeInterval
+        let warningDuration = BalanceConfig.Overclocker.tileWarningDuration
 
         // Timer for floor pattern changes
         if lastTileChangeTime == 0 || currentTime - lastTileChangeTime > tileChangeInterval {
@@ -863,7 +866,7 @@ class BossSimulator {
                 targetPos = tileCenter
             }
         }
-        moveBossTowards(x: targetPos.x, y: targetPos.y, speed: 150)
+        moveBossTowards(x: targetPos.x, y: targetPos.y, speed: BalanceConfig.Overclocker.phase2BossMoveSpeed)
 
         // Check player lava damage
         let col = Int((playerX - 0) / (arenaWidth / 4))
@@ -871,7 +874,7 @@ class BossSimulator {
         if col >= 0 && col < 4 && row >= 0 && row < 4 {
             let index = row * 4 + col
             if index < overclockerTileStates.count && overclockerTileStates[index] == 2 {
-                takeDamage(60 * CGFloat(deltaTime), source: "lava")
+                takeDamage(BalanceConfig.Overclocker.lavaTileDPS * CGFloat(deltaTime), source: "lava")
             }
         }
     }
@@ -884,11 +887,10 @@ class BossSimulator {
 
     private func updateOverclockerPhase3() {
         // Chase player
-        let chaseSpeed: CGFloat = 180
-        moveBossTowards(x: playerX, y: playerY, speed: chaseSpeed)
+        moveBossTowards(x: playerX, y: playerY, speed: BalanceConfig.Overclocker.chaseSpeed)
 
         // Drop steam
-        let steamDropInterval: TimeInterval = 0.15
+        let steamDropInterval = BalanceConfig.Overclocker.steamDropInterval
         if currentTime - lastSteamDropTime > steamDropInterval {
             lastSteamDropTime = currentTime
             steamTrail.append(SimSteamSegment(
@@ -905,11 +907,10 @@ class BossSimulator {
         }
 
         // Steam damage
-        let steamRadius: CGFloat = 40
         for segment in steamTrail {
             let dist = hypot(playerX - segment.x, playerY - segment.y)
-            if dist < steamRadius {
-                takeDamage(30 * CGFloat(deltaTime), source: "steam")
+            if dist < BalanceConfig.Overclocker.steamRadius {
+                takeDamage(BalanceConfig.Overclocker.steamDPS * CGFloat(deltaTime), source: "steam")
                 break
             }
         }
@@ -926,8 +927,8 @@ class BossSimulator {
 
         // Toggle suction
         overclockerSuctionTimer += deltaTime
-        let suctionPullDuration: TimeInterval = 4.0
-        let suctionPauseDuration: TimeInterval = 2.0
+        let suctionPullDuration = BalanceConfig.Overclocker.suctionPullDuration
+        let suctionPauseDuration = BalanceConfig.Overclocker.suctionPauseDuration
 
         if overclockerSuctionActive {
             if overclockerSuctionTimer > suctionPullDuration {
@@ -943,7 +944,7 @@ class BossSimulator {
 
         // Vacuum pulls player toward boss
         if overclockerSuctionActive {
-            let vacuumStrength: CGFloat = 80
+            let vacuumStrength = BalanceConfig.Overclocker.vacuumPullStrength
             let dx = bossX - playerX
             let dy = bossY - playerY
             let angle = atan2(dy, dx)
@@ -954,7 +955,7 @@ class BossSimulator {
         }
 
         // Continue steam trail
-        let steamDropInterval: TimeInterval = 0.15
+        let steamDropInterval = BalanceConfig.Overclocker.steamDropInterval
         if currentTime - lastSteamDropTime > steamDropInterval {
             lastSteamDropTime = currentTime
             steamTrail.append(SimSteamSegment(
@@ -969,20 +970,18 @@ class BossSimulator {
         }
 
         // Steam damage
-        let steamRadius: CGFloat = 40
         for segment in steamTrail {
             let dist = hypot(playerX - segment.x, playerY - segment.y)
-            if dist < steamRadius {
-                takeDamage(30 * CGFloat(deltaTime), source: "steam")
+            if dist < BalanceConfig.Overclocker.steamRadius {
+                takeDamage(BalanceConfig.Overclocker.steamDPS * CGFloat(deltaTime), source: "steam")
                 break
             }
         }
 
         // Shredder damage when close to boss
-        let shredderRadius: CGFloat = 80
         let distToBoss = hypot(playerX - bossX, playerY - bossY)
-        if distToBoss < shredderRadius {
-            takeDamage(100 * CGFloat(deltaTime), source: "shredder")
+        if distToBoss < BalanceConfig.Overclocker.shredderRadius {
+            takeDamage(BalanceConfig.Overclocker.shredderDPS * CGFloat(deltaTime), source: "shredder")
         }
     }
 
@@ -1037,7 +1036,7 @@ class BossSimulator {
         let newY = bossY + sin(wyrmHeadAngle) * headSpeed * CGFloat(deltaTime)
 
         // Wall bounce
-        let padding: CGFloat = 50
+        let padding = BalanceConfig.TrojanWyrm.lungeBoundsPadding
         if newX < padding || newX > arenaWidth - padding ||
            newY < padding || newY > arenaHeight - padding {
             wyrmHeadAngle += .pi
@@ -1123,14 +1122,14 @@ class BossSimulator {
 
         for i in 0..<subWormCount {
             let angle = CGFloat(i) * angleStep
-            let spawnDist: CGFloat = 200
+            let spawnDist = BalanceConfig.TrojanWyrm.subWormSpawnDistance
             let pos = CGPoint(
                 x: arenaCenter.x + cos(angle) * spawnDist,
                 y: arenaCenter.y + sin(angle) * spawnDist
             )
             var body: [CGPoint] = []
             for k in 1...bodyCount {
-                body.append(CGPoint(x: pos.x, y: pos.y - CGFloat(k * 20)))
+                body.append(CGPoint(x: pos.x, y: pos.y - CGFloat(k) * BalanceConfig.TrojanWyrm.subWormSegmentSpacing))
             }
             wyrmSubWorms.append(SimSubWorm(
                 id: i,
@@ -1165,7 +1164,7 @@ class BossSimulator {
                 let dx = leader.x - worm.body[j].x
                 let dy = leader.y - worm.body[j].y
                 let dist = sqrt(dx * dx + dy * dy)
-                let spacing: CGFloat = 25
+                let spacing = BalanceConfig.TrojanWyrm.subWormBodySpacing
                 if dist > spacing {
                     let angle = atan2(dy, dx)
                     worm.body[j] = CGPoint(
@@ -1250,7 +1249,7 @@ class BossSimulator {
 
             // Trigger lunge after circling
             wyrmAimTimer += deltaTime
-            if wyrmAimTimer > 4.0 {
+            if wyrmAimTimer > BalanceConfig.TrojanWyrm.circlingDuration {
                 wyrmPhase4SubState = 1  // aiming
                 wyrmAimTimer = 0
             }
@@ -1282,10 +1281,10 @@ class BossSimulator {
 
             // Check bounds or timeout
             wyrmLungeTimer += deltaTime
-            let padding: CGFloat = 50
-            if bossX < padding || bossX > arenaWidth - padding ||
-               bossY < padding || bossY > arenaHeight - padding ||
-               wyrmLungeTimer > 1.5 {
+            let lungePadding = BalanceConfig.TrojanWyrm.lungeBoundsPadding
+            if bossX < lungePadding || bossX > arenaWidth - lungePadding ||
+               bossY < lungePadding || bossY > arenaHeight - lungePadding ||
+               wyrmLungeTimer > BalanceConfig.TrojanWyrm.lungeDuration {
                 wyrmPhase4SubState = 3  // recovering
                 wyrmRecoverTimer = 0
             }
@@ -1827,8 +1826,8 @@ class BossSimulator {
     }
 
     private func fireRangedVolley() {
-        let count = 5
-        let spread: CGFloat = 0.5  // radians
+        let count = BalanceConfig.Cyberboss.rangedProjectileCount
+        let spread = BalanceConfig.Cyberboss.rangedSpreadAngle
         let baseAngle = atan2(playerY - bossY, playerX - bossX)
 
         for i in 0..<count {
@@ -1837,9 +1836,9 @@ class BossSimulator {
                 id: UUID().uuidString,
                 x: bossX,
                 y: bossY,
-                velocityX: cos(angle) * 300,
-                velocityY: sin(angle) * 300,
-                damage: 25,
+                velocityX: cos(angle) * BalanceConfig.Cyberboss.rangedProjectileSpeed,
+                velocityY: sin(angle) * BalanceConfig.Cyberboss.rangedProjectileSpeed,
+                damage: BalanceConfig.Cyberboss.rangedProjectileDamage,
                 radius: 15,
                 lifetime: 0,
                 maxLifetime: 3,
