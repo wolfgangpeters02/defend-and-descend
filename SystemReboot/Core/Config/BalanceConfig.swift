@@ -592,12 +592,14 @@ struct BalanceConfig {
         static let boundsPadding: CGFloat = 30
 
         // Phase 2 - Firewall (Wall sweep)
+        static let wallMargin: CGFloat = 100           // Wall bounce margin from arena edges
         static let wallSweepSpeed: CGFloat = 70        // Slightly slower sweep
         static let turretFireInterval: Double = 1.8    // Slower fire rate
         static let turretProjectileSpeed: CGFloat = 220
         static let turretProjectileDamage: CGFloat = 12 // Reduced from 20
         static let turretProjectileRadius: CGFloat = 8
         static let turretProjectileLifetime: TimeInterval = 4.0
+        static let turretProjectileColor: String = "#00ff44" // Lime green
 
         // Phase 3 - Data Corruption (Sub-worms)
         static let subWormCount: Int = 3               // Reduced from 4
@@ -609,12 +611,15 @@ struct BalanceConfig {
         static let subWormBodyMitigation: CGFloat = 0.80
 
         // Phase 4 - Format C: (Constricting ring)
+        static let circlingDuration: Double = 4.0      // Time spent circling before aiming
         static let ringInitialRadius: CGFloat = 250
         static let ringMinRadius: CGFloat = 130        // Slightly larger min (more escape room)
         static let ringShrinkRate: CGFloat = 4         // Slower shrink
         static let ringRotationSpeed: CGFloat = 0.8    // Radians per second (slower rotation)
         static let aimDuration: Double = 1.2           // More warning time
         static let lungeSpeed: CGFloat = 500           // Reduced from 600
+        static let lungeDuration: Double = 1.5         // Lunge timeout
+        static let lungeBoundsPadding: CGFloat = 50    // Bounds padding for lunge stop
         static let lungeHeadDamage: CGFloat = 30       // Reduced from 60
         static let recoverDuration: Double = 1.8       // Longer recovery = more punish window
 
@@ -625,6 +630,7 @@ struct BalanceConfig {
 
         // Contact damage
         static let contactCooldown: Double = 0.5       // Contact damage cooldown
+        static let contactPadding: CGFloat = 20        // Extra padding on collision radii
     }
 
     // MARK: - Survival Events
@@ -810,6 +816,15 @@ struct BalanceConfig {
     struct TDCore {
         /// Core initial health
         static let baseHealth: CGFloat = 100
+
+        /// Core base damage per attack
+        static let baseDamage: CGFloat = 10
+
+        /// Core base attack range
+        static let baseRange: CGFloat = 150
+
+        /// Core base attacks per second
+        static let baseAttackSpeed: CGFloat = 1.0
 
         /// Level bonus per player level (+2%)
         static let levelBonusPercent: CGFloat = 0.02
@@ -1732,6 +1747,177 @@ struct BalanceConfig {
         static let bossArenaWeaponRange: CGFloat = 600
     }
 
+    // MARK: - Protocol Base Stats
+    // Per-protocol base stats for Firewall (TD) and Weapon (Boss/Debug) modes
+    // These are level-1 values before any scaling is applied
+    // Special abilities (.chain, .execute, etc.) stay in Protocol.swift
+
+    struct ProtocolBaseStats {
+
+        struct KernelPulse {
+            // Firewall (Tower) Stats
+            static let firewallDamage: CGFloat = 8
+            static let firewallRange: CGFloat = 120
+            static let firewallFireRate: CGFloat = 1.0
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 15
+            // Weapon (Active/Debug) Stats
+            static let weaponDamage: CGFloat = 8
+            static let weaponFireRate: CGFloat = 2.0
+            static let weaponProjectileCount: Int = 1
+            static let weaponSpread: CGFloat = 0
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 400
+            // Costs
+            static let compileCost: Int = 0
+            static let baseUpgradeCost: Int = 50
+        }
+
+        struct BurstProtocol {
+            static let firewallDamage: CGFloat = 10
+            static let firewallRange: CGFloat = 140
+            static let firewallFireRate: CGFloat = 0.8
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 40
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 20
+            static let weaponDamage: CGFloat = 6
+            static let weaponFireRate: CGFloat = 0.8
+            static let weaponProjectileCount: Int = 5
+            static let weaponSpread: CGFloat = 0.5
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 350
+            static let compileCost: Int = 100
+            static let baseUpgradeCost: Int = 50
+        }
+
+        struct TraceRoute {
+            static let firewallDamage: CGFloat = 50
+            static let firewallRange: CGFloat = 250
+            static let firewallFireRate: CGFloat = 0.4
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 3
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 35
+            static let weaponDamage: CGFloat = 40
+            static let weaponFireRate: CGFloat = 0.5
+            static let weaponProjectileCount: Int = 1
+            static let weaponSpread: CGFloat = 0
+            static let weaponPierce: Int = 5
+            static let weaponProjectileSpeed: CGFloat = 800
+            static let compileCost: Int = 200
+            static let baseUpgradeCost: Int = 100
+        }
+
+        struct IceShard {
+            static let firewallDamage: CGFloat = 5
+            static let firewallRange: CGFloat = 130
+            static let firewallFireRate: CGFloat = 1.5
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0.5
+            static let firewallSlowDuration: TimeInterval = 2.0
+            static let firewallPowerDraw: Int = 30
+            static let weaponDamage: CGFloat = 4
+            static let weaponFireRate: CGFloat = 3.0
+            static let weaponProjectileCount: Int = 1
+            static let weaponSpread: CGFloat = 0
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 500
+            static let compileCost: Int = 200
+            static let baseUpgradeCost: Int = 100
+        }
+
+        struct ForkBomb {
+            static let firewallDamage: CGFloat = 12
+            static let firewallRange: CGFloat = 140
+            static let firewallFireRate: CGFloat = 0.7
+            static let firewallProjectileCount: Int = 3
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 40
+            static let weaponDamage: CGFloat = 10
+            static let weaponFireRate: CGFloat = 1.0
+            static let weaponProjectileCount: Int = 8
+            static let weaponSpread: CGFloat = 0.8
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 380
+            static let compileCost: Int = 400
+            static let baseUpgradeCost: Int = 200
+        }
+
+        struct RootAccess {
+            static let firewallDamage: CGFloat = 80
+            static let firewallRange: CGFloat = 160
+            static let firewallFireRate: CGFloat = 0.3
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 75
+            static let weaponDamage: CGFloat = 60
+            static let weaponFireRate: CGFloat = 0.4
+            static let weaponProjectileCount: Int = 1
+            static let weaponSpread: CGFloat = 0
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 600
+            static let compileCost: Int = 400
+            static let baseUpgradeCost: Int = 200
+        }
+
+        struct Overflow {
+            static let firewallDamage: CGFloat = 15
+            static let firewallRange: CGFloat = 150
+            static let firewallFireRate: CGFloat = 0.8
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 120
+            static let weaponDamage: CGFloat = 12
+            static let weaponFireRate: CGFloat = 1.2
+            static let weaponProjectileCount: Int = 1
+            static let weaponSpread: CGFloat = 0
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 450
+            static let compileCost: Int = 800
+            static let baseUpgradeCost: Int = 400
+        }
+
+        struct NullPointer {
+            static let firewallDamage: CGFloat = 25
+            static let firewallRange: CGFloat = 140
+            static let firewallFireRate: CGFloat = 0.6
+            static let firewallProjectileCount: Int = 1
+            static let firewallPierce: Int = 1
+            static let firewallSplash: CGFloat = 0
+            static let firewallSlow: CGFloat = 0
+            static let firewallSlowDuration: TimeInterval = 0
+            static let firewallPowerDraw: Int = 100
+            static let weaponDamage: CGFloat = 20
+            static let weaponFireRate: CGFloat = 0.8
+            static let weaponProjectileCount: Int = 1
+            static let weaponSpread: CGFloat = 0
+            static let weaponPierce: Int = 1
+            static let weaponProjectileSpeed: CGFloat = 500
+            static let compileCost: Int = 800
+            static let baseUpgradeCost: Int = 400
+        }
+    }
+
     // MARK: - Pillar System (Boss Fight Cover)
 
     struct Pillar {
@@ -1791,7 +1977,10 @@ struct BalanceConfig {
         static let minSlotDistance: CGFloat = 70
 
         /// CPU exclusion radius (no towers near CPU)
-        static let cpuExclusionRadius: CGFloat = 200
+        static let cpuExclusionRadius: CGFloat = 280
+
+        /// Distance from CPU center for defense slot placement
+        static let cpuDefenseSlotOffset: CGFloat = 330
     }
 
     // MARK: - Projectile System
@@ -2120,8 +2309,23 @@ extension BalanceConfig {
         /// Size of each sector
         static let sectorSize: CGFloat = 1400
 
-        /// CPU core visual size
+        /// CPU core visual size (IHS body)
         static let cpuSize: CGFloat = 300
+
+        /// CPU inner silicon die size
+        static let cpuDieSize: CGFloat = 200
+
+        /// CPU socket retention frame size
+        static let cpuSocketFrameSize: CGFloat = 800
+
+        /// Number of pins per side on CPU
+        static let cpuPinsPerSide: Int = 12
+
+        /// Number of heatsink fins around CPU
+        static let cpuFinCount: Int = 16
+
+        /// CPU outer glow ring radius
+        static let cpuGlowRingRadius: CGFloat = 200
     }
 
     // MARK: - System Freeze
@@ -2354,6 +2558,97 @@ extension BalanceConfig {
             uniqueKeysWithValues: SectorHashBonus.multipliers.map { ($0.key, Double($0.value)) }
         )
 
+        func protoStatsDict(
+            fwDmg: CGFloat, fwRng: CGFloat, fwRate: CGFloat, fwProj: Int, fwPierce: Int,
+            fwSplash: CGFloat, fwSlow: CGFloat, fwSlowDur: TimeInterval, fwPower: Int,
+            wpDmg: CGFloat, wpRate: CGFloat, wpProj: Int, wpSpread: CGFloat,
+            wpPierce: Int, wpSpeed: CGFloat,
+            compile: Int, upgrade: Int, rarity: String
+        ) -> [String: Any] {
+            [
+                "rarity": rarity,
+                "firewall": [
+                    "damage": Double(fwDmg), "range": Double(fwRng), "fireRate": Double(fwRate),
+                    "projectileCount": fwProj, "pierce": fwPierce, "splash": Double(fwSplash),
+                    "slow": Double(fwSlow), "slowDuration": fwSlowDur, "powerDraw": fwPower
+                ] as [String: Any],
+                "weapon": [
+                    "damage": Double(wpDmg), "fireRate": Double(wpRate),
+                    "projectileCount": wpProj, "spread": Double(wpSpread),
+                    "pierce": wpPierce, "projectileSpeed": Double(wpSpeed)
+                ] as [String: Any],
+                "compileCost": compile, "baseUpgradeCost": upgrade
+            ]
+        }
+
+        typealias PBS = ProtocolBaseStats
+        let protocolBaseStatsDict: [String: Any] = [
+            "kernel_pulse": protoStatsDict(
+                fwDmg: PBS.KernelPulse.firewallDamage, fwRng: PBS.KernelPulse.firewallRange, fwRate: PBS.KernelPulse.firewallFireRate,
+                fwProj: PBS.KernelPulse.firewallProjectileCount, fwPierce: PBS.KernelPulse.firewallPierce,
+                fwSplash: PBS.KernelPulse.firewallSplash, fwSlow: PBS.KernelPulse.firewallSlow, fwSlowDur: PBS.KernelPulse.firewallSlowDuration,
+                fwPower: PBS.KernelPulse.firewallPowerDraw, wpDmg: PBS.KernelPulse.weaponDamage, wpRate: PBS.KernelPulse.weaponFireRate,
+                wpProj: PBS.KernelPulse.weaponProjectileCount, wpSpread: PBS.KernelPulse.weaponSpread,
+                wpPierce: PBS.KernelPulse.weaponPierce, wpSpeed: PBS.KernelPulse.weaponProjectileSpeed,
+                compile: PBS.KernelPulse.compileCost, upgrade: PBS.KernelPulse.baseUpgradeCost, rarity: "common"),
+            "burst_protocol": protoStatsDict(
+                fwDmg: PBS.BurstProtocol.firewallDamage, fwRng: PBS.BurstProtocol.firewallRange, fwRate: PBS.BurstProtocol.firewallFireRate,
+                fwProj: PBS.BurstProtocol.firewallProjectileCount, fwPierce: PBS.BurstProtocol.firewallPierce,
+                fwSplash: PBS.BurstProtocol.firewallSplash, fwSlow: PBS.BurstProtocol.firewallSlow, fwSlowDur: PBS.BurstProtocol.firewallSlowDuration,
+                fwPower: PBS.BurstProtocol.firewallPowerDraw, wpDmg: PBS.BurstProtocol.weaponDamage, wpRate: PBS.BurstProtocol.weaponFireRate,
+                wpProj: PBS.BurstProtocol.weaponProjectileCount, wpSpread: PBS.BurstProtocol.weaponSpread,
+                wpPierce: PBS.BurstProtocol.weaponPierce, wpSpeed: PBS.BurstProtocol.weaponProjectileSpeed,
+                compile: PBS.BurstProtocol.compileCost, upgrade: PBS.BurstProtocol.baseUpgradeCost, rarity: "common"),
+            "trace_route": protoStatsDict(
+                fwDmg: PBS.TraceRoute.firewallDamage, fwRng: PBS.TraceRoute.firewallRange, fwRate: PBS.TraceRoute.firewallFireRate,
+                fwProj: PBS.TraceRoute.firewallProjectileCount, fwPierce: PBS.TraceRoute.firewallPierce,
+                fwSplash: PBS.TraceRoute.firewallSplash, fwSlow: PBS.TraceRoute.firewallSlow, fwSlowDur: PBS.TraceRoute.firewallSlowDuration,
+                fwPower: PBS.TraceRoute.firewallPowerDraw, wpDmg: PBS.TraceRoute.weaponDamage, wpRate: PBS.TraceRoute.weaponFireRate,
+                wpProj: PBS.TraceRoute.weaponProjectileCount, wpSpread: PBS.TraceRoute.weaponSpread,
+                wpPierce: PBS.TraceRoute.weaponPierce, wpSpeed: PBS.TraceRoute.weaponProjectileSpeed,
+                compile: PBS.TraceRoute.compileCost, upgrade: PBS.TraceRoute.baseUpgradeCost, rarity: "rare"),
+            "ice_shard": protoStatsDict(
+                fwDmg: PBS.IceShard.firewallDamage, fwRng: PBS.IceShard.firewallRange, fwRate: PBS.IceShard.firewallFireRate,
+                fwProj: PBS.IceShard.firewallProjectileCount, fwPierce: PBS.IceShard.firewallPierce,
+                fwSplash: PBS.IceShard.firewallSplash, fwSlow: PBS.IceShard.firewallSlow, fwSlowDur: PBS.IceShard.firewallSlowDuration,
+                fwPower: PBS.IceShard.firewallPowerDraw, wpDmg: PBS.IceShard.weaponDamage, wpRate: PBS.IceShard.weaponFireRate,
+                wpProj: PBS.IceShard.weaponProjectileCount, wpSpread: PBS.IceShard.weaponSpread,
+                wpPierce: PBS.IceShard.weaponPierce, wpSpeed: PBS.IceShard.weaponProjectileSpeed,
+                compile: PBS.IceShard.compileCost, upgrade: PBS.IceShard.baseUpgradeCost, rarity: "rare"),
+            "fork_bomb": protoStatsDict(
+                fwDmg: PBS.ForkBomb.firewallDamage, fwRng: PBS.ForkBomb.firewallRange, fwRate: PBS.ForkBomb.firewallFireRate,
+                fwProj: PBS.ForkBomb.firewallProjectileCount, fwPierce: PBS.ForkBomb.firewallPierce,
+                fwSplash: PBS.ForkBomb.firewallSplash, fwSlow: PBS.ForkBomb.firewallSlow, fwSlowDur: PBS.ForkBomb.firewallSlowDuration,
+                fwPower: PBS.ForkBomb.firewallPowerDraw, wpDmg: PBS.ForkBomb.weaponDamage, wpRate: PBS.ForkBomb.weaponFireRate,
+                wpProj: PBS.ForkBomb.weaponProjectileCount, wpSpread: PBS.ForkBomb.weaponSpread,
+                wpPierce: PBS.ForkBomb.weaponPierce, wpSpeed: PBS.ForkBomb.weaponProjectileSpeed,
+                compile: PBS.ForkBomb.compileCost, upgrade: PBS.ForkBomb.baseUpgradeCost, rarity: "epic"),
+            "root_access": protoStatsDict(
+                fwDmg: PBS.RootAccess.firewallDamage, fwRng: PBS.RootAccess.firewallRange, fwRate: PBS.RootAccess.firewallFireRate,
+                fwProj: PBS.RootAccess.firewallProjectileCount, fwPierce: PBS.RootAccess.firewallPierce,
+                fwSplash: PBS.RootAccess.firewallSplash, fwSlow: PBS.RootAccess.firewallSlow, fwSlowDur: PBS.RootAccess.firewallSlowDuration,
+                fwPower: PBS.RootAccess.firewallPowerDraw, wpDmg: PBS.RootAccess.weaponDamage, wpRate: PBS.RootAccess.weaponFireRate,
+                wpProj: PBS.RootAccess.weaponProjectileCount, wpSpread: PBS.RootAccess.weaponSpread,
+                wpPierce: PBS.RootAccess.weaponPierce, wpSpeed: PBS.RootAccess.weaponProjectileSpeed,
+                compile: PBS.RootAccess.compileCost, upgrade: PBS.RootAccess.baseUpgradeCost, rarity: "epic"),
+            "overflow": protoStatsDict(
+                fwDmg: PBS.Overflow.firewallDamage, fwRng: PBS.Overflow.firewallRange, fwRate: PBS.Overflow.firewallFireRate,
+                fwProj: PBS.Overflow.firewallProjectileCount, fwPierce: PBS.Overflow.firewallPierce,
+                fwSplash: PBS.Overflow.firewallSplash, fwSlow: PBS.Overflow.firewallSlow, fwSlowDur: PBS.Overflow.firewallSlowDuration,
+                fwPower: PBS.Overflow.firewallPowerDraw, wpDmg: PBS.Overflow.weaponDamage, wpRate: PBS.Overflow.weaponFireRate,
+                wpProj: PBS.Overflow.weaponProjectileCount, wpSpread: PBS.Overflow.weaponSpread,
+                wpPierce: PBS.Overflow.weaponPierce, wpSpeed: PBS.Overflow.weaponProjectileSpeed,
+                compile: PBS.Overflow.compileCost, upgrade: PBS.Overflow.baseUpgradeCost, rarity: "legendary"),
+            "null_pointer": protoStatsDict(
+                fwDmg: PBS.NullPointer.firewallDamage, fwRng: PBS.NullPointer.firewallRange, fwRate: PBS.NullPointer.firewallFireRate,
+                fwProj: PBS.NullPointer.firewallProjectileCount, fwPierce: PBS.NullPointer.firewallPierce,
+                fwSplash: PBS.NullPointer.firewallSplash, fwSlow: PBS.NullPointer.firewallSlow, fwSlowDur: PBS.NullPointer.firewallSlowDuration,
+                fwPower: PBS.NullPointer.firewallPowerDraw, wpDmg: PBS.NullPointer.weaponDamage, wpRate: PBS.NullPointer.weaponFireRate,
+                wpProj: PBS.NullPointer.weaponProjectileCount, wpSpread: PBS.NullPointer.weaponSpread,
+                wpPierce: PBS.NullPointer.weaponPierce, wpSpeed: PBS.NullPointer.weaponProjectileSpeed,
+                compile: PBS.NullPointer.compileCost, upgrade: PBS.NullPointer.baseUpgradeCost, rarity: "legendary")
+        ]
+
         let config: [String: Any] = [
             "waves": wavesDict,
             "threatLevel": threatDict,
@@ -2365,6 +2660,7 @@ extension BalanceConfig {
             "overclock": overclockDict,
             "hashEconomy": hashEconomyDict,
             "protocolScaling": protocolScalingDict,
+            "protocolBaseStats": protocolBaseStatsDict,
             "components": componentsDict,
             "efficiency": efficiencyDict,
             "freeze": freezeDict,

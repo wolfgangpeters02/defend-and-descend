@@ -1389,12 +1389,12 @@ class BossRenderingManager {
             }
         } else {
             // Clean up sub-worms if not in Phase 3
-            for wi in 0..<4 {
+            for wi in 0..<8 {
                 if let node = bossMechanicNodes["trojanwyrm_sw_\(wi)_head"] {
                     node.removeFromParent()
                     bossMechanicNodes.removeValue(forKey: "trojanwyrm_sw_\(wi)_head")
                 }
-                for si in 0..<5 {
+                for si in 0..<8 {
                     let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
                     if let node = bossMechanicNodes[segKey] {
                         node.removeFromParent()

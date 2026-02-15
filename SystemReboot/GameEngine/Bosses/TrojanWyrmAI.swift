@@ -85,7 +85,7 @@ class TrojanWyrmAI {
         case 2:
             // Setup Firewall
             bossState.wallInitialized = true
-            bossState.wallY = arenaRect.maxY - 100
+            bossState.wallY = arenaRect.maxY - BalanceConfig.TrojanWyrm.wallMargin
             bossState.wallDirection = -1 // Move down
             let maxGhostIndex = bossState.segments.count - 3
             bossState.ghostSegmentIndex = maxGhostIndex > 3 ? Int.random(in: 3..<maxGhostIndex) : 0
@@ -95,8 +95,9 @@ class TrojanWyrmAI {
             bossState.subWormsInitialized = true
             bossState.subWorms = []
 
-            let offsets: [CGFloat] = [0, .pi / 2, .pi, 3 * .pi / 2]
-            for (i, angle) in offsets.enumerated() {
+            let wormCount = BalanceConfig.TrojanWyrm.subWormCount
+            for i in 0..<wormCount {
+                let angle = CGFloat(i) * (2 * .pi / CGFloat(wormCount))
                 let spawnDist = BalanceConfig.TrojanWyrm.subWormSpawnDistance
                 let pos = CGPoint(
                     x: arenaRect.midX + cos(angle) * spawnDist,
@@ -193,13 +194,13 @@ class TrojanWyrmAI {
 
         // Bounce at edges and re-randomize ghost gap
         let maxGhostIdx = bossState.segments.count - 3
-        if bossState.wallY < arenaRect.minY + 100 {
+        if bossState.wallY < arenaRect.minY + config.wallMargin {
             bossState.wallDirection = 1
-            bossState.wallY = arenaRect.minY + 100
+            bossState.wallY = arenaRect.minY + config.wallMargin
             bossState.ghostSegmentIndex = maxGhostIdx > 3 ? Int.random(in: 3..<maxGhostIdx) : 0
-        } else if bossState.wallY > arenaRect.maxY - 100 {
+        } else if bossState.wallY > arenaRect.maxY - config.wallMargin {
             bossState.wallDirection = -1
-            bossState.wallY = arenaRect.maxY - 100
+            bossState.wallY = arenaRect.maxY - config.wallMargin
             bossState.ghostSegmentIndex = maxGhostIdx > 3 ? Int.random(in: 3..<maxGhostIdx) : 0
         }
 
@@ -235,7 +236,7 @@ class TrojanWyrmAI {
                     velocityY: -config.turretProjectileSpeed, // Fire downward
                     damage: config.turretProjectileDamage,
                     radius: config.turretProjectileRadius,
-                    color: "#00ff44",
+                    color: config.turretProjectileColor,
                     lifetime: config.turretProjectileLifetime,
                     piercing: 0,
                     hitEnemies: [],
@@ -327,7 +328,7 @@ class TrojanWyrmAI {
 
             // Trigger lunge after circling for a while
             bossState.aimTimer += deltaTime
-            if bossState.aimTimer > 4.0 {
+            if bossState.aimTimer > config.circlingDuration {
                 bossState.phase4SubState = .aiming
                 bossState.aimTimer = 0
             }
@@ -362,10 +363,10 @@ class TrojanWyrmAI {
 
             // Check bounds or timeout
             bossState.lungeTimer += deltaTime
-            let padding: CGFloat = 50
+            let padding = config.lungeBoundsPadding
             if boss.x < arenaRect.minX + padding || boss.x > arenaRect.maxX - padding ||
                boss.y < arenaRect.minY + padding || boss.y > arenaRect.maxY - padding ||
-               bossState.lungeTimer > 1.5 {
+               bossState.lungeTimer > config.lungeDuration {
                 bossState.phase4SubState = .recovering
                 bossState.recoverTimer = 0
             }
@@ -493,7 +494,7 @@ class TrojanWyrmAI {
             // Check sub-worms
             for worm in bossState.subWorms {
                 let headDist = hypot(playerPos.x - worm.head.x, playerPos.y - worm.head.y)
-                if headDist < config.subWormHeadSize + 20 {
+                if headDist < config.subWormHeadSize + config.contactPadding {
                     contactMade = true
                     damageAmount = config.headContactDamage
                     knockbackSource = worm.head.cgPoint
@@ -501,7 +502,7 @@ class TrojanWyrmAI {
                 }
                 for seg in worm.body {
                     let segDist = hypot(playerPos.x - seg.x, playerPos.y - seg.y)
-                    if segDist < config.subWormBodySize + 20 {
+                    if segDist < config.subWormBodySize + config.contactPadding {
                         contactMade = true
                         damageAmount = config.bodyContactDamage
                         knockbackSource = seg.cgPoint
@@ -517,12 +518,12 @@ class TrojanWyrmAI {
 
             // Phase 4 lunge head does extra damage
             if bossState.phase == 4 && bossState.phase4SubState == .lunging {
-                if headDist < config.headCollisionRadius + 20 {
+                if headDist < config.headCollisionRadius + config.contactPadding {
                     contactMade = true
                     damageAmount = config.lungeHeadDamage
                     knockbackSource = headPos
                 }
-            } else if headDist < config.headCollisionRadius + 20 {
+            } else if headDist < config.headCollisionRadius + config.contactPadding {
                 contactMade = true
                 damageAmount = config.headContactDamage
                 knockbackSource = headPos
@@ -535,7 +536,7 @@ class TrojanWyrmAI {
                     if bossState.phase == 2 && i == bossState.ghostSegmentIndex { continue }
 
                     let segDist = hypot(playerPos.x - seg.x, playerPos.y - seg.y)
-                    if segDist < config.bodyCollisionRadius + 20 {
+                    if segDist < config.bodyCollisionRadius + config.contactPadding {
                         contactMade = true
                         damageAmount = config.bodyContactDamage
                         knockbackSource = seg.cgPoint
