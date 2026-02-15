@@ -24,6 +24,7 @@ struct GameContainerView: View {
     @State private var showGlitchEffect = false
     @State private var scanLineOffset: CGFloat = 0
     @State private var previousHealth: CGFloat = 0
+    @State private var showBossFightTutorial = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -48,6 +49,21 @@ struct GameContainerView: View {
                     GlitchEffectOverlay()
                         .ignoresSafeArea()
                         .allowsHitTesting(false)
+                }
+
+                // Boss fight tutorial overlay (FTUE — first boss fight)
+                if showBossFightTutorial {
+                    BossFightTutorialOverlay(
+                        onStart: {
+                            withAnimation(.easeOut(duration: 0.3)) {
+                                showBossFightTutorial = false
+                            }
+                            gameScene?.isPaused = false
+                            AppState.shared.completeBossTutorial()
+                        }
+                    )
+                    .zIndex(100)
+                    .transition(.opacity)
                 }
 
                 // Virtual joystick overlay (no momentum for direct control)
@@ -235,26 +251,6 @@ struct GameContainerView: View {
                                     .foregroundColor(DesignColors.primary)
                             }
 
-                            // Extraction button (survival mode only, after 3 min)
-                            if gameMode == .survival && state.stats.extractionAvailable {
-                                Button(action: {
-                                    HapticsService.shared.play(.medium)
-                                    gameScene?.triggerExtraction()
-                                }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "arrow.up.circle.fill")
-                                            .font(.system(size: 16, weight: .bold))
-                                        Text(L10n.Game.HUD.extract)
-                                            .font(.system(size: 14, weight: .bold))
-                                    }
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(DesignColors.success)
-                                    .cornerRadius(8)
-                                }
-                                .transition(.scale.combined(with: .opacity))
-                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
@@ -393,6 +389,12 @@ struct GameContainerView: View {
         previousHealth = state.player.health
 
         gameScene = scene
+
+        // FTUE: Pause boss fight scene until player taps START
+        if gameMode == .boss && !appState.currentPlayer.hasSeenBossTutorial {
+            scene.isPaused = true
+            showBossFightTutorial = true
+        }
     }
 
     /// Maps arena/dungeon type to boss type for boss encounters

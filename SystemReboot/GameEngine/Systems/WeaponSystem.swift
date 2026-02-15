@@ -95,7 +95,6 @@ class WeaponSystem {
             }
 
             let projectileSpeed: CGFloat = BalanceConfig.Player.weaponProjectileSpeed
-            let survivalDamageModifier = SurvivalArenaSystem.getDamageModifier(state: state)
 
             state.projectiles.append(Projectile(
                 id: "\(RandomUtils.generateId())-\(i)",
@@ -104,7 +103,7 @@ class WeaponSystem {
                 y: startY,
                 velocityX: cos(angle) * projectileSpeed,
                 velocityY: sin(angle) * projectileSpeed,
-                damage: weapon.damage * survivalDamageModifier,
+                damage: weapon.damage,
                 radius: BalanceConfig.ProjectileSystem.playerProjectileRadius,
                 color: weapon.color,
                 lifetime: Double(weapon.range / projectileSpeed),

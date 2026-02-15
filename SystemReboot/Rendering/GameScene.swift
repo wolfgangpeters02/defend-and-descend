@@ -38,9 +38,6 @@ class GameScene: SKScene {
     // Node pool (Phase 5: reduce node allocations)
     var nodePool: NodePool!
 
-    // Survival mode event system
-    var survivalSystem = SurvivalArenaSystem()
-
     // Cached HUD Elements (Phase 1.3 - HUD Caching)
     var hudLayer: SKNode!
     var healthBarBg: SKShapeNode!
@@ -65,23 +62,9 @@ class GameScene: SKScene {
     var screenFlashNode: SKShapeNode?
     var cameraNode: SKCameraNode?
 
-    // Survival event visual elements
-    var eventBorderNode: SKShapeNode?
-    var eventAnnouncementLabel: SKLabelNode?
-    var eventTimerLabel: SKLabelNode?
-    var healingZoneNode: SKShapeNode?
-    var arenaOverlayNode: SKShapeNode?  // For buffer overflow shrink effect
-
-    // Survival economy UI
-    var hashEarnedLabel: SKLabelNode?
-    var extractionLabel: SKLabelNode?
-    var lastHashEarned: Int = 0
-    var lastEventTimeRemaining: Int = -1  // Cache event timer to avoid per-frame string allocation
-
     // Callbacks
     var onGameOver: ((GameState) -> Void)?
     var onStateUpdate: ((GameState) -> Void)?
-    var onExtraction: (() -> Void)?  // Called when extraction button pressed
     var didCallGameOver = false  // Prevent calling onGameOver multiple times
 
     // Screen size for dynamic scaling
@@ -178,7 +161,6 @@ class GameScene: SKScene {
         // setupHUD() - disabled to avoid duplicate UI
         setupScreenFlash()
         setupInvulnerabilityAnimation()
-        setupSurvivalEventVisuals()
     }
 
     private func setupLayers() {
@@ -308,25 +290,6 @@ class GameScene: SKScene {
         }
     }
 
-    // MARK: - Survival Extraction
-
-    /// Check if extraction is currently available
-    var canExtract: Bool {
-        return SurvivalArenaSystem.canExtract(state: gameState)
-    }
-
-    /// Get current Hash earned (for UI)
-    var hashEarned: Int {
-        return gameState.stats.hashEarned
-    }
-
-    /// Trigger extraction - ends game with 100% Hash reward
-    func triggerExtraction() {
-        guard canExtract else { return }
-        SurvivalArenaSystem.extract(state: &gameState)
-        onExtraction?()
-    }
-
     // MARK: - Input
 
     func updateInput(_ input: InputState) {
@@ -409,16 +372,6 @@ class GameScene: SKScene {
         // Constrain player to arena bounds
         ArenaSystem.constrainPlayerToArena(state: &gameState)
 
-        // Spawn enemies in survival mode (boss mode has boss already spawned)
-        if gameState.gameMode == .survival {
-            SpawnSystem.update(state: &gameState, context: context)
-
-            // Spawn boss every 2 minutes in survival mode
-            if gameState.timeElapsed - gameState.lastBossSpawnTime >= BalanceConfig.BossSurvivor.spawnInterval {
-                SpawnSystem.spawnBoss(state: &gameState, context: context)
-            }
-        }
-
         // Update enemies
         EnemySystem.update(state: &gameState, context: context)
 
@@ -443,11 +396,6 @@ class GameScene: SKScene {
 
         // Update particles
         updateParticles(context: context)
-
-        // Survival mode: Update event system
-        if gameState.gameMode == .survival {
-            survivalSystem.update(state: &gameState, deltaTime: context.deltaTime)
-        }
 
         // Boss mode specific updates
         if gameState.gameMode == .boss && gameState.activeBossId != nil {
@@ -505,6 +453,97 @@ class GameScene: SKScene {
         }
     }
 
+    // MARK: - HUD Setup (Cached - Phase 1.3)
+
+    func setupHUD() {
+        hudLayer = SKNode()
+        hudLayer.zPosition = 1000
+
+        // For boss mode with larger arena, attach HUD to camera so it stays on screen
+        if gameState.gameMode == .boss, let cam = cameraNode {
+            cam.addChild(hudLayer)
+        } else {
+            addChild(hudLayer)
+        }
+
+        let healthBarWidth: CGFloat = 200
+        let healthBarHeight: CGFloat = 20
+
+        let hudWidth = gameState.gameMode == .boss ? screenSize.width : gameState.arena.width
+        let hudHeight = gameState.gameMode == .boss ? screenSize.height : gameState.arena.height
+        let hudYOffset: CGFloat = gameState.gameMode == .boss ? hudHeight / 2 - 30 : hudHeight - 30
+        let hudXOffsetLeft: CGFloat = gameState.gameMode == .boss ? -hudWidth / 2 + 120 : 120
+        let hudXCenter: CGFloat = gameState.gameMode == .boss ? 0 : hudWidth / 2
+        let hudXOffsetRight: CGFloat = gameState.gameMode == .boss ? hudWidth / 2 - 20 : hudWidth - 20
+
+        healthBarBg = SKShapeNode(rectOf: CGSize(width: healthBarWidth, height: healthBarHeight), cornerRadius: 4)
+        healthBarBg.fillColor = SKColor.darkGray
+        healthBarBg.strokeColor = SKColor.white.withAlphaComponent(0.3)
+        healthBarBg.position = CGPoint(x: hudXOffsetLeft, y: hudYOffset)
+        hudLayer.addChild(healthBarBg)
+
+        healthBarFill = SKShapeNode(rect: CGRect(
+            x: -healthBarWidth / 2,
+            y: -healthBarHeight / 2,
+            width: healthBarWidth,
+            height: healthBarHeight
+        ), cornerRadius: 4)
+        healthBarFill.fillColor = SKColor.green
+        healthBarFill.strokeColor = .clear
+        healthBarFill.position = healthBarBg.position
+        hudLayer.addChild(healthBarFill)
+
+        healthText = SKLabelNode(text: "\(Int(gameState.player.maxHealth))/\(Int(gameState.player.maxHealth))")
+        healthText.fontName = "Helvetica-Bold"
+        healthText.fontSize = 14
+        healthText.fontColor = .white
+        healthText.position = CGPoint(x: healthBarBg.position.x, y: healthBarBg.position.y - 5)
+        hudLayer.addChild(healthText)
+
+        timerText = SKLabelNode(text: "0:00")
+        timerText.fontName = "Helvetica-Bold"
+        timerText.fontSize = 24
+        timerText.fontColor = .white
+        timerText.position = CGPoint(x: hudXCenter, y: hudYOffset)
+        hudLayer.addChild(timerText)
+
+        killText = SKLabelNode(text: L10n.Game.HUD.kills(0))
+        killText.fontName = "Helvetica"
+        killText.fontSize = 16
+        killText.fontColor = .white
+        killText.horizontalAlignmentMode = .right
+        killText.position = CGPoint(x: hudXOffsetRight, y: hudYOffset)
+        hudLayer.addChild(killText)
+    }
+
+    // MARK: - HUD Update (Cached - Phase 1.3)
+
+    func updateHUD() {
+        guard healthBarFill != nil else { return }
+
+        let healthPercent = gameState.player.health / gameState.player.maxHealth
+        if abs(healthPercent - lastHealthPercent) > 0.001 {
+            lastHealthPercent = healthPercent
+            healthBarFill.xScale = max(0.001, healthPercent)
+            healthBarFill.fillColor = healthPercent > 0.3 ? SKColor.green : SKColor.red
+            healthText?.text = "\(Int(gameState.player.health))/\(Int(gameState.player.maxHealth))"
+        }
+
+        let timeSeconds = Int(gameState.timeElapsed)
+        if timeSeconds != lastTimeSeconds {
+            lastTimeSeconds = timeSeconds
+            let minutes = timeSeconds / 60
+            let seconds = timeSeconds % 60
+            timerText?.text = String(format: "%d:%02d", minutes, seconds)
+        }
+
+        let killCount = gameState.stats.enemiesKilled
+        if killCount != lastKillCount {
+            lastKillCount = killCount
+            killText?.text = L10n.Game.HUD.kills(killCount)
+        }
+    }
+
     // MARK: - Rendering
 
     private func render() {
@@ -514,7 +553,6 @@ class GameScene: SKScene {
         renderPickups()
         renderParticles()
         renderDamageEvents()
-        renderSurvivalEvents()
         renderPillars()  // Boss mode: pillar health and destruction
         updateHUD() // Phase 1.3: Only update changed values
     }

@@ -52,8 +52,7 @@ class PlayerSystem {
             // Effect zone modifiers
             let iceMultiplier = state.player.onIce ? state.player.iceSpeedMultiplier : 1.0
             let speedZoneMultiplier = state.player.inSpeedZone ? state.player.speedZoneMultiplier : 1.0
-            let survivalModifier = SurvivalArenaSystem.getSpeedModifier(state: state)
-            let effectiveSpeed = state.player.speed * iceMultiplier * speedZoneMultiplier * survivalModifier
+            let effectiveSpeed = state.player.speed * iceMultiplier * speedZoneMultiplier
 
             state.player.velocityX = moveX * effectiveSpeed
             state.player.velocityY = moveY * effectiveSpeed
