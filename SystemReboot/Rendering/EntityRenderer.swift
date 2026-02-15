@@ -48,7 +48,7 @@ class EntityRenderer {
         let size = enemy.size ?? 20
 
         // Special rendering for Void Harbinger boss
-        if enemy.isBoss && enemy.type == EnemyID.boss.rawValue && color == colorFromHex("#8800ff") {
+        if enemy.isBoss && enemy.type == EnemyID.boss.rawValue && color == colorFromHex(BalanceConfig.VoidHarbinger.bossColor) {
             return createVoidHarbingerNode(size: size, color: color)
         }
 
@@ -98,7 +98,7 @@ class EntityRenderer {
                 ])
                 container.run(SKAction.repeatForever(pulse))
             } else {
-                // Elite virus — "Zero-Day Exploit" full composition
+                // Elite virus — full composition
                 let body = EntityRenderer.createEliteVirusComposition(in: container, size: size, color: color)
                 // Alpha flicker — glitchy presence
                 let flicker = SKAction.sequence([

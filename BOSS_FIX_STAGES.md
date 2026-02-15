@@ -37,14 +37,16 @@ Replaced bossMoveSpeed*150 with single phase2BossMoveSpeed config value; added u
 
 ---
 
-## Stage 3: Void Harbinger — Hardcoded Values & Minion Cap
+## Stage 3: Void Harbinger — Hardcoded Values & Minion Cap [DONE]
 
-**Files:** `VoidHarbingerAI.swift`, `BalanceConfig.swift`
+Added maxMinionsOnScreen cap (20) with count check before spawning; centralized pylonSize, pylonXP, bossColor, and 4 entity colors into BalanceConfig.VoidHarbinger; updated EntityRenderer to use config constant.
 
-- [ ] Add minion cap: add `BalanceConfig.VoidHarbinger.maxMinionsOnScreen` (suggest 20), check count before spawning in `spawnVoidMinions` and `spawnEliteMinion`.
-- [ ] Move pylon collision size `40` (line 142) to `BalanceConfig.VoidHarbinger.pylonSize`
-- [ ] Move pylon XP `10` (line 143) to `BalanceConfig.VoidHarbinger.pylonXP`
-- [ ] Move pylon color `"#aa00ff"`, minion color `"#6600aa"`, projectile color `"#8800ff"` to DesignColors or local constants with descriptive names.
+**Files:** `VoidHarbingerAI.swift`, `BalanceConfig.swift`, `EntityRenderer.swift`
+
+- [x] Add minion cap: add `BalanceConfig.VoidHarbinger.maxMinionsOnScreen` (suggest 20), check count before spawning in `spawnVoidMinions` and `spawnEliteMinion`.
+- [x] Move pylon collision size `40` (line 142) to `BalanceConfig.VoidHarbinger.pylonSize`
+- [x] Move pylon XP `10` (line 143) to `BalanceConfig.VoidHarbinger.pylonXP`
+- [x] Move pylon color `"#aa00ff"`, minion color `"#6600aa"`, projectile color `"#8800ff"` to DesignColors or local constants with descriptive names.
 
 ---
 

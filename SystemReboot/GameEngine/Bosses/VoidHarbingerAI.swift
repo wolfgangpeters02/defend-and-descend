@@ -135,11 +135,11 @@ class VoidHarbingerAI {
                 maxHealth: BalanceConfig.VoidHarbinger.pylonHealth,
                 damage: 0,  // Pylons don't deal contact damage
                 speed: 0,   // Pylons don't move
-                xpValue: 10,
-                color: "#aa00ff"
+                xpValue: BalanceConfig.VoidHarbinger.pylonXP,
+                color: BalanceConfig.VoidHarbinger.pylonColor
             )
             pylonEnemy.pylonId = pylonId
-            pylonEnemy.size = 40  // Collision size for targeting
+            pylonEnemy.size = BalanceConfig.VoidHarbinger.pylonSize
             gameState.enemies.append(pylonEnemy)
         }
     }
@@ -373,7 +373,7 @@ class VoidHarbingerAI {
                 velocityY: sin(angle) * BalanceConfig.VoidHarbinger.volleyProjectileSpeed,
                 damage: BalanceConfig.VoidHarbinger.volleyProjectileDamage,
                 radius: BalanceConfig.VoidHarbinger.volleyProjectileRadius,
-                color: "#8800ff",
+                color: BalanceConfig.VoidHarbinger.volleyProjectileColor,
                 lifetime: BalanceConfig.VoidHarbinger.volleyProjectileLifetime,
                 piercing: 0,
                 hitEnemies: [],
@@ -386,14 +386,19 @@ class VoidHarbingerAI {
     }
 
     private static func spawnVoidMinions(count: Int, near boss: Enemy, gameState: inout GameState) {
-        for _ in 0..<count {
+        let currentMinions = gameState.enemies.filter {
+            $0.type == EnemyID.voidMinionSpawn.rawValue || $0.type == EnemyID.voidElite.rawValue
+        }.count
+        let allowed = max(0, BalanceConfig.VoidHarbinger.maxMinionsOnScreen - currentMinions)
+        let spawnCount = min(count, allowed)
+
+        for _ in 0..<spawnCount {
             let angle = CGFloat.random(in: 0...(2 * .pi))
             let distance = CGFloat.random(in: BalanceConfig.VoidHarbinger.minionSpawnDistanceMin...BalanceConfig.VoidHarbinger.minionSpawnDistanceMax)
 
             let x = boss.x + cos(angle) * distance
             let y = boss.y + sin(angle) * distance
 
-            // Create void minion (custom fast enemy type)
             let enemy = Enemy(
                 id: RandomUtils.generateId(),
                 type: "void_minion",
@@ -404,7 +409,7 @@ class VoidHarbingerAI {
                 damage: BalanceConfig.VoidHarbinger.minionDamage,
                 speed: BalanceConfig.VoidHarbinger.minionSpeed,
                 xpValue: BalanceConfig.VoidHarbinger.minionXP,
-                color: "#6600aa",
+                color: BalanceConfig.VoidHarbinger.minionColor,
                 velocityX: 0,
                 velocityY: 0
             )
@@ -413,6 +418,11 @@ class VoidHarbingerAI {
     }
 
     private static func spawnEliteMinion(near boss: Enemy, gameState: inout GameState) {
+        let currentMinions = gameState.enemies.filter {
+            $0.type == EnemyID.voidMinionSpawn.rawValue || $0.type == EnemyID.voidElite.rawValue
+        }.count
+        guard currentMinions < BalanceConfig.VoidHarbinger.maxMinionsOnScreen else { return }
+
         let angle = CGFloat.random(in: 0...(2 * .pi))
         let distance = BalanceConfig.VoidHarbinger.eliteMinionSpawnDistance
 
@@ -426,7 +436,7 @@ class VoidHarbingerAI {
             damage: BalanceConfig.VoidHarbinger.eliteMinionDamage,
             speed: BalanceConfig.VoidHarbinger.eliteMinionSpeed,
             xpValue: BalanceConfig.VoidHarbinger.eliteMinionXP,
-            color: "#aa00ff",
+            color: BalanceConfig.VoidHarbinger.eliteMinionColor,
             velocityX: 0,
             velocityY: 0
         )

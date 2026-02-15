@@ -423,6 +423,9 @@ struct BalanceConfig {
         static let phase3Threshold: CGFloat = 0.40
         static let phase4Threshold: CGFloat = 0.10
 
+        // Boss body color (used for entity identification)
+        static let bossColor: String = "#8800ff"
+
         // Void zones
         static let voidZoneIntervalPhase1: Double = 8.0
         static let voidZoneIntervalPhase4: Double = 2.0
@@ -444,6 +447,7 @@ struct BalanceConfig {
         static let volleyProjectileRadius: CGFloat = 10
         static let volleySpreadAngle: CGFloat = 0.2       // Angle between each projectile
         static let volleyProjectileLifetime: TimeInterval = 4.0
+        static let volleyProjectileColor: String = "#8800ff"
 
         // Minion spawns
         static let minionSpawnInterval: Double = 15.0
@@ -452,6 +456,8 @@ struct BalanceConfig {
         static let minionDamage: CGFloat = 10
         static let minionSpeed: CGFloat = 120
         static let minionXP: Int = 5
+        static let minionColor: String = "#6600aa"
+        static let maxMinionsOnScreen: Int = 20
 
         // Elite minions (Phase 3+)
         static let eliteMinionInterval: Double = 20.0
@@ -459,10 +465,14 @@ struct BalanceConfig {
         static let eliteMinionDamage: CGFloat = 25
         static let eliteMinionSpeed: CGFloat = 80
         static let eliteMinionXP: Int = 50
+        static let eliteMinionColor: String = "#aa00ff"
 
         // Pylons (Phase 2)
         static let pylonCount: Int = 4
         static let pylonHealth: CGFloat = 500
+        static let pylonSize: CGFloat = 40
+        static let pylonXP: Int = 10
+        static let pylonColor: String = "#aa00ff"
         static let pylonBeamInterval: Double = 3.0
         static let pylonBeamSpeed: CGFloat = 400
         static let pylonBeamDamage: CGFloat = 30
