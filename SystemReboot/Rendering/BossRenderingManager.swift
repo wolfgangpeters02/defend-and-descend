@@ -221,7 +221,7 @@ class BossRenderingManager {
             let nodeKey = "cyberboss_puddle_\(puddle.id)"
 
             let isWarningPhase = puddle.lifetime < puddle.warningDuration
-            let isAboutToPop = puddle.lifetime > puddle.maxLifetime - 0.5
+            let isAboutToPop = puddle.lifetime > puddle.maxLifetime - BalanceConfig.Cyberboss.puddlePopThreshold
 
             let currentPhase: String
             if isWarningPhase { currentPhase = "warning" }
@@ -1056,7 +1056,7 @@ class BossRenderingManager {
                 bladeNode.zRotation = -currentAngle
             }
         } else {
-            for i in 0..<3 {
+            for i in 0..<BalanceConfig.Overclocker.bladeCount {
                 let nodeKey = "overclocker_blade_\(i)"
                 if let node = bossMechanicNodes[nodeKey] {
                     node.removeFromParent()
@@ -1068,13 +1068,14 @@ class BossRenderingManager {
         // Phase 2: Render lava tiles
         if bossState.phase == 2 {
             let arenaRect = bossState.arenaRect
-            let tileW = arenaRect.width / 4
-            let tileH = arenaRect.height / 4
+            let gridSize = CGFloat(BalanceConfig.Overclocker.tileGridSize)
+            let tileW = arenaRect.width / gridSize
+            let tileH = arenaRect.height / gridSize
 
-            for i in 0..<16 {
+            for i in 0..<BalanceConfig.Overclocker.tileCount {
                 let nodeKey = "overclocker_tile_\(i)"
-                let col = i % 4
-                let row = i / 4
+                let col = i % BalanceConfig.Overclocker.tileGridSize
+                let row = i / BalanceConfig.Overclocker.tileGridSize
 
                 let tileNode: SKShapeNode
                 if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
@@ -1107,7 +1108,7 @@ class BossRenderingManager {
                 }
             }
         } else {
-            for i in 0..<16 {
+            for i in 0..<BalanceConfig.Overclocker.tileCount {
                 let nodeKey = "overclocker_tile_\(i)"
                 if let node = bossMechanicNodes[nodeKey] {
                     node.removeFromParent()
@@ -1499,12 +1500,14 @@ class BossRenderingManager {
             }
         } else {
             // Clean up sub-worms if not in Phase 3
-            for wi in 0..<8 {
+            let swCleanupCount = max(BalanceConfig.TrojanWyrm.subWormCount, 8)  // Safe upper bound
+            let swBodyCleanup = max(BalanceConfig.TrojanWyrm.subWormBodyCount, 8)
+            for wi in 0..<swCleanupCount {
                 if let node = bossMechanicNodes["trojanwyrm_sw_\(wi)_head"] {
                     node.removeFromParent()
                     bossMechanicNodes.removeValue(forKey: "trojanwyrm_sw_\(wi)_head")
                 }
-                for si in 0..<8 {
+                for si in 0..<swBodyCleanup {
                     let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
                     if let node = bossMechanicNodes[segKey] {
                         node.removeFromParent()

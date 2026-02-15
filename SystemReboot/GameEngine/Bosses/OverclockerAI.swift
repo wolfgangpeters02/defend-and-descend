@@ -16,7 +16,7 @@ class OverclockerAI {
         state.arenaRect = arenaRect
         state.phase = 1
         state.bladeAngle = 0
-        state.tileStates = Array(repeating: .normal, count: 16)
+        state.tileStates = Array(repeating: .normal, count: BalanceConfig.Overclocker.tileCount)
         return state
     }
 
@@ -74,13 +74,13 @@ class OverclockerAI {
         switch phase {
         case 2:
             // Initialize tile grid
-            bossState.tileStates = Array(repeating: .normal, count: 16)
+            bossState.tileStates = Array(repeating: .normal, count: BalanceConfig.Overclocker.tileCount)
             bossState.lastTileChangeTime = 0
             bossState.bossTargetTileIndex = nil
 
         case 3:
             // Clear tile states
-            bossState.tileStates = Array(repeating: .normal, count: 16)
+            bossState.tileStates = Array(repeating: .normal, count: BalanceConfig.Overclocker.tileCount)
             // Start steam trail
             bossState.steamTrail = []
             bossState.lastSteamDropTime = 0
@@ -137,10 +137,11 @@ class OverclockerAI {
             bossState.lastTileChangeTime = currentTime
 
             // Reset Grid
-            var newTiles = Array(repeating: TileState.normal, count: 16)
+            let gridConfig = BalanceConfig.Overclocker.self
+            var newTiles = Array(repeating: TileState.normal, count: gridConfig.tileCount)
 
-            // Pick 2 Safe Zones
-            var availableIndices = Array(0..<16)
+            // Pick safe zones
+            var availableIndices = Array(0..<gridConfig.tileCount)
             let safe1 = availableIndices.randomElement()!
             availableIndices.removeAll { $0 == safe1 }
             let safe2 = availableIndices.randomElement()!
@@ -149,8 +150,8 @@ class OverclockerAI {
             newTiles[safe1] = .safe
             newTiles[safe2] = .safe
 
-            // Pick 4 Warning Zones (will become Lava)
-            for _ in 0..<4 {
+            // Pick warning zones (will become lava)
+            for _ in 0..<gridConfig.warningTileCount {
                 if let lavaIndex = availableIndices.randomElement() {
                     newTiles[lavaIndex] = .warning
                     availableIndices.removeAll { $0 == lavaIndex }
@@ -171,7 +172,7 @@ class OverclockerAI {
         // Resolve Warnings to Lava after warning duration
         let timeSinceChange = currentTime - bossState.lastTileChangeTime
         if timeSinceChange > config.tileWarningDuration {
-            for i in 0..<16 {
+            for i in 0..<config.tileCount {
                 if bossState.tileStates[i] == .warning {
                     bossState.tileStates[i] = .lava
                 }
@@ -344,11 +345,12 @@ class OverclockerAI {
 
         // Phase 2: Lava Tiles (DPS)
         if state.phase == 2 {
-            let col = Int((playerPos.x - arenaRect.minX) / (arenaRect.width / 4))
-            let row = Int((playerPos.y - arenaRect.minY) / (arenaRect.height / 4))
+            let gridSize = BalanceConfig.Overclocker.tileGridSize
+            let col = Int((playerPos.x - arenaRect.minX) / (arenaRect.width / CGFloat(gridSize)))
+            let row = Int((playerPos.y - arenaRect.minY) / (arenaRect.height / CGFloat(gridSize)))
 
-            if col >= 0 && col < 4 && row >= 0 && row < 4 {
-                let index = row * 4 + col
+            if col >= 0 && col < gridSize && row >= 0 && row < gridSize {
+                let index = row * gridSize + col
                 if index < state.tileStates.count && state.tileStates[index] == .lava {
                     damage += config.lavaTileDPS * CGFloat(deltaTime)
                 }
@@ -417,10 +419,11 @@ class OverclockerAI {
     }
 
     static func getTileCenter(index: Int, arenaRect: CGRect) -> CGPoint {
-        let col = index % 4
-        let row = index / 4
-        let tileW = arenaRect.width / 4
-        let tileH = arenaRect.height / 4
+        let gridSize = BalanceConfig.Overclocker.tileGridSize
+        let col = index % gridSize
+        let row = index / gridSize
+        let tileW = arenaRect.width / CGFloat(gridSize)
+        let tileH = arenaRect.height / CGFloat(gridSize)
 
         return CGPoint(
             x: arenaRect.minX + (CGFloat(col) * tileW) + (tileW / 2),

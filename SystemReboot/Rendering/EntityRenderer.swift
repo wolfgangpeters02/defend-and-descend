@@ -160,7 +160,7 @@ class EntityRenderer {
         octPath.closeSubpath()
 
         let body = SKShapeNode(path: octPath)
-        body.fillColor = SKColor(hex: "1a0033") ?? SKColor.black
+        body.fillColor = SKColor(hex: BalanceConfig.VoidHarbinger.voidCoreColor) ?? SKColor.black
         body.strokeColor = color
         body.lineWidth = 4
         body.glowWidth = 1.5  // Void core shimmer
@@ -169,7 +169,7 @@ class EntityRenderer {
         // Inner eye/core - the "harbinger"
         let eye = SKShapeNode(circleOfRadius: size * 0.4)
         eye.fillColor = color
-        eye.strokeColor = SKColor(hex: "ff00ff") ?? SKColor.magenta
+        eye.strokeColor = SKColor(hex: BalanceConfig.VoidHarbinger.harbingerEyeColor) ?? SKColor.magenta
         eye.lineWidth = 3
         eye.glowWidth = 1.5  // Hypnotic center glow
         container.addChild(eye)
@@ -234,7 +234,7 @@ class EntityRenderer {
 
             let body = SKShapeNode(path: octPath)
             body.fillColor = color
-            body.strokeColor = SKColor(hex: "ff00ff") ?? SKColor.magenta
+            body.strokeColor = SKColor(hex: BalanceConfig.VoidHarbinger.harbingerEyeColor) ?? SKColor.magenta
             body.lineWidth = 3
             body.glowWidth = 0
             body.name = "body"
@@ -381,7 +381,7 @@ class EntityRenderer {
         if projectile.weaponId == "void_bolt" {
             // Dark void core with purple energy
             let voidCore = SKShapeNode(circleOfRadius: size)
-            voidCore.fillColor = SKColor(hex: "1a0033") ?? SKColor.black
+            voidCore.fillColor = SKColor(hex: BalanceConfig.VoidHarbinger.voidCoreColor) ?? SKColor.black
             voidCore.strokeColor = color
             voidCore.lineWidth = 3
             voidCore.glowWidth = 0
@@ -390,7 +390,7 @@ class EntityRenderer {
             // Inner swirling void
             let innerVoid = SKShapeNode(circleOfRadius: size * 0.5)
             innerVoid.fillColor = color.withAlphaComponent(0.8)
-            innerVoid.strokeColor = SKColor(hex: "ff00ff") ?? SKColor.magenta
+            innerVoid.strokeColor = SKColor(hex: BalanceConfig.VoidHarbinger.harbingerEyeColor) ?? SKColor.magenta
             innerVoid.lineWidth = 2
             innerVoid.glowWidth = 0
             container.addChild(innerVoid)
@@ -426,7 +426,7 @@ class EntityRenderer {
             // Energy beam with tracking visual
             let beamCore = SKShapeNode(circleOfRadius: size)
             beamCore.fillColor = color
-            beamCore.strokeColor = SKColor(hex: "ff66cc") ?? SKColor.magenta
+            beamCore.strokeColor = SKColor(hex: BalanceConfig.VoidHarbinger.pylonBeamReticleColor) ?? SKColor.magenta
             beamCore.lineWidth = 2
             beamCore.glowWidth = 0
             container.addChild(beamCore)

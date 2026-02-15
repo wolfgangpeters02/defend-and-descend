@@ -74,6 +74,12 @@ struct BalanceConfig {
         /// Duration of invulnerability after revive
         static let reviveInvulnerabilityDuration: TimeInterval = 3.0
 
+        /// Arena edge padding for player movement clamping
+        static let boundsPadding: CGFloat = 30
+
+        /// Health percentage restored on revive
+        static let reviveHealthPercent: CGFloat = 0.5
+
         /// Speed of pickups being magnetized toward player
         static let pickupMagnetSpeed: CGFloat = 400
 
@@ -341,7 +347,7 @@ struct BalanceConfig {
         // Mode switching (Phase 1-2)
         static let modeSwitchInterval: Double = 5.0
 
-        // Minion spawns
+        // Minion spawns (higher cap + faster interval than VH because Cyberboss minions are weaker fodder)
         static let minionSpawnIntervalPhase1: Double = 10.0
         static let minionSpawnIntervalPhase2: Double = 8.0
         static let maxMinionsOnScreen: Int = 25
@@ -425,6 +431,9 @@ struct BalanceConfig {
 
         // Projectile color
         static let rangedProjectileColor: String = "#00ffff"
+
+        // Simulation hit radius (laser width + player radius, used by BossSimulator)
+        static let simLaserHitRadius: CGFloat = 30
     }
 
     // MARK: - Void Harbinger Configuration
@@ -434,12 +443,19 @@ struct BalanceConfig {
         static let baseHealth: CGFloat = 5000
 
         // Phase thresholds (health percentage)
+        // Uses 70/40/20 split (30-30-20-20) for longer early phases vs Cyberboss/Overclocker's equal 25% split
         static let phase2Threshold: CGFloat = 0.70
         static let phase3Threshold: CGFloat = 0.40
         static let phase4Threshold: CGFloat = 0.20  // Phase 4 covers 20% HP (was 0.10)
 
         // Boss body color (used for entity identification)
         static let bossColor: String = "#8800ff"
+
+        // Visual colors (used by EntityRenderer and BossRenderingManager)
+        static let voidCoreColor: String = "#1a0033"         // Dark purple void core
+        static let harbingerEyeColor: String = "#ff00ff"     // Magenta eye/core glow
+        static let pylonBeamColor: String = "#ff00aa"        // Pylon beam projectile color
+        static let pylonBeamReticleColor: String = "#ff66cc" // Pylon beam reticle stroke
 
         // Void zones
         static let voidZoneIntervalPhase1: Double = 8.0
@@ -464,7 +480,7 @@ struct BalanceConfig {
         static let volleyProjectileLifetime: TimeInterval = 4.0
         static let volleyProjectileColor: String = "#8800ff"
 
-        // Minion spawns
+        // Minion spawns (lower cap + slower interval than Cyberboss because VH minions are stronger)
         static let minionSpawnInterval: Double = 15.0
         static let minionCount: Int = 4
         static let minionHealth: CGFloat = 30
@@ -535,6 +551,9 @@ struct BalanceConfig {
 
         // Teleport offset ratio (0.6 = 60% of arena radius)
         static let teleportOffsetRatio: CGFloat = 0.6
+
+        // Simulation hit radius (rift width + player radius, used by BossSimulator)
+        static let simRiftHitRadius: CGFloat = 40
     }
 
     // MARK: - Overclocker Boss
@@ -557,6 +576,10 @@ struct BalanceConfig {
         static let bladeWidth: CGFloat = 30
 
         // Phase 2 - Heat Sink (Lava Grid)
+        static let tileGridSize: Int = 4               // 4×4 grid
+        static let tileCount: Int = 16                 // tileGridSize²
+        static let safeTileCount: Int = 2              // Safe zones per cycle
+        static let warningTileCount: Int = 4           // Tiles that become lava per cycle
         static let tileChangeInterval: Double = 5.0
         static let tileWarningDuration: Double = 2.0
         static let lavaTileDPS: CGFloat = 40           // DPS while standing on lava (was 60)
@@ -597,6 +620,7 @@ struct BalanceConfig {
         static let baseHealth: CGFloat = 5500
 
         // Phase thresholds (health percentage)
+        // Uses 70/40/20 split (30-30-20-20) for longer early phases vs Cyberboss/Overclocker's equal 25% split
         static let phase2Threshold: CGFloat = 0.70
         static let phase3Threshold: CGFloat = 0.40
         static let phase4Threshold: CGFloat = 0.20  // Phase 4 covers 20% HP (was 0.10)
@@ -656,6 +680,11 @@ struct BalanceConfig {
         // Contact damage
         static let contactCooldown: Double = 0.5       // Contact damage cooldown
         static let contactPadding: CGFloat = 20        // Extra padding on collision radii
+
+        // Simulation collision multipliers (used by BossSimulator for approximated hitboxes)
+        static let simHeadCollisionMultiplier: CGFloat = 1.8   // Head hitbox scaling in sim
+        static let simBodyCollisionMultiplier: CGFloat = 2.0   // Body hitbox scaling in sim
+        static let simSubWormCollisionMultiplier: CGFloat = 2.5 // Sub-worm body hitbox scaling in sim
     }
 
     // MARK: - Survival Events
@@ -2296,6 +2325,38 @@ extension BalanceConfig {
         /// Storage usage threshold that triggers "wall" detection
         static let storageWallThreshold: CGFloat = 0.90
 
+        // MARK: - Boss Sim Weapon Effects
+
+        /// Pinger tag duration (boss takes bonus damage while tagged)
+        static let pingerTagDuration: TimeInterval = 4.0
+
+        /// Throttler slow duration
+        static let throttlerSlowDuration: TimeInterval = 2.0
+
+        /// Throttler stun duration (on crit)
+        static let throttlerStunDuration: TimeInterval = 0.5
+
+        /// Garbage Collector mark duration
+        static let garbageCollectorMarkDuration: TimeInterval = 2.0
+
+        /// Fragmenter DoT tick interval
+        static let fragmenterTickInterval: TimeInterval = 0.5
+
+        /// Fragmenter DoT damage multiplier (fraction of base damage)
+        static let fragmenterDotMultiplier: CGFloat = 0.5
+
+        /// Recursion child projectile damage multiplier
+        static let recursionChildDamageMultiplier: CGFloat = 0.35
+
+        /// Projectile homing force (acceleration)
+        static let projectileHomingForce: CGFloat = 2.0
+
+        /// Boss arena edge padding (clamp margin)
+        static let bossArenaPadding: CGFloat = 80
+
+        /// Minion spawn margin from arena edges
+        static let minionSpawnMargin: CGFloat = 100
+
         // MARK: - Adaptive Bot Thresholds
 
         /// Efficiency below this triggers "panic mode" — prioritize defense over economy
@@ -2687,6 +2748,21 @@ extension BalanceConfig {
                 compile: PBS.NullPointer.compileCost, upgrade: PBS.NullPointer.baseUpgradeCost, rarity: "legendary")
         ]
 
+        let upgradeRarityDict: [String: Double] = [
+            "commonWeight": UpgradeRarity.commonWeight,
+            "rareWeight": UpgradeRarity.rareWeight,
+            "epicWeight": UpgradeRarity.epicWeight,
+            "legendaryWeight": UpgradeRarity.legendaryWeight
+        ]
+
+        let playerDict: [String: Any] = [
+            "baseHealth": Double(Player.baseHealth),
+            "baseSpeed": Double(Player.baseSpeed),
+            "pickupRange": Double(Player.pickupRange),
+            "baseRegen": Double(Player.baseRegen),
+            "maxArmor": Double(Player.maxArmor)
+        ]
+
         let config: [String: Any] = [
             "waves": wavesDict,
             "threatLevel": threatDict,
@@ -2703,7 +2779,9 @@ extension BalanceConfig {
             "efficiency": efficiencyDict,
             "freeze": freezeDict,
             "sectorUnlock": sectorUnlockDict,
-            "sectorHashBonus": sectorHashBonusDict
+            "sectorHashBonus": sectorHashBonusDict,
+            "upgradeRarity": upgradeRarityDict,
+            "player": playerDict
         ]
 
         if let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),

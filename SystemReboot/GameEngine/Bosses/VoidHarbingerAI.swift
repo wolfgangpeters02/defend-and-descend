@@ -521,7 +521,7 @@ class VoidHarbingerAI {
                 velocityY: (dy / distance) * BalanceConfig.VoidHarbinger.pylonBeamSpeed,
                 damage: BalanceConfig.VoidHarbinger.pylonBeamDamage,
                 radius: BalanceConfig.VoidHarbinger.pylonBeamRadius,
-                color: "#ff00aa",
+                color: BalanceConfig.VoidHarbinger.pylonBeamColor,
                 lifetime: BalanceConfig.VoidHarbinger.pylonBeamLifetime,
                 piercing: 0,
                 hitEnemies: [],
