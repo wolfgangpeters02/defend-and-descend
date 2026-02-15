@@ -1170,6 +1170,116 @@ class BossRenderingManager {
                 bossMechanicNodes.removeValue(forKey: "overclocker_shredder")
             }
         }
+
+        updateOverclockerBodyVisuals(phase: bossState.phase, boss: boss, gameState: gameState, isSuctionActive: bossState.isSuctionActive)
+    }
+
+    // MARK: - Overclocker Phase Body Visuals
+
+    /// Update Overclocker body composition based on current phase.
+    /// Warning ring, heat gauge, core clock speed, and thermal vents escalate per phase.
+    func updateOverclockerBodyVisuals(phase: Int, boss: Enemy, gameState: GameState, isSuctionActive: Bool) {
+        // Skip redundant updates (except phase 4 where suction state changes visuals)
+        guard phase != cachedOverclockerPhase || phase == 4 else { return }
+        cachedOverclockerPhase = phase
+
+        // Find boss body node (lazy cache)
+        if cachedBossBodyNode == nil || cachedBossBodyNode?.parent == nil {
+            let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
+            cachedBossBodyNode = enemyLayer?.children.first(where: {
+                abs($0.position.x - bossScenePos.x) < 5 && abs($0.position.y - bossScenePos.y) < 5
+            })
+        }
+        guard let bossNode = cachedBossBodyNode else { return }
+
+        let heatOrange = UIColor(hex: "ff4400") ?? UIColor.orange
+
+        // Warning ring — alpha and scale escalate per phase
+        if let ring = bossNode.childNode(withName: "warningRing") as? SKShapeNode {
+            switch phase {
+            case 1:
+                ring.strokeColor = heatOrange.withAlphaComponent(0.35)
+                ring.setScale(1.0)
+            case 2:
+                ring.strokeColor = heatOrange.withAlphaComponent(0.5)
+                ring.setScale(1.05)
+            case 3:
+                ring.strokeColor = UIColor.red.withAlphaComponent(0.7)
+                ring.setScale(1.1)
+            case 4:
+                ring.strokeColor = (isSuctionActive ? UIColor.red : heatOrange).withAlphaComponent(1.0)
+                ring.setScale(1.15)
+            default: break
+            }
+        }
+
+        // Heat gauge — color shifts orange to red, lineWidth increases
+        if let gauge = bossNode.childNode(withName: "heatGauge") as? SKShapeNode {
+            switch phase {
+            case 1:
+                gauge.strokeColor = heatOrange.withAlphaComponent(0.6)
+                gauge.lineWidth = 3
+            case 2:
+                gauge.strokeColor = heatOrange.withAlphaComponent(0.8)
+                gauge.lineWidth = 4
+            case 3:
+                gauge.strokeColor = UIColor.red.withAlphaComponent(0.8)
+                gauge.lineWidth = 5
+            case 4:
+                gauge.strokeColor = UIColor.red
+                gauge.lineWidth = 6
+            default: break
+            }
+        }
+
+        // Core clock — spin speed increases per phase
+        if let clock = bossNode.childNode(withName: "coreClock") as? SKShapeNode {
+            clock.removeAction(forKey: "clockSpin")
+            let spinDuration: TimeInterval
+            switch phase {
+            case 1: spinDuration = 4.0
+            case 2: spinDuration = 3.0
+            case 3: spinDuration = 2.0
+            case 4: spinDuration = 1.0
+            default: spinDuration = 4.0
+            }
+            let spin = SKAction.rotate(byAngle: .pi * 2, duration: spinDuration)
+            clock.run(SKAction.repeatForever(spin), withKey: "clockSpin")
+        }
+
+        // Thermal vents — glow brightens per phase
+        if let vents = bossNode.childNode(withName: "thermalVents") as? SKShapeNode {
+            switch phase {
+            case 1: vents.fillColor = heatOrange.withAlphaComponent(0.4)
+            case 2: vents.fillColor = heatOrange.withAlphaComponent(0.5)
+            case 3: vents.fillColor = UIColor.red.withAlphaComponent(0.7)
+            case 4: vents.fillColor = UIColor.red.withAlphaComponent(0.9)
+            default: break
+            }
+        }
+
+        // Body octagon — stroke shifts to red in later phases; phase 4 jitter
+        if let body = bossNode.childNode(withName: "body") as? SKShapeNode {
+            switch phase {
+            case 1, 2:
+                body.strokeColor = heatOrange
+                body.removeAction(forKey: "phaseJitter")
+            case 3:
+                body.strokeColor = UIColor.red
+                body.removeAction(forKey: "phaseJitter")
+            case 4:
+                body.strokeColor = UIColor.red
+                if body.action(forKey: "phaseJitter") == nil {
+                    let jitter = SKAction.repeatForever(SKAction.sequence([
+                        SKAction.moveBy(x: CGFloat.random(in: -2...2),
+                                        y: CGFloat.random(in: -2...2), duration: 0.05),
+                        SKAction.move(to: .zero, duration: 0.05)
+                    ]))
+                    body.run(jitter, withKey: "phaseJitter")
+                }
+            default: break
+            }
+        }
     }
 
     // MARK: - Trojan Wyrm Rendering

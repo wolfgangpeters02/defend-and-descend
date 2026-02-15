@@ -535,7 +535,7 @@ struct BalanceConfig {
         static let tileChangeInterval: Double = 5.0
         static let tileWarningDuration: Double = 2.0
         static let lavaTileDPS: CGFloat = 60           // DPS while standing on lava
-        static let bossMoveSpeed: CGFloat = 1.0
+        static let phase2BossMoveSpeed: CGFloat = 150  // Phase 2 boss movement speed to safe zone
 
         // Phase 3 - Overheat (Chase + Steam Trail)
         static let chaseSpeed: CGFloat = 160.0

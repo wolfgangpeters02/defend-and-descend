@@ -182,7 +182,7 @@ class OverclockerAI {
         if let targetIndex = bossState.bossTargetTileIndex {
             let targetPos = getTileCenter(index: targetIndex, arenaRect: arenaRect)
             let bossPos = CGPoint(x: boss.x, y: boss.y)
-            let speed = config.bossMoveSpeed * 150 // Base speed
+            let speed = config.phase2BossMoveSpeed
             let newPos = moveTowards(current: bossPos, target: targetPos, speed: speed * CGFloat(deltaTime))
             boss.x = newPos.x
             boss.y = newPos.y

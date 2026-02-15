@@ -25,13 +25,15 @@ Centralized 7 categories of hardcoded values into BalanceConfig.TrojanWyrm; fixe
 
 ---
 
-## Stage 2: Overclocker — Magic Number & Missing Phase Visuals
+## Stage 2: Overclocker — Magic Number & Missing Phase Visuals [DONE]
+
+Replaced bossMoveSpeed*150 with single phase2BossMoveSpeed config value; added updateOverclockerBodyVisuals with per-phase escalation on warningRing, heatGauge, coreClock, thermalVents, body octagon, and suction-active indicator.
 
 **Files:** `OverclockerAI.swift`, `BalanceConfig.swift`, `BossRenderingManager.swift`
 
-- [ ] **Bug: `bossMoveSpeed * 150` magic number** (line 185). Replace with a single `BalanceConfig.Overclocker.phase2BossMoveSpeed` value that means what it says (e.g., `150`), remove the multiplication.
-- [ ] Add `updateOverclockerBodyVisuals(phase:boss:gameState:)` to BossRenderingManager, matching the pattern used by Cyberboss and Void Harbinger. At minimum: phase-dependent color shifts on the boss body node, threat ring intensity changes, and a visual indicator for suction-active state.
-- [ ] Call the new method from `renderOverclockerMechanics`.
+- [x] **Bug: `bossMoveSpeed * 150` magic number** (line 185). Replace with a single `BalanceConfig.Overclocker.phase2BossMoveSpeed` value that means what it says (e.g., `150`), remove the multiplication.
+- [x] Add `updateOverclockerBodyVisuals(phase:boss:gameState:)` to BossRenderingManager, matching the pattern used by Cyberboss and Void Harbinger. At minimum: phase-dependent color shifts on the boss body node, threat ring intensity changes, and a visual indicator for suction-active state.
+- [x] Call the new method from `renderOverclockerMechanics`.
 
 ---
 
