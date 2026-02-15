@@ -116,9 +116,9 @@ class CyberbossAI {
                                 state: &gameState,
                                 x: obstacleCenterX,
                                 y: obstacleCenterY,
-                                color: "#6b7280",
-                                count: 15,
-                                size: 12
+                                color: BalanceConfig.Cyberboss.obstacleParticleColor,
+                                count: BalanceConfig.Cyberboss.obstacleParticleCount,
+                                size: BalanceConfig.Cyberboss.obstacleParticleSize
                             )
                         }
                     }
@@ -181,6 +181,9 @@ class CyberbossAI {
     }
 
     private static func enterPhase4(bossState: inout CyberbossState, boss: Enemy) {
+        // Increase puddle spawn rate for Phase 4
+        bossState.puddleSpawnInterval = BalanceConfig.Cyberboss.puddleSpawnIntervalPhase4
+
         // Create rotating laser beams
         let beamCount = BalanceConfig.Cyberboss.laserBeamCount
         let angleStep = 360.0 / CGFloat(beamCount)
@@ -211,7 +214,7 @@ class CyberbossAI {
             bossState.mode = bossState.mode == .melee ? .ranged : .melee
 
             // Change boss color to indicate mode
-            boss.color = bossState.mode == .melee ? "#ff4444" : "#4444ff"
+            boss.color = bossState.mode == .melee ? BalanceConfig.Cyberboss.meleeModeColor : BalanceConfig.Cyberboss.rangedModeColor
         }
 
         // Movement behavior based on mode
@@ -274,8 +277,7 @@ class CyberbossAI {
         boss.velocityX = 0
         boss.velocityY = 0
 
-        // Continue spawning puddles at faster rate
-        bossState.puddleSpawnInterval = BalanceConfig.Cyberboss.puddleSpawnIntervalPhase4
+        // Continue spawning puddles at faster rate (interval set in enterPhase4)
         if gameState.gameTime - bossState.lastPuddleSpawnTime >= bossState.puddleSpawnInterval {
             bossState.lastPuddleSpawnTime = gameState.gameTime
             spawnDamagePuddles(boss: boss, bossState: &bossState, gameState: gameState)
@@ -367,7 +369,7 @@ class CyberbossAI {
                     velocityY: dirY * projectileSpeed,
                     damage: BalanceConfig.Cyberboss.rangedProjectileDamage,
                     radius: projectileSize,
-                    color: "#00ffff", // Cyan energy blast
+                    color: BalanceConfig.Cyberboss.rangedProjectileColor,
                     lifetime: BalanceConfig.Cyberboss.rangedProjectileLifetime,
                     piercing: 0,
                     hitEnemies: [],

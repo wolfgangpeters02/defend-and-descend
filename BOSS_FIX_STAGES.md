@@ -50,14 +50,16 @@ Added maxMinionsOnScreen cap (20) with count check before spawning; centralized 
 
 ---
 
-## Stage 4: Cyberboss — Minor Cleanup
+## Stage 4: Cyberboss — Minor Cleanup [DONE]
+
+Centralized 6 hardcoded values (3 colors, particle count/size, mode colors) into BalanceConfig.Cyberboss; moved Phase 4 puddle interval assignment from per-frame updatePhase4 to one-time enterPhase4.
 
 **Files:** `CyberbossAI.swift`, `BalanceConfig.swift`
 
-- [ ] Move particle color `"#6b7280"` (line 119), count `15`, size `12` to BalanceConfig or DesignSystem constants.
-- [ ] Move mode indicator colors `"#ff4444"` / `"#4444ff"` (line 214) to DesignColors constants.
-- [ ] Move projectile color `"#00ffff"` (line 371) to a constant.
-- [ ] Fix Phase 4 puddle interval being set every frame (line 278): move to `enterPhase4` instead.
+- [x] Move particle color `"#6b7280"` (line 119), count `15`, size `12` to BalanceConfig or DesignSystem constants.
+- [x] Move mode indicator colors `"#ff4444"` / `"#4444ff"` (line 214) to DesignColors constants.
+- [x] Move projectile color `"#00ffff"` (line 371) to a constant.
+- [x] Fix Phase 4 puddle interval being set every frame (line 278): move to `enterPhase4` instead.
 
 ---
 

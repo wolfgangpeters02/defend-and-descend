@@ -410,6 +410,18 @@ struct BalanceConfig {
 
         // Laser hit invulnerability duration
         static let laserHitInvulnerability: TimeInterval = 0.5
+
+        // Obstacle destruction particles
+        static let obstacleParticleColor: String = "#6b7280"
+        static let obstacleParticleCount: Int = 15
+        static let obstacleParticleSize: CGFloat = 12
+
+        // Mode indicator colors
+        static let meleeModeColor: String = "#ff4444"
+        static let rangedModeColor: String = "#4444ff"
+
+        // Projectile color
+        static let rangedProjectileColor: String = "#00ffff"
     }
 
     // MARK: - Void Harbinger Configuration
