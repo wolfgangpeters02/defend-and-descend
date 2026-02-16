@@ -397,12 +397,16 @@ class BossRenderingManager {
         }
 
         // Phase 4: glitch jitter on chassis
-        if let chassis = bossNode.childNode(withName: "body") as? SKShapeNode {
+        if let chassis = bossNode.childNode(withName: "chassis") as? SKShapeNode {
             if phase >= 4 {
                 if chassis.action(forKey: "phaseJitter") == nil {
                     let jitter = SKAction.repeatForever(SKAction.sequence([
-                        SKAction.moveBy(x: CGFloat.random(in: -2...2),
-                                        y: CGFloat.random(in: -2...2), duration: 0.05),
+                        SKAction.customAction(withDuration: 0.05) { node, _ in
+                            node.position = CGPoint(
+                                x: CGFloat.random(in: -2...2),
+                                y: CGFloat.random(in: -2...2)
+                            )
+                        },
                         SKAction.move(to: .zero, duration: 0.05)
                     ]))
                     chassis.run(jitter, withKey: "phaseJitter")
@@ -488,11 +492,14 @@ class BossRenderingManager {
             }
         } else {
             if let node = bossMechanicNodes[nodeKey] {
+                // Delay key removal until after fade-out to prevent duplicate creation
                 node.run(SKAction.sequence([
                     SKAction.fadeOut(withDuration: 0.3),
+                    SKAction.run { [weak self] in
+                        self?.bossMechanicNodes.removeValue(forKey: nodeKey)
+                    },
                     SKAction.removeFromParent()
                 ]))
-                bossMechanicNodes.removeValue(forKey: nodeKey)
             }
         }
     }

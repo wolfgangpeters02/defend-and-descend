@@ -30,6 +30,9 @@ class EmbeddedTDGameController: ObservableObject {
     @Published var showBossFight = false
     @Published var selectedBossDifficulty: BossDifficulty = .normal
 
+    // Camera tutorial state (FTUE)
+    @Published var showCameraTutorial = false
+
     private var delegateHandler: EmbeddedTDDelegateHandler?
     private var cancellables = Set<AnyCancellable>()
     private var lastHashSyncTime: Date = .distantPast
@@ -71,6 +74,7 @@ class EmbeddedTDGameController: ObservableObject {
     /// Reset game state (called on account reset)
     func reset() {
         scene?.isPaused = true
+        TDGameScene.resetCaches()
         scene = nil
         gameState = nil
         delegateHandler = nil
@@ -179,11 +183,36 @@ class EmbeddedTDGameController: ObservableObject {
         newScene.backgroundColor = .black  // Set immediately to avoid grey flash
         newScene.scaleMode = .aspectFill
         newScene.gameStateDelegate = handler
+
+        // FTUE: Camera tutorial for new players
+        let isNewPlayer = !playerProfile.hasCompletedIntro
+        if isNewPlayer {
+            newScene.cameraController.suppressIntroAnimation = true
+            state.isPaused = true
+            state.idleSpawnTimer = -20  // Long grace period after tutorial ends
+        }
+
         newScene.loadState(state, waves: waves)
 
         self.delegateHandler = handler
         self.gameState = state
         self.scene = newScene
+
+        if isNewPlayer {
+            showCameraTutorial = true
+        }
+    }
+
+    /// Complete the camera tutorial
+    func completeCameraTutorial() {
+        showCameraTutorial = false
+
+        // Mark intro as completed
+        AppState.shared.completeIntroSequence()
+
+        // Activate tutorial hints for tower placement
+        TutorialHintManager.shared.activateHint(.deckCard)
+        TutorialHintManager.shared.activateHint(.towerSlot)
     }
 
     // MARK: - System Freeze Recovery

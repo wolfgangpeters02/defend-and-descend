@@ -23,6 +23,7 @@ class CameraController: NSObject {
 
     // Configuration (set once after init, before setup)
     var isMotherboardMap: Bool = false
+    var suppressIntroAnimation: Bool = false  // Tutorial takes over camera
     var panSpeedMultiplier: CGFloat { isMotherboardMap ? 2.5 : 1.0 }
 
     /// Callback queried each frame to suppress panning during placement/drag.
@@ -57,18 +58,25 @@ class CameraController: NSObject {
         scene.addChild(cameraNode)
         scene.camera = cameraNode
 
-        // Animated intro zoom
+        // Animated intro zoom (skipped when tutorial takes over camera)
         if isMotherboardMap {
-            currentScale = 2.0
-            cameraNode.setScale(currentScale)
+            if suppressIntroAnimation {
+                // Tutorial mode: start zoomed out on full board, tutorial will animate
+                currentScale = 1.8
+                cameraNode.setScale(currentScale)
+                cameraNode.position = CGPoint(x: 2100, y: 2100)  // Board center
+            } else {
+                currentScale = 2.0
+                cameraNode.setScale(currentScale)
 
-            let wait = SKAction.wait(forDuration: 0.8)
-            let zoomIn = SKAction.scale(to: 1.0, duration: 1.0)
-            zoomIn.timingMode = .easeInEaseOut
-            let updateScale = SKAction.run { [weak self] in
-                self?.currentScale = 1.0
+                let wait = SKAction.wait(forDuration: 0.8)
+                let zoomIn = SKAction.scale(to: 1.0, duration: 1.0)
+                zoomIn.timingMode = .easeInEaseOut
+                let updateScale = SKAction.run { [weak self] in
+                    self?.currentScale = 1.0
+                }
+                cameraNode.run(SKAction.sequence([wait, zoomIn, updateScale]))
             }
-            cameraNode.run(SKAction.sequence([wait, zoomIn, updateScale]))
         } else {
             currentScale = 1.5
             cameraNode.setScale(currentScale)
@@ -262,8 +270,10 @@ class CameraController: NSObject {
 
         cameraNode.position = CGPoint(x: newX, y: newY)
 
-        velocity.x *= friction
-        velocity.y *= friction
+        // Frame-rate independent friction: normalize to 60fps baseline
+        let frictionFactor = pow(friction, dt * 60)
+        velocity.x *= frictionFactor
+        velocity.y *= frictionFactor
     }
 
     // MARK: - Reset
@@ -275,7 +285,28 @@ class CameraController: NSObject {
             SKAction.scale(to: targetScale, duration: 0.3)
         ])
         action.timingMode = .easeInEaseOut
-        cameraNode.run(action)
-        currentScale = targetScale
+        let updateScale = SKAction.run { [weak self] in
+            self?.currentScale = targetScale
+        }
+        cameraNode.run(SKAction.sequence([action, updateScale]))
+    }
+
+    /// Animate camera to a position and scale with custom duration (for tutorial sequences)
+    func animateTo(position: CGPoint, scale targetScale: CGFloat, duration: TimeInterval, completion: (() -> Void)? = nil) {
+        guard let cameraNode = cameraNode else {
+            completion?()
+            return
+        }
+        let action = SKAction.group([
+            SKAction.move(to: position, duration: duration),
+            SKAction.scale(to: targetScale, duration: duration)
+        ])
+        action.timingMode = .easeInEaseOut
+        cameraNode.run(action) { [weak self] in
+            self?.currentScale = targetScale
+            DispatchQueue.main.async {
+                completion?()
+            }
+        }
     }
 }

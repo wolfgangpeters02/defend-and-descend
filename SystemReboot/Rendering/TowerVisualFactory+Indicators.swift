@@ -31,19 +31,52 @@ extension TowerVisualFactory {
         return container
     }
 
+    // MARK: - Star Indicator (Merge Level)
+
+    /// Create star indicator showing tower merge level (0-3 stars)
+    /// Returns empty node for 0 stars (no visual)
+    static func createStarIndicator(starLevel: Int, color: UIColor) -> SKNode {
+        let container = SKNode()
+        guard starLevel > 0 else { return container }
+
+        // Build star string (e.g. "★★★")
+        let starString = String(repeating: "\u{2605}", count: starLevel)
+
+        // Background pill
+        let bgWidth: CGFloat = CGFloat(12 + starLevel * 12)
+        let bg = SKShapeNode(rectOf: CGSize(width: bgWidth, height: 16), cornerRadius: 4)
+        bg.fillColor = UIColor.black.withAlphaComponent(0.85)
+        bg.strokeColor = UIColor.yellow.withAlphaComponent(0.8)
+        bg.lineWidth = 1.5
+        bg.zPosition = -1
+        container.addChild(bg)
+
+        // Single label with all stars (more reliable rendering)
+        let starLabel = SKLabelNode(text: starString)
+        starLabel.fontSize = 12
+        starLabel.fontName = "HelveticaNeue-Bold"
+        starLabel.fontColor = .yellow
+        starLabel.verticalAlignmentMode = .center
+        starLabel.horizontalAlignmentMode = .center
+        starLabel.name = "starChar"
+        container.addChild(starLabel)
+
+        return container
+    }
+
     // MARK: - Range Indicator
 
     static func createRangeIndicator(range: CGFloat, color: UIColor) -> SKShapeNode {
-        let rangeCircle = SKShapeNode(circleOfRadius: range)
+        // Dashed outer ring using UIBezierPath with dash pattern
+        let dashedPath = UIBezierPath(arcCenter: .zero, radius: range, startAngle: 0, endAngle: .pi * 2, clockwise: true)
+        let dashPattern: [CGFloat] = [8, 4]
+        dashedPath.setLineDash(dashPattern, count: dashPattern.count, phase: 0)
+
+        let rangeCircle = SKShapeNode(path: dashedPath.cgPath)
         rangeCircle.fillColor = color.withAlphaComponent(0.12)
         rangeCircle.strokeColor = color.withAlphaComponent(0.5)
         rangeCircle.lineWidth = 2
         rangeCircle.glowWidth = 1.5  // Shown on select only (1 tower at a time)
-
-        // Dashed outer ring
-        let dashPattern: [CGFloat] = [8, 4]
-        let dashedPath = UIBezierPath(arcCenter: .zero, radius: range, startAngle: 0, endAngle: .pi * 2, clockwise: true)
-        dashedPath.setLineDash(dashPattern, count: dashPattern.count, phase: 0)
 
         return rangeCircle
     }

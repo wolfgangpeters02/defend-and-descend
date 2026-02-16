@@ -12,12 +12,15 @@ extension TDGameScene {
         let profile = AppState.shared.currentPlayer
 
         for sector in megaConfig.sectors {
-            // Skip CPU sector
-            guard sector.id != SectorID.cpu.rawValue else { continue }
-
             // Only start ambient effects for fully unlocked sectors
             let renderMode = MegaBoardSystem.shared.getRenderMode(for: sector.id, profile: profile)
             guard renderMode == .unlocked else { continue }
+
+            // CPU sector gets its own dedicated ambient system
+            if sector.id == SectorID.cpu.rawValue {
+                startCPUSectorAmbient(sector: sector)
+                continue
+            }
 
             switch sector.theme {
             case .power:
@@ -83,7 +86,7 @@ extension TDGameScene {
         shimmer.strokeColor = .clear
         shimmer.zPosition = -2.7
         // REMOVED: blendMode = .add (causes extra render pass)
-        particleLayer.addChild(shimmer)
+        backgroundLayer.addChild(shimmer)
 
         // Simple rise and fade
         shimmer.run(SKAction.sequence([
@@ -169,7 +172,7 @@ extension TDGameScene {
             pulse.strokeColor = .clear
             // REMOVED: glowWidth, blendMode
             pulse.zPosition = -2.2
-            self.particleLayer.addChild(pulse)
+            self.backgroundLayer.addChild(pulse)
 
             pulse.run(SKAction.sequence([
                 SKAction.group([
@@ -241,7 +244,7 @@ extension TDGameScene {
             ring.lineWidth = 2
             // REMOVED: glowWidth, blendMode
             ring.zPosition = -2.8
-            self.particleLayer.addChild(ring)
+            self.backgroundLayer.addChild(ring)
 
             ring.run(SKAction.sequence([
                 SKAction.group([
@@ -353,7 +356,7 @@ extension TDGameScene {
             line.lineWidth = 2
             // REMOVED: glowWidth, blendMode
             line.zPosition = -2.6
-            self.particleLayer.addChild(line)
+            self.backgroundLayer.addChild(line)
 
             line.run(SKAction.sequence([
                 SKAction.moveBy(x: sector.width + lineLength, y: 0, duration: 0.2),
@@ -367,5 +370,90 @@ extension TDGameScene {
             spawnLine
         ]))
         backgroundLayer.run(lineSequence, withKey: "cacheLines_\(sector.id)")
+    }
+
+    // MARK: - CPU Sector Ambient (Processing Core)
+
+    /// CPU sector: Data processing pulses + heartbeat ring. Tier-responsive.
+    func startCPUSectorAmbient(sector: MegaBoardSector) {
+        let cpuTier = state?.cpuTier ?? 1
+        let tierColor = CPUTierColors.color(for: cpuTier)
+        let center = CGPoint(x: sector.worldX + sector.width / 2, y: sector.worldY + sector.height / 2)
+
+        startCPUDataPulses(center: center, sectorId: sector.id, tier: cpuTier, color: tierColor)
+        startCPUHeartbeatRing(center: center, sectorId: sector.id, color: tierColor)
+    }
+
+    /// CPU data processing pulses — small rectangles spawn from die edges, move outward
+    private func startCPUDataPulses(center: CGPoint, sectorId: String, tier: Int, color: UIColor) {
+        // Spawn rate scales with tier: 0.6s at tier 1, 0.3s at tier 5
+        let spawnInterval = max(0.3, 0.7 - Double(tier) * 0.1)
+
+        let spawnPulse = SKAction.run { [weak self] in
+            guard let self = self, self.currentScale < 0.8, self.ambientParticleCount < self.maxAmbientParticles else { return }
+            self.ambientParticleCount += 1
+
+            // Pick a random direction to emit from the die edge
+            let angle = CGFloat.random(in: 0...(2 * .pi))
+            let startOffset: CGFloat = BalanceConfig.Motherboard.cpuSize / 2 + 20
+            let travelDistance: CGFloat = CGFloat.random(in: 100...250)
+
+            let pulse = SKShapeNode(rectOf: CGSize(width: 5, height: 3))
+            pulse.position = CGPoint(x: center.x + cos(angle) * startOffset,
+                                     y: center.y + sin(angle) * startOffset)
+            pulse.fillColor = color.withAlphaComponent(0.6)
+            pulse.strokeColor = .clear
+            pulse.zRotation = angle
+            pulse.zPosition = -2.5
+            self.backgroundLayer.addChild(pulse)
+
+            pulse.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.move(by: CGVector(dx: cos(angle) * travelDistance,
+                                               dy: sin(angle) * travelDistance),
+                                  duration: 0.6),
+                    SKAction.fadeOut(withDuration: 0.6)
+                ]),
+                SKAction.run { [weak self] in self?.ambientParticleCount -= 1 },
+                SKAction.removeFromParent()
+            ]))
+        }
+
+        let pulseSequence = SKAction.repeatForever(SKAction.sequence([
+            spawnPulse,
+            SKAction.wait(forDuration: spawnInterval)
+        ]))
+        backgroundLayer.run(pulseSequence, withKey: "cpuPulses_\(sectorId)")
+    }
+
+    /// CPU heartbeat ring — expanding sonar-like ring centered on CPU
+    private func startCPUHeartbeatRing(center: CGPoint, sectorId: String, color: UIColor) {
+        let spawnRing = SKAction.run { [weak self] in
+            guard let self = self, self.currentScale < 0.8, self.ambientParticleCount < self.maxAmbientParticles else { return }
+            self.ambientParticleCount += 1
+
+            let ring = SKShapeNode(circleOfRadius: 50)
+            ring.position = center
+            ring.fillColor = .clear
+            ring.strokeColor = color.withAlphaComponent(0.3)
+            ring.lineWidth = 2
+            ring.zPosition = -2.8
+            self.backgroundLayer.addChild(ring)
+
+            ring.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.scale(to: 8, duration: 2.5),
+                    SKAction.fadeOut(withDuration: 2.5)
+                ]),
+                SKAction.run { [weak self] in self?.ambientParticleCount -= 1 },
+                SKAction.removeFromParent()
+            ]))
+        }
+
+        let ringSequence = SKAction.repeatForever(SKAction.sequence([
+            spawnRing,
+            SKAction.wait(forDuration: 3.0)
+        ]))
+        backgroundLayer.run(ringSequence, withKey: "cpuHeartbeat_\(sectorId)")
     }
 }

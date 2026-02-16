@@ -28,9 +28,29 @@ Removed rendering code for protocols/archetypes that no longer exist in the game
 
 ---
 
-## Stage 2: Bug Fixes (Correctness)
+## Stage 2: Bug Fixes (Correctness) -- DONE
 
-Fix actual bugs that cause incorrect visuals, wasted CPU, or potential crashes.
+Fixed 14 rendering bugs that caused incorrect visuals, wasted CPU, or potential crashes.
+
+**Changes made:**
+- **2a**: Replaced ~24 no-op `glowWidth = 0` toggles with actual `fadeAlpha` animations across all 7 tower archetypes (projectile, frost, beam, tesla, multishot, execute) — towers now visually pulse as intended
+- **2b**: Replaced `DispatchQueue.main.asyncAfter` with pure SKAction sequence in Execute tower glitch animation — prevents unsafe mutations during scene pause/dealloc
+- **2c**: Fixed star indicator lookup from `"stars"` to `"starIndicator"` — merge star pulse animation now runs
+- **2d**: Replaced 67-line duplicate Void Harbinger instance method with delegation to shared static composition — fixes incorrect whole-container rotation (eye/pupil now stay still, only fragments orbit)
+- **2e**: Removed `chassis.name = "body"` overwrite in Cyberboss composition — chassis keeps its name, refs dict provides "body" key for hit detection lookup
+- **2f**: Moved 6 ambient sector particle spawn points from `particleLayer` (z=7) to `backgroundLayer` (z=0) — GPU heat shimmer, RAM pulses, network rings, cache speed lines, CPU pulses/heartbeat now render behind gameplay
+- **2g**: Normalized CameraController inertia friction to `pow(friction, dt * 60)` — consistent deceleration regardless of frame rate
+- **2h**: Deferred `currentScale` updates in `reset()` and `animateTo()` to action completion callbacks — prevents stale scale during animated transitions
+- **2i**: Changed artillery idle animation from nonexistent `"capacitors"` to actual `"bolts"` node — bolt pulse now fires
+- **2j**: Replaced static `CGFloat.random` in Cyberboss phase jitter with `SKAction.customAction` — jitter now randomizes per tick instead of repeating one frozen offset
+- **2k**: Deferred chainsaw dictionary key removal until after fade-out completes — prevents duplicate node creation during 0.3s fade
+- **2l**: Unified NodePool enemy type key from `"enemy_\(type)"` (acquire) to `"enemy"` (matching releaseInactive) — fixes pool bucket mismatch and negative inUseCount
+- **2m**: Applied dashed `UIBezierPath` to range ring `SKShapeNode` via `path:` init — dashed ring now renders instead of being silently discarded
+- **2n**: Added `TDGameScene.resetCaches()` called from `EmbeddedTDGameController.reset()` — clears static `cachedCooldownProgress` on scene teardown
+
+**Files changed: 9 files across Rendering/ and UI/Tabs/. Build verified clean.**
+
+---
 
 ### 2a. Fix glowWidth no-op animations (ALL tower types)
 

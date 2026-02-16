@@ -32,10 +32,9 @@ class NodePool {
             available[type] = nodes
             inUseCount[type, default: 0] += 1
 
-            // Reset node state
+            // Reset node state (minimal — most nodes have no actions now)
             node.alpha = 1.0
             node.isHidden = false
-            node.removeAllActions()
             node.zRotation = 0
             node.xScale = 1.0
             node.yScale = 1.0
@@ -124,8 +123,7 @@ extension NodePool {
             return node
         }
 
-        let type = "enemy_\(enemy.type)"
-        let node = acquire(type: type) {
+        let node = acquire(type: "enemy") {
             renderer.createEnemyNode(enemy: enemy)
         }
         existing[id] = node

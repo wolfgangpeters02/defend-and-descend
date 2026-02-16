@@ -273,6 +273,11 @@ extension TDGameScene {
     /// Cached cooldown progress per tower to avoid redundant arc path rebuilds
     private static var cachedCooldownProgress: [String: CGFloat] = [:]
 
+    /// Clear static caches on scene teardown to prevent stale data across sessions
+    static func resetCaches() {
+        cachedCooldownProgress.removeAll()
+    }
+
     /// Update cooldown arc indicator on tower (cached refs + lazy creation + arc path caching)
     func updateCooldownArc(for tower: Tower, node: SKNode, currentTime: TimeInterval) {
         // Guard against invalid attack speed (prevents NaN/Infinity angles)

@@ -134,8 +134,8 @@ extension EntityRenderer {
         ])
         leds.run(SKAction.repeatForever(ledBlink))
 
-        // Body node for name reference (use chassis as the "body" for hit detection)
-        chassis.name = "body"
+        // Also register chassis under "body" key for consistent hit detection lookup
+        refs["body"] = chassis
 
         return refs
     }
@@ -281,7 +281,141 @@ extension EntityRenderer {
         return refs
     }
 
-    // MARK: - 6B. Trojan Wyrm Head — "Parasitic Data Worm"
+    // MARK: - 6A2. Void Harbinger — "Void Entity"
+    // Theme: Dark, cosmic, otherworldly. Octagonal core with swirling aura.
+    // Nodes: aura, octagonal body, inner eye, pupil, orbiting fragments = 5
+    // Adapted from EntityRenderer.createVoidHarbingerNode() for static composition pattern.
+
+    /// Creates the full Void Harbinger body composition.
+    static func createVoidHarbingerComposition(in container: SKNode, size: CGFloat) -> [String: SKNode] {
+        var refs: [String: SKNode] = [:]
+        let voidColor = UIColor(hex: BalanceConfig.VoidHarbinger.bossColor) ?? UIColor.purple
+
+        // 1. Outer void aura — dark swirling energy
+        let aura = SKShapeNode(circleOfRadius: size * 1.3)
+        aura.fillColor = UIColor.black.withAlphaComponent(0.4)
+        aura.strokeColor = voidColor.withAlphaComponent(0.6)
+        aura.lineWidth = 3
+        aura.zPosition = -0.2
+        aura.name = "aura"
+        container.addChild(aura)
+        refs["aura"] = aura
+
+        // Aura pulse
+        let auraPulse = SKAction.sequence([
+            SKAction.scale(to: 1.06, duration: 1.2),
+            SKAction.scale(to: 1.0, duration: 1.2)
+        ])
+        aura.run(SKAction.repeatForever(auraPulse))
+
+        // 2. Body — octagonal void core
+        let octPath = CGMutablePath()
+        for i in 0..<8 {
+            let angle = CGFloat(i) * (.pi / 4) - (.pi / 8)
+            let pt = CGPoint(x: cos(angle) * size, y: sin(angle) * size)
+            if i == 0 { octPath.move(to: pt) } else { octPath.addLine(to: pt) }
+        }
+        octPath.closeSubpath()
+        let body = SKShapeNode(path: octPath)
+        body.fillColor = UIColor(hex: BalanceConfig.VoidHarbinger.voidCoreColor) ?? UIColor.black
+        body.strokeColor = voidColor
+        body.lineWidth = 4
+        body.name = "body"
+        container.addChild(body)
+        refs["body"] = body
+
+        // 3. Inner eye — the "harbinger"
+        let eye = SKShapeNode(circleOfRadius: size * 0.4)
+        eye.fillColor = voidColor
+        eye.strokeColor = UIColor(hex: BalanceConfig.VoidHarbinger.harbingerEyeColor) ?? UIColor.magenta
+        eye.lineWidth = 3
+        eye.zPosition = 0.1
+        eye.name = "eye"
+        container.addChild(eye)
+        refs["eye"] = eye
+
+        // 4. Pupil
+        let pupil = SKShapeNode(circleOfRadius: size * 0.15)
+        pupil.fillColor = UIColor.black
+        pupil.strokeColor = .clear
+        pupil.zPosition = 0.2
+        container.addChild(pupil)
+
+        // 5. Orbiting void fragments (compound path, single node)
+        let fragmentPath = CGMutablePath()
+        for i in 0..<4 {
+            let angle = CGFloat(i) * (.pi / 2)
+            let fx = cos(angle) * size * 0.8
+            let fy = sin(angle) * size * 0.8
+            fragmentPath.addArc(center: CGPoint(x: fx, y: fy), radius: size * 0.15,
+                                startAngle: 0, endAngle: .pi * 2, clockwise: false)
+        }
+        let fragments = SKShapeNode(path: fragmentPath)
+        fragments.fillColor = voidColor.withAlphaComponent(0.8)
+        fragments.strokeColor = .clear
+        fragments.name = "fragments"
+        container.addChild(fragments)
+        refs["fragments"] = fragments
+
+        // Slow rotation for orbiting effect
+        let fragmentRotate = SKAction.rotate(byAngle: .pi * 2, duration: 3.0)
+        fragments.run(SKAction.repeatForever(fragmentRotate))
+
+        return refs
+    }
+
+    // MARK: - 6B. Trojan Wyrm — "Parasitic Data Worm"
+    // Theme: Organic worm, segmented, parasitic.
+    // Simplified composition for TD board: head + 4 trailing body segments.
+    // Nodes: head circle, jaw/eyes/mandible details, 4 body segments = ~8
+
+    /// Creates a simplified Trojan Wyrm composition for the TD board.
+    static func createTrojanWyrmComposition(in container: SKNode, size: CGFloat) -> [String: SKNode] {
+        var refs: [String: SKNode] = [:]
+        let wyrmGreen = UIColor(hex: "00ff45") ?? UIColor.green
+        let darkGreen = UIColor(hex: "005522") ?? UIColor(red: 0, green: 0.33, blue: 0.13, alpha: 1)
+
+        // Body segments — 4 trailing circles in a slight curve behind the head
+        let segmentCount = 4
+        for i in (0..<segmentCount).reversed() {
+            let segIndex = CGFloat(i + 1)
+            let segRadius = size * (0.7 - segIndex * 0.1)  // Tapering: 0.6, 0.5, 0.4, 0.3
+            let segY = -segIndex * size * 0.55  // Spacing below head
+            let segX = sin(segIndex * 0.4) * size * 0.2  // Slight S-curve
+
+            let segment = SKShapeNode(circleOfRadius: segRadius)
+            segment.fillColor = (i % 2 == 0) ? wyrmGreen.withAlphaComponent(0.7) : darkGreen.withAlphaComponent(0.8)
+            segment.strokeColor = wyrmGreen.withAlphaComponent(0.4)
+            segment.lineWidth = 1.5
+            segment.position = CGPoint(x: segX, y: segY)
+            segment.zPosition = -0.1 - CGFloat(i) * 0.01
+            segment.name = "segment_\(i)"
+            container.addChild(segment)
+        }
+
+        // Head — main circle
+        let head = SKShapeNode(circleOfRadius: size)
+        head.fillColor = wyrmGreen
+        head.strokeColor = wyrmGreen.lighter(by: 0.2)
+        head.lineWidth = 2.5
+        head.name = "body"
+        container.addChild(head)
+        refs["body"] = head
+
+        // Add jaw/eyes/mandible details (reuse existing method)
+        addTrojanWyrmHeadDetails(to: container, size: size)
+
+        // Subtle undulation animation
+        let undulate = SKAction.sequence([
+            SKAction.rotate(toAngle: 0.08, duration: 1.0),
+            SKAction.rotate(toAngle: -0.08, duration: 1.0)
+        ])
+        container.run(SKAction.repeatForever(undulate))
+
+        return refs
+    }
+
+    // MARK: - 6C. Trojan Wyrm Head Details — "Parasitic Data Worm"
     // Theme: Organic worm, segmented, parasitic. Head detail node.
     // Adds jaw/mouth detail and eye dots to the existing head segment.
 
