@@ -632,7 +632,18 @@ Boss-specific arena theming, pillar phase escalation, and vignette overlay.
 
 ---
 
-## Stage 10: Pickup & Projectile Clarity
+## Stage 10: Pickup & Projectile Clarity -- DONE
+
+Pickup visual consistency, animations, and projectile source distinction.
+
+**Changes made:**
+- **10a**: Replaced health pickup heart emoji (`♥` SKLabelNode) with geometric red cross/plus shape (CGMutablePath, two overlapping rects) matching cybersecurity med-kit theme.
+- **10b**: Added pickup animations via inner `pickupAnim` wrapper node (avoids position override from renderPickups): Hash hexagon gets slow rotation (4s/cycle) + vertical bob (±3pt, 1s easeInEaseOut). Health cross gets scale pulse (1.0→1.15→1.0, 1.5s easeInEaseOut). XP orb radius increased from 5 to 8pt, gets vertical bob (±2pt, 0.75s easeInEaseOut).
+- **10c**: Added enemy projectile red tint — default projectiles with `isEnemyProjectile` flag get fill color blended 30% toward red and red stroke (0.6 alpha), making incoming threats visually distinct from player fire.
+
+**Files changed: 1 file (EntityRenderer.swift). Build verified clean.**
+
+---
 
 ### 10a. Replace health pickup emoji with geometric shape
 

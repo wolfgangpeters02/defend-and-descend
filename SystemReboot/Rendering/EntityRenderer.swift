@@ -187,10 +187,15 @@ class EntityRenderer {
             return container
         }
 
-        // Main projectile (default)
+        // Main projectile (default) — tint enemy projectiles toward red for distinction
         let body = SKShapeNode(circleOfRadius: size)
-        body.fillColor = color
-        body.strokeColor = color.lighter(by: 0.3)
+        if projectile.isEnemyProjectile {
+            body.fillColor = color.blended(with: .red, ratio: 0.3)
+            body.strokeColor = SKColor.red.withAlphaComponent(0.6)
+        } else {
+            body.fillColor = color
+            body.strokeColor = color.lighter(by: 0.3)
+        }
         body.lineWidth = 1
         body.glowWidth = 0
         container.addChild(body)
@@ -211,6 +216,10 @@ class EntityRenderer {
 
     func createPickupNode(pickup: Pickup) -> SKNode {
         let container = SKNode()
+        // Inner wrapper for animations (bob/rotate/pulse) — container position is set every frame by renderPickups()
+        let animWrapper = SKNode()
+        animWrapper.name = "pickupAnim"
+        container.addChild(animWrapper)
 
         switch pickup.type {
         case .hash:
@@ -237,21 +246,48 @@ class EntityRenderer {
             hashNode.strokeColor = hashColorLight
             hashNode.lineWidth = 1.5
             hashNode.glowWidth = 0
-            container.addChild(hashNode)
+            animWrapper.addChild(hashNode)
+
+            // Slow rotation + gentle vertical bob
+            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 4.0)
+            animWrapper.run(SKAction.repeatForever(rotate))
+            let bobUp = SKAction.moveBy(x: 0, y: 3, duration: 1.0)
+            let bobDown = SKAction.moveBy(x: 0, y: -3, duration: 1.0)
+            bobUp.timingMode = .easeInEaseOut
+            bobDown.timingMode = .easeInEaseOut
+            animWrapper.run(SKAction.repeatForever(SKAction.sequence([bobUp, bobDown])))
 
         case .health:
-            let heart = SKLabelNode(text: "♥")
-            heart.fontSize = 16
-            heart.fontColor = SKColor.red
-            heart.verticalAlignmentMode = .center
-            container.addChild(heart)
+            // Red cross/plus shape matching cybersecurity med-kit theme
+            let crossPath = CGMutablePath()
+            crossPath.addRect(CGRect(x: -2, y: -6, width: 4, height: 12))
+            crossPath.addRect(CGRect(x: -6, y: -2, width: 12, height: 4))
+            let cross = SKShapeNode(path: crossPath)
+            cross.fillColor = SKColor(red: 1.0, green: 0.2, blue: 0.2, alpha: 1.0)
+            cross.strokeColor = SKColor(red: 1.0, green: 0.5, blue: 0.5, alpha: 1.0)
+            cross.lineWidth = 1
+            animWrapper.addChild(cross)
+
+            // Pulse scale animation
+            let scaleUp = SKAction.scale(to: 1.15, duration: 0.75)
+            let scaleDown = SKAction.scale(to: 1.0, duration: 0.75)
+            scaleUp.timingMode = .easeInEaseOut
+            scaleDown.timingMode = .easeInEaseOut
+            animWrapper.run(SKAction.repeatForever(SKAction.sequence([scaleUp, scaleDown])))
 
         case .xp:
-            let orb = SKShapeNode(circleOfRadius: 5)
+            let orb = SKShapeNode(circleOfRadius: 8)
             orb.fillColor = SKColor.blue
             orb.strokeColor = SKColor.cyan
             orb.lineWidth = 1
-            container.addChild(orb)
+            animWrapper.addChild(orb)
+
+            // Gentle vertical bob
+            let bobUp = SKAction.moveBy(x: 0, y: 2, duration: 0.75)
+            let bobDown = SKAction.moveBy(x: 0, y: -2, duration: 0.75)
+            bobUp.timingMode = .easeInEaseOut
+            bobDown.timingMode = .easeInEaseOut
+            animWrapper.run(SKAction.repeatForever(SKAction.sequence([bobUp, bobDown])))
         }
 
         return container
