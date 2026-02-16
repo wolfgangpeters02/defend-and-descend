@@ -25,6 +25,9 @@ struct TDGameContainerView: View {
     @State var showGameOver = false
     @State var isPaused = false
 
+    // Protocol info panel (tap deck card to preview stats)
+    @State var selectedDeckProtocol: Protocol?
+
     // Drag-from-deck state (progressive disclosure - grid only visible during drag)
     @State var isDraggingFromDeck = false
     @State var draggedProtocolId: String?
@@ -85,6 +88,11 @@ struct TDGameContainerView: View {
                 if let towerId = selectedTowerId,
                    let tower = gameState?.towers.first(where: { $0.id == towerId }) {
                     towerInfoPanel(tower: tower, geometry: geometry)
+                }
+
+                // Protocol info panel (tapped from deck)
+                if let proto = selectedDeckProtocol {
+                    protocolInfoPanel(protocol: proto, geometry: geometry)
                 }
 
                 // Drag preview overlay
@@ -426,6 +434,9 @@ struct TDGameContainerView: View {
 
     fileprivate func handleTowerSelected(_ towerId: String?) {
         selectedTowerId = towerId
+        if towerId != nil {
+            selectedDeckProtocol = nil  // Dismiss deck panel when selecting a placed tower
+        }
     }
 
     fileprivate func handleGateSelected(_ sectorId: String) {

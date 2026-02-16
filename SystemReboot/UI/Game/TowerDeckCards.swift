@@ -80,6 +80,7 @@ struct RarityCorners: View {
 struct ProtocolDeckCard: View {
     let `protocol`: Protocol
     let hash: Int
+    let onTap: () -> Void
     let onDragStart: () -> Void
     let onDragChanged: (DragGesture.Value) -> Void
     let onDragEnded: () -> Void
@@ -265,6 +266,9 @@ struct ProtocolDeckCard: View {
         .onDisappear {
             glitchTimer?.invalidate()
             glitchTimer = nil
+        }
+        .onTapGesture {
+            onTap()
         }
         .simultaneousGesture(
             DragGesture(minimumDistance: 10, coordinateSpace: .named("gameArea"))

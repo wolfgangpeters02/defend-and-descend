@@ -23,6 +23,10 @@ extension TDGameContainerView {
                         ProtocolDeckCard(
                             protocol: proto,
                             hash: gameState?.hash ?? 0,
+                            onTap: {
+                                selectedTowerId = nil  // Dismiss placed tower panel
+                                selectedDeckProtocol = proto
+                            },
                             onDragStart: { startDragFromDeck(protocolId: proto.id) },
                             onDragChanged: { value in updateDragPosition(value, geometry: geometry) },
                             onDragEnded: { endDragFromDeck() }
@@ -122,6 +126,7 @@ extension TDGameContainerView {
         isDraggingFromDeck = true
         draggedProtocolId = protocolId
         previousNearestSlot = nil
+        selectedDeckProtocol = nil  // Dismiss protocol info panel during drag
         canAffordDraggedTower = TowerPlacementService.canAfford(protocolId: protocolId, hash: gameState?.hash ?? 0)
 
         // Enter placement mode - shows grid dots (progressive disclosure)
@@ -346,5 +351,101 @@ extension TDGameContainerView {
 
     private func rarityColorForTower(_ tower: Tower) -> Color {
         return RarityColors.color(for: tower.rarity)
+    }
+
+    // MARK: - Protocol Info Panel (from deck card tap)
+
+    func protocolInfoPanel(protocol proto: Protocol, geometry: GeometryProxy) -> some View {
+        let stats = proto.firewallStats
+        let dps = stats.damage * stats.fireRate * CGFloat(stats.projectileCount)
+        let currentHash = gameState?.hash ?? 0
+
+        return VStack(alignment: .leading, spacing: 8) {
+            // Header
+            HStack {
+                Text(proto.name)
+                    .font(DesignTypography.headline(16))
+                    .foregroundColor(.white)
+
+                Spacer()
+
+                Button(action: { selectedDeckProtocol = nil }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(DesignTypography.headline(18))
+                        .foregroundColor(.white.opacity(0.6))
+                }
+            }
+
+            Text(L10n.TD.levelMax(proto.level, max: BalanceConfig.maxUpgradeLevel))
+                .font(DesignTypography.caption(12))
+                .foregroundColor(.gray)
+
+            Divider().background(Color.white.opacity(0.3))
+
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    TDStatRow(icon: "flame.fill", label: L10n.Stats.dmg, value: String(format: "%.1f", stats.damage), color: .orange)
+                    TDStatRow(icon: "scope", label: L10n.Stats.rng, value: String(format: "%.0f", stats.range), color: .blue)
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 4) {
+                    TDStatRow(icon: "bolt.fill", label: L10n.Stats.spd, value: String(format: "%.2f/s", stats.fireRate), color: .yellow)
+                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: L10n.Stats.dps, value: String(format: "%.1f", dps), color: .green)
+                }
+            }
+            .font(DesignTypography.caption(12))
+
+            Divider().background(Color.white.opacity(0.3))
+
+            // Action buttons
+            HStack(spacing: 8) {
+                if proto.canUpgrade {
+                    Button(action: { upgradeDeckProtocol(proto) }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.up.circle.fill")
+                            Text("Ħ\(proto.upgradeCost)")
+                        }
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(currentHash >= proto.upgradeCost ? Color.cyan : Color.gray)
+                        .cornerRadius(6)
+                    }
+                    .disabled(currentHash < proto.upgradeCost)
+                }
+
+                Spacer()
+            }
+            .foregroundColor(.white)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.95))
+                .shadow(color: RarityColors.color(for: proto.rarity).opacity(0.5), radius: 8)
+        )
+        .frame(width: 200)
+        .position(x: geometry.size.width / 2, y: geometry.size.height - 200)
+    }
+
+    /// Upgrade a protocol from the deck info panel
+    func upgradeDeckProtocol(_ proto: Protocol) {
+        let cost = proto.upgradeCost
+        guard appState.currentPlayer.hash >= cost else { return }
+        let currentLevel = appState.currentPlayer.protocolLevel(proto.id)
+        HapticsService.shared.play(.medium)
+        AnalyticsService.shared.trackProtocolUpgraded(protocolId: proto.id, fromLevel: currentLevel, toLevel: currentLevel + 1)
+        appState.updatePlayer { profile in
+            profile.hash -= cost
+            profile.protocolLevels[proto.id] = currentLevel + 1
+        }
+        // Refresh the selected protocol with updated level
+        if var updated = ProtocolLibrary.get(proto.id) {
+            updated.level = currentLevel + 1
+            selectedDeckProtocol = updated
+        }
     }
 }
