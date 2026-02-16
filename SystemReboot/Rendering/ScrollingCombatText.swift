@@ -31,7 +31,7 @@ enum SCTType {
         case .execute:  return UIColor(hex: "ef4444") ?? .red
         case .xp:       return UIColor(hex: "a855f7") ?? .purple
         case .currency: return UIColor(hex: "fbbf24") ?? .yellow
-        case .miss:     return UIColor(hex: "6b7280") ?? .gray
+        case .miss:     return UIColor(hex: "9eaab6") ?? .gray
         case .levelUp:  return UIColor(hex: "fbbf24") ?? .yellow
         case .immune:   return UIColor(hex: "d946ef") ?? .magenta
         }
@@ -126,7 +126,7 @@ class ScrollingCombatTextManager {
     weak var scene: SKScene?
     private var config: SCTConfig
     private var activeTexts: [SKNode] = []
-    private let maxActiveTexts = 50  // Prevent performance issues
+    private let maxActiveTexts = 20  // Prevent performance issues during heavy combat
 
     init(scene: SKScene, config: SCTConfig = .standard) {
         self.scene = scene
@@ -338,13 +338,23 @@ class ScrollingCombatTextManager {
         // Remove oldest texts if we have too many
         while activeTexts.count >= maxActiveTexts {
             if let oldest = activeTexts.first {
+                oldest.removeAllActions()
                 oldest.removeFromParent()
                 activeTexts.removeFirst()
             }
         }
 
-        // Also clean up any nil references
-        activeTexts.removeAll { $0.parent == nil }
+        // Clean up detached nodes in-place
+        var w = 0
+        for idx in 0..<activeTexts.count {
+            if activeTexts[idx].parent != nil {
+                activeTexts[w] = activeTexts[idx]
+                w += 1
+            }
+        }
+        if w < activeTexts.count {
+            activeTexts.removeSubrange(w..<activeTexts.count)
+        }
     }
 
     /// Clear all active combat text

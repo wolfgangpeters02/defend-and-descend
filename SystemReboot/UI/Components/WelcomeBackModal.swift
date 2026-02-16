@@ -43,7 +43,7 @@ struct WelcomeBackModal: View {
 
                     Text(L10n.Welcome.subtitle)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                 }
                 .opacity(showContent ? 1 : 0)
                 .offset(y: showContent ? 0 : -20)
@@ -52,7 +52,7 @@ struct WelcomeBackModal: View {
                 VStack(spacing: 4) {
                     Text(L10n.Welcome.offlineDuration)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
 
                     Text(earnings.formattedTimeAway)
                         .font(.system(size: 24, weight: .bold, design: .monospaced))
@@ -106,7 +106,7 @@ struct WelcomeBackModal: View {
 
                     Text(L10n.Welcome.generatedPwr)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
 
                     // Hash earned
                     VStack(spacing: 4) {
@@ -120,7 +120,7 @@ struct WelcomeBackModal: View {
 
                         Text(L10n.Common.hash)
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundColor(.gray)
+                            .foregroundColor(DesignColors.textSecondary)
 
                         // Show if efficiency reduced earnings
                         if earnings.newEfficiency < earnings.startEfficiency {
@@ -139,7 +139,7 @@ struct WelcomeBackModal: View {
                         VStack(spacing: 6) {
                             Text(L10n.Welcome.defenseReport)
                                 .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(.gray)
+                                .foregroundColor(DesignColors.textSecondary)
 
                             HStack(spacing: 16) {
                                 VStack(spacing: 2) {
@@ -152,12 +152,12 @@ struct WelcomeBackModal: View {
                                         .foregroundColor(.green)
                                     Text(L10n.Welcome.yourTowers)
                                         .font(.system(size: 8, design: .monospaced))
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(DesignColors.textSecondary)
                                 }
 
                                 Text(L10n.Welcome.vs)
                                     .font(.system(size: 10, design: .monospaced))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(DesignColors.textSecondary)
 
                                 VStack(spacing: 2) {
                                     HStack(spacing: 4) {
@@ -169,7 +169,7 @@ struct WelcomeBackModal: View {
                                         .foregroundColor(.red)
                                     Text(L10n.Welcome.viruses)
                                         .font(.system(size: 8, design: .monospaced))
-                                        .foregroundColor(.gray)
+                                        .foregroundColor(DesignColors.textSecondary)
                                 }
                             }
 

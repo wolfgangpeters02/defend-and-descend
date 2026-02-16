@@ -24,11 +24,11 @@ enum DesignColors {
     static let success = Color(hex: "22c55e") ?? Color.green          // Green - valid, efficiency good
     static let warning = Color(hex: "f59e0b") ?? Color.orange         // Amber - caution, legendary
     static let danger = Color(hex: "ef4444") ?? Color.red             // Red - virus, damage, critical
-    static let muted = Color(hex: "3a3a4a") ?? Color.gray             // Disabled, inactive, grid lines
+    static let muted = Color(hex: "6e7681") ?? Color.gray             // Disabled, inactive, muted text
 
     // Terminal text colors
     static let textPrimary = Color(hex: "e6edf3") ?? Color.white      // Primary text
-    static let textSecondary = Color(hex: "7d8590") ?? Color.gray     // Secondary text
+    static let textSecondary = Color(hex: "9eaab6") ?? Color.gray     // Secondary text (high contrast)
     static let textTerminal = Color(hex: "00ff41") ?? Color.green     // Terminal green text
 
     // UIKit versions for SpriteKit
@@ -40,7 +40,7 @@ enum DesignColors {
     static let successUI = UIColor(hex: "22c55e") ?? .green
     static let warningUI = UIColor(hex: "f59e0b") ?? .orange
     static let dangerUI = UIColor(hex: "ef4444") ?? .red
-    static let mutedUI = UIColor(hex: "3a3a4a") ?? .gray
+    static let mutedUI = UIColor(hex: "6e7681") ?? .gray
     static let textTerminalUI = UIColor(hex: "00ff41") ?? .green
 
     // Circuit trace colors (paths in TD mode) - Copper/Gold aesthetic

@@ -20,7 +20,7 @@ struct UpgradeModalView: View {
 
                 Text(L10n.Upgrade.level(1))
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(DesignColors.textSecondary)
 
                 // Upgrade choices
                 HStack(spacing: 15) {
@@ -44,7 +44,7 @@ struct UpgradeCardView: View {
 
     private var rarityColor: Color {
         switch choice.rarity {
-        case .common: return .gray
+        case .common: return RarityColors.common
         case .rare: return .blue
         case .epic: return .purple
         case .legendary: return .yellow
@@ -88,7 +88,7 @@ struct UpgradeCardView: View {
                 // Description
                 Text(choice.description)
                     .font(.system(size: 11))
-                    .foregroundColor(.gray)
+                    .foregroundColor(DesignColors.textSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .frame(height: 40)

@@ -93,7 +93,7 @@ struct EmbeddedTDGameView: View {
             // Description
             Text(L10n.Sector.comingSoonDescription)
                 .font(.system(size: 14, design: .monospaced))
-                .foregroundColor(.gray)
+                .foregroundColor(DesignColors.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
@@ -145,7 +145,7 @@ struct EmbeddedTDGameView: View {
             if let desc = status?.description {
                 Text(desc)
                     .font(.system(size: 14, design: .monospaced))
-                    .foregroundColor(.gray)
+                    .foregroundColor(DesignColors.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
@@ -157,7 +157,7 @@ struct EmbeddedTDGameView: View {
                     HStack(spacing: 8) {
                         Text(L10n.Sector.decryptCost)
                             .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundColor(.gray)
+                            .foregroundColor(DesignColors.textSecondary)
 
                         Text("Ħ \(status.unlockCost)")
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
@@ -168,7 +168,7 @@ struct EmbeddedTDGameView: View {
                     HStack(spacing: 8) {
                         Text(L10n.Sector.yourBalance)
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(.gray)
+                            .foregroundColor(DesignColors.textSecondary)
 
                         Text("Ħ \(status.currentHash)")
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -216,7 +216,7 @@ struct EmbeddedTDGameView: View {
                         Text(L10n.Sector.decrypt)
                     }
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundColor(status?.canUnlock == true ? .black : .gray)
+                    .foregroundColor(status?.canUnlock == true ? .black : DesignColors.textSecondary)
                     .frame(width: 140, height: 50)
                     .background(status?.canUnlock == true ? Color.cyan : Color.gray.opacity(0.3))
                     .cornerRadius(8)
@@ -311,7 +311,7 @@ struct EmbeddedProtocolDeckCard: View {
                 // Protocol icon - simplified, geometric
                 Image(systemName: `protocol`.iconName)
                     .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(canAfford ? .white : .gray)
+                    .foregroundColor(canAfford ? .white : DesignColors.textSecondary)
                     .shadow(color: canAfford && isHighRarity ? rarityColor.opacity(0.5) : .clear, radius: 4)
 
                 // Corner accent (circuit node) - larger for higher rarity

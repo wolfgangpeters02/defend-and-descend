@@ -56,7 +56,7 @@ struct ManualOverrideView: View {
                         HStack(spacing: 4) {
                             ForEach(0..<3, id: \.self) { i in
                                 Image(systemName: i < gameController.health ? "heart.fill" : "heart")
-                                    .foregroundColor(i < gameController.health ? .red : .gray)
+                                    .foregroundColor(i < gameController.health ? .red : DesignColors.textSecondary)
                                     .font(.system(size: 20))
                             }
                         }

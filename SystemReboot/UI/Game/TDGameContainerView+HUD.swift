@@ -102,7 +102,7 @@ extension TDGameContainerView {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.CPU.tier)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                     HStack(spacing: 4) {
                         Image(systemName: "cpu")
                             .font(DesignTypography.headline(22))
@@ -115,7 +115,7 @@ extension TDGameContainerView {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.CPU.multiplier)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                     Text("\(String(format: "%.0f", cpuInfo.multiplier))x")
                         .font(.system(size: 24, weight: .bold, design: .monospaced))
                         .foregroundColor(.green)
@@ -126,7 +126,7 @@ extension TDGameContainerView {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text(L10n.CPU.watts)
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                     HStack(spacing: 4) {
                         Image(systemName: "bolt.fill")
                         Text("\(appState.currentPlayer.hash)")
@@ -152,7 +152,7 @@ extension TDGameContainerView {
                             .fontWeight(.bold)
                     }
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
-                    .foregroundColor(canUpgrade ? .black : .gray)
+                    .foregroundColor(canUpgrade ? .black : DesignColors.textSecondary)
                     .padding()
                     .background(canUpgrade ? Color.cyan : Color.gray.opacity(0.3))
                     .cornerRadius(10)

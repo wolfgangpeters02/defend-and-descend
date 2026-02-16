@@ -36,7 +36,7 @@ extension TDGameContainerView {
 
                 Text(L10n.Boss.immuneToFirewalls)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.gray)
+                    .foregroundColor(DesignColors.textSecondary)
 
                 Text(L10n.Boss.ignoreHint)
                     .font(.system(size: 11, design: .monospaced))
@@ -111,7 +111,7 @@ extension TDGameContainerView {
                 }) {
                     Text(L10n.Common.cancel)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                         .padding(.vertical, 8)
                 }
                 .padding(.top, 8)
@@ -143,7 +143,7 @@ extension TDGameContainerView {
 
                     Text("\(difficulty.hashReward) Ħ")
                         .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                 }
 
                 Spacer()
@@ -184,6 +184,7 @@ extension TDGameContainerView {
 
         // Pause TD and transition to boss fight
         isPaused = true
+        bossCoordinator.onFightStarted()
         bossCoordinator.showBossFight = true
 
         HapticsService.shared.play(.warning)
@@ -323,7 +324,7 @@ extension TDGameContainerView {
 
                     Text(L10n.Freeze.criticalError)
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
 
                     Text(L10n.Freeze.hashHalted)
                         .font(.system(size: 12, design: .monospaced))
@@ -334,7 +335,7 @@ extension TDGameContainerView {
                 VStack(spacing: 16) {
                     Text(L10n.Freeze.selectReboot)
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
 
                     // Option 1: Flush Memory (Pay Hash)
                     let flushCost = FreezeRecoveryService.flushCost(currentHash: appState.currentPlayer.hash)
@@ -355,7 +356,7 @@ extension TDGameContainerView {
                                 .font(.system(size: 11, design: .monospaced))
                                 .opacity(0.8)
                         }
-                        .foregroundColor(canAffordFlush ? .black : .gray)
+                        .foregroundColor(canAffordFlush ? .black : DesignColors.textSecondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(
