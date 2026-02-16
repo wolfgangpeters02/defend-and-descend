@@ -4,16 +4,15 @@ import CoreGraphics
 // MARK: - Game Mode
 
 enum GameMode: String, Codable {
-    case survival      // Endless survival in Memory Core arena
     case boss          // Direct boss encounter
     case towerDefense  // Motherboard tower defense
 
-    /// Backward compatibility: old saves may contain "arena" or "dungeon" raw values
+    /// Backward compatibility: old saves may contain "arena", "survival", or "dungeon" raw values
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
         switch rawValue {
-        case "arena": self = .survival
+        case "arena", "survival": self = .towerDefense
         case "dungeon": self = .boss
         default:
             guard let mode = GameMode(rawValue: rawValue) else {
@@ -315,8 +314,6 @@ struct Obstacle: Identifiable {
     var height: CGFloat
     var color: String
     var type: String
-    var isCorrupted: Bool = false  // For survival event: data corruption
-
     // Destructible pillar support (boss fights)
     var health: CGFloat?       // nil = indestructible
     var maxHealth: CGFloat?

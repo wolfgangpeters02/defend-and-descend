@@ -2,7 +2,7 @@ import SpriteKit
 
 // MARK: - Boss Archetype Visual Compositions
 // Phase 4-6: Multi-node boss-specific visuals.
-// Shared between EntityRenderer (survival mode) and TDGameScene (TD mode).
+// Shared between EntityRenderer (boss mode) and TDGameScene (TD mode).
 
 extension EntityRenderer {
 

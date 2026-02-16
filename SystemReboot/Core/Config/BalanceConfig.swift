@@ -1658,9 +1658,6 @@ struct BalanceConfig {
         static let cyberbossXP: Int = 50
         static let voidHarbingerXP: Int = 100
 
-        /// Hash value for killing a boss enemy (survival/arena mode)
-        static let bossKillHashValue: Int = 50
-
         /// XP multiplier reduction per weapon level (higher levels = less XP)
         static let xpReductionPerLevel: CGFloat = 0.10  // 10% reduction per level
         static let minXPMultiplier: CGFloat = 0.2       // Minimum 20% XP
@@ -1910,9 +1907,6 @@ struct BalanceConfig {
         static let bossArenaWidth: CGFloat = 1200
         static let bossArenaHeight: CGFloat = 900
 
-        /// Spawn distance multiplier for survival mode
-        static let spawnDistanceMultiplier: CGFloat = 0.6
-
         /// Cache flush invulnerability duration
         static let cacheFlushInvulnerability: TimeInterval = 1.0
     }
@@ -1986,7 +1980,7 @@ struct BalanceConfig {
     // MARK: - Manual Override Minigame
 
     struct ManualOverride {
-        /// Duration of survival challenge
+        /// Duration of challenge
         static let duration: TimeInterval = 30.0
 
         /// Player movement speed

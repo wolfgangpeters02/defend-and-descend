@@ -2,7 +2,7 @@ import SpriteKit
 
 // MARK: - Enemy Archetype Visual Compositions
 // Phase 3: Multi-node archetype-specific visuals for each enemy type.
-// Shared between EntityRenderer (survival mode) and TDGameScene (TD mode).
+// Shared between EntityRenderer (boss mode) and TDGameScene (TD mode).
 // Performance: compound paths for small decorative groups, no per-enemy glow.
 
 extension EntityRenderer {
@@ -396,9 +396,9 @@ extension EntityRenderer {
         }
     }
 
-    /// Spawns a lightweight death effect for survival mode (node-pool compatible).
+    /// Spawns a lightweight death effect (node-pool compatible).
     /// Creates a temporary flash + fragments without needing the original node.
-    static func spawnSurvivalDeathEffect(
+    static func spawnDeathEffect(
         at position: CGPoint,
         in parent: SKNode?,
         shape: String,

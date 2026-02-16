@@ -2,7 +2,7 @@ import Foundation
 import CoreGraphics
 
 // MARK: - Arena System
-// Simplified collision detection utilities for survival and boss modes
+// Simplified collision detection utilities for boss mode
 
 class ArenaSystem {
 

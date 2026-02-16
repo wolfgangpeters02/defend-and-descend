@@ -164,7 +164,8 @@ In **ArenaRenderer.swift**:
 
 Also check **GameConfigLoader** — if it loads arena configs from a JSON file, some arena definitions there may also be survival-only dead data.
 
-### Stage 8: Final cleanup — GameMode enum and sweep [TODO]
+### Stage 8: Final cleanup — GameMode enum and sweep [DONE]
+Removed GameMode.survival case; updated decoder to map "arena"/"survival" to .towerDefense; removed dead isCorrupted field, bossKillHashValue, spawnDistanceMultiplier; inlined finalHashReward; renamed spawnSurvivalDeathEffect to spawnDeathEffect; cleaned survival-referencing comments across 6 files.
 
 In **GameTypes.swift**:
 
@@ -191,4 +192,4 @@ Global sweep:
 - [x] Stage 5: Balance config and L10n cleaned
 - [x] Stage 6: Player profile fields cleaned
 - [x] Stage 7: Unused arena themes removed
-- [ ] Stage 8: GameMode.survival removed, final sweep done
+- [x] Stage 8: GameMode.survival removed, final sweep done

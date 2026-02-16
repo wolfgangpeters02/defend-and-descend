@@ -122,7 +122,7 @@ extension GameScene {
             let size = node.userData?["size"] as? CGFloat ?? 12
             let color = node.userData?["color"] as? UIColor ?? .red
             // Spawn lightweight death fragments at enemy position
-            EntityRenderer.spawnSurvivalDeathEffect(
+            EntityRenderer.spawnDeathEffect(
                 at: node.position, in: enemyLayer,
                 shape: shape, color: color, size: size
             )

@@ -134,7 +134,7 @@ class GameStateFactory {
                 height: pillarSize,
                 color: "#4a5568",  // Gray color
                 type: "pillar",
-                isCorrupted: false,
+
                 health: pillarHealth,
                 maxHealth: pillarHealth
             ))
@@ -150,7 +150,7 @@ class GameStateFactory {
                 height: pillarSize,
                 color: "#4a5568",  // Gray color
                 type: "pillar",
-                isCorrupted: false,
+
                 health: pillarHealth,
                 maxHealth: pillarHealth
             ))

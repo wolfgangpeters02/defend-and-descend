@@ -287,7 +287,7 @@ struct GameContainerView: View {
                     )
                 }
 
-                // Victory overlay (includes extraction and boss rewards)
+                // Victory overlay (boss rewards)
                 if showVictory {
                     GameOverOverlay(
                         victory: true,
@@ -443,11 +443,6 @@ struct GameOverOverlay: View {
         return state.stats.hashEarned
     }
 
-    // Final Hash reward (same as earned — extraction system removed)
-    private var finalHashReward: Int {
-        hashEarned
-    }
-
     var body: some View {
         ZStack {
             Color.black.opacity(0.85)
@@ -510,7 +505,7 @@ struct GameOverOverlay: View {
 
                                 Spacer()
 
-                                Text("+Ħ\(finalHashReward)")
+                                Text("+Ħ\(hashEarned)")
                                     .font(.system(size: 24, weight: .bold, design: .monospaced))
                                     .foregroundColor(victory ? .green : .orange)
                             }
