@@ -151,7 +151,8 @@ In **StorageService.swift**:
 - Remove `arenaRuns` migration code if the field was removed
 - Clean any other references to removed profile fields
 
-### Stage 7: Remove unused arena themes from ArenaRenderer [TODO]
+### Stage 7: Remove unused arena themes from ArenaRenderer [DONE]
+Deleted ArenaRenderer.swift (entirely unused, zero callers); removed survival-only arena definitions (boss_arena, grasslands, volcano, ice_cave, castle, space, temple) from GameConfig.json; kept memory_core, cyberboss, voidrealm for boss fights.
 
 In **ArenaRenderer.swift**:
 
@@ -189,5 +190,5 @@ Global sweep:
 - [x] Stage 4: Survival UI and reward code cleaned
 - [x] Stage 5: Balance config and L10n cleaned
 - [x] Stage 6: Player profile fields cleaned
-- [ ] Stage 7: Unused arena themes removed
+- [x] Stage 7: Unused arena themes removed
 - [ ] Stage 8: GameMode.survival removed, final sweep done
