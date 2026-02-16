@@ -49,7 +49,8 @@ After deleting, fix all compilation errors in files that reference these deleted
 - **PlayerSystem.swift**: Remove `SurvivalArenaSystem.getSpeedModifier()` call — just use speed without survival modifier
 - **EnemySystem.swift**: Remove the survival-mode hash earning block (`if state.gameMode == .survival { ... hashEarned ... }`)
 
-### Stage 2: Delete DebugGameView and debug arena infrastructure [TODO]
+### Stage 2: Delete DebugGameView and debug arena infrastructure [DONE]
+Deleted DebugGameView.swift; moved CurrencyInfoSheet to UI/Components; removed DebugArena, ArenaDifficulty, ArenaLayout, DebugArenaLibrary from GlobalUpgrades.swift; removed createDebugGameState() from GameState.swift; cleaned PlayerProfile references.
 
 Delete these files:
 
@@ -179,7 +180,7 @@ Global sweep:
 ## Completion Checklist
 
 - [x] Stage 1: Survival system files deleted
-- [ ] Stage 2: DebugGameView and debug arenas removed
+- [x] Stage 2: DebugGameView and debug arenas removed
 - [ ] Stage 3: Survival types cleaned from shared files
 - [ ] Stage 4: Survival UI and reward code cleaned
 - [ ] Stage 5: Balance config and L10n cleaned

@@ -144,7 +144,7 @@
 		SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SYSFRZOVRF0 /* SystemFreezeOverlay.swift */; };
 		ARSNLVWBL0 /* ArsenalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ARSNLVWRF0 /* ArsenalView.swift */; };
 		UPGRDVWBL0 /* UpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPGRDVWRF0 /* UpgradesView.swift */; };
-		DBGGMVWBL0 /* DebugGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBGGMVWRF0 /* DebugGameView.swift */; };
+		CRNCINFSBL0 /* CurrencyInfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRNCINFSRF0 /* CurrencyInfoSheet.swift */; };
 		OFLNSMBLD0 /* OfflineSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OFLNSMREF0 /* OfflineSimulator.swift */; };
 		FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRZRCVREF0 /* FreezeRecoveryService.swift */; };
 		GMRWDSVCBL /* GameRewardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GMRWDSVCRF /* GameRewardService.swift */; };
@@ -313,7 +313,7 @@
 		SYSFRZOVRF0 /* SystemFreezeOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemFreezeOverlay.swift; sourceTree = "<group>"; };
 		ARSNLVWRF0 /* ArsenalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArsenalView.swift; sourceTree = "<group>"; };
 		UPGRDVWRF0 /* UpgradesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UpgradesView.swift; sourceTree = "<group>"; };
-		DBGGMVWRF0 /* DebugGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DebugGameView.swift; sourceTree = "<group>"; };
+		CRNCINFSRF0 /* CurrencyInfoSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurrencyInfoSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -586,6 +586,7 @@
 				9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */,
 				TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */,
 				AA100044 /* SettingsSheet.swift */,
+				CRNCINFSRF0 /* CurrencyInfoSheet.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -632,7 +633,6 @@
 				SYSFRZOVRF0 /* SystemFreezeOverlay.swift */,
 				ARSNLVWRF0 /* ArsenalView.swift */,
 				UPGRDVWRF0 /* UpgradesView.swift */,
-				DBGGMVWRF0 /* DebugGameView.swift */,
 			);
 			path = Tabs;
 			sourceTree = "<group>";
@@ -875,7 +875,7 @@
 				SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */,
 				ARSNLVWBL0 /* ArsenalView.swift in Sources */,
 				UPGRDVWBL0 /* UpgradesView.swift in Sources */,
-				DBGGMVWBL0 /* DebugGameView.swift in Sources */,
+				CRNCINFSBL0 /* CurrencyInfoSheet.swift in Sources */,
 				OFLNSMBLD0 /* OfflineSimulator.swift in Sources */,
 				FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */,
 				GMRWDSVCBL /* GameRewardService.swift in Sources */,

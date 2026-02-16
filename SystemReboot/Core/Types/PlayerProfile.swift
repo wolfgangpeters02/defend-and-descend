@@ -37,6 +37,9 @@ struct PlayerProfile: Codable, HashStorable {
     /// IDs of tutorial hints that have been seen/dismissed
     var tutorialHintsSeen: [String] = []
 
+    /// Whether the player has seen the first boss tutorial
+    var hasSeenBossTutorial: Bool = false
+
     // MARK: - Notification Settings
 
     /// Whether efficiency alert notifications are enabled
@@ -46,17 +49,12 @@ struct PlayerProfile: Codable, HashStorable {
 
     enum CodingKeys: String, CodingKey {
         case id, displayName, createdAt, level, xp, hash
-        case hasCompletedIntro, firstTowerPlaced, tutorialHintsSeen  // FTUE
+        case hasCompletedIntro, firstTowerPlaced, tutorialHintsSeen, hasSeenBossTutorial  // FTUE
         case notificationsEnabled  // Settings
         case compiledProtocols, protocolLevels, equippedProtocolId, protocolBlueprints
         case globalUpgrades, componentLevels, unlockedComponents  // Upgrade systems
-        case unlockedExpansions, motherboardEfficiency
         case unlockedSectors, sectorBestTimes, tdSectorUnlockProgress, unlockedTDSectors
         case defeatedSectorBosses = "defeatedDistrictBosses"  // Preserved key for save compat
-        // lastActiveTimestamp and offlineEfficiencySnapshot removed from CodingKeys:
-        // Source of truth is tdStats.lastActiveTimestamp / tdStats.averageEfficiency.
-        // Old saves may contain a Date-formatted lastActiveTimestamp which would fail
-        // to decode as TimeInterval, so we exclude it and use defaults.
         case unlocks, weaponLevels
         case survivorStats, tdStats
         case totalRuns, bestTime, totalKills, legendariesUnlocked
@@ -93,18 +91,10 @@ struct PlayerProfile: Codable, HashStorable {
     /// Tracks which components are unlocked via sector boss defeats
     var unlockedComponents: UnlockedComponents = UnlockedComponents()
 
-    // MARK: - Motherboard Progress (New)
-
-    /// IDs of unlocked board expansions
-    var unlockedExpansions: [String] = []
-
-    /// Current efficiency (0.0 to 1.0)
-    var motherboardEfficiency: CGFloat = 1.0
-
-    // MARK: - Debug Arena Progress
+    // MARK: - Debug Arena Progress (Legacy — kept for save compat)
 
     /// IDs of unlocked debug arenas (CodingKey: "unlockedSectors" for save compat)
-    var unlockedSectors: [String] = [DebugArenaLibrary.starterArenaId, "cathedral"]  // RAM + Cathedral unlocked by default
+    var unlockedSectors: [String] = ["ram", "cathedral"]  // RAM + Cathedral unlocked by default
 
     /// Arena ID -> Best survival time (CodingKey: "sectorBestTimes" for save compat)
     var sectorBestTimes: [String: TimeInterval] = [:]
@@ -118,16 +108,6 @@ struct PlayerProfile: Codable, HashStorable {
     /// IDs of sectors where boss has been defeated for first time
     /// Defeating a sector boss unlocks visibility of the next sector
     var defeatedSectorBosses: [String] = []
-
-    // MARK: - Offline State (Legacy - actual state lives in tdStats)
-
-    /// Last time the app was active (for offline calculation)
-    /// NOTE: Source of truth is tdStats.lastActiveTimestamp (TimeInterval)
-    var lastActiveTimestamp: TimeInterval = 0
-
-    /// Efficiency snapshot for offline calculation
-    /// NOTE: Source of truth is tdStats.averageEfficiency
-    var offlineEfficiencySnapshot: CGFloat = 1.0
 
     // MARK: - Legacy Fields (Preserved for save backward compat — do NOT read from these)
     // Canonical data lives in compiledProtocols/protocolLevels.
@@ -212,8 +192,8 @@ extension PlayerProfile {
     /// Default starter protocol ID (single source: ProtocolID.starter)
     static let defaultProtocolId = ProtocolID.starter.rawValue
 
-    /// Default starter sector ID (single source: DebugArenaLibrary.starterArenaId)
-    static let defaultSectorId = DebugArenaLibrary.starterArenaId
+    /// Default starter sector ID (legacy debug arena)
+    static let defaultSectorId = "ram"
 
     /// Create a default profile for new players
     static var defaultProfile: PlayerProfile {
@@ -227,17 +207,14 @@ extension PlayerProfile {
             hasCompletedIntro: false,         // FTUE: New player hasn't seen intro
             firstTowerPlaced: false,          // FTUE: New player hasn't placed a tower
             tutorialHintsSeen: [],            // FTUE: No hints dismissed yet
+            hasSeenBossTutorial: false,       // FTUE: New player hasn't seen boss tutorial
             compiledProtocols: [defaultProtocolId],  // Start with Kernel Pulse
             protocolLevels: [defaultProtocolId: 1],
             equippedProtocolId: defaultProtocolId,
             protocolBlueprints: [],
             bossKillRecords: [:],  // Blueprint system tracking
-            unlockedExpansions: [],
-            motherboardEfficiency: 1.0,
             unlockedSectors: [defaultSectorId, "cathedral"],  // RAM + Cathedral unlocked by default
             sectorBestTimes: [:],
-            lastActiveTimestamp: 0,
-            offlineEfficiencySnapshot: 1.0,
             unlocks: PlayerUnlocks(
                 arenas: ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"],  // All arenas unlocked for testing
                 weapons: [defaultProtocolId]  // Default Protocol (unified weapon system)
@@ -288,6 +265,11 @@ extension PlayerProfile {
         profile.componentLevels.ram = max(profile.componentLevels.ram, profile.globalUpgrades.ramLevel)
         profile.componentLevels.cache = max(profile.componentLevels.cache, profile.globalUpgrades.coolingLevel)
         profile.componentLevels.storage = max(profile.componentLevels.storage, profile.globalUpgrades.hddLevel)
+
+        // Existing players who already fought bosses should skip the tutorial
+        if !profile.defeatedSectorBosses.isEmpty {
+            profile.hasSeenBossTutorial = true
+        }
 
         // Migrate legacy weapon data → protocol system
         // Old saves may only have weaponLevels/unlocks.weapons; copy to canonical protocol fields
