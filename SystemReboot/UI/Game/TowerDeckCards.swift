@@ -179,7 +179,7 @@ struct ProtocolDeckCard: View {
 
                     Image(systemName: enhancedIcon)
                         .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(canAfford ? .white : .gray)
+                        .foregroundColor(canAfford ? rarityColor : rarityColor.opacity(0.4))
                 }
 
                 // Level badge (enhanced)
