@@ -12,7 +12,7 @@
 ## Bundle 2: HUD Layout & State
 > Top HUD issues — layout and live updates.
 
-- [ ] **2a.** PSU upgrade: HUD number doesn't update immediately after upgrading
+- [x] **2a.** PSU upgrade: HUD number doesn't update immediately after upgrading — ✅ Added onPSUUpgraded callback from CurrencyInfoSheet to sync powerCapacity and hash to live gameState and scene in MotherboardView
 - [ ] **2b.** Top HUD sometimes line-breaks — redesign as a consistent 2-line layout
 
 ## Bundle 3: Readability

@@ -4,6 +4,7 @@ import SwiftUI
 
 struct CurrencyInfoSheet: View {
     let info: CurrencyInfoType
+    var onPSUUpgraded: ((Int) -> Void)? = nil
     @ObservedObject var appState = AppState.shared
     @Environment(\.dismiss) var dismiss
 
@@ -132,5 +133,6 @@ struct CurrencyInfoSheet: View {
             profile.hash -= cost
             profile.componentLevels.upgrade(.power)
         }
+        onPSUUpgraded?(cost)
     }
 }

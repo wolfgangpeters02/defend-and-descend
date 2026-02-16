@@ -332,7 +332,15 @@ struct MotherboardView: View {
         .padding(.vertical, 10)
         .background(DesignColors.surface.opacity(0.85))
         .sheet(item: $showCurrencyInfo) { info in
-            CurrencyInfoSheet(info: info)
+            CurrencyInfoSheet(info: info, onPSUUpgraded: { cost in
+                // Sync PSU capacity and hash deduction to live game state
+                if var state = embeddedGameController.gameState {
+                    state.powerCapacity = appState.currentPlayer.componentLevels.powerCapacity
+                    state.hash -= cost
+                    embeddedGameController.gameState = state
+                    embeddedGameController.scene?.state = state
+                }
+            })
         }
     }
 
