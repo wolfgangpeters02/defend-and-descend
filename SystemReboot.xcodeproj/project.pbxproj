@@ -86,6 +86,13 @@
 		BSSGMVWBL0 /* BossGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSGMVWRF0 /* BossGameView.swift */; };
 		BSSLTRWBL0 /* BossLootReward.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSLTRWRF0 /* BossLootReward.swift */; };
 		BSSRM0BLD1 /* BossRenderingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRM00001 /* BossRenderingManager.swift */; };
+		BSSRMCYBBL1 /* BossRenderingManager+Cyberboss.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRMCYB001 /* BossRenderingManager+Cyberboss.swift */; };
+		BSSRMVHBBL1 /* BossRenderingManager+VoidHarbinger.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRMVHB001 /* BossRenderingManager+VoidHarbinger.swift */; };
+		BSSRMOCBBL1 /* BossRenderingManager+Overclocker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRMOCB001 /* BossRenderingManager+Overclocker.swift */; };
+		BSSRMTWBBL1 /* BossRenderingManager+TrojanWyrm.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRMTWB001 /* BossRenderingManager+TrojanWyrm.swift */; };
+		TDSCNTVB0001 /* TDGameScene+TowerVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNTV00001 /* TDGameScene+TowerVisuals.swift */; };
+		TDSCNEMVB001 /* TDGameScene+EnemyVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEMV0001 /* TDGameScene+EnemyVisuals.swift */; };
+		TDSCNLODB001 /* TDGameScene+LODAndCulling.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNLOD0001 /* TDGameScene+LODAndCulling.swift */; };
 		BSSSTTSBL0 /* BossStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSSTTSRF0 /* BossStates.swift */; };
 		CAMCTRLBLD /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMCTRL01 /* CameraController.swift */; };
 		CAMTUTBL01 /* CameraTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMTUTRF01 /* CameraTutorialOverlay.swift */; };
@@ -235,6 +242,13 @@
 		BSSGMVWRF0 /* BossGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossGameView.swift; sourceTree = "<group>"; };
 		BSSLTRWRF0 /* BossLootReward.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootReward.swift; sourceTree = "<group>"; };
 		BSSRM00001 /* BossRenderingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossRenderingManager.swift; sourceTree = "<group>"; };
+		BSSRMCYB001 /* BossRenderingManager+Cyberboss.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BossRenderingManager+Cyberboss.swift"; sourceTree = "<group>"; };
+		BSSRMVHB001 /* BossRenderingManager+VoidHarbinger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BossRenderingManager+VoidHarbinger.swift"; sourceTree = "<group>"; };
+		BSSRMOCB001 /* BossRenderingManager+Overclocker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BossRenderingManager+Overclocker.swift"; sourceTree = "<group>"; };
+		BSSRMTWB001 /* BossRenderingManager+TrojanWyrm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BossRenderingManager+TrojanWyrm.swift"; sourceTree = "<group>"; };
+		TDSCNTV00001 /* TDGameScene+TowerVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TDGameScene+TowerVisuals.swift"; sourceTree = "<group>"; };
+		TDSCNEMV0001 /* TDGameScene+EnemyVisuals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EnemyVisuals.swift"; sourceTree = "<group>"; };
+		TDSCNLOD0001 /* TDGameScene+LODAndCulling.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TDGameScene+LODAndCulling.swift"; sourceTree = "<group>"; };
 		BSSSTTSRF0 /* BossStates.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossStates.swift; sourceTree = "<group>"; };
 		C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimulationRunner.swift; sourceTree = "<group>"; };
 		CAMCTRL01 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
@@ -400,6 +414,10 @@
 				GSCNEF00001 /* GameScene+Effects.swift */,
 				GSCNBR00001 /* GameScene+BossRendering.swift */,
 				BSSRM00001 /* BossRenderingManager.swift */,
+				BSSRMCYB001 /* BossRenderingManager+Cyberboss.swift */,
+				BSSRMVHB001 /* BossRenderingManager+VoidHarbinger.swift */,
+				BSSRMOCB001 /* BossRenderingManager+Overclocker.swift */,
+				BSSRMTWB001 /* BossRenderingManager+TrojanWyrm.swift */,
 				GSCNER00001 /* GameScene+EntityRendering.swift */,
 				GSCNDB00001 /* GameScene+DebugOverlay.swift */,
 				AA100011 /* EntityRenderer.swift */,
@@ -417,6 +435,9 @@
 				TDSCNPT00001 /* TDGameScene+Paths.swift */,
 				TDSCNEF00001 /* TDGameScene+Effects.swift */,
 				TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */,
+				TDSCNTV00001 /* TDGameScene+TowerVisuals.swift */,
+				TDSCNEMV0001 /* TDGameScene+EnemyVisuals.swift */,
+				TDSCNLOD0001 /* TDGameScene+LODAndCulling.swift */,
 				TDSCNIN00001 /* TDGameScene+Input.swift */,
 				TDSCNAC00001 /* TDGameScene+Actions.swift */,
 				TDSCNDB00001 /* TDGameScene+DebugOverlay.swift */,
@@ -844,6 +865,10 @@
 				CAMCTRLBLD /* CameraController.swift in Sources */,
 				PARTFXSVBLD /* ParticleEffectService.swift in Sources */,
 				BSSRM0BLD1 /* BossRenderingManager.swift in Sources */,
+				BSSRMCYBBL1 /* BossRenderingManager+Cyberboss.swift in Sources */,
+				BSSRMVHBBL1 /* BossRenderingManager+VoidHarbinger.swift in Sources */,
+				BSSRMOCBBL1 /* BossRenderingManager+Overclocker.swift in Sources */,
+				BSSRMTWBBL1 /* BossRenderingManager+TrojanWyrm.swift in Sources */,
 				UICLRBLD0001 /* UIColor+Utilities.swift in Sources */,
 				TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */,
 				TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */,
@@ -859,6 +884,9 @@
 				TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */,
 				TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */,
 				TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */,
+				TDSCNTVB0001 /* TDGameScene+TowerVisuals.swift in Sources */,
+				TDSCNEMVB001 /* TDGameScene+EnemyVisuals.swift in Sources */,
+				TDSCNLODB001 /* TDGameScene+LODAndCulling.swift in Sources */,
 				TDSCNINB0001 /* TDGameScene+Input.swift in Sources */,
 				TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */,
 				TDSCNDBB0001 /* TDGameScene+DebugOverlay.swift in Sources */,

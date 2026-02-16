@@ -292,14 +292,14 @@ Replace per-flash `SKShapeNode` allocation with a pool of 2-3 reusable arc nodes
 
 ---
 
-## Stage 5: Architecture (Structure)
+## Stage 5: Architecture (Structure) -- DONE (5a)
 
-### 5a. Split oversized files
+Split two oversized rendering files to bring all files under the ~800-line limit per CLAUDE.md rules. Stages 6-11 now work on focused per-boss files instead of a monolith.
 
-- `TDGameScene+EntityVisuals.swift` (~1381 lines) -> split into `+TowerVisuals`, `+EnemyVisuals`, `+ProjectileVisuals`
-- `BossRenderingManager.swift` (~1553 lines) -> split into `+Cyberboss`, `+VoidHarbinger`, `+Overclocker`, `+TrojanWyrm`
-
-**Note:** Splitting BossRenderingManager here means Stages 6-11 work on focused ~400-line per-boss files instead of a monolith.
+**Changes made:**
+- **5a**: Split `BossRenderingManager.swift` (1,608 → ~223 lines) into shared base + 4 boss extensions: `+Cyberboss` (~295), `+VoidHarbinger` (~530), `+Overclocker` (~280), `+TrojanWyrm` (~280)
+- **5a**: Split `TDGameScene+EntityVisuals.swift` (1,390 → ~235 lines) into base (damage events, projectiles, core) + 3 extensions: `+TowerVisuals` (~340), `+EnemyVisuals` (~490), `+LODAndCulling` (~250)
+- No logic changes — pure file splits with identical behavior
 
 ### 5b. Use type-safe enums for NodePool keys
 
