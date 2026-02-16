@@ -6,16 +6,23 @@ import CoreGraphics
 class ParticleFactory {
 
     /// Maximum particles allowed (prevents lag from particle accumulation)
-    private static let maxParticles = 80
+    /// 11g: Boss mode cap raised from 80 to 150 to accommodate death explosions + combat effects
+    private static let maxParticlesTD = 80
+    private static let maxParticlesBoss = 150
 
     /// Get current timestamp from game state (avoids Date() calls)
     private static func timestamp(from state: GameState) -> TimeInterval {
         return state.startTime + state.timeElapsed
     }
 
+    /// Effective particle cap for the current game mode
+    private static func effectiveCap(state: GameState) -> Int {
+        state.gameMode == .boss ? maxParticlesBoss : maxParticlesTD
+    }
+
     /// Check if we can add more particles (enforces cap)
     private static func canAddParticles(state: GameState, count: Int = 1) -> Bool {
-        return state.particles.count + count < maxParticles
+        return state.particles.count + count < effectiveCap(state: state)
     }
 
     /// Create explosion particles
@@ -28,7 +35,7 @@ class ParticleFactory {
         size: CGFloat
     ) {
         // Limit particle count based on current particle count
-        let availableSlots = max(0, maxParticles - state.particles.count)
+        let availableSlots = max(0, effectiveCap(state: state) - state.particles.count)
         let actualCount = min(min(count, 16), availableSlots)
         guard actualCount > 0 else { return }
 

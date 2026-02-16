@@ -336,12 +336,8 @@ extension BossRenderingManager {
                 node.position = CGPoint(x: centerSceneX, y: centerSceneY)
                 node.zRotation = rift.angle * .pi / 180
             } else {
-                let riftLength = BalanceConfig.VoidHarbinger.voidRiftLength
-                let path = CGMutablePath()
-                path.move(to: CGPoint.zero)
-                path.addLine(to: CGPoint(x: riftLength, y: 0))
-
-                let riftNode = SKShapeNode(path: path)
+                // 11f: Cached rift path — all rifts share the same length
+                let riftNode = SKShapeNode(path: Self.cachedRiftPath)
                 riftNode.strokeColor = DesignColors.secondaryUI
                 riftNode.lineWidth = rift.width
                 riftNode.glowWidth = 0
@@ -350,6 +346,9 @@ extension BossRenderingManager {
                 riftNode.name = nodeKey
                 riftNode.position = CGPoint(x: centerSceneX, y: centerSceneY)
                 riftNode.zRotation = rift.angle * .pi / 180
+
+                // 11a: Alpha oscillation + line width pulse
+                riftNode.run(SKAction.repeatForever(riftPulseAction), withKey: "riftPulse")
 
                 scene.addChild(riftNode)
                 bossMechanicNodes[nodeKey] = riftNode
@@ -384,6 +383,31 @@ extension BossRenderingManager {
                 wellNode.addChild(innerCircle)
 
                 wellNode.run(SKAction.repeatForever(gravityWellRotateAction), withKey: "rotate")
+
+                // 11b: Spawn inward-pulling particles on a cycle
+                let pullRadius = well.pullRadius
+                let spawnPull = SKAction.run { [weak wellNode] in
+                    guard let wellNode = wellNode, wellNode.parent != nil else { return }
+                    for _ in 0..<4 {
+                        let angle = CGFloat.random(in: 0...(2 * .pi))
+                        let dot = SKShapeNode(circleOfRadius: 1.5)
+                        dot.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.6)
+                        dot.strokeColor = .clear
+                        dot.position = CGPoint(x: cos(angle) * pullRadius, y: sin(angle) * pullRadius)
+                        dot.zPosition = 1
+                        wellNode.addChild(dot)
+                        dot.run(SKAction.sequence([
+                            SKAction.group([
+                                SKAction.move(to: .zero, duration: 0.5),
+                                SKAction.fadeOut(withDuration: 0.5),
+                                SKAction.scale(to: 0.3, duration: 0.5)
+                            ]),
+                            SKAction.removeFromParent()
+                        ]))
+                    }
+                }
+                let pullCycle = SKAction.sequence([spawnPull, SKAction.wait(forDuration: 0.5)])
+                wellNode.run(SKAction.repeatForever(pullCycle), withKey: "pullParticles")
 
                 scene.addChild(wellNode)
                 bossMechanicNodes[nodeKey] = wellNode

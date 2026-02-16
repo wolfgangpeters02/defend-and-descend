@@ -262,9 +262,18 @@ extension GameScene {
             // Check if pillar is destructible and alive
             guard PillarSystem.isPillarAlive(obstacle: obstacle),
                   let healthPercent = PillarSystem.getPillarHealthPercent(obstacle: obstacle) else {
-                // Pillar destroyed or not destructible - hide/remove it
+                // Pillar destroyed or not destructible — remove from scene graph (11d)
                 if obstacle.isDestructible, let health = obstacle.health, health <= 0 {
-                    obstacleNode.alpha = 0  // Hide destroyed pillar
+                    if obstacleNode.alpha > 0 {
+                        // Animate destruction then remove entirely
+                        obstacleNode.run(SKAction.sequence([
+                            SKAction.group([
+                                SKAction.fadeOut(withDuration: 0.25),
+                                SKAction.scale(to: 0.85, duration: 0.25)
+                            ]),
+                            SKAction.removeFromParent()
+                        ]))
+                    }
                     // Remove health bar if exists
                     if let healthBar = pillarHealthBars[pillarId] {
                         healthBar.removeFromParent()

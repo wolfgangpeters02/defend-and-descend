@@ -705,7 +705,22 @@ if projectile.isEnemyProjectile {
 
 ---
 
-## Stage 11: Boss Minor Polish & Cleanup
+## Stage 11: Boss Minor Polish & Cleanup -- DONE
+
+Boss minor visual polish, performance improvements, and cleanup across Void Harbinger, Overclocker, SCT, pillars, and particle system.
+
+**Changes made:**
+- **11a**: Added `riftPulseAction` (cached SKAction) to void rifts — alpha oscillates between 0.5 and 0.8 over 0.8s cycle with easeInEaseOut timing, giving rifts a living energy feel.
+- **11b**: Added gravity well pull visual — 4 small particles spawn at well edge every 0.5s and animate inward to center with fade-out and scale-down, creating a visual "suction" effect.
+- **11c**: Replaced steam trail `fadeOutAndRemoveBossNode` (0.2s + scale-down) with a softer 0.3s fade-only removal for natural steam dissipation without jarring scale changes.
+- **11d**: Destroyed pillars now animate out (0.25s fade + scale to 0.85) and `removeFromParent()` instead of remaining as invisible alpha-0 nodes in the scene graph.
+- **11e**: SCT AoE clustering mitigation — widened default `spreadRange` from 15 to 25px, capped `showDamageBatch` to 5 entries (largest damage first), replaced `DispatchQueue.main.asyncAfter` stagger with SKAction-based timing.
+- **11f**: Cached void rift CGPath as `static let cachedRiftPath` on BossRenderingManager — all rifts share the same length, eliminating per-rift CGMutablePath allocation.
+- **11g**: Made particle cap game-mode-aware: boss mode 150 (up from 80), TD mode stays at 80. Boss death explosions (16 particles) + active combat effects no longer risk FIFO truncation.
+
+**Files changed: 6 files (BossRenderingManager.swift, +VoidHarbinger, +Overclocker, GameScene+EntityRendering.swift, ScrollingCombatText.swift, ParticleFactory.swift). Build verified clean.**
+
+---
 
 ### 11a. Void rift animation
 

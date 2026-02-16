@@ -97,7 +97,7 @@ enum SCTType {
 struct SCTConfig {
     var duration: TimeInterval = 0.8
     var riseDistance: CGFloat = 40
-    var spreadRange: CGFloat = 15        // Random horizontal spread
+    var spreadRange: CGFloat = 25        // Random horizontal spread (11e: widened from 15 to reduce AoE clustering)
     var fadeStart: CGFloat = 0.6         // When to start fading (0-1)
     var scaleUp: CGFloat = 1.2           // Initial scale for emphasis
     var scaleDown: CGFloat = 0.8         // Final scale
@@ -198,13 +198,22 @@ class ScrollingCombatTextManager {
     }
 
     /// Batch show multiple damage numbers (for AoE attacks)
+    /// 11e: Throttles to max 5 entries per burst (largest hits first), with increased spatial jitter
     func showDamageBatch(_ damages: [(damage: Int, position: CGPoint, isCritical: Bool)]) {
-        for (index, info) in damages.enumerated() {
-            // Stagger slightly to avoid overlap
+        guard let scene = scene else { return }
+        // Sort by damage descending, cap at 5 to prevent cluster overlap
+        let sorted = damages.sorted { $0.damage > $1.damage }
+        let capped = Array(sorted.prefix(5))
+
+        for (index, info) in capped.enumerated() {
             let delay = Double(index) * 0.05
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.showDamage(info.damage, at: info.position, isCritical: info.isCritical)
-            }
+            let stagger = SKAction.sequence([
+                SKAction.wait(forDuration: delay),
+                SKAction.run { [weak self] in
+                    self?.showDamage(info.damage, at: info.position, isCritical: info.isCritical)
+                }
+            ])
+            scene.run(stagger)
         }
     }
 

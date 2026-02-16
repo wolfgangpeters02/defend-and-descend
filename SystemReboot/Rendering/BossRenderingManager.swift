@@ -61,6 +61,14 @@ class BossRenderingManager {
         return SKAction.sequence([down, up])
     }()
 
+    lazy var riftPulseAction: SKAction = {
+        let down = SKAction.fadeAlpha(to: 0.5, duration: 0.4)
+        down.timingMode = .easeInEaseOut
+        let up = SKAction.fadeAlpha(to: 0.8, duration: 0.4)
+        up.timingMode = .easeInEaseOut
+        return SKAction.sequence([down, up])
+    }()
+
     lazy var chainsawRotateAction: SKAction = {
         SKAction.rotate(byAngle: .pi * 2, duration: 0.8)
     }()
@@ -102,6 +110,16 @@ class BossRenderingManager {
     var wyrmHeadHistory: [CGPoint] = []
     /// Frames of spacing between each body segment in the history buffer.
     let wyrmHistorySpacing: Int = 3
+
+    // MARK: - Cached CGPaths (11f)
+
+    /// Shared rift CGPath — all void rifts use the same length.
+    static let cachedRiftPath: CGPath = {
+        let path = CGMutablePath()
+        path.move(to: .zero)
+        path.addLine(to: CGPoint(x: BalanceConfig.VoidHarbinger.voidRiftLength, y: 0))
+        return path
+    }()
 
     // MARK: - Configuration
 

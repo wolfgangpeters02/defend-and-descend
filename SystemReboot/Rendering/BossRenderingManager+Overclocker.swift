@@ -146,10 +146,18 @@ extension BossRenderingManager {
                 steamNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
             }
 
-            // Clean up old steam segments (8b: fade-out)
+            // Clean up old steam segments (8b/11c: softer fade-out without scale-down for natural dissipation)
             let steamKeysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix("overclocker_steam_") && !activeSteamIds.contains(String($0.dropFirst("overclocker_steam_".count))) }
             for key in steamKeysToRemove {
-                fadeOutAndRemoveBossNode(key: key)
+                guard let node = bossMechanicNodes.removeValue(forKey: key) else { continue }
+                let poolType = poolTypeForKey(key)
+                node.run(SKAction.sequence([
+                    SKAction.fadeOut(withDuration: 0.3),
+                    SKAction.run { [weak self] in
+                        node.alpha = 1.0
+                        self?.nodePool.release(node, type: poolType)
+                    }
+                ]))
             }
         }
 
