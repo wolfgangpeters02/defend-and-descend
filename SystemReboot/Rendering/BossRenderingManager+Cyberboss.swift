@@ -60,18 +60,24 @@ extension BossRenderingManager {
 
                 scene.addChild(puddleNode)
                 bossMechanicNodes[nodeKey] = puddleNode
+                fadeInMechanicNode(puddleNode)
             }
         }
 
-        // Remove puddles that no longer exist
+        // Remove puddles that no longer exist (8b: fade-out, 8d: pop burst)
         let puddlePrefix = "cyberboss_puddle_"
         for key in findKeysToRemove(prefix: puddlePrefix, activeIds: activePuddleIds) {
-            if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: .bossPuddle)
-            }
             let puddleId = String(key.dropFirst(puddlePrefix.count))
+
+            // 8d: Puddle pop burst — scale pulse + red particles on pop-phase expiry
+            if puddlePhaseCache[puddleId] == "pop", let node = bossMechanicNodes[key] {
+                spawnVisualBurst(at: node.position, color: DesignColors.dangerUI, count: 8)
+                // Brief scale pulse before fade-out
+                node.run(SKAction.scale(to: 1.3, duration: 0.1))
+            }
+
             puddlePhaseCache.removeValue(forKey: puddleId)
-            bossMechanicNodes.removeValue(forKey: key)
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         // Render laser beams
@@ -110,15 +116,13 @@ extension BossRenderingManager {
 
                 scene.addChild(laserNode)
                 bossMechanicNodes[nodeKey] = laserNode
+                fadeInMechanicNode(laserNode)
             }
         }
 
-        // Remove lasers that no longer exist
+        // Remove lasers that no longer exist (8b: fade-out)
         for key in findKeysToRemove(prefix: "cyberboss_laser_", activeIds: activeLaserIds) {
-            if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: .bossLaser)
-            }
-            bossMechanicNodes.removeValue(forKey: key)
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         renderPhaseIndicator(phase: bossState.phase, bossType: "cyberboss", gameState: gameState)
@@ -283,6 +287,7 @@ extension BossRenderingManager {
 
                 scene.addChild(chainsawNode)
                 bossMechanicNodes[nodeKey] = chainsawNode
+                fadeInMechanicNode(chainsawNode)
             }
         } else {
             if let node = bossMechanicNodes[nodeKey] {

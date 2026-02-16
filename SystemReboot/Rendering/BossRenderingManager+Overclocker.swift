@@ -34,6 +34,7 @@ extension BossRenderingManager {
                     bladeNode.zPosition = 100
                     scene.addChild(bladeNode)
                     bossMechanicNodes[nodeKey] = bladeNode
+                    fadeInMechanicNode(bladeNode)
                 }
 
                 bladeNode.position = CGPoint(x: bossPos.x, y: arenaH - bossPos.y)
@@ -41,7 +42,7 @@ extension BossRenderingManager {
             }
         } else {
             for i in 0..<BalanceConfig.Overclocker.bladeCount {
-                removeBossNode(key: "overclocker_blade_\(i)")
+                fadeOutAndRemoveBossNode(key: "overclocker_blade_\(i)")
             }
         }
 
@@ -58,21 +59,30 @@ extension BossRenderingManager {
                 let row = i / BalanceConfig.Overclocker.tileGridSize
 
                 let tileNode: SKShapeNode
+                let isNew: Bool
                 if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
                     tileNode = existing
+                    isNew = false
                 } else {
                     tileNode = SKShapeNode(rectOf: CGSize(width: tileW - 4, height: tileH - 4), cornerRadius: 4)
                     tileNode.zPosition = 1
                     tileNode.lineWidth = 2
                     scene.addChild(tileNode)
                     bossMechanicNodes[nodeKey] = tileNode
+                    fadeInMechanicNode(tileNode)
+                    isNew = true
                 }
 
                 let tileX = arenaRect.minX + CGFloat(col) * tileW + tileW / 2
                 let tileY = arenaRect.minY + CGFloat(row) * tileH + tileH / 2
                 tileNode.position = CGPoint(x: tileX, y: arenaH - tileY)
 
-                switch bossState.tileStates[i] {
+                let currentState = bossState.tileStates[i]
+                let previousState = tileStateCache[i]
+                let stateChanged = !isNew && previousState != nil && previousState != currentState
+                tileStateCache[i] = currentState
+
+                switch currentState {
                 case .normal:
                     tileNode.fillColor = SKColor.darkGray.withAlphaComponent(0.3)
                     tileNode.strokeColor = SKColor.gray
@@ -86,10 +96,30 @@ extension BossRenderingManager {
                     tileNode.fillColor = SKColor.cyan.withAlphaComponent(0.4)
                     tileNode.strokeColor = SKColor.blue
                 }
+
+                // 8e: Scale pulse on state transition
+                if stateChanged {
+                    let pulse = SKAction.sequence([
+                        SKAction.scale(to: 1.05, duration: 0.1),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ])
+                    pulse.timingMode = .easeInEaseOut
+                    tileNode.run(pulse, withKey: "tileTransition")
+
+                    // Extra red flash for warning → lava transition
+                    if previousState == .warning && currentState == .lava {
+                        tileNode.run(SKAction.sequence([
+                            SKAction.run { tileNode.fillColor = SKColor.white.withAlphaComponent(0.8) },
+                            SKAction.wait(forDuration: 0.08),
+                            SKAction.run { tileNode.fillColor = SKColor.red.withAlphaComponent(0.7) }
+                        ]), withKey: "lavaFlash")
+                    }
+                }
             }
         } else {
             for i in 0..<BalanceConfig.Overclocker.tileCount {
-                removeBossNode(key: "overclocker_tile_\(i)")
+                fadeOutAndRemoveBossNode(key: "overclocker_tile_\(i)")
+                tileStateCache.removeValue(forKey: i)
             }
         }
 
@@ -110,15 +140,16 @@ extension BossRenderingManager {
                     steamNode.zPosition = 50
                     scene.addChild(steamNode)
                     bossMechanicNodes[nodeKey] = steamNode
+                    fadeInMechanicNode(steamNode, targetAlpha: 1.0, duration: 0.1)
                 }
 
                 steamNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
             }
 
-            // Clean up old steam segments
-            let keysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix("overclocker_steam_") && !activeSteamIds.contains(String($0.dropFirst("overclocker_steam_".count))) }
-            for key in keysToRemove {
-                removeBossNode(key: key)
+            // Clean up old steam segments (8b: fade-out)
+            let steamKeysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix("overclocker_steam_") && !activeSteamIds.contains(String($0.dropFirst("overclocker_steam_".count))) }
+            for key in steamKeysToRemove {
+                fadeOutAndRemoveBossNode(key: key)
             }
         }
 
@@ -136,12 +167,13 @@ extension BossRenderingManager {
                 shredderNode.zPosition = 99
                 scene.addChild(shredderNode)
                 bossMechanicNodes[nodeKey] = shredderNode
+                fadeInMechanicNode(shredderNode)
             }
 
             shredderNode.position = CGPoint(x: bossPos.x, y: arenaH - bossPos.y)
             shredderNode.strokeColor = bossState.isSuctionActive ? SKColor.red : SKColor.orange
         } else {
-            removeBossNode(key: "overclocker_shredder")
+            fadeOutAndRemoveBossNode(key: "overclocker_shredder")
         }
 
         renderPhaseIndicator(phase: bossState.phase, bossType: "overclocker", gameState: gameState)

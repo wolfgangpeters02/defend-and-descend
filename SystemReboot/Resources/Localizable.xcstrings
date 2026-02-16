@@ -423,6 +423,23 @@
         }
       }
     },
+    "boss.shieldDown" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SCHILD ZERSTÖRT"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SHIELD DOWN"
+          }
+        }
+      }
+    },
     "boss.encounters" : {
       "extractionState" : "manual",
       "localizations" : {

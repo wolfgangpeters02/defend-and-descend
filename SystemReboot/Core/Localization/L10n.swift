@@ -268,6 +268,7 @@ enum L10n {
         static let selectDifficulty = String(localized: "boss.selectDifficulty")
         static let blueprintDrop = String(localized: "boss.blueprintDrop")
         static let destroyPylons = String(localized: "boss.destroyPylons")
+        static let shieldDown = String(localized: "boss.shieldDown")
     }
 
     // MARK: - System Upgrades

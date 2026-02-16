@@ -46,18 +46,16 @@ extension BossRenderingManager {
 
                 scene.addChild(zoneNode)
                 bossMechanicNodes[nodeKey] = zoneNode
+                fadeInMechanicNode(zoneNode)
             }
         }
 
-        // Remove zones that no longer exist
+        // Remove zones that no longer exist (8b: fade-out)
         let zonePrefix = "voidharbinger_zone_"
         for key in findKeysToRemove(prefix: zonePrefix, activeIds: activeZoneIds) {
-            if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: .bossZone)
-            }
             let zoneId = String(key.dropFirst(zonePrefix.count))
             zonePhaseCache.removeValue(forKey: zoneId)
-            bossMechanicNodes.removeValue(forKey: key)
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         // Render pylons (Phase 2)
@@ -108,15 +106,22 @@ extension BossRenderingManager {
 
                 scene.addChild(container)
                 bossMechanicNodes[nodeKey] = container
+                fadeInMechanicNode(container)
             }
         }
 
-        // Remove destroyed pylons
+        // Remove destroyed pylons (8b: fade-out, 8c: destruction burst)
         for key in findKeysToRemove(prefix: "voidharbinger_pylon_", activeIds: activePylonIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: .bossPylon)
+                // 8c: Pylon destruction burst — purple particles + shake + SCT
+                spawnVisualBurst(at: node.position, color: DesignColors.secondaryUI, count: 15)
+                if let gameScene = scene as? GameScene {
+                    gameScene.shakeScreen(intensity: 4, duration: 0.2)
+                }
+                let sctPos = CGPoint(x: node.position.x, y: node.position.y + 40)
+                scene.combatText.show(L10n.Boss.shieldDown, type: .execute, at: sctPos, config: .dramatic)
             }
-            bossMechanicNodes.removeValue(forKey: key)
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         // Render shield around boss during Phase 2
@@ -171,9 +176,10 @@ extension BossRenderingManager {
 
                 scene.addChild(shieldNode)
                 bossMechanicNodes[shieldKey] = shieldNode
+                fadeInMechanicNode(shieldNode)
             }
         } else {
-            removeBossNode(key: shieldKey)
+            fadeOutAndRemoveBossNode(key: shieldKey)
         }
 
         // Render energy lines from pylons to boss (Phase 2)
@@ -213,13 +219,19 @@ extension BossRenderingManager {
 
                     scene.addChild(lineNode)
                     bossMechanicNodes[lineKey] = lineNode
+                    fadeInMechanicNode(lineNode)
                 }
             }
         }
 
-        // Remove lines for destroyed pylons or when not in Phase 2
+        // Remove lines for destroyed pylons or when not in Phase 2 (8b/8c: flash + fade-out)
         for key in findKeysToRemove(prefix: "voidharbinger_pylonline_", activeIds: activeLineIds) {
-            removeBossNode(key: key)
+            // 8c: Flash white briefly before fading to simulate line snapping
+            if let lineNode = bossMechanicNodes[key] as? SKShapeNode {
+                lineNode.strokeColor = SKColor.white
+                lineNode.glowWidth = 4
+            }
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         // Render pylon direction indicators (Phase 2 only)
@@ -295,17 +307,19 @@ extension BossRenderingManager {
 
                         scene.addChild(arrowNode)
                         bossMechanicNodes[arrowKey] = arrowNode
+                        fadeInMechanicNode(arrowNode)
                     }
                 } else {
-                    removeBossNode(key: arrowKey)
+                    fadeOutAndRemoveBossNode(key: arrowKey)
                 }
             }
         } else {
-            removeBossNode(key: "voidharbinger_pylon_hint")
+            fadeOutAndRemoveBossNode(key: "voidharbinger_pylon_hint")
 
             let arrowPrefix = "voidharbinger_pylon_arrow_"
-            for key in bossMechanicNodes.keys where key.hasPrefix(arrowPrefix) {
-                removeBossNode(key: key)
+            let arrowKeys = bossMechanicNodes.keys.filter { $0.hasPrefix(arrowPrefix) }
+            for key in arrowKeys {
+                fadeOutAndRemoveBossNode(key: key)
             }
         }
 
@@ -339,15 +353,13 @@ extension BossRenderingManager {
 
                 scene.addChild(riftNode)
                 bossMechanicNodes[nodeKey] = riftNode
+                fadeInMechanicNode(riftNode, targetAlpha: 0.8)
             }
         }
 
-        // Remove rifts that no longer exist
+        // Remove rifts that no longer exist (8b: fade-out)
         for key in findKeysToRemove(prefix: "voidharbinger_rift_", activeIds: activeRiftIds) {
-            if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: .bossRift)
-            }
-            bossMechanicNodes.removeValue(forKey: key)
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         // Render gravity wells (Phase 3+)
@@ -375,15 +387,13 @@ extension BossRenderingManager {
 
                 scene.addChild(wellNode)
                 bossMechanicNodes[nodeKey] = wellNode
+                fadeInMechanicNode(wellNode)
             }
         }
 
-        // Remove wells that no longer exist
+        // Remove wells that no longer exist (8b: fade-out)
         for key in findKeysToRemove(prefix: "voidharbinger_well_", activeIds: activeWellIds) {
-            if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: .bossWell)
-            }
-            bossMechanicNodes.removeValue(forKey: key)
+            fadeOutAndRemoveBossNode(key: key)
         }
 
         // Render shrinking arena boundary (Phase 4)
@@ -413,9 +423,10 @@ extension BossRenderingManager {
 
                 scene.addChild(arenaNode)
                 bossMechanicNodes[arenaKey] = arenaNode
+                fadeInMechanicNode(arenaNode)
             }
         } else {
-            removeBossNode(key: "voidharbinger_arena")
+            fadeOutAndRemoveBossNode(key: "voidharbinger_arena")
         }
 
         renderPhaseIndicator(phase: bossState.phase, bossType: "voidharbinger", isInvulnerable: bossState.isInvulnerable, gameState: gameState)

@@ -46,6 +46,7 @@ extension BossRenderingManager {
                     segNode.zPosition = 100
                     scene.addChild(segNode)
                     bossMechanicNodes[nodeKey] = segNode
+                    fadeInMechanicNode(segNode)
                 }
 
                 // Use history-based position for smooth trailing, fallback to game-state
@@ -85,6 +86,7 @@ extension BossRenderingManager {
                     tailWisp.zPosition = 99
                     scene.addChild(tailWisp)
                     bossMechanicNodes[tailKey] = tailWisp
+                    fadeInMechanicNode(tailWisp)
                 }
                 // Draw a short trailing wisp from last segment extending away
                 let lastSeg = bossState.segments[segCount - 1]
@@ -126,6 +128,7 @@ extension BossRenderingManager {
 
                 scene.addChild(headContainer)
                 bossMechanicNodes[headKey] = headContainer
+                fadeInMechanicNode(headContainer)
             }
             headContainer.position = CGPoint(x: boss.x, y: arenaH - boss.y)
 
@@ -139,13 +142,13 @@ extension BossRenderingManager {
                 }
             }
         } else {
-            // Clean up main body in Phase 3 and reset history
+            // Clean up main body in Phase 3 and reset history (8b: fade-out)
             wyrmHeadHistory.removeAll()
             for i in 0..<BalanceConfig.TrojanWyrm.segmentCount {
-                removeBossNode(key: "trojanwyrm_seg_\(i)")
+                fadeOutAndRemoveBossNode(key: "trojanwyrm_seg_\(i)")
             }
-            removeBossNode(key: "trojanwyrm_head")
-            removeBossNode(key: "trojanwyrm_tailwisp")
+            fadeOutAndRemoveBossNode(key: "trojanwyrm_head")
+            fadeOutAndRemoveBossNode(key: "trojanwyrm_tailwisp")
         }
 
         // Phase 3: Render sub-worms with enhanced visuals
@@ -175,6 +178,7 @@ extension BossRenderingManager {
 
                     scene.addChild(swHeadContainer)
                     bossMechanicNodes[headKey] = swHeadContainer
+                    fadeInMechanicNode(swHeadContainer)
                 }
                 swHeadContainer.position = CGPoint(x: worm.head.x, y: arenaH - worm.head.y)
 
@@ -209,6 +213,7 @@ extension BossRenderingManager {
                         swSegNode.zPosition = 100
                         scene.addChild(swSegNode)
                         bossMechanicNodes[segKey] = swSegNode
+                        fadeInMechanicNode(swSegNode)
                     }
                     swSegNode.position = CGPoint(x: seg.x, y: arenaH - seg.y)
 
@@ -223,13 +228,61 @@ extension BossRenderingManager {
                 }
             }
         } else {
-            // Clean up sub-worms if not in Phase 3
-            let swCleanupCount = max(BalanceConfig.TrojanWyrm.subWormCount, 8)  // Safe upper bound
+            // Clean up sub-worms if not in Phase 3 (8f: staggered despawn + green burst)
+            let swCleanupCount = max(BalanceConfig.TrojanWyrm.subWormCount, 8)
             let swBodyCleanup = max(BalanceConfig.TrojanWyrm.subWormBodyCount, 8)
+            let wyrmGreenBurst = SKColor(red: 0, green: 1, blue: 0.27, alpha: 1.0)
+
             for wi in 0..<swCleanupCount {
-                removeBossNode(key: "trojanwyrm_sw_\(wi)_head")
+                let headKey = "trojanwyrm_sw_\(wi)_head"
+                let stagger = TimeInterval(wi) * 0.1
+
+                // 8f: Green particle burst at each sub-worm head before despawn
+                if let headNode = bossMechanicNodes[headKey] {
+                    let headPos = headNode.position
+                    // Stagger the burst and fade-out for cascade effect
+                    if stagger > 0 {
+                        headNode.run(SKAction.sequence([
+                            SKAction.wait(forDuration: stagger),
+                            SKAction.run { [weak self] in
+                                self?.spawnVisualBurst(at: headPos, color: wyrmGreenBurst, count: 8)
+                            },
+                            SKAction.group([
+                                SKAction.fadeOut(withDuration: 0.3),
+                                SKAction.scale(to: 0.85, duration: 0.3)
+                            ]),
+                            SKAction.run { [weak self] in
+                                headNode.alpha = 1.0
+                                headNode.setScale(1.0)
+                                self?.nodePool.release(headNode, type: .bossMisc)
+                            }
+                        ]))
+                        bossMechanicNodes.removeValue(forKey: headKey)
+                    } else {
+                        spawnVisualBurst(at: headPos, color: wyrmGreenBurst, count: 8)
+                        fadeOutAndRemoveBossNode(key: headKey)
+                    }
+                }
+
                 for si in 0..<swBodyCleanup {
-                    removeBossNode(key: "trojanwyrm_sw_\(wi)_seg_\(si)")
+                    let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
+                    if stagger > 0, let segNode = bossMechanicNodes[segKey] {
+                        segNode.run(SKAction.sequence([
+                            SKAction.wait(forDuration: stagger),
+                            SKAction.group([
+                                SKAction.fadeOut(withDuration: 0.3),
+                                SKAction.scale(to: 0.85, duration: 0.3)
+                            ]),
+                            SKAction.run { [weak self] in
+                                segNode.alpha = 1.0
+                                segNode.setScale(1.0)
+                                self?.nodePool.release(segNode, type: .bossMisc)
+                            }
+                        ]))
+                        bossMechanicNodes.removeValue(forKey: segKey)
+                    } else {
+                        fadeOutAndRemoveBossNode(key: segKey)
+                    }
                 }
             }
         }
@@ -252,6 +305,7 @@ extension BossRenderingManager {
                 aimNode.zPosition = 102
                 scene.addChild(aimNode)
                 bossMechanicNodes[aimKey] = aimNode
+                fadeInMechanicNode(aimNode)
             }
 
             let path = CGMutablePath()
@@ -259,7 +313,7 @@ extension BossRenderingManager {
             path.addLine(to: CGPoint(x: playerPos.x, y: arenaH - playerPos.y))
             aimNode.path = path
         } else {
-            removeBossNode(key: "trojanwyrm_aimline")
+            fadeOutAndRemoveBossNode(key: "trojanwyrm_aimline")
         }
     }
 }

@@ -461,9 +461,21 @@ particleEffectService?.triggerScreenShake(intensity: 6, duration: 0.3)
 
 ---
 
-## Stage 8: Mechanic Spawn/Despawn Animations
+## Stage 8: Mechanic Spawn/Despawn Animations -- DONE
 
-All boss mechanics (puddles, zones, pylons, rifts, tiles, etc.) pop in and out instantly. This breaks immersion and makes mechanics feel cheap.
+Standardized spawn/despawn animations for all boss mechanics with three helpers, plus destruction/expiry effects and phase transitions.
+
+**Changes made:**
+- **8a**: Added `fadeInMechanicNode()` helper in BossRenderingManager. Applied fade-in (alpha 0→1, 0.15s) to all mechanic node creation points across all 4 bosses: puddles, lasers, chainsaw, void zones, pylons, shield, energy lines, arrows, rifts, gravity wells, arena boundary, blades, lava tiles, steam trail, shredder ring, wyrm segments/head/tail, sub-worm heads/bodies, aim line.
+- **8b**: Added `fadeOutAndRemoveBossNode()` helper — removes key from tracking immediately, runs fade-out (alpha→0 + scale→0.85, 0.2s), resets alpha/scale, then releases to pool. Replaced all direct `removeBossNode`/`nodePool.release` removal patterns across all 4 bosses. Energy lines flash white before fade to simulate snapping.
+- **8c**: Added pylon destruction burst on Void Harbinger pylon removal — `spawnVisualBurst()` (15 purple particles radiating outward via SKActions), screen shake (intensity 4, 0.2s), SCT "SHIELD DOWN" text at pylon position. Added `L10n.Boss.shieldDown` with EN/DE translations.
+- **8d**: Added puddle pop burst on Cyberboss puddle expiry — detects "pop" phase via `puddlePhaseCache`, spawns 8 red particles + brief scale pulse (1.3x) before fade-out.
+- **8e**: Added lava tile state transition animations for Overclocker — `tileStateCache` tracks per-tile state, scale pulse (1.05x, 0.2s) on any state change, extra white flash on warning→lava transition.
+- **8f**: Added sub-worm phase transition for Trojan Wyrm — staggered despawn (0.1s delay per sub-worm) with cascade effect, green particle burst (8 particles) at each sub-worm head position before fade-out.
+
+**Files changed: 7 files (BossRenderingManager.swift, +Cyberboss, +VoidHarbinger, +Overclocker, +TrojanWyrm, L10n.swift, Localizable.xcstrings). Build verified clean.**
+
+---
 
 ### 8a. Standardize fade-in for all spawning mechanics
 

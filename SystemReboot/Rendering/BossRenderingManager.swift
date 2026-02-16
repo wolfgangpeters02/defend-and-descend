@@ -86,6 +86,7 @@ class BossRenderingManager {
     var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
     var zonePhaseCache: [String: Bool] = [:]       // id -> isActive
     var lastIndicatorPhase: [String: Int] = [:]    // bossType -> last phase (for transition detection)
+    var tileStateCache: [Int: OverclockerAI.TileState] = [:]  // tile index -> last state (8e transition detection)
 
     // MARK: - Boss Body Visual References
 
@@ -176,6 +177,7 @@ class BossRenderingManager {
         puddlePhaseCache.removeAll()
         zonePhaseCache.removeAll()
         lastIndicatorPhase.removeAll()
+        tileStateCache.removeAll()
         cachedBossBodyNode = nil
         lastKnownBossHealth = -1
         cachedCyberbossPhase = -1
@@ -210,6 +212,62 @@ class BossRenderingManager {
         guard let node = bossMechanicNodes[key] else { return }
         nodePool.release(node, type: poolTypeForKey(key))
         bossMechanicNodes.removeValue(forKey: key)
+    }
+
+    // MARK: - Spawn/Despawn Animations (Stage 8)
+
+    /// 8a: Fade in a newly created mechanic node from alpha 0.
+    func fadeInMechanicNode(_ node: SKNode, targetAlpha: CGFloat = 1.0, duration: TimeInterval = 0.15) {
+        node.alpha = 0
+        node.run(SKAction.fadeAlpha(to: targetAlpha, duration: duration))
+    }
+
+    /// 8b: Fade out and remove a mechanic node, then release to pool.
+    /// Removes the key from tracking immediately so new nodes can be created.
+    func fadeOutAndRemoveBossNode(key: String, duration: TimeInterval = 0.2) {
+        guard let node = bossMechanicNodes.removeValue(forKey: key) else { return }
+        let poolType = poolTypeForKey(key)
+        node.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.fadeOut(withDuration: duration),
+                SKAction.scale(to: 0.85, duration: duration)
+            ]),
+            SKAction.run { [weak self] in
+                node.alpha = 1.0
+                node.setScale(1.0)
+                self?.nodePool.release(node, type: poolType)
+            }
+        ]))
+    }
+
+    /// 8c/8d: Spawn a visual-only particle burst at a position using SKActions.
+    /// Creates small shape nodes that radiate outward and fade — no GameState needed.
+    func spawnVisualBurst(at position: CGPoint, color: SKColor, count: Int = 12) {
+        guard let scene = scene else { return }
+        for _ in 0..<count {
+            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...4))
+            particle.fillColor = color
+            particle.strokeColor = color.withAlphaComponent(0.5)
+            particle.position = position
+            particle.zPosition = 150
+            particle.blendMode = .add
+            scene.addChild(particle)
+
+            let angle = CGFloat.random(in: 0...(2 * .pi))
+            let speed = CGFloat.random(in: 40...100)
+            let dx = cos(angle) * speed
+            let dy = sin(angle) * speed
+            let lifetime = TimeInterval.random(in: 0.3...0.6)
+
+            particle.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.moveBy(x: dx, y: dy, duration: lifetime),
+                    SKAction.fadeOut(withDuration: lifetime),
+                    SKAction.scale(to: 0.3, duration: lifetime)
+                ]),
+                SKAction.removeFromParent()
+            ]))
+        }
     }
 
     // MARK: - Utilities
