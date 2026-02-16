@@ -13,6 +13,8 @@ class GameScene: SKScene {
     // Rendering
     var entityRenderer: EntityRenderer!
     var backgroundNode: SKShapeNode?
+    var arenaGridNode: SKShapeNode?
+    var vignetteNode: SKSpriteNode?
     var playerNode: SKNode?
     var obstacleNodes: [SKNode] = []
     var hazardNodes: [SKNode] = []
@@ -209,6 +211,7 @@ class GameScene: SKScene {
         gridNode.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height / 2)
         gridNode.zPosition = -99
         addChild(gridNode)
+        arenaGridNode = gridNode as? SKShapeNode
     }
 
     private func createWireframeGrid(size: CGSize, spacing: CGFloat, color: SKColor) -> SKNode {
@@ -235,6 +238,116 @@ class GameScene: SKScene {
         gridNode.strokeColor = color
         gridNode.lineWidth = 1
         return gridNode
+    }
+
+    // MARK: - Boss Arena Theme (Stage 9)
+
+    /// 9a: Apply boss-specific arena color theme to background and grid.
+    func applyBossArenaTheme() {
+        guard let bossType = gameState.activeBossType else { return }
+
+        let bgColor: SKColor
+        let gridColor: SKColor
+
+        switch bossType {
+        case .cyberboss:
+            bgColor = SKColor(red: 10/255, green: 10/255, blue: 26/255, alpha: 1.0)
+            gridColor = SKColor(red: 0, green: 1, blue: 1, alpha: 0.08)
+        case .voidHarbinger:
+            bgColor = SKColor(red: 10/255, green: 0, blue: 15/255, alpha: 1.0)
+            gridColor = SKColor(red: 1, green: 0, blue: 1, alpha: 0.06)
+        case .overclocker:
+            bgColor = SKColor(red: 15/255, green: 10/255, blue: 5/255, alpha: 1.0)
+            gridColor = SKColor(red: 1, green: 0.533, blue: 0, alpha: 0.08)
+        case .trojanWyrm:
+            bgColor = SKColor(red: 5/255, green: 10/255, blue: 5/255, alpha: 1.0)
+            gridColor = SKColor(red: 0, green: 1, blue: 0.255, alpha: 0.08)
+        }
+
+        backgroundNode?.fillColor = bgColor
+        arenaGridNode?.strokeColor = gridColor
+        setupVignette()
+    }
+
+    /// 9c: Create a radial vignette overlay for the boss arena.
+    private func setupVignette() {
+        guard vignetteNode == nil else { return }
+
+        let textureSize = CGSize(width: 256, height: 256)
+        let renderer = UIGraphicsImageRenderer(size: textureSize)
+        let image = renderer.image { context in
+            let cgContext = context.cgContext
+            let center = CGPoint(x: textureSize.width / 2, y: textureSize.height / 2)
+            let maxRadius = sqrt(pow(textureSize.width / 2, 2) + pow(textureSize.height / 2, 2))
+
+            let colors = [UIColor.clear.cgColor, UIColor.black.cgColor]
+            let locations: [CGFloat] = [0.3, 1.0]
+            guard let gradient = CGGradient(
+                colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                colors: colors as CFArray,
+                locations: locations
+            ) else { return }
+
+            cgContext.drawRadialGradient(
+                gradient,
+                startCenter: center, startRadius: 0,
+                endCenter: center, endRadius: maxRadius,
+                options: []
+            )
+        }
+
+        let texture = SKTexture(image: image)
+        let vignetteSize = CGSize(width: screenSize.width * 1.5, height: screenSize.height * 1.5)
+        let vignette = SKSpriteNode(texture: texture, size: vignetteSize)
+        vignette.position = .zero
+        vignette.zPosition = -10
+        vignette.alpha = 0.1
+
+        if let cam = cameraNode {
+            cam.addChild(vignette)
+        } else {
+            vignette.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height / 2)
+            addChild(vignette)
+        }
+        vignetteNode = vignette
+    }
+
+    /// 9c: Update vignette intensity based on boss phase.
+    func updateVignetteForPhase(_ phase: Int) {
+        guard let vignette = vignetteNode else { return }
+        let targetAlpha: CGFloat
+        switch phase {
+        case 1: targetAlpha = 0.1
+        case 2: targetAlpha = 0.15
+        case 3: targetAlpha = 0.2
+        case 4: targetAlpha = 0.3
+        default: targetAlpha = 0.1
+        }
+        if abs(vignette.alpha - targetAlpha) > 0.01 {
+            vignette.run(SKAction.fadeAlpha(to: targetAlpha, duration: 0.5), withKey: "vignetteFade")
+        }
+    }
+
+    /// Returns the current boss phase (1-4).
+    func currentBossPhase() -> Int {
+        if let s = gameState.cyberbossState { return s.phase }
+        if let s = gameState.voidHarbingerState { return s.phase }
+        if let s = gameState.overclockerState { return s.phase }
+        if let s = gameState.trojanWyrmState { return s.phase }
+        return 1
+    }
+
+    /// Returns the theme color for the active boss type.
+    func bossThemeColor() -> SKColor {
+        guard let bossType = gameState.activeBossType else {
+            return SKColor(red: 0, green: 1, blue: 0.255, alpha: 1)
+        }
+        switch bossType {
+        case .cyberboss:     return SKColor(red: 0, green: 1, blue: 1, alpha: 1)
+        case .voidHarbinger: return SKColor(red: 1, green: 0, blue: 1, alpha: 1)
+        case .overclocker:   return SKColor(red: 1, green: 0.533, blue: 0, alpha: 1)
+        case .trojanWyrm:    return SKColor(red: 0, green: 1, blue: 0.255, alpha: 1)
+        }
     }
 
     private func setupObstacles() {
@@ -571,6 +684,10 @@ class GameScene: SKScene {
 
         // Clear debug overlay
         removeDebugOverlay()
+
+        // Clear arena theme references
+        arenaGridNode = nil
+        vignetteNode = nil
 
         // Clear boss rendering (Step 4.1)
         bossRenderingManager.cleanup()

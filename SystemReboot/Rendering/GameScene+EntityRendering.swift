@@ -301,18 +301,46 @@ extension GameScene {
                 pillarHealthBars[pillarId] = healthBar
             }
 
-            // Update pillar visual based on damage
+            // Update pillar visual based on damage and phase
             if let shapeNode = obstacleNode as? SKShapeNode {
-                // Darken pillar as it takes damage
                 let damageAlpha = 0.6 + (healthPercent * 0.4)
                 shapeNode.alpha = damageAlpha
 
-                // Add red tint when low health
+                // Base stroke color from health state
+                var strokeColor: SKColor
                 if healthPercent < 0.3 {
-                    shapeNode.strokeColor = SKColor(red: 0.8, green: 0.3, blue: 0.3, alpha: 1)
+                    strokeColor = SKColor(red: 0.8, green: 0.3, blue: 0.3, alpha: 1)
                     shapeNode.lineWidth = 3
+                } else {
+                    strokeColor = SKColor(red: 0.29, green: 0.33, blue: 0.41, alpha: 1)
+                    shapeNode.lineWidth = 2
                 }
+
+                // 9b: Phase-based pillar escalation — tint stroke toward boss theme
+                if gameState.activeBossType != nil {
+                    let phase = currentBossPhase()
+                    let themeColor = bossThemeColor()
+                    let blendFraction: CGFloat
+                    let glow: CGFloat
+                    switch phase {
+                    case 2: blendFraction = 0.1; glow = 0
+                    case 3: blendFraction = 0.25; glow = 2
+                    case 4: blendFraction = 0.4; glow = 4
+                    default: blendFraction = 0; glow = 0
+                    }
+                    if blendFraction > 0 {
+                        strokeColor = blendColor(strokeColor, toward: themeColor, fraction: blendFraction)
+                    }
+                    shapeNode.glowWidth = glow
+                }
+
+                shapeNode.strokeColor = strokeColor
             }
+        }
+
+        // 9c: Update vignette intensity based on boss phase
+        if gameState.activeBossType != nil {
+            updateVignetteForPhase(currentBossPhase())
         }
     }
 
@@ -334,5 +362,19 @@ extension GameScene {
         container.addChild(fillNode)
 
         return container
+    }
+
+    /// Linearly interpolate between two colors.
+    private func blendColor(_ base: SKColor, toward target: SKColor, fraction: CGFloat) -> SKColor {
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        base.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        target.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        return SKColor(
+            red: r1 + (r2 - r1) * fraction,
+            green: g1 + (g2 - g1) * fraction,
+            blue: b1 + (b2 - b1) * fraction,
+            alpha: a1
+        )
     }
 }

@@ -33,6 +33,9 @@ extension GameScene {
 
         gameState.activeBossId = bossId
 
+        // 9a: Apply boss-specific arena color theme
+        applyBossArenaTheme()
+
         // Spawn the boss enemy
         let config = GameConfigLoader.shared
 

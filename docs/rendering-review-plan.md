@@ -570,9 +570,18 @@ Apply to: puddles, zones, pylons (on destruction), rifts, gravity wells, blades,
 
 ---
 
-## Stage 9: Arena Differentiation
+## Stage 9: Arena Differentiation -- DONE
 
-All 4 bosses fight in identical arenas. Easy visual wins with near-zero perf cost.
+Boss-specific arena theming, pillar phase escalation, and vignette overlay.
+
+**Changes made:**
+- **9a**: Applied boss-specific background tints and grid colors at arena setup via `applyBossArenaTheme()`. Cyberboss: cyan grid on #0a0a1a. Void Harbinger: magenta grid (6% opacity) on #0a000f. Overclocker: orange grid on #0f0a05. Trojan Wyrm: lime grid on #050a05. Non-boss arenas keep default green grid on #0a0a0f.
+- **9b**: Pillar stroke colors now blend toward boss theme color based on phase. Phase 1: default gray (#4a5568). Phase 2: 10% boss color blend. Phase 3: 25% blend + glowWidth 2. Phase 4: 40% blend + glowWidth 4. Health-based coloring (orange/red) still applies under 60%/30% thresholds.
+- **9c**: Added camera-attached radial vignette overlay (programmatic 256x256 gradient texture scaled to viewport). Alpha escalates per phase: 0.1 (P1) → 0.15 (P2) → 0.2 (P3) → 0.3 (P4) with 0.5s animated transitions. Creates "arena closing in" effect as danger increases.
+
+**Files changed: 3 files (GameScene.swift, GameScene+EntityRendering.swift, GameScene+BossRendering.swift). Build verified clean.**
+
+---
 
 ### 9a. Boss-specific arena color themes
 
