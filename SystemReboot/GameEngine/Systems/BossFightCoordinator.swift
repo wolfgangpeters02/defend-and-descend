@@ -13,6 +13,7 @@ class BossFightCoordinator: ObservableObject {
 
     @Published var showBossFight = false
     @Published var showBossLootModal = false
+    @Published var showCampaignComplete = false
     @Published var pendingBossLootReward: BossLootReward?
 
     // MARK: - Fight Context
@@ -44,6 +45,14 @@ class BossFightCoordinator: ObservableObject {
     var onLootApplied: ((_ reward: BossLootReward) -> Void)?
 
     // MARK: - Fight Lifecycle
+
+    /// Call before presenting the boss fight to track analytics.
+    func onFightStarted() {
+        AnalyticsService.shared.trackBossFightStarted(
+            bossId: activeBossType ?? "cyberboss",
+            difficulty: selectedBossDifficulty.rawValue
+        )
+    }
 
     /// Called when the boss fight scene completes (replaces NotificationCenter pattern).
     /// This is the single entry point that both MotherboardView and TDGameContainerView use.
@@ -93,9 +102,26 @@ class BossFightCoordinator: ObservableObject {
                 isFirstKill: context.isFirstKill
             )
 
+            // Track boss victory and blueprint drop
+            AnalyticsService.shared.trackBossFightCompleted(
+                bossId: bossId,
+                difficulty: difficulty.rawValue,
+                victory: true,
+                isFirstKill: context.isFirstKill
+            )
+            if let protocolId = dropResult.protocolId {
+                AnalyticsService.shared.trackBlueprintDropped(bossId: bossId, protocolId: protocolId)
+            }
+
             showBossLootModal = true
             HapticsService.shared.play(.success)
         } else {
+            AnalyticsService.shared.trackBossFightCompleted(
+                bossId: activeBossType ?? "cyberboss",
+                difficulty: selectedBossDifficulty.rawValue,
+                victory: false,
+                isFirstKill: false
+            )
             onDefeat?()
             HapticsService.shared.play(.defeat)
         }
@@ -112,6 +138,7 @@ class BossFightCoordinator: ObservableObject {
         let sectorId = currentBossSectorId ?? SectorID.power.rawValue
         let bossId = activeBossType ?? "cyberboss"
         let difficulty = selectedBossDifficulty
+        let wasCampaignCompleted = AppState.shared.currentPlayer.campaignCompleted
 
         // Apply all rewards to player profile
         AppState.shared.updatePlayer { profile in
@@ -132,6 +159,17 @@ class BossFightCoordinator: ObservableObject {
                 profile.protocolBlueprints.append(protocolId)
                 profile.recordBlueprintDrop(bossId, protocolId: protocolId)
             }
+
+            // Check if campaign just became complete (all MVP bosses defeated)
+            if !profile.campaignCompleted &&
+               BalanceConfig.SectorUnlock.isCampaignComplete(defeatedSectorBosses: profile.defeatedSectorBosses) {
+                profile.campaignCompleted = true
+            }
+        }
+
+        // Show campaign complete overlay if just completed
+        if !wasCampaignCompleted && AppState.shared.currentPlayer.campaignCompleted {
+            showCampaignComplete = true
         }
 
         // Let the hosting view do any context-specific post-loot work

@@ -1380,6 +1380,12 @@ struct BalanceConfig {
             return index > maxMVPSectorIndex
         }
 
+        /// Check if all MVP sector bosses have been defeated (campaign complete)
+        static func isCampaignComplete(defeatedSectorBosses: [String]) -> Bool {
+            let mvpSectors = Array(unlockOrder.prefix(maxMVPSectorIndex + 1))
+            return mvpSectors.allSatisfy { defeatedSectorBosses.contains($0) }
+        }
+
         /// Get unlock cost for a sector
         static func unlockCost(for sectorId: String) -> Int {
             guard let index = unlockOrder.firstIndex(of: sectorId) else { return 0 }

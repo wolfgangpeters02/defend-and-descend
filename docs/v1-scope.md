@@ -131,9 +131,9 @@ Implement a clear "end of content" boundary at **Sector 4 (Cache)** so the game 
 ---
 
 ### Stage 4: Campaign Completion Detection
-- **Status:** TODO
-- **Summary:** _to be filled by implementing agent_
-- **Commit:** _to be filled_
+- **Status:** DONE
+- **Summary:** Added `isCampaignComplete()` helper to `BalanceConfig.SectorUnlock` that checks all MVP sector bosses are defeated, added `@Published showCampaignComplete` signal to `BossFightCoordinator`, and wired campaign completion detection into `onLootCollected()` with before/after comparison to trigger the signal exactly once.
+- **Commit:** fdb46f2
 
 **Goal:** Detect when the player has defeated all 4 unique bosses (completing the MVP content) and flag the campaign as complete.
 
