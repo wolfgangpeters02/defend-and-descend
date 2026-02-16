@@ -257,7 +257,6 @@ struct GameContainerView: View {
                         .background(Color.black.opacity(0.5))
                         .cornerRadius(10)
                         .padding(.bottom, 100) // Above joystick
-                        .animation(.easeInOut(duration: 0.3), value: state.stats.extractionAvailable)
                     }
                 }
 
@@ -280,8 +279,7 @@ struct GameContainerView: View {
                                     sessionHash: state.sessionHash,
                                     gameMode: gameMode,
                                     victory: false,
-                                    hashEarned: state.stats.hashEarned,
-                                    extracted: state.stats.extracted
+                                    hashEarned: state.stats.hashEarned
                                 )
                             }
                             onExit()
@@ -307,8 +305,7 @@ struct GameContainerView: View {
                                     sessionHash: state.sessionHash,
                                     gameMode: gameMode,
                                     victory: true,
-                                    hashEarned: state.stats.hashEarned,
-                                    extracted: state.stats.extracted
+                                    hashEarned: state.stats.hashEarned
                                 )
                             }
                             onExit()
@@ -446,15 +443,9 @@ struct GameOverOverlay: View {
         return state.stats.hashEarned
     }
 
-    // Final reward after extraction multiplier
+    // Final Hash reward (same as earned — extraction system removed)
     private var finalHashReward: Int {
-        guard let state = gameState else { return 0 }
-        return state.stats.finalHashReward()
-    }
-
-    // Did player extract successfully?
-    private var didExtract: Bool {
-        gameState?.stats.extracted ?? false
+        hashEarned
     }
 
     var body: some View {
@@ -510,18 +501,18 @@ struct GameOverOverlay: View {
 
                             HStack {
                                 HStack(spacing: 6) {
-                                    Image(systemName: didExtract ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                        .foregroundColor(didExtract ? .green : .orange)
-                                    Text(didExtract ? L10n.GameOver.extractionBonus : L10n.GameOver.deathPenalty)
+                                    Image(systemName: victory ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                        .foregroundColor(victory ? .green : .orange)
+                                    Text(victory ? L10n.GameOver.victory : L10n.GameOver.defeat)
                                 }
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(didExtract ? .green : .orange)
+                                .foregroundColor(victory ? .green : .orange)
 
                                 Spacer()
 
                                 Text("+Ħ\(finalHashReward)")
                                     .font(.system(size: 24, weight: .bold, design: .monospaced))
-                                    .foregroundColor(didExtract ? .green : .orange)
+                                    .foregroundColor(victory ? .green : .orange)
                             }
 
                         }

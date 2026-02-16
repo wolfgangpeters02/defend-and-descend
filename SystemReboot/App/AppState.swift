@@ -19,8 +19,7 @@ class AppState: ObservableObject {
     @Published var pendingOfflineEarnings: OfflineEarningsResult?
     @Published var showWelcomeBack: Bool = false
 
-    // FTUE (First Time User Experience)
-    @Published var showIntroSequence: Bool = false
+    // FTUE (First Time User Experience) — camera tutorial handled in MotherboardView
 
     // Game Reset Signal (for resetting embedded game controllers)
     @Published var tdResetRequested: Bool = false
@@ -36,11 +35,8 @@ class AppState: ObservableObject {
     private init() {
         self.currentPlayer = StorageService.shared.getOrCreateDefaultPlayer()
 
-        // Check if we should show intro sequence for new players
-        if !currentPlayer.hasCompletedIntro {
-            showIntroSequence = true
-        } else {
-            // Only check offline earnings for returning players
+        // Check offline earnings for returning players (new players get camera tutorial in MotherboardView)
+        if currentPlayer.hasCompletedIntro {
             checkOfflineEarnings()
         }
     }
@@ -183,17 +179,15 @@ class AppState: ObservableObject {
         }
     }
 
-    /// Record survivor run result with unified progression
+    /// Record survivor/boss run result with unified progression
     /// - hashEarned: Actual Hash collected during session (from SessionStats)
-    /// - extracted: True if player extracted (100% reward), false if died (50% reward)
     func recordSurvivorRun(
         time: TimeInterval,
         kills: Int,
         sessionHash: Int,
         gameMode: GameMode,
         victory: Bool,
-        hashEarned: Int = 0,
-        extracted: Bool = false
+        hashEarned: Int = 0
     ) {
         updatePlayer { profile in
             GameRewardService.applySurvivorResult(
@@ -202,8 +196,7 @@ class AppState: ObservableObject {
                 kills: kills,
                 gameMode: gameMode,
                 victory: victory,
-                hashEarned: hashEarned,
-                extracted: extracted
+                hashEarned: hashEarned
             )
         }
     }

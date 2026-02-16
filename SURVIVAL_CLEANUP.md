@@ -69,7 +69,8 @@ Also remove from **GlobalUpgrades.swift**:
 
 Check if `GameStateFactory.createDebugGameState()` in `GameState.swift` is still called anywhere after DebugGameView is gone. If not, remove it too.
 
-### Stage 3: Remove survival-only types from shared files [TODO]
+### Stage 3: Remove survival-only types from shared files [DONE]
+Removed SurvivalEventType, SurvivalEventData, WeaponID enums; removed activeEvent/eventEndTime/eventData from GameState; removed extractionAvailable/extracted/finalHashReward from SessionStats; cleaned DebugOverlay, GameContainerView, AppState, GameRewardService, and UpgradeSystem.
 
 In **GameTypes.swift**:
 
@@ -181,7 +182,7 @@ Global sweep:
 
 - [x] Stage 1: Survival system files deleted
 - [x] Stage 2: DebugGameView and debug arenas removed
-- [ ] Stage 3: Survival types cleaned from shared files
+- [x] Stage 3: Survival types cleaned from shared files
 - [ ] Stage 4: Survival UI and reward code cleaned
 - [ ] Stage 5: Balance config and L10n cleaned
 - [ ] Stage 6: Player profile fields cleaned

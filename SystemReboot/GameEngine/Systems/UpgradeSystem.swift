@@ -5,12 +5,12 @@ import CoreGraphics
 
 class UpgradeSystem {
 
-    // Rarity weights
+    // Rarity weights (from BalanceConfig)
     private static let rarityWeights: [(rarity: Rarity, weight: Double)] = [
-        (.common, 60),
-        (.rare, 25),
-        (.epic, 12),
-        (.legendary, 3)
+        (.common, BalanceConfig.UpgradeRarity.commonWeight),
+        (.rare, BalanceConfig.UpgradeRarity.rareWeight),
+        (.epic, BalanceConfig.UpgradeRarity.epicWeight),
+        (.legendary, BalanceConfig.UpgradeRarity.legendaryWeight)
     ]
 
     /// Generate upgrade choices for player selection
@@ -138,8 +138,8 @@ class UpgradeSystem {
 
         case .armor:
             state.player.armor += value
-            // Cap armor at 75%
-            state.player.armor = min(0.75, state.player.armor)
+            // Cap armor at configured maximum
+            state.player.armor = min(BalanceConfig.Player.maxArmor, state.player.armor)
 
         case .pickupRange:
             if isMultiplier {
@@ -251,13 +251,8 @@ class UpgradeSystem {
 
     /// Check if upgrade should trigger
     static func shouldTriggerUpgrade(state: GameState) -> Bool {
-        // Arena mode: every 60 seconds
-        if state.gameMode == .survival {
-            let expectedLevel = Int(state.timeElapsed / BalanceConfig.Timing.upgradeInterval)
-            return expectedLevel > state.upgradeLevel && !state.pendingUpgrade
-        }
-
         // TD mode: no mid-game upgrades (towers are pre-placed)
+        // Boss mode: upgrades come from XP level-ups
         return false
     }
 

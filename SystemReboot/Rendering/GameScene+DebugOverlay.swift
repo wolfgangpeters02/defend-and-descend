@@ -199,20 +199,6 @@ extension GameScene {
             }
         }
 
-        // Survival events
-        if let event = gameState.activeEvent {
-            let remaining = (gameState.eventEndTime ?? 0) - gameState.timeElapsed
-            lines.append(DebugLine(
-                text: String(format: "EVENT: %@  %.1fs", event.rawValue, max(0, remaining)),
-                color: .cyan
-            ))
-        }
-
-        // Extraction
-        if gameState.stats.extractionAvailable {
-            lines.append(DebugLine(text: "EXTRACTION AVAILABLE", color: .green))
-        }
-
         if gameState.isGameOver {
             lines.append(DebugLine(
                 text: gameState.victory ? "*** VICTORY ***" : "*** GAME OVER ***",

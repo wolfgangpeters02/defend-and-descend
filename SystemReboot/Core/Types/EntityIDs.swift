@@ -4,23 +4,7 @@ import Foundation
 // These enums provide compile-time safety for entity lookups.
 // String raw values match JSON config keys exactly.
 
-// MARK: - Weapon IDs (Legacy System)
-
-/// Legacy weapon types from GameConfig.json
-/// Used in the older survivor mode
-enum WeaponID: String, CaseIterable, Codable {
-    case bow
-    case cannon
-    case iceShard = "ice_shard"
-    case laser
-    case staff
-    case bomb
-    case lightning
-    case flamethrower
-    case excalibur
-}
-
-// MARK: - Protocol IDs (New System)
+// MARK: - Protocol IDs
 
 /// Protocol IDs for the unified Protocol system
 /// Used in both TD (as Firewalls) and Active (as Weapons) modes

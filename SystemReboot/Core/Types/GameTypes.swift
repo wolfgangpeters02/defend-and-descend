@@ -94,11 +94,6 @@ struct GameState {
     // Boss encounter
     var bossDifficulty: BossDifficulty?
 
-    // Survival mode events
-    var activeEvent: SurvivalEventType?
-    var eventEndTime: TimeInterval?
-    var eventData: SurvivalEventData?
-
     // Camera
     var camera: Camera?
 
@@ -170,25 +165,6 @@ enum BossDifficulty: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Survival Events
-
-enum SurvivalEventType: String, Codable {
-    case memorySurge       // Speed boost + increased spawns
-    case bufferOverflow    // Arena shrinks temporarily
-    case cacheFlush        // Clears all enemies
-    case thermalThrottle   // Slow movement + damage boost
-    case dataCorruption    // Obstacles become hazards
-    case virusSwarm        // 50 fast weak enemies
-    case systemRestore     // Healing zone spawns
-}
-
-struct SurvivalEventData: Codable {
-    var shrinkAmount: CGFloat?           // For buffer overflow
-    var corruptedObstacles: [String]?    // For data corruption
-    var healingZonePosition: CGPoint?    // For system restore
-    var swarmDirection: CGFloat?         // For virus swarm (angle)
-}
-
 // MARK: - Session Stats
 
 struct SessionStats {
@@ -201,17 +177,6 @@ struct SessionStats {
 
     // Economy - Hash (Ħ) earned this session (includes time bonus + pickups)
     var hashEarned: Int = 0              // Running total of Hash earned
-    var extractionAvailable: Bool = false // True after 3 minutes survival
-    var extracted: Bool = false           // True if player chose to extract
-
-    /// Calculate final Hash reward based on exit type
-    func finalHashReward() -> Int {
-        if extracted {
-            return hashEarned  // 100% on extraction
-        } else {
-            return hashEarned / 2  // 50% on death
-        }
-    }
 }
 
 // MARK: - Potions

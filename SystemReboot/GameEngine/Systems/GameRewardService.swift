@@ -53,15 +53,15 @@ struct GameRewardService {
 
     // MARK: - Survivor Rewards
 
-    /// Calculate XP and Hash rewards for a Survivor (arena/dungeon) run
-    static func calculateSurvivorRewards(kills: Int, time: TimeInterval, victory: Bool, extracted: Bool, hashEarned: Int) -> SurvivorRewardResult {
+    /// Calculate XP and Hash rewards for a boss run
+    static func calculateSurvivorRewards(kills: Int, time: TimeInterval, victory: Bool, hashEarned: Int) -> SurvivorRewardResult {
         let xp = kills
             + Int(time / BalanceConfig.SurvivorRewards.xpPerTimePeriod)
-            + (victory || extracted ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
+            + (victory ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
 
         let hash: Int
         if hashEarned > 0 {
-            hash = extracted ? hashEarned : Int(CGFloat(hashEarned) * BalanceConfig.SurvivorRewards.deathHashPenalty)
+            hash = victory ? hashEarned : Int(CGFloat(hashEarned) * BalanceConfig.SurvivorRewards.deathHashPenalty)
         } else {
             // Legacy fallback
             let hashFromKills = kills / BalanceConfig.SurvivorRewards.legacyHashPerKills
@@ -73,8 +73,8 @@ struct GameRewardService {
         return SurvivorRewardResult(xpReward: xp, hashReward: hash)
     }
 
-    /// Record a survivor run onto a player profile (stats + rewards + level-up)
-    static func applySurvivorResult(to profile: inout PlayerProfile, time: TimeInterval, kills: Int, gameMode: GameMode, victory: Bool, hashEarned: Int, extracted: Bool) {
+    /// Record a boss run onto a player profile (stats + rewards + level-up)
+    static func applySurvivorResult(to profile: inout PlayerProfile, time: TimeInterval, kills: Int, gameMode: GameMode, victory: Bool, hashEarned: Int) {
         profile.totalRuns += 1
         profile.totalKills += kills
         if time > profile.bestTime { profile.bestTime = time }
@@ -96,7 +96,7 @@ struct GameRewardService {
         }
 
         // Rewards
-        let rewards = calculateSurvivorRewards(kills: kills, time: time, victory: victory, extracted: extracted, hashEarned: hashEarned)
+        let rewards = calculateSurvivorRewards(kills: kills, time: time, victory: victory, hashEarned: hashEarned)
         profile.xp += rewards.xpReward
         profile.addHash(rewards.hashReward)
 
