@@ -43,13 +43,13 @@ extension TowerAnimations {
 
         // Archetype-specific enhanced effects
         switch archetype {
-        case .artillery:
+        case .payload:
             playArtilleryMuzzleFlash(barrel: barrel, color: color)
-        case .beam:
+        case .rootkit:
             playBeamMuzzleFlash(barrel: barrel, color: color)
-        case .tesla:
+        case .overload:
             playTeslaMuzzleFlash(barrel: barrel, color: color)
-        case .frost:
+        case .cryowall:
             playFrostMuzzleFlash(barrel: barrel, color: color)
         default:
             // Standard flash for other archetypes

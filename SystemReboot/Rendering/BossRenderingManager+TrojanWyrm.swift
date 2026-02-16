@@ -142,20 +142,10 @@ extension BossRenderingManager {
             // Clean up main body in Phase 3 and reset history
             wyrmHeadHistory.removeAll()
             for i in 0..<BalanceConfig.TrojanWyrm.segmentCount {
-                let nodeKey = "trojanwyrm_seg_\(i)"
-                if let node = bossMechanicNodes[nodeKey] {
-                    node.removeFromParent()
-                    bossMechanicNodes.removeValue(forKey: nodeKey)
-                }
+                removeBossNode(key: "trojanwyrm_seg_\(i)")
             }
-            if let node = bossMechanicNodes["trojanwyrm_head"] {
-                node.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: "trojanwyrm_head")
-            }
-            if let node = bossMechanicNodes["trojanwyrm_tailwisp"] {
-                node.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: "trojanwyrm_tailwisp")
-            }
+            removeBossNode(key: "trojanwyrm_head")
+            removeBossNode(key: "trojanwyrm_tailwisp")
         }
 
         // Phase 3: Render sub-worms with enhanced visuals
@@ -237,16 +227,9 @@ extension BossRenderingManager {
             let swCleanupCount = max(BalanceConfig.TrojanWyrm.subWormCount, 8)  // Safe upper bound
             let swBodyCleanup = max(BalanceConfig.TrojanWyrm.subWormBodyCount, 8)
             for wi in 0..<swCleanupCount {
-                if let node = bossMechanicNodes["trojanwyrm_sw_\(wi)_head"] {
-                    node.removeFromParent()
-                    bossMechanicNodes.removeValue(forKey: "trojanwyrm_sw_\(wi)_head")
-                }
+                removeBossNode(key: "trojanwyrm_sw_\(wi)_head")
                 for si in 0..<swBodyCleanup {
-                    let segKey = "trojanwyrm_sw_\(wi)_seg_\(si)"
-                    if let node = bossMechanicNodes[segKey] {
-                        node.removeFromParent()
-                        bossMechanicNodes.removeValue(forKey: segKey)
-                    }
+                    removeBossNode(key: "trojanwyrm_sw_\(wi)_seg_\(si)")
                 }
             }
         }
@@ -274,10 +257,7 @@ extension BossRenderingManager {
             path.addLine(to: CGPoint(x: playerPos.x, y: arenaH - playerPos.y))
             aimNode.path = path
         } else {
-            if let node = bossMechanicNodes["trojanwyrm_aimline"] {
-                node.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: "trojanwyrm_aimline")
-            }
+            removeBossNode(key: "trojanwyrm_aimline")
         }
     }
 }

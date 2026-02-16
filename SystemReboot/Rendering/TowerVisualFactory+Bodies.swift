@@ -9,19 +9,19 @@ extension TowerVisualFactory {
 
     static func createTowerBody(archetype: TowerArchetype, protocolId: String, color: UIColor, rarity: RarityTier) -> SKShapeNode {
         switch archetype {
-        case .projectile:
+        case .scanner:
             return createReticleBody(color: color, rarity: rarity)
-        case .artillery:
+        case .payload:
             return createArtilleryBody(color: color, rarity: rarity)
-        case .frost:
+        case .cryowall:
             return createCrystalBody(color: color, rarity: rarity)
-        case .beam:
+        case .rootkit:
             return createEmitterBody(color: color, rarity: rarity)
-        case .tesla:
+        case .overload:
             return createTeslaBody(color: color, rarity: rarity)
-        case .multishot:
+        case .forkbomb:
             return createReplicatorBody(color: color, rarity: rarity)
-        case .execute:
+        case .exception:
             return createExceptionBody(color: color)
         }
     }

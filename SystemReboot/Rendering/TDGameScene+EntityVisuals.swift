@@ -61,7 +61,7 @@ extension TDGameScene {
         // Remove old projectile nodes and trails (Set lookup: O(1) per node)
         let activeProjectileIds = Set(state.projectiles.map { $0.id })
         for (id, node) in projectileNodes where !activeProjectileIds.contains(id) {
-            tdNodePool.release(node, type: "td_projectile")
+            tdNodePool.release(node, type: .tdProjectile)
             projectileNodes.removeValue(forKey: id)
             projectileTrails.removeValue(forKey: id)
         }
@@ -77,7 +77,7 @@ extension TDGameScene {
                 updateProjectileTrail(projId: proj.id, position: scenePos, color: UIColor(hex: proj.color) ?? .yellow)
             } else {
                 // Acquire from pool (reuses nodes instead of alloc/dealloc)
-                let container = tdNodePool.acquire(type: "td_projectile") {
+                let container = tdNodePool.acquire(type: .tdProjectile) {
                     let c = SKNode()
                     let projectile = SKShapeNode(circleOfRadius: BalanceConfig.Towers.projectileHitboxRadius)
                     projectile.strokeColor = .white

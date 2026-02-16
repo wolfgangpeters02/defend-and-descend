@@ -10,32 +10,32 @@ final class TowerVisualFactory {
     // MARK: - Tower Archetype
 
     enum TowerArchetype {
-        case projectile     // TraceRoute, KernelPulse - Targeting reticle
-        case artillery      // BurstProtocol - Heavy platform
-        case frost          // IceShard - Crystalline spire
-        case beam           // RootAccess - Tech emitter
-        case tesla          // Overflow - Tesla coil
-        case multishot      // ForkBomb - Replication array
-        case execute        // NullPointer - System exception
+        case scanner        // TraceRoute, KernelPulse - Targeting reticle
+        case payload        // BurstProtocol - Heavy platform
+        case cryowall       // IceShard - Crystalline spire
+        case rootkit        // RootAccess - Tech emitter
+        case overload       // Overflow - Tesla coil
+        case forkbomb       // ForkBomb - Replication array
+        case exception      // NullPointer - System exception
 
         static func from(protocolId: String) -> TowerArchetype {
             switch protocolId.lowercased() {
             case "trace_route", "kernel_pulse":
-                return .projectile
+                return .scanner
             case "burst_protocol":
-                return .artillery
+                return .payload
             case "ice_shard":
-                return .frost
+                return .cryowall
             case "root_access":
-                return .beam
+                return .rootkit
             case "overflow":
-                return .tesla
+                return .overload
             case "fork_bomb":
-                return .multishot
+                return .forkbomb
             case "null_pointer":
-                return .execute
+                return .exception
             default:
-                return .projectile
+                return .scanner
             }
         }
     }
@@ -146,41 +146,41 @@ final class TowerVisualFactory {
         let container = SKNode()
 
         switch archetype {
-        case .projectile:
+        case .scanner:
             // Octagonal tech platform with circuit traces
             let platform = createOctagonPlatform(radius: 18, color: color)
             container.addChild(platform)
             addCircuitTraces(to: container, style: .targeting, color: color)
 
-        case .artillery:
+        case .payload:
             // Reinforced square platform with corner bolts
             let platform = createReinforcedSquare(size: 36, color: color)
             container.addChild(platform)
             addCornerBolts(to: container, size: 36, color: color)
 
-        case .frost:
+        case .cryowall:
             // Crystalline base with frost emanation
             let platform = createCrystalBase(size: 32, color: color)
             container.addChild(platform)
             addFrostParticles(to: container, color: color)
 
-        case .beam:
+        case .rootkit:
             // Tech grid platform with capacitor nodes
             let platform = createTechGrid(size: 32, color: color)
             container.addChild(platform)
             addCapacitorNodes(to: container, color: color)
 
-        case .tesla:
+        case .overload:
             // Insulator base with coil foundation
             let platform = createInsulatorBase(radius: 18, color: color)
             container.addChild(platform)
 
-        case .multishot:
+        case .forkbomb:
             // Server rack style base
             let platform = createServerRackBase(size: 32, color: color)
             container.addChild(platform)
 
-        case .execute:
+        case .exception:
             // Corrupted/glitched platform
             let platform = createCorruptedPlatform(size: 30, color: color)
             container.addChild(platform)
@@ -193,19 +193,19 @@ final class TowerVisualFactory {
 
     private static func createTowerBarrel(archetype: TowerArchetype, protocolId: String, color: UIColor) -> SKSpriteNode {
         switch archetype {
-        case .projectile:
+        case .scanner:
             return createPrecisionBarrel(color: color)
-        case .artillery:
+        case .payload:
             return createHeavyBarrel(color: color)
-        case .frost:
+        case .cryowall:
             return createCrystalEmitter(color: color)
-        case .beam:
+        case .rootkit:
             return createLensArray(color: color)
-        case .tesla:
+        case .overload:
             return createTeslaAntenna(color: color)
-        case .multishot:
+        case .forkbomb:
             return createMultiEmitter(color: color)
-        case .execute:
+        case .exception:
             return createExceptionEmitter(color: color)
         }
     }

@@ -1,5 +1,44 @@
 import SpriteKit
 
+// MARK: - Node Pool Type
+
+/// Type-safe keys for the node pool, preventing typos and mismatches.
+enum NodePoolType: Hashable {
+    // Standard entity types
+    case enemy
+    case projectile
+    case tdProjectile
+
+    case pickup
+    case particle
+
+    // Boss mechanic types
+    case bossPuddle
+    case bossLaser
+    case bossZone
+    case bossPylon
+    case bossRift
+    case bossWell
+    case bossMisc
+
+    var key: String {
+        switch self {
+        case .enemy: return "enemy"
+        case .projectile: return "projectile"
+        case .tdProjectile: return "td_projectile"
+        case .pickup: return "pickup"
+        case .particle: return "particle"
+        case .bossPuddle: return "boss_puddle"
+        case .bossLaser: return "boss_laser"
+        case .bossZone: return "boss_zone"
+        case .bossPylon: return "boss_pylon"
+        case .bossRift: return "boss_rift"
+        case .bossWell: return "boss_well"
+        case .bossMisc: return "boss_misc"
+        }
+    }
+}
+
 // MARK: - Node Pool
 
 /// A pool for reusing SpriteKit nodes to reduce allocation overhead.
@@ -23,20 +62,17 @@ class NodePool {
     // MARK: - Pre-warming
 
     /// Pre-create nodes for a type during loading screens to avoid runtime allocation spikes.
-    /// - Parameters:
-    ///   - type: Type key for the node
-    ///   - count: Number of nodes to pre-create
-    ///   - creator: Factory function to create each node
-    func prewarm(type: String, count: Int, creator: () -> SKNode) {
-        if available[type] == nil {
-            available[type] = []
+    func prewarm(type: NodePoolType, count: Int, creator: () -> SKNode) {
+        let key = type.key
+        if available[key] == nil {
+            available[key] = []
         }
-        let currentCount = available[type]?.count ?? 0
+        let currentCount = available[key]?.count ?? 0
         let toCreate = min(count - currentCount, maxPerType - currentCount)
         guard toCreate > 0 else { return }
         for _ in 0..<toCreate {
             let node = creator()
-            available[type]?.append(node)
+            available[key]?.append(node)
         }
     }
 
@@ -44,13 +80,14 @@ class NodePool {
 
     /// Acquire a node of the specified type.
     /// - Parameters:
-    ///   - type: Type key for the node (e.g., "enemy_basic", "projectile")
+    ///   - type: Type-safe pool key
     ///   - creator: Factory function to create a new node if none available
     /// - Returns: A node ready for use
-    func acquire(type: String, creator: () -> SKNode) -> SKNode {
-        if var nodes = available[type], let node = nodes.popLast() {
-            available[type] = nodes
-            inUseCount[type, default: 0] += 1
+    func acquire(type: NodePoolType, creator: () -> SKNode) -> SKNode {
+        let key = type.key
+        if var nodes = available[key], let node = nodes.popLast() {
+            available[key] = nodes
+            inUseCount[key, default: 0] += 1
 
             // Reset node state for reuse
             node.alpha = 1.0
@@ -69,40 +106,33 @@ class NodePool {
 
         // Create new node
         let node = creator()
-        inUseCount[type, default: 0] += 1
+        inUseCount[key, default: 0] += 1
         return node
     }
 
     /// Release a node back to the pool.
-    /// - Parameters:
-    ///   - node: The node to release
-    ///   - type: Type key for the node
-    func release(_ node: SKNode, type: String) {
+    func release(_ node: SKNode, type: NodePoolType) {
+        let key = type.key
         node.removeFromParent()
         node.removeAllActions()
 
         // Guard against negative counts (double-release or mismatched type keys)
-        let current = inUseCount[type, default: 0]
-        inUseCount[type] = max(current - 1, 0)
+        let current = inUseCount[key, default: 0]
+        inUseCount[key] = max(current - 1, 0)
 
-        if available[type] == nil {
-            available[type] = []
+        if available[key] == nil {
+            available[key] = []
         }
 
-        if (available[type]?.count ?? 0) < maxPerType {
-            available[type]?.append(node)
+        if (available[key]?.count ?? 0) < maxPerType {
+            available[key]?.append(node)
         }
         // If pool is full, node is discarded
     }
 
-    /// Release all nodes of a specific type that match a predicate.
-    /// - Parameters:
-    ///   - type: Type key for the nodes
-    ///   - nodes: Dictionary of id -> node
-    ///   - activeIds: Set of IDs that should remain active
-    /// - Returns: Updated dictionary with only active nodes
+    /// Release all nodes of a specific type that are no longer active.
     func releaseInactive(
-        type: String,
+        type: NodePoolType,
         nodes: inout [String: SKNode],
         activeIds: Set<String>
     ) {
@@ -115,13 +145,13 @@ class NodePool {
     // MARK: - Stats
 
     /// Get the number of available nodes for a type.
-    func availableCount(for type: String) -> Int {
-        return available[type]?.count ?? 0
+    func availableCount(for type: NodePoolType) -> Int {
+        return available[type.key]?.count ?? 0
     }
 
     /// Get the number of in-use nodes for a type.
-    func inUseCount(for type: String) -> Int {
-        return inUseCount[type] ?? 0
+    func inUseCount(for type: NodePoolType) -> Int {
+        return inUseCount[type.key] ?? 0
     }
 
     /// Total available nodes across all types.
@@ -150,7 +180,7 @@ extension NodePool {
             return node
         }
 
-        let node = acquire(type: "enemy") {
+        let node = acquire(type: .enemy) {
             renderer.createEnemyNode(enemy: enemy)
         }
         existing[id] = node
@@ -168,7 +198,7 @@ extension NodePool {
             return node
         }
 
-        let node = acquire(type: "projectile") {
+        let node = acquire(type: .projectile) {
             renderer.createProjectileNode(projectile: projectile)
         }
         existing[id] = node
@@ -186,8 +216,7 @@ extension NodePool {
             return node
         }
 
-        let type = "pickup_\(pickup.type.rawValue)"
-        let node = acquire(type: type) {
+        let node = acquire(type: .pickup) {
             renderer.createPickupNode(pickup: pickup)
         }
         existing[id] = node
@@ -205,44 +234,10 @@ extension NodePool {
             return node
         }
 
-        let type = "particle_\(particle.type.rawValue)"
-        let node = acquire(type: type) {
+        let node = acquire(type: .particle) {
             renderer.createParticleNode(particle: particle)
         }
         existing[id] = node
         return node
-    }
-
-    // MARK: - Boss Mechanic Node Pooling
-
-    /// Acquire or reuse a boss mechanic node (puddles, lasers, zones, etc.)
-    func acquireBossMechanicNode(
-        id: String,
-        type: String,
-        existing: inout [String: SKNode],
-        creator: () -> SKNode
-    ) -> SKNode {
-        if let node = existing[id] {
-            return node
-        }
-
-        let node = acquire(type: "boss_\(type)", creator: creator)
-        existing[id] = node
-        return node
-    }
-
-    /// Release boss mechanic nodes that are no longer active.
-    func releaseBossMechanicNodes(
-        type: String,
-        nodes: inout [String: SKNode],
-        activeIds: Set<String>
-    ) {
-        let keysToRemove = nodes.keys.filter { !activeIds.contains($0) }
-        for key in keysToRemove {
-            if let node = nodes[key] {
-                release(node, type: "boss_\(type)")
-                nodes.removeValue(forKey: key)
-            }
-        }
     }
 }

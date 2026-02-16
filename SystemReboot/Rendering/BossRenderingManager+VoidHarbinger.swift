@@ -53,7 +53,7 @@ extension BossRenderingManager {
         let zonePrefix = "voidharbinger_zone_"
         for key in findKeysToRemove(prefix: zonePrefix, activeIds: activeZoneIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: "boss_zone")
+                nodePool.release(node, type: .bossZone)
             }
             let zoneId = String(key.dropFirst(zonePrefix.count))
             zonePhaseCache.removeValue(forKey: zoneId)
@@ -114,7 +114,7 @@ extension BossRenderingManager {
         // Remove destroyed pylons
         for key in findKeysToRemove(prefix: "voidharbinger_pylon_", activeIds: activePylonIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: "boss_pylon")
+                nodePool.release(node, type: .bossPylon)
             }
             bossMechanicNodes.removeValue(forKey: key)
         }
@@ -173,10 +173,7 @@ extension BossRenderingManager {
                 bossMechanicNodes[shieldKey] = shieldNode
             }
         } else {
-            if let shield = bossMechanicNodes[shieldKey] {
-                shield.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: shieldKey)
-            }
+            removeBossNode(key: shieldKey)
         }
 
         // Render energy lines from pylons to boss (Phase 2)
@@ -222,10 +219,7 @@ extension BossRenderingManager {
 
         // Remove lines for destroyed pylons or when not in Phase 2
         for key in findKeysToRemove(prefix: "voidharbinger_pylonline_", activeIds: activeLineIds) {
-            if let node = bossMechanicNodes[key] {
-                node.removeFromParent()
-            }
-            bossMechanicNodes.removeValue(forKey: key)
+            removeBossNode(key: key)
         }
 
         // Render pylon direction indicators (Phase 2 only)
@@ -303,25 +297,15 @@ extension BossRenderingManager {
                         bossMechanicNodes[arrowKey] = arrowNode
                     }
                 } else {
-                    if let arrow = bossMechanicNodes[arrowKey] {
-                        arrow.removeFromParent()
-                        bossMechanicNodes.removeValue(forKey: arrowKey)
-                    }
+                    removeBossNode(key: arrowKey)
                 }
             }
         } else {
-            let hintKey = "voidharbinger_pylon_hint"
-            if let hint = bossMechanicNodes[hintKey] {
-                hint.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: hintKey)
-            }
+            removeBossNode(key: "voidharbinger_pylon_hint")
 
             let arrowPrefix = "voidharbinger_pylon_arrow_"
             for key in bossMechanicNodes.keys where key.hasPrefix(arrowPrefix) {
-                if let arrow = bossMechanicNodes[key] {
-                    arrow.removeFromParent()
-                }
-                bossMechanicNodes.removeValue(forKey: key)
+                removeBossNode(key: key)
             }
         }
 
@@ -361,7 +345,7 @@ extension BossRenderingManager {
         // Remove rifts that no longer exist
         for key in findKeysToRemove(prefix: "voidharbinger_rift_", activeIds: activeRiftIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: "boss_rift")
+                nodePool.release(node, type: .bossRift)
             }
             bossMechanicNodes.removeValue(forKey: key)
         }
@@ -397,7 +381,7 @@ extension BossRenderingManager {
         // Remove wells that no longer exist
         for key in findKeysToRemove(prefix: "voidharbinger_well_", activeIds: activeWellIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: "boss_well")
+                nodePool.release(node, type: .bossWell)
             }
             bossMechanicNodes.removeValue(forKey: key)
         }
@@ -431,10 +415,7 @@ extension BossRenderingManager {
                 bossMechanicNodes[arenaKey] = arenaNode
             }
         } else {
-            if let node = bossMechanicNodes["voidharbinger_arena"] {
-                node.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: "voidharbinger_arena")
-            }
+            removeBossNode(key: "voidharbinger_arena")
         }
 
         renderPhaseIndicator(phase: bossState.phase, bossType: "voidharbinger", isInvulnerable: bossState.isInvulnerable, gameState: gameState)

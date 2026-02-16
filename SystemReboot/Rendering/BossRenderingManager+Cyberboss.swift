@@ -67,7 +67,7 @@ extension BossRenderingManager {
         let puddlePrefix = "cyberboss_puddle_"
         for key in findKeysToRemove(prefix: puddlePrefix, activeIds: activePuddleIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: "boss_puddle")
+                nodePool.release(node, type: .bossPuddle)
             }
             let puddleId = String(key.dropFirst(puddlePrefix.count))
             puddlePhaseCache.removeValue(forKey: puddleId)
@@ -116,7 +116,7 @@ extension BossRenderingManager {
         // Remove lasers that no longer exist
         for key in findKeysToRemove(prefix: "cyberboss_laser_", activeIds: activeLaserIds) {
             if let node = bossMechanicNodes[key] {
-                nodePool.release(node, type: "boss_laser")
+                nodePool.release(node, type: .bossLaser)
             }
             bossMechanicNodes.removeValue(forKey: key)
         }

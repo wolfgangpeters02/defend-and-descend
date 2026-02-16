@@ -41,11 +41,7 @@ extension BossRenderingManager {
             }
         } else {
             for i in 0..<BalanceConfig.Overclocker.bladeCount {
-                let nodeKey = "overclocker_blade_\(i)"
-                if let node = bossMechanicNodes[nodeKey] {
-                    node.removeFromParent()
-                    bossMechanicNodes.removeValue(forKey: nodeKey)
-                }
+                removeBossNode(key: "overclocker_blade_\(i)")
             }
         }
 
@@ -93,11 +89,7 @@ extension BossRenderingManager {
             }
         } else {
             for i in 0..<BalanceConfig.Overclocker.tileCount {
-                let nodeKey = "overclocker_tile_\(i)"
-                if let node = bossMechanicNodes[nodeKey] {
-                    node.removeFromParent()
-                    bossMechanicNodes.removeValue(forKey: nodeKey)
-                }
+                removeBossNode(key: "overclocker_tile_\(i)")
             }
         }
 
@@ -126,8 +118,7 @@ extension BossRenderingManager {
             // Clean up old steam segments
             let keysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix("overclocker_steam_") && !activeSteamIds.contains(String($0.dropFirst("overclocker_steam_".count))) }
             for key in keysToRemove {
-                bossMechanicNodes[key]?.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: key)
+                removeBossNode(key: key)
             }
         }
 
@@ -150,10 +141,7 @@ extension BossRenderingManager {
             shredderNode.position = CGPoint(x: bossPos.x, y: arenaH - bossPos.y)
             shredderNode.strokeColor = bossState.isSuctionActive ? SKColor.red : SKColor.orange
         } else {
-            if let node = bossMechanicNodes["overclocker_shredder"] {
-                node.removeFromParent()
-                bossMechanicNodes.removeValue(forKey: "overclocker_shredder")
-            }
+            removeBossNode(key: "overclocker_shredder")
         }
 
         updateOverclockerBodyVisuals(phase: bossState.phase, boss: boss, gameState: gameState, isSuctionActive: bossState.isSuctionActive)

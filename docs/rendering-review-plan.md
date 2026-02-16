@@ -292,34 +292,16 @@ Replace per-flash `SKShapeNode` allocation with a pool of 2-3 reusable arc nodes
 
 ---
 
-## Stage 5: Architecture (Structure) -- DONE (5a)
+## Stage 5: Architecture (Structure) -- DONE
 
-Split two oversized rendering files to bring all files under the ~800-line limit per CLAUDE.md rules. Stages 6-11 now work on focused per-boss files instead of a monolith.
+Split oversized files, added type-safe pool keys, standardized boss node lifecycle, renamed archetypes.
 
 **Changes made:**
 - **5a**: Split `BossRenderingManager.swift` (1,608 → ~223 lines) into shared base + 4 boss extensions: `+Cyberboss` (~295), `+VoidHarbinger` (~530), `+Overclocker` (~280), `+TrojanWyrm` (~280)
 - **5a**: Split `TDGameScene+EntityVisuals.swift` (1,390 → ~235 lines) into base (damage events, projectiles, core) + 3 extensions: `+TowerVisuals` (~340), `+EnemyVisuals` (~490), `+LODAndCulling` (~250)
-- No logic changes — pure file splits with identical behavior
-
-### 5b. Use type-safe enums for NodePool keys
-
-Replace string keys (`"enemy"`, `"boss_puddle"`) with an enum to prevent typos and mismatches.
-
-### 5c. Standardize boss mechanic node lifecycle
-
-Ensure all boss mechanic nodes acquired through the pool are released through the pool (not `removeFromParent()` directly).
-
-### 5d. Rename tower archetypes to match game theme
-
-Since the game uses a cybersecurity/computer theme, rename the internal archetype enum:
-- `projectile` -> `scanner` (targeting reticle fits)
-- `artillery` -> `payload` (burst/bomb fits)
-- `frost` -> `cryowall` (ice shard fits)
-- `beam` -> `rootkit` (root access fits)
-- `tesla` -> `overload` (overflow fits)
-- `multishot` -> `forkbomb` (fork bomb fits)
-- `execute` -> `exception` (null pointer fits)
-- Remove dead: `magic`, `pyro`, `legendary`
+- **5b**: Added `NodePoolType` enum with 13 type-safe cases (enemy, projectile, tdProjectile, pickup, particle, bossPuddle, bossLaser, bossZone, bossPylon, bossRift, bossWell, bossMisc). Updated all pool acquire/release/releaseInactive callers. Removed dead `acquireBossMechanicNode`/`releaseBossMechanicNodes` helpers. Fixed pickup/particle pooling mismatch (acquire/release now use same key).
+- **5c**: Added `removeBossNode(key:)` helper and `poolTypeForKey(_:)` to BossRenderingManager. Replaced all 15 `removeFromParent()` + `removeValue(forKey:)` patterns in boss extensions with `removeBossNode(key:)`. Updated `cleanup()` to release through pool.
+- **5d**: Renamed `TowerArchetype` enum cases to match cybersecurity theme: `projectile`→`scanner`, `artillery`→`payload`, `frost`→`cryowall`, `beam`→`rootkit`, `tesla`→`overload`, `multishot`→`forkbomb`, `execute`→`exception`. Updated all 7 switch statements across 6 files. Dead cases `magic`/`pyro`/`legendary` were already absent.
 
 ---
 

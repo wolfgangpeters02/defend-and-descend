@@ -168,8 +168,8 @@ class BossRenderingManager {
     // MARK: - Cleanup
 
     func cleanup() {
-        for (_, node) in bossMechanicNodes {
-            node.removeFromParent()
+        for (key, node) in bossMechanicNodes {
+            nodePool.release(node, type: poolTypeForKey(key))
         }
         bossMechanicNodes.removeAll()
         puddlePhaseCache.removeAll()
@@ -186,18 +186,28 @@ class BossRenderingManager {
         let keysToRemove = bossMechanicNodes.keys.filter { $0.hasPrefix(prefix) }
         for key in keysToRemove {
             if let node = bossMechanicNodes[key] {
-                let poolType: String
-                if key.contains("puddle") { poolType = "boss_puddle" }
-                else if key.contains("laser") { poolType = "boss_laser" }
-                else if key.contains("zone") { poolType = "boss_zone" }
-                else if key.contains("pylon") { poolType = "boss_pylon" }
-                else if key.contains("rift") { poolType = "boss_rift" }
-                else if key.contains("well") { poolType = "boss_well" }
-                else { poolType = "boss_misc" }
-                nodePool.release(node, type: poolType)
+                nodePool.release(node, type: poolTypeForKey(key))
             }
             bossMechanicNodes.removeValue(forKey: key)
         }
+    }
+
+    /// Map a boss mechanic node key to its pool type for proper release.
+    func poolTypeForKey(_ key: String) -> NodePoolType {
+        if key.contains("puddle") { return .bossPuddle }
+        if key.contains("laser") { return .bossLaser }
+        if key.contains("zone") { return .bossZone }
+        if key.contains("pylon") { return .bossPylon }
+        if key.contains("rift") { return .bossRift }
+        if key.contains("well") { return .bossWell }
+        return .bossMisc
+    }
+
+    /// Remove a boss mechanic node by key, releasing it through the pool.
+    func removeBossNode(key: String) {
+        guard let node = bossMechanicNodes[key] else { return }
+        nodePool.release(node, type: poolTypeForKey(key))
+        bossMechanicNodes.removeValue(forKey: key)
     }
 
     // MARK: - Utilities

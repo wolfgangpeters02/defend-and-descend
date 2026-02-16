@@ -179,16 +179,16 @@ extension TDGameScene {
 
         // Use enhanced archetype-specific muzzle flash
         TowerAnimations.playEnhancedMuzzleFlash(node: node, archetype: archetype, color: towerColor)
-        TowerAnimations.playRecoil(node: node, intensity: archetype == .artillery ? 5.0 : 3.0)
+        TowerAnimations.playRecoil(node: node, intensity: archetype == .payload ? 5.0 : 3.0)
 
         // Special effects for certain archetypes
         switch archetype {
-        case .execute:
+        case .exception:
             // Null pointer glitch effect — probability gate (fires ~30% of shots)
             if RandomUtils.randomBool(probability: 0.3) {
                 TowerAnimations.playExecuteEffect(node: node)
             }
-        case .beam:
+        case .rootkit:
             // Sustained beam flash from barrel toward target direction
             TowerAnimations.playBeamLine(
                 node: node,
@@ -196,8 +196,8 @@ extension TDGameScene {
                 range: tower.effectiveRange,
                 rotation: tower.rotation
             )
-        case .tesla:
-            // Tesla arc flash handled by idle animation
+        case .overload:
+            // Overload arc flash handled by idle animation
             break
         default:
             break

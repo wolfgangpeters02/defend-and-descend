@@ -11,7 +11,7 @@ extension TowerVisualFactory {
         let container = SKNode()
 
         switch archetype {
-        case .frost:
+        case .cryowall:
             // Orbiting ice shards
             for i in 0..<3 {
                 let shard = createIceShard(index: i, color: color)
@@ -19,11 +19,11 @@ extension TowerVisualFactory {
                 container.addChild(shard)
             }
 
-        case .tesla:
+        case .overload:
             // Electric arc nodes
             addElectricArcs(to: container, color: color)
 
-        case .execute:
+        case .exception:
             // Glitch artifacts
             addGlitchArtifacts(to: container)
 

@@ -16,19 +16,19 @@ extension TowerAnimations {
 
         // Archetype-specific idle animations
         switch archetype {
-        case .projectile:
+        case .scanner:
             startReticleIdleAnimation(node: node, color: color)
-        case .artillery:
+        case .payload:
             startArtilleryIdleAnimation(node: node, color: color)
-        case .frost:
+        case .cryowall:
             startFrostIdleAnimation(node: node, color: color)
-        case .beam:
+        case .rootkit:
             startBeamIdleAnimation(node: node, color: color)
-        case .tesla:
+        case .overload:
             startTeslaIdleAnimation(node: node, color: color)
-        case .multishot:
+        case .forkbomb:
             startMultishotIdleAnimation(node: node, color: color)
-        case .execute:
+        case .exception:
             startExecuteIdleAnimation(node: node, color: color)
         }
 

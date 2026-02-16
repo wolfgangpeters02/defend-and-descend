@@ -136,7 +136,7 @@ extension GameScene {
         }
 
         // Release unused nodes back to pool (Phase 5)
-        nodePool.releaseInactive(type: "enemy", nodes: &enemyNodes, activeIds: activeIds)
+        nodePool.releaseInactive(type: .enemy, nodes: &enemyNodes, activeIds: activeIds)
     }
 
     func renderProjectiles() {
@@ -166,7 +166,7 @@ extension GameScene {
         }
 
         // Release unused nodes back to pool (Phase 5)
-        nodePool.releaseInactive(type: "projectile", nodes: &projectileNodes, activeIds: activeIds)
+        nodePool.releaseInactive(type: .projectile, nodes: &projectileNodes, activeIds: activeIds)
     }
 
     func renderPickups() {
@@ -196,7 +196,7 @@ extension GameScene {
         }
 
         // Release unused nodes back to pool (Phase 5)
-        nodePool.releaseInactive(type: "pickup", nodes: &pickupNodes, activeIds: activeIds)
+        nodePool.releaseInactive(type: .pickup, nodes: &pickupNodes, activeIds: activeIds)
     }
 
     func renderParticles() {
@@ -237,7 +237,7 @@ extension GameScene {
         }
 
         // Release unused nodes back to pool (Phase 5)
-        nodePool.releaseInactive(type: "particle", nodes: &particleNodes, activeIds: activeIds)
+        nodePool.releaseInactive(type: .particle, nodes: &particleNodes, activeIds: activeIds)
     }
 
     // MARK: - Pillar Rendering (Boss Mode)
