@@ -18,31 +18,35 @@ class BossRenderingManager {
     // MARK: - Cached SKActions (avoid recreating every frame)
 
     lazy var laserFlickerAction: SKAction = {
-        SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.8, duration: 0.08),
-            SKAction.fadeAlpha(to: 1.0, duration: 0.08)
-        ])
+        let down = SKAction.fadeAlpha(to: 0.8, duration: 0.08)
+        down.timingMode = .easeOut
+        let up = SKAction.fadeAlpha(to: 1.0, duration: 0.08)
+        up.timingMode = .easeIn
+        return SKAction.sequence([down, up])
     }()
 
     lazy var puddlePulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.15, duration: 0.3),
-            SKAction.scale(to: 1.0, duration: 0.3)
-        ])
+        let up = SKAction.scale(to: 1.15, duration: 0.3)
+        up.timingMode = .easeInEaseOut
+        let down = SKAction.scale(to: 1.0, duration: 0.3)
+        down.timingMode = .easeInEaseOut
+        return SKAction.sequence([up, down])
     }()
 
     lazy var voidZonePulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.4),
-            SKAction.scale(to: 1.0, duration: 0.4)
-        ])
+        let up = SKAction.scale(to: 1.1, duration: 0.4)
+        up.timingMode = .easeInEaseOut
+        let down = SKAction.scale(to: 1.0, duration: 0.4)
+        down.timingMode = .easeInEaseOut
+        return SKAction.sequence([up, down])
     }()
 
     lazy var pylonCrystalPulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.2, duration: 0.5),
-            SKAction.scale(to: 1.0, duration: 0.5)
-        ])
+        let up = SKAction.scale(to: 1.2, duration: 0.5)
+        up.timingMode = .easeInEaseOut
+        let down = SKAction.scale(to: 1.0, duration: 0.5)
+        down.timingMode = .easeInEaseOut
+        return SKAction.sequence([up, down])
     }()
 
     lazy var gravityWellRotateAction: SKAction = {
@@ -50,10 +54,11 @@ class BossRenderingManager {
     }()
 
     lazy var arenaBoundaryPulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.fadeAlpha(to: 0.5, duration: 0.5),
-            SKAction.fadeAlpha(to: 1.0, duration: 0.5)
-        ])
+        let down = SKAction.fadeAlpha(to: 0.5, duration: 0.5)
+        down.timingMode = .easeInEaseOut
+        let up = SKAction.fadeAlpha(to: 1.0, duration: 0.5)
+        up.timingMode = .easeInEaseOut
+        return SKAction.sequence([down, up])
     }()
 
     lazy var chainsawRotateAction: SKAction = {
@@ -61,10 +66,11 @@ class BossRenderingManager {
     }()
 
     lazy var chainsawDangerPulseAction: SKAction = {
-        SKAction.sequence([
-            SKAction.scale(to: 1.1, duration: 0.2),
-            SKAction.scale(to: 1.0, duration: 0.2)
-        ])
+        let up = SKAction.scale(to: 1.1, duration: 0.2)
+        up.timingMode = .easeInEaseOut
+        let down = SKAction.scale(to: 1.0, duration: 0.2)
+        down.timingMode = .easeInEaseOut
+        return SKAction.sequence([up, down])
     }()
 
     // MARK: - State Caching
@@ -80,6 +86,11 @@ class BossRenderingManager {
     var cachedCyberbossPhase: Int = -1
     var cachedVoidHarbingerPhase: Int = -1
     var cachedOverclockerPhase: Int = -1
+
+    /// Head position history for smooth Trojan Wyrm trailing (scene coordinates).
+    var wyrmHeadHistory: [CGPoint] = []
+    /// Frames of spacing between each body segment in the history buffer.
+    let wyrmHistorySpacing: Int = 3
 
     // MARK: - Configuration
 
@@ -133,6 +144,7 @@ class BossRenderingManager {
         cachedCyberbossPhase = -1
         cachedVoidHarbingerPhase = -1
         cachedOverclockerPhase = -1
+        wyrmHeadHistory.removeAll()
     }
 
     func cleanupBossNodes(prefix: String) {
@@ -306,7 +318,8 @@ class BossRenderingManager {
                 let laserNode = SKShapeNode(path: path)
                 laserNode.strokeColor = laserColor
                 laserNode.lineWidth = laserWidth
-                laserNode.glowWidth = 0
+                laserNode.glowWidth = 4
+                laserNode.blendMode = .add
                 laserNode.zPosition = 100
                 laserNode.name = nodeKey
                 laserNode.position = CGPoint(x: bossSceneX, y: bossSceneY)
@@ -539,7 +552,7 @@ class BossRenderingManager {
                 if zone.isActive {
                     zoneNode.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.3)
                     zoneNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
-                    zoneNode.glowWidth = 0
+                    zoneNode.glowWidth = 2
                 } else {
                     zoneNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                     zoneNode.strokeColor = DesignColors.warningUI
@@ -655,16 +668,17 @@ class BossRenderingManager {
                 shieldNode.zPosition = 45
                 shieldNode.name = shieldKey
 
-                let shieldPulse = SKAction.sequence([
-                    SKAction.group([
-                        SKAction.scale(to: 1.08, duration: 0.8),
-                        SKAction.fadeAlpha(to: 0.7, duration: 0.8)
-                    ]),
-                    SKAction.group([
-                        SKAction.scale(to: 1.0, duration: 0.8),
-                        SKAction.fadeAlpha(to: 1.0, duration: 0.8)
-                    ])
+                let shieldUp = SKAction.group([
+                    SKAction.scale(to: 1.08, duration: 0.8),
+                    SKAction.fadeAlpha(to: 0.7, duration: 0.8)
                 ])
+                shieldUp.timingMode = .easeInEaseOut
+                let shieldDown = SKAction.group([
+                    SKAction.scale(to: 1.0, duration: 0.8),
+                    SKAction.fadeAlpha(to: 1.0, duration: 0.8)
+                ])
+                shieldDown.timingMode = .easeInEaseOut
+                let shieldPulse = SKAction.sequence([shieldUp, shieldDown])
                 shieldNode.run(SKAction.repeatForever(shieldPulse), withKey: "pulse")
 
                 let rotation = SKAction.rotate(byAngle: .pi * 2, duration: 12)
@@ -703,14 +717,16 @@ class BossRenderingManager {
                     let lineNode = SKShapeNode(path: linePath)
                     lineNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.6)
                     lineNode.lineWidth = 2
-                    lineNode.glowWidth = 0
+                    lineNode.glowWidth = 2
+                    lineNode.blendMode = .add
                     lineNode.zPosition = 40
                     lineNode.name = lineKey
 
-                    let linePulse = SKAction.sequence([
-                        SKAction.fadeAlpha(to: 0.4, duration: 0.3),
-                        SKAction.fadeAlpha(to: 1.0, duration: 0.3)
-                    ])
+                    let lineDown = SKAction.fadeAlpha(to: 0.4, duration: 0.3)
+                    lineDown.timingMode = .easeInEaseOut
+                    let lineUp = SKAction.fadeAlpha(to: 1.0, duration: 0.3)
+                    lineUp.timingMode = .easeInEaseOut
+                    let linePulse = SKAction.sequence([lineDown, lineUp])
                     lineNode.run(SKAction.repeatForever(linePulse), withKey: "pulse")
 
                     scene.addChild(lineNode)
@@ -739,10 +755,11 @@ class BossRenderingManager {
                 hintLabel.zPosition = 200
                 hintLabel.name = hintKey
 
-                let pulse = SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0.5, duration: 0.5),
-                    SKAction.fadeAlpha(to: 1.0, duration: 0.5)
-                ])
+                let hintDown = SKAction.fadeAlpha(to: 0.5, duration: 0.5)
+                hintDown.timingMode = .easeInEaseOut
+                let hintUp = SKAction.fadeAlpha(to: 1.0, duration: 0.5)
+                hintUp.timingMode = .easeInEaseOut
+                let pulse = SKAction.sequence([hintDown, hintUp])
                 hintLabel.run(SKAction.repeatForever(pulse), withKey: "pulse")
 
                 scene.addChild(hintLabel)
@@ -790,10 +807,11 @@ class BossRenderingManager {
                         arrowNode.zPosition = 150
                         arrowNode.name = arrowKey
 
-                        let arrowPulse = SKAction.sequence([
-                            SKAction.scale(to: 1.2, duration: 0.3),
-                            SKAction.scale(to: 1.0, duration: 0.3)
-                        ])
+                        let arrowUp = SKAction.scale(to: 1.2, duration: 0.3)
+                        arrowUp.timingMode = .easeInEaseOut
+                        let arrowDown = SKAction.scale(to: 1.0, duration: 0.3)
+                        arrowDown.timingMode = .easeInEaseOut
+                        let arrowPulse = SKAction.sequence([arrowUp, arrowDown])
                         arrowNode.run(SKAction.repeatForever(arrowPulse), withKey: "pulse")
 
                         scene.addChild(arrowNode)
@@ -881,7 +899,7 @@ class BossRenderingManager {
                 let innerCircle = SKShapeNode(circleOfRadius: 30)
                 innerCircle.fillColor = SKColor.black.withAlphaComponent(0.7)
                 innerCircle.strokeColor = DesignColors.secondaryUI
-                innerCircle.glowWidth = 0
+                innerCircle.glowWidth = 4
                 wellNode.addChild(innerCircle)
 
                 wellNode.run(SKAction.repeatForever(gravityWellRotateAction), withKey: "rotate")
@@ -1224,23 +1242,39 @@ class BossRenderingManager {
             }
         }
 
-        // Heat gauge — color shifts orange to red, lineWidth increases
+        // Heat gauge — arc length, color, and lineWidth escalate per phase
         if let gauge = bossNode.childNode(withName: "heatGauge") as? SKShapeNode {
+            let bossSize = boss.size ?? 60
+            let gaugeRadius = bossSize * 1.15
+
+            // Arc grows per phase: ~180° → ~225° → ~270° → ~315°
+            let endAngle: CGFloat
             switch phase {
             case 1:
                 gauge.strokeColor = heatOrange.withAlphaComponent(0.6)
                 gauge.lineWidth = 3
+                endAngle = -.pi * 0.25   // 180°
             case 2:
                 gauge.strokeColor = heatOrange.withAlphaComponent(0.8)
                 gauge.lineWidth = 4
+                endAngle = -.pi * 0.5    // 225°
             case 3:
                 gauge.strokeColor = UIColor.red.withAlphaComponent(0.8)
                 gauge.lineWidth = 5
+                endAngle = -.pi * 0.75   // 270°
             case 4:
                 gauge.strokeColor = UIColor.red
                 gauge.lineWidth = 6
-            default: break
+                endAngle = -.pi          // 315°
+            default:
+                endAngle = -.pi * 0.25
             }
+
+            let gaugePath = CGMutablePath()
+            gaugePath.addArc(center: .zero, radius: gaugeRadius,
+                             startAngle: .pi * 0.75, endAngle: endAngle,
+                             clockwise: true)
+            gauge.path = gaugePath
         }
 
         // Core clock — spin speed increases per phase
@@ -1305,8 +1339,16 @@ class BossRenderingManager {
         let wyrmDark = SKColor(red: 0, green: 0.6, blue: 0.15, alpha: 1.0)
         let wyrmLime = SKColor(red: 0.53, green: 1, blue: 0, alpha: 1.0)
 
-        // Render body segments (Phase 1, 2, 4)
+        // Render body segments (Phase 1, 2, 4) with position history trailing
         if bossState.phase != 3 {
+            // Record head position for smooth trailing
+            let headScenePos = CGPoint(x: boss.x, y: arenaH - boss.y)
+            wyrmHeadHistory.insert(headScenePos, at: 0)
+            let maxHistory = bossState.segments.count * wyrmHistorySpacing + wyrmHistorySpacing
+            if wyrmHeadHistory.count > maxHistory {
+                wyrmHeadHistory.removeLast(wyrmHeadHistory.count - maxHistory)
+            }
+
             let segCount = bossState.segments.count
             for (i, segment) in bossState.segments.enumerated() {
                 let nodeKey = "trojanwyrm_seg_\(i)"
@@ -1331,7 +1373,13 @@ class BossRenderingManager {
                     bossMechanicNodes[nodeKey] = segNode
                 }
 
-                segNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
+                // Use history-based position for smooth trailing, fallback to game-state
+                let historyIndex = (i + 1) * wyrmHistorySpacing
+                if historyIndex < wyrmHeadHistory.count {
+                    segNode.position = wyrmHeadHistory[historyIndex]
+                } else {
+                    segNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
+                }
 
                 if bossState.phase == 2 && i == bossState.ghostSegmentIndex {
                     segNode.fillColor = SKColor.cyan.withAlphaComponent(0.2)
@@ -1416,7 +1464,8 @@ class BossRenderingManager {
                 }
             }
         } else {
-            // Clean up main body in Phase 3
+            // Clean up main body in Phase 3 and reset history
+            wyrmHeadHistory.removeAll()
             for i in 0..<BalanceConfig.TrojanWyrm.segmentCount {
                 let nodeKey = "trojanwyrm_seg_\(i)"
                 if let node = bossMechanicNodes[nodeKey] {

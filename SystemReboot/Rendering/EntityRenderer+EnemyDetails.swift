@@ -12,7 +12,7 @@ extension EntityRenderer {
     // Nodes: body, membrane ring, nucleus, flagella (compound path) = 4
 
     /// Creates the "Malware Blob" composition for basic virus enemies.
-    /// Simplified: body + nucleus = 2 nodes, no repeating animations.
+    /// Body + nucleus + flagella tendrils = 3 nodes. Tendrils make rotation visible.
     /// - Returns: The body SKShapeNode for animation hookup by the caller.
     @discardableResult
     static func createBasicVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
@@ -31,6 +31,30 @@ extension EntityRenderer {
         nucleus.zPosition = 0.1
         container.addChild(nucleus)
 
+        // Flagella tendrils — 3 wavy appendages (compound path, single node)
+        let flagellaPath = CGMutablePath()
+        for i in 0..<3 {
+            let baseAngle = CGFloat(i) * (2 * .pi / 3) + .pi / 6
+            let startR = size * 0.9
+            let startPt = CGPoint(x: cos(baseAngle) * startR, y: sin(baseAngle) * startR)
+            let midR = size * 1.5
+            let endR = size * 1.9
+            let wobble: CGFloat = size * 0.3
+            flagellaPath.move(to: startPt)
+            flagellaPath.addCurve(
+                to: CGPoint(x: cos(baseAngle) * endR, y: sin(baseAngle) * endR),
+                control1: CGPoint(x: cos(baseAngle) * midR + wobble, y: sin(baseAngle) * midR + wobble),
+                control2: CGPoint(x: cos(baseAngle) * (midR + endR) / 2 - wobble, y: sin(baseAngle) * (midR + endR) / 2)
+            )
+        }
+        let flagella = SKShapeNode(path: flagellaPath)
+        flagella.strokeColor = color.withAlphaComponent(0.5)
+        flagella.lineWidth = 1.5
+        flagella.lineCap = .round
+        flagella.fillColor = .clear
+        flagella.zPosition = -0.1
+        container.addChild(flagella)
+
         return body
     }
 
@@ -39,7 +63,7 @@ extension EntityRenderer {
     // Nodes: body (diamond/chevron), speed lines, core dot, directional arrow = 4
 
     /// Creates the "Packet Runner" composition for fast virus enemies.
-    /// Simplified: body only = 1 node, no animations.
+    /// Body + core dot = 2 nodes. Core dot provides visual center reference.
     @discardableResult
     static func createFastVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
         // Body — elongated diamond/chevron (pointy top, shorter bottom)
@@ -57,6 +81,13 @@ extension EntityRenderer {
         body.name = "body"
         container.addChild(body)
 
+        // Core dot — bright center point for visual clarity at speed
+        let core = SKShapeNode(circleOfRadius: size * 0.2)
+        core.fillColor = color.lighter(by: 0.5)
+        core.strokeColor = .clear
+        core.zPosition = 0.1
+        container.addChild(core)
+
         return body
     }
 
@@ -65,7 +96,7 @@ extension EntityRenderer {
     // Nodes: body (rounded rect), outer armor, armor plates (compound), inner core = 4
 
     /// Creates the "Armored Payload" composition for tank virus enemies.
-    /// Simplified: body + bolts = 2 nodes, no animations.
+    /// Body + bolts + armor seam = 3 nodes.
     @discardableResult
     static func createTankVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
         // Body — rounded rectangle
@@ -95,6 +126,16 @@ extension EntityRenderer {
         plates.zPosition = 0.1
         container.addChild(plates)
 
+        // Armor seam — horizontal weld line across the body
+        let seamPath = CGMutablePath()
+        seamPath.move(to: CGPoint(x: -size * 0.75, y: 0))
+        seamPath.addLine(to: CGPoint(x: size * 0.75, y: 0))
+        let seam = SKShapeNode(path: seamPath)
+        seam.strokeColor = color.darker(by: 0.5).withAlphaComponent(0.6)
+        seam.lineWidth = 1.5
+        seam.zPosition = 0.2
+        container.addChild(seam)
+
         return body
     }
 
@@ -103,14 +144,14 @@ extension EntityRenderer {
     // Nodes: aura ring, body (irregular hex), crosshair, glitch overlay, data fragments = 5
 
     /// Creates the elite virus composition for elite virus enemies.
-    /// Simplified: body + crosshair = 2 nodes, no animations.
+    /// Body + crosshair = 2 nodes. Vertex jitter is randomized per-instance.
     @discardableResult
     static func createEliteVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
-        // Body — irregular hexagon (glitched vertices for "corrupted" look)
+        // Body — irregular hexagon (per-instance randomized vertex jitter for "corrupted" look)
         let bodyPath = CGMutablePath()
         for i in 0..<6 {
             let angle = CGFloat(i) * (.pi / 3) - (.pi / 2)
-            let radiusJitter: CGFloat = (i % 2 == 0) ? size * 1.05 : size * 0.92
+            let radiusJitter = size * CGFloat.random(in: 0.88...1.08)
             let point = CGPoint(x: cos(angle) * radiusJitter, y: sin(angle) * radiusJitter)
             if i == 0 {
                 bodyPath.move(to: point)

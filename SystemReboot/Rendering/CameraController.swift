@@ -291,6 +291,32 @@ class CameraController: NSObject {
         cameraNode.run(SKAction.sequence([action, updateScale]))
     }
 
+    // MARK: - Screen Shake
+
+    /// Shake the camera with decaying intensity. Used for tower destruction, boss attacks, etc.
+    func shake(intensity: CGFloat = 5, duration: TimeInterval = 0.2) {
+        guard let cameraNode = cameraNode else { return }
+
+        let originalPosition = cameraNode.position
+        cameraNode.removeAction(forKey: "shake")
+
+        let shakeCount = Int(duration / 0.02)
+        var shakeActions: [SKAction] = []
+
+        for i in 0..<shakeCount {
+            let decayFactor = 1.0 - (CGFloat(i) / CGFloat(shakeCount))
+            let offsetX = CGFloat.random(in: -intensity...intensity) * decayFactor
+            let offsetY = CGFloat.random(in: -intensity...intensity) * decayFactor
+            shakeActions.append(SKAction.move(to: CGPoint(
+                x: originalPosition.x + offsetX,
+                y: originalPosition.y + offsetY
+            ), duration: 0.02))
+        }
+
+        shakeActions.append(SKAction.move(to: originalPosition, duration: 0.02))
+        cameraNode.run(SKAction.sequence(shakeActions), withKey: "shake")
+    }
+
     /// Animate camera to a position and scale with custom duration (for tutorial sequences)
     func animateTo(position: CGPoint, scale targetScale: CGFloat, duration: TimeInterval, completion: (() -> Void)? = nil) {
         guard let cameraNode = cameraNode else {

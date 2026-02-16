@@ -29,7 +29,7 @@ class ParticleFactory {
     ) {
         // Limit particle count based on current particle count
         let availableSlots = max(0, maxParticles - state.particles.count)
-        let actualCount = min(min(count, 4), availableSlots)
+        let actualCount = min(min(count, 8), availableSlots)
         guard actualCount > 0 else { return }
 
         let now = timestamp(from: state)
@@ -44,7 +44,7 @@ class ParticleFactory {
                 type: .explosion,
                 x: x,
                 y: y,
-                lifetime: Double.random(in: 0.3...0.8),
+                lifetime: Double.random(in: 0.5...1.0),
                 createdAt: now,
                 color: color,
                 size: particleSize,
@@ -77,11 +77,11 @@ class ParticleFactory {
                 type: .blood,
                 x: x,
                 y: y,
-                lifetime: Double.random(in: 0.2...0.4),
+                lifetime: Double.random(in: 0.4...0.7),
                 createdAt: now,
                 color: "#8b0000",
                 size: CGFloat.random(in: 2...5),
-                velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
+                velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed - 40),
                 drag: 0.05
             ))
         }
@@ -156,7 +156,7 @@ class ParticleFactory {
         protocolId: String
     ) {
         // Only spawn trail particles rarely and when under particle budget
-        guard RandomUtils.randomBool(probability: 0.1),
+        guard RandomUtils.randomBool(probability: 0.25),
               canAddParticles(state: state) else { return }
 
         let now = timestamp(from: state)
@@ -167,7 +167,7 @@ class ParticleFactory {
             type: .trail,
             x: x + CGFloat.random(in: -2...2),
             y: y + CGFloat.random(in: -2...2),
-            lifetime: 0.15,
+            lifetime: 0.3,
             createdAt: now,
             color: color,
             size: CGFloat.random(in: 2...4),

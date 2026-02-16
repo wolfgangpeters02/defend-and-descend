@@ -149,7 +149,24 @@ Add a `static func resetCache()` called from scene's `willMove(from:)`.
 
 ---
 
-## Stage 3: Visual Polish (Quality)
+## Stage 3: Visual Polish (Quality) -- DONE
+
+Visual quality improvements across boss effects, enemy detail, particles, beam towers, camera shake, and execute effects.
+
+**Changes made:**
+- **3a**: Restored `glowWidth` on boss lasers (4), energy lines (2), active void zones (2), gravity well cores (4). Added `.add` blending to lasers and energy lines. Kept puddles/chainsaw/pylons/shield/arrows/rifts/arena at 0.
+- **3b**: Added `.easeInEaseOut` timing to all 7 cached pulse actions (puddle, void zone, pylon crystal, arena boundary, chainsaw danger, laser flicker) and 4 inline pulses (shield, pylon line, hint label, arrow).
+- **3c**: Basic virus: added 3 curved flagella tendrils (compound path, 1 node) making rotation visible. Fast virus: added bright core dot. Tank: added horizontal armor seam line. Elite: randomized vertex jitter per-instance (was alternating fixed pattern).
+- **3d**: Overclocker heat gauge arc now grows per phase (~180° → ~225° → ~270° → ~315°) via CGPath rebuild. Cyberboss LED colors were already connected in Stage 2.
+- **3e**: Added `wyrmHeadHistory` position buffer (spacing=3 frames) for smooth snake-like trailing. Body segments position at historical head positions instead of game-state positions. History clears on Phase 3 transition and cleanup.
+- **3f**: Explosion cap raised from 4 to 8 per burst. Explosion lifetime increased (0.5–1.0s from 0.3–0.8s). Blood lifetime increased (0.4–0.7s from 0.2–0.4s) with downward velocity bias (-40). Trail spawn chance raised from 10% to 25%, lifetime from 0.15s to 0.3s.
+- **3g**: Added `TowerAnimations.playBeamLine()` — sustained beam flash from barrel tip in facing direction with `glowWidth=3`, `.add` blending, 0.2s fade-out. Triggered on beam tower fire.
+- **3h**: Added `CameraController.shake(intensity:duration:)` with decaying random offsets (matching boss-mode GameScene pattern) for TD mode use.
+- **3i**: Added 30% probability gate to execute tower glitch effect to match legendary pattern.
+
+**Files changed: 6 files across Rendering/. Build verified clean.**
+
+---
 
 Improvements that upgrade the visual quality toward AAA code-only rendering.
 

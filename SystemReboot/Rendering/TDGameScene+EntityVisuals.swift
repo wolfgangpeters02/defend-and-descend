@@ -236,8 +236,18 @@ extension TDGameScene {
         // Special effects for certain archetypes
         switch archetype {
         case .execute:
-            // Null pointer glitch effect
-            TowerAnimations.playExecuteEffect(node: node)
+            // Null pointer glitch effect — probability gate (fires ~30% of shots)
+            if RandomUtils.randomBool(probability: 0.3) {
+                TowerAnimations.playExecuteEffect(node: node)
+            }
+        case .beam:
+            // Sustained beam flash from barrel toward target direction
+            TowerAnimations.playBeamLine(
+                node: node,
+                color: towerColor,
+                range: tower.effectiveRange,
+                rotation: tower.rotation
+            )
         case .tesla:
             // Tesla arc flash handled by idle animation
             break

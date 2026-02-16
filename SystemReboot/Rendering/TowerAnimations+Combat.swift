@@ -276,6 +276,43 @@ extension TowerAnimations {
         }
     }
 
+    // MARK: - Beam Line
+
+    /// Sustained beam line from barrel tip toward target direction. Fades over 0.2s.
+    static func playBeamLine(node: SKNode, color: UIColor, range: CGFloat, rotation: CGFloat) {
+        guard let barrel = node.childNode(withName: "barrel") else { return }
+
+        // Remove any existing beam to avoid stacking
+        barrel.childNode(withName: "beamLine")?.removeFromParent()
+
+        // Create beam from barrel tip toward target direction
+        let beamLength = range * 0.9
+        let beamPath = CGMutablePath()
+        beamPath.move(to: CGPoint(x: 0, y: 22))  // Barrel tip
+        beamPath.addLine(to: CGPoint(x: 0, y: 22 + beamLength))
+
+        let beam = SKShapeNode(path: beamPath)
+        beam.strokeColor = color
+        beam.lineWidth = 3
+        beam.glowWidth = 3
+        beam.blendMode = .add
+        beam.alpha = 0.8
+        beam.zPosition = 14
+        beam.name = "beamLine"
+        barrel.addChild(beam)
+
+        let fadeOut = SKAction.sequence([
+            SKAction.wait(forDuration: 0.05),
+            SKAction.group([
+                SKAction.fadeOut(withDuration: 0.15),
+                SKAction.run { beam.lineWidth = 1.5 }
+            ]),
+            SKAction.removeFromParent()
+        ])
+        fadeOut.timingMode = .easeOut
+        beam.run(fadeOut)
+    }
+
     // MARK: - Recoil
 
     /// Play recoil animation
