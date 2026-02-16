@@ -323,7 +323,18 @@ Since the game uses a cybersecurity/computer theme, rename the internal archetyp
 
 ---
 
-## Stage 6: Boss Damage & Death Feedback
+## Stage 6: Boss Damage & Death Feedback -- DONE
+
+Added boss hit feedback, death explosion, and removed dead VisualEffects code.
+
+**Changes made:**
+- **6a**: Added `lastKnownBossHealth` tracking in `BossRenderingManager.renderFrame()` — detects per-frame health decrease and triggers cached `damageFlashAction` (alpha 1.0→0.4→1.0, 0.15s) on the boss body node via `withKey: "damageFlash"`
+- **6b**: Added `triggerBossDeathEffects()` in `GameScene+BossRendering` — fires 16-particle explosion in boss theme color (#00ffff cyan / #ff00ff magenta / #ff6600 orange / #00ff41 lime), screen flash (0.25 alpha, 0.3s), screen shake (intensity 8, 0.35s), and boss node scale-up (1.3x) + fade-out before cleanup. Raised `ParticleFactory.createExplosion()` per-call cap from 8 to 16.
+- **6c**: Removed `VisualEffects.swift` entirely (~387 lines) — `VisualEffects` singleton (screen shake/flash/slow-mo/hitstop), 7 dead `ParticleFactory` extension methods (`createLevelUpEffect`, `createVictoryConfetti`, `createLegendaryExplosion`, `createPlayerDeathEffect`, `createFireParticles`, `createIceParticles`, `createLightningParticles`), and unused `DamageNumber`/`DamageNumberManager` types. All were self-referencing dead code with zero external callers.
+
+**Files changed: 4 files (BossRenderingManager.swift, GameScene+BossRendering.swift, ParticleFactory.swift, project.pbxproj) + 1 file removed (VisualEffects.swift). Build verified clean.**
+
+---
 
 The biggest boss fight visual gap: bosses give zero feedback when hit and have no death animation.
 

@@ -73,6 +73,14 @@ class BossRenderingManager {
         return SKAction.sequence([up, down])
     }()
 
+    lazy var damageFlashAction: SKAction = {
+        let down = SKAction.fadeAlpha(to: 0.4, duration: 0.06)
+        down.timingMode = .easeOut
+        let up = SKAction.fadeAlpha(to: 1.0, duration: 0.09)
+        up.timingMode = .easeIn
+        return SKAction.sequence([down, up])
+    }()
+
     // MARK: - State Caching
 
     var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
@@ -83,6 +91,7 @@ class BossRenderingManager {
     weak var enemyLayer: SKNode?
     var cachedBossBodyNode: SKNode?
     var cachedBossEnemy: Enemy?  // Cached per frame to avoid repeated O(n) searches
+    var lastKnownBossHealth: CGFloat = -1
     var cachedCyberbossPhase: Int = -1
     var cachedVoidHarbingerPhase: Int = -1
     var cachedOverclockerPhase: Int = -1
@@ -105,6 +114,14 @@ class BossRenderingManager {
     func renderFrame(gameState: GameState) {
         // Cache boss enemy lookup once per frame (avoids 6 O(n) scans)
         cachedBossEnemy = gameState.enemies.first(where: { $0.isBoss && !$0.isDead })
+
+        // 6a: Detect health decrease and trigger damage flash
+        if let boss = cachedBossEnemy {
+            if lastKnownBossHealth >= 0 && boss.health < lastKnownBossHealth {
+                triggerBossDamageFlash()
+            }
+            lastKnownBossHealth = boss.health
+        }
 
         if let bossState = gameState.cyberbossState {
             renderCyberbossMechanics(bossState: bossState, gameState: gameState)
@@ -131,6 +148,23 @@ class BossRenderingManager {
         }
     }
 
+    // MARK: - Boss Damage Flash
+
+    private func triggerBossDamageFlash() {
+        // Find the boss body node via the cached container
+        if cachedBossBodyNode == nil || cachedBossBodyNode?.parent == nil,
+           let boss = cachedBossEnemy {
+            let bossScenePos = CGPoint(x: boss.x, y: (scene?.size.height ?? 0) - boss.y)
+            cachedBossBodyNode = enemyLayer?.children.first(where: {
+                abs($0.position.x - bossScenePos.x) < 5 && abs($0.position.y - bossScenePos.y) < 5
+            })
+        }
+
+        if let bodyNode = cachedBossBodyNode?.childNode(withName: "body") {
+            bodyNode.run(damageFlashAction, withKey: "damageFlash")
+        }
+    }
+
     // MARK: - Cleanup
 
     func cleanup() {
@@ -141,6 +175,7 @@ class BossRenderingManager {
         puddlePhaseCache.removeAll()
         zonePhaseCache.removeAll()
         cachedBossBodyNode = nil
+        lastKnownBossHealth = -1
         cachedCyberbossPhase = -1
         cachedVoidHarbingerPhase = -1
         cachedOverclockerPhase = -1

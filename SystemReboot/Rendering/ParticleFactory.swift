@@ -29,7 +29,7 @@ class ParticleFactory {
     ) {
         // Limit particle count based on current particle count
         let availableSlots = max(0, maxParticles - state.particles.count)
-        let actualCount = min(min(count, 8), availableSlots)
+        let actualCount = min(min(count, 16), availableSlots)
         guard actualCount > 0 else { return }
 
         let now = timestamp(from: state)

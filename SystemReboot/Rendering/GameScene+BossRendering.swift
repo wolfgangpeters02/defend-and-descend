@@ -81,8 +81,16 @@ extension GameScene {
 
         // Find the boss enemy
         guard let bossIndex = gameState.enemies.firstIndex(where: { $0.isBoss && !$0.isDead }) else {
-            // Boss is dead - trigger victory!
+            // Boss is dead - trigger victory with death effects!
             if !gameState.isGameOver {
+                // Trigger boss death explosion before setting game over
+                if let deadBoss = gameState.enemies.first(where: { $0.isBoss }) {
+                    triggerBossDeathEffects(
+                        boss: deadBoss,
+                        bossType: bossType
+                    )
+                }
+
                 gameState.isGameOver = true
                 gameState.victory = true
             }
@@ -185,6 +193,47 @@ extension GameScene {
                 gameState.enemies[bossIndex] = boss
                 gameState.trojanWyrmState = bossState
             }
+        }
+    }
+
+    // MARK: - Boss Death Effects
+
+    private func triggerBossDeathEffects(boss: Enemy, bossType: BossType) {
+        // Boss-specific theme colors
+        let colorHex: String
+        let flashColor: SKColor
+        switch bossType {
+        case .cyberboss:     colorHex = "#00ffff"; flashColor = SKColor.cyan
+        case .voidHarbinger: colorHex = "#ff00ff"; flashColor = SKColor.magenta
+        case .overclocker:   colorHex = "#ff6600"; flashColor = SKColor.orange
+        case .trojanWyrm:    colorHex = "#00ff41"; flashColor = SKColor.green
+        }
+
+        // 1. Particle explosion at boss position (16 particles in boss color)
+        ParticleFactory.createExplosion(
+            state: &gameState,
+            x: boss.x,
+            y: boss.y,
+            color: colorHex,
+            count: 16,
+            size: 8
+        )
+
+        // 2. Screen flash in boss theme color
+        flashScreen(color: flashColor, intensity: 0.25, duration: 0.3)
+
+        // 3. Screen shake
+        shakeScreen(intensity: 8, duration: 0.35)
+
+        // 4. Scale-up boss node before it's cleaned up
+        let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
+        if let bossNode = enemyLayer.children.first(where: {
+            abs($0.position.x - bossScenePos.x) < 5 && abs($0.position.y - bossScenePos.y) < 5
+        }) {
+            let scaleUp = SKAction.scale(to: 1.3, duration: 0.15)
+            scaleUp.timingMode = .easeOut
+            let fadeOut = SKAction.fadeOut(withDuration: 0.2)
+            bossNode.run(SKAction.group([scaleUp, fadeOut]))
         }
     }
 

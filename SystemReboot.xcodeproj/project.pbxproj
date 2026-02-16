@@ -49,7 +49,7 @@
 		AA000018 /* ProjectileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019 /* ProjectileSystem.swift */; };
 		AA000020 /* PickupSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100021 /* PickupSystem.swift */; };
 		AA000021 /* ParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100022 /* ParticleFactory.swift */; };
-		AA000022 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100023 /* VisualEffects.swift */; };
+
 		AA000024 /* UpgradeSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100025 /* UpgradeSystem.swift */; };
 		AA000026 /* LevelingSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100027 /* LevelingSystem.swift */; };
 		AA000027 /* XPSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100028 /* XPSystem.swift */; };
@@ -204,7 +204,7 @@
 		AA100019 /* ProjectileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectileSystem.swift; sourceTree = "<group>"; };
 		AA100021 /* PickupSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickupSystem.swift; sourceTree = "<group>"; };
 		AA100022 /* ParticleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleFactory.swift; sourceTree = "<group>"; };
-		AA100023 /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
+
 		AA100025 /* UpgradeSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeSystem.swift; sourceTree = "<group>"; };
 		AA100027 /* LevelingSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelingSystem.swift; sourceTree = "<group>"; };
 		AA100028 /* XPSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPSystem.swift; sourceTree = "<group>"; };
@@ -424,7 +424,7 @@
 				ENTRNEDRF01 /* EntityRenderer+EnemyDetails.swift */,
 				ENTRNBDRF01 /* EntityRenderer+BossDetails.swift */,
 				AA100022 /* ParticleFactory.swift */,
-				AA100023 /* VisualEffects.swift */,
+
 				529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */,
 				TDSCNBG00001 /* TDGameScene+Background.swift */,
 				TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */,
@@ -781,7 +781,7 @@
 				AA000018 /* ProjectileSystem.swift in Sources */,
 				AA000020 /* PickupSystem.swift in Sources */,
 				AA000021 /* ParticleFactory.swift in Sources */,
-				AA000022 /* VisualEffects.swift in Sources */,
+
 				AA000024 /* UpgradeSystem.swift in Sources */,
 				AA000026 /* LevelingSystem.swift in Sources */,
 				AA000027 /* XPSystem.swift in Sources */,
