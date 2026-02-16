@@ -96,7 +96,7 @@ struct UpgradeCard: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 4)
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(DesignColors.muted.opacity(0.3))
                     RoundedRectangle(cornerRadius: 4)
                         .fill(Color(hex: component.color) ?? .cyan)
                         .frame(width: geo.size.width * (CGFloat(level) / CGFloat(ComponentLevels.maxLevel)))
@@ -156,6 +156,7 @@ struct UpgradeCard: View {
     private func performUpgrade() {
         guard let upgradeCost = cost, canAfford else { return }
         HapticsService.shared.play(.medium)
+        AnalyticsService.shared.trackComponentUpgraded(component: component.rawValue, fromLevel: level, toLevel: level + 1)
         appState.updatePlayer { profile in
             profile.hash -= upgradeCost
             profile.componentLevels.upgrade(component)

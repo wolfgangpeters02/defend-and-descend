@@ -361,7 +361,7 @@ extension TDGameContainerView {
                         .padding(.vertical, 16)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(canAffordFlush ? Color.cyan : Color.gray.opacity(0.3))
+                                .fill(canAffordFlush ? DesignColors.primary : DesignColors.muted.opacity(0.3))
                         )
                     }
                     .disabled(!canAffordFlush)

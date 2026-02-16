@@ -19,7 +19,7 @@ extension TDGameContainerView {
                         .foregroundColor(.cyan)
                     Text(L10n.TD.protocolsSuspended)
                         .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                 }
 
                 // CPU Upgrade Section
@@ -90,7 +90,7 @@ extension TDGameContainerView {
 
                     Text(gameState?.victory == true ? L10n.TD.threatsNeutralized : L10n.TD.cpuCompromised)
                         .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                 }
 
                 // Stats card
@@ -159,7 +159,7 @@ extension TDGameContainerView {
                 if let desc = status?.description {
                     Text(desc)
                         .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
@@ -171,7 +171,7 @@ extension TDGameContainerView {
                         HStack(spacing: 8) {
                             Text(L10n.Sector.decryptCost)
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray)
+                                .foregroundColor(DesignColors.textSecondary)
 
                             Text("Ħ \(status.unlockCost)")
                                 .font(.system(size: 20, weight: .bold, design: .monospaced))
@@ -182,7 +182,7 @@ extension TDGameContainerView {
                         HStack(spacing: 8) {
                             Text(L10n.Sector.yourBalance)
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray)
+                                .foregroundColor(DesignColors.textSecondary)
 
                             Text("Ħ \(status.currentHash)")
                                 .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -218,7 +218,7 @@ extension TDGameContainerView {
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
                             .foregroundColor(.white)
                             .frame(width: 120, height: 50)
-                            .background(Color.gray.opacity(0.3))
+                            .background(DesignColors.muted.opacity(0.3))
                             .cornerRadius(8)
                     }
 
@@ -231,9 +231,9 @@ extension TDGameContainerView {
                             Text(L10n.Sector.decrypt)
                         }
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundColor(status?.canUnlock == true ? .black : .gray)
+                        .foregroundColor(status?.canUnlock == true ? .black : DesignColors.muted)
                         .frame(width: 140, height: 50)
-                        .background(status?.canUnlock == true ? Color.cyan : Color.gray.opacity(0.3))
+                        .background(status?.canUnlock == true ? DesignColors.primary : DesignColors.muted.opacity(0.3))
                         .cornerRadius(8)
                     }
                     .disabled(status?.canUnlock != true)
@@ -278,7 +278,7 @@ extension TDGameContainerView {
 
                     Text(L10n.Sector.pauseDescription)
                         .font(.system(size: 12, design: .monospaced))
-                        .foregroundColor(.gray)
+                        .foregroundColor(DesignColors.textSecondary)
                 }
 
                 // Sector list
@@ -343,14 +343,14 @@ extension TDGameContainerView {
         return HStack(spacing: 16) {
             // Sector color indicator
             Circle()
-                .fill(isPaused ? Color.gray : themeColor)
+                .fill(isPaused ? DesignColors.muted : themeColor)
                 .frame(width: 12, height: 12)
 
             // Sector name
             VStack(alignment: .leading, spacing: 2) {
                 Text(lane.displayName)
                     .font(.system(size: 16, weight: .semibold, design: .monospaced))
-                    .foregroundColor(isPaused ? .gray : .white)
+                    .foregroundColor(isPaused ? DesignColors.muted : .white)
 
                 Text(isPaused ? L10n.Common.paused : L10n.Common.active)
                     .font(.system(size: 10, weight: .medium, design: .monospaced))

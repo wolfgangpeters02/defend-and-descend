@@ -36,7 +36,7 @@ extension TDGameContainerView {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(DesignColors.muted.opacity(0.3))
                             RoundedRectangle(cornerRadius: 4)
                                 .fill(efficiencyColor)
                                 .frame(width: geo.size.width * efficiency / 100)
@@ -157,7 +157,7 @@ extension TDGameContainerView {
                     .font(.system(size: 14, weight: .medium, design: .monospaced))
                     .foregroundColor(canUpgrade ? .black : DesignColors.textSecondary)
                     .padding()
-                    .background(canUpgrade ? Color.cyan : Color.gray.opacity(0.3))
+                    .background(canUpgrade ? DesignColors.primary : DesignColors.muted.opacity(0.3))
                     .cornerRadius(10)
                 }
                 .disabled(!canUpgrade)

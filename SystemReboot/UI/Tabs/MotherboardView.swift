@@ -247,91 +247,100 @@ struct MotherboardView: View {
     }
 
     private var motherboardHUD: some View {
-        HStack {
-            // Power (⚡) - PSU usage - tappable for info
-            HStack(spacing: 4) {
-                Image(systemName: "bolt.fill")
-                    .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
-                Text("\(embeddedGameController.gameState?.powerUsed ?? 0)/\(embeddedGameController.gameState?.powerCapacity ?? 300)W")
-                    .font(DesignTypography.caption(12))
-                    .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
-            }
-            .offset(x: embeddedGameController.powerShakeTriggered ? -3 : 0)
-            .animation(embeddedGameController.powerShakeTriggered ?
-                Animation.easeInOut(duration: 0.05).repeatCount(6, autoreverses: true) :
-                .default, value: embeddedGameController.powerShakeTriggered)
-            .onTapGesture { showCurrencyInfo = .power }
-
-            Spacer()
-
-            // Hash (Ħ) - Currency with storage cap - tappable for info
-            HStack(spacing: 4) {
-                Image(systemName: "number.circle.fill")
-                    .foregroundColor(.cyan)
-                Text(NumberFormatUtils.hashWithCap(
-                    current: embeddedGameController.gameState?.hash ?? appState.currentPlayer.hash,
-                    max: embeddedGameController.gameState?.hashStorageCapacity ?? appState.currentPlayer.hashStorageCapacity
-                ))
-                    .font(DesignTypography.headline(12))
-                    .foregroundColor(.cyan)
-                    .fixedSize()
-            }
-            .onTapGesture { showCurrencyInfo = .hash }
-
-            Spacer()
-
-            // Efficiency bar
-            HStack(spacing: 4) {
-                let efficiency = (embeddedGameController.gameState?.efficiency ?? 100) / 100.0
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.gray.opacity(0.3))
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(efficiencyColor)
-                            .frame(width: geo.size.width * efficiency)
+        VStack(spacing: 4) {
+            // Row 1: SYSTEM button | Efficiency
+            HStack(spacing: 10) {
+                // SYSTEM button - opens Arsenal/Settings menu
+                Button {
+                    HapticsService.shared.play(.selection)
+                    showSystemMenu = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 10))
+                        Text(L10n.Motherboard.system)
+                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .lineLimit(1)
                     }
+                    .foregroundColor(DesignColors.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(DesignColors.surface)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(DesignColors.secondary.opacity(0.5), lineWidth: 1)
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                    )
                 }
-                .frame(width: 50, height: 6)
+                .tutorialGlow(color: DesignColors.primary, isActive: hintManager.hasUnseenBlueprints)
 
-                Text("\(Int((embeddedGameController.gameState?.efficiency ?? 100)))%")
-                    .font(DesignTypography.caption(11))
-                    .foregroundColor(efficiencyColor)
-                    .fixedSize()
-            }
-            .fixedSize()
+                Spacer()
 
-            Spacer()
-                .frame(width: 12)
-
-            // SYSTEM button - opens Arsenal/Settings menu
-            Button {
-                HapticsService.shared.play(.selection)
-                showSystemMenu = true
-            } label: {
+                // Efficiency bar
                 HStack(spacing: 4) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 10))
-                    Text(L10n.Motherboard.system)
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    let efficiency = (embeddedGameController.gameState?.efficiency ?? 100) / 100.0
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(DesignColors.muted.opacity(0.3))
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(efficiencyColor)
+                                .frame(width: geo.size.width * efficiency)
+                        }
+                    }
+                    .frame(width: 50, height: 6)
+
+                    Text("\(Int((embeddedGameController.gameState?.efficiency ?? 100)))%")
+                        .font(DesignTypography.caption(11))
+                        .foregroundColor(efficiencyColor)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
-                .foregroundColor(DesignColors.secondary)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(DesignColors.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(DesignColors.secondary.opacity(0.5), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
-                )
+                .fixedSize()
             }
-            .tutorialGlow(color: DesignColors.primary, isActive: hintManager.hasUnseenBlueprints)
+
+            // Row 2: Power | Hash
+            HStack {
+                // Power (⚡) - PSU usage - tappable for info
+                HStack(spacing: 4) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
+                    Text("\(embeddedGameController.gameState?.powerUsed ?? 0)/\(embeddedGameController.gameState?.powerCapacity ?? 300)W")
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
+                        .lineLimit(1)
+                }
+                .offset(x: embeddedGameController.powerShakeTriggered ? -3 : 0)
+                .animation(embeddedGameController.powerShakeTriggered ?
+                    Animation.easeInOut(duration: 0.05).repeatCount(6, autoreverses: true) :
+                    .default, value: embeddedGameController.powerShakeTriggered)
+                .onTapGesture { showCurrencyInfo = .power }
+
+                Spacer()
+
+                // Hash (Ħ) - Currency with storage cap - tappable for info
+                HStack(spacing: 4) {
+                    Image(systemName: "number.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.cyan)
+                    Text(NumberFormatUtils.hashWithCap(
+                        current: embeddedGameController.gameState?.hash ?? appState.currentPlayer.hash,
+                        max: embeddedGameController.gameState?.hashStorageCapacity ?? appState.currentPlayer.hashStorageCapacity
+                    ))
+                        .font(DesignTypography.headline(12))
+                        .foregroundColor(.cyan)
+                        .lineLimit(1)
+                        .fixedSize()
+                }
+                .onTapGesture { showCurrencyInfo = .hash }
+            }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 8)
         .background(DesignColors.surface.opacity(0.85))
         .sheet(item: $showCurrencyInfo) { info in
             CurrencyInfoSheet(info: info, onPSUUpgraded: { cost in
@@ -379,7 +388,7 @@ struct MotherboardView: View {
                 HStack {
                     Text(tower.towerName)
                         .font(DesignTypography.headline(16))
-                        .foregroundColor(Color(hex: tower.color) ?? .white)
+                        .foregroundColor(Color(hex: tower.color) ?? RarityColors.color(for: tower.rarity))
 
                     Text(L10n.Common.lv(tower.level))
                         .font(DesignTypography.caption(12))

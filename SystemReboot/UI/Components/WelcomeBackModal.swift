@@ -133,7 +133,7 @@ struct WelcomeBackModal: View {
                     // Defense vs Offense explanation (only show if there were leaks)
                     if earnings.leaksOccurred > 0 {
                         Divider()
-                            .background(Color.gray.opacity(0.3))
+                            .background(DesignColors.muted.opacity(0.3))
                             .padding(.vertical, 4)
 
                         VStack(spacing: 6) {

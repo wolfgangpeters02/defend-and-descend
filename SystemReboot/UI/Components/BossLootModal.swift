@@ -160,7 +160,7 @@ struct BossLootModal: View {
                             ForEach(0..<tapsRequired, id: \.self) { tapIndex in
                                 let progress = itemDecryptProgress.indices.contains(currentItemIndex) ? itemDecryptProgress[currentItemIndex] : 0
                                 Circle()
-                                    .fill(tapIndex < progress ? DesignColors.primary : Color(hex: "2a2a34") ?? Color.gray)
+                                    .fill(tapIndex < progress ? DesignColors.primary : Color(hex: "2a2a34") ?? DesignColors.muted)
                                     .frame(width: 10, height: 10)
                                     .overlay(
                                         Circle()
@@ -329,7 +329,7 @@ struct DataPacketCard: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(
-                            isRevealed ? itemColor : (isActive ? DesignColors.primary : Color.gray.opacity(0.3)),
+                            isRevealed ? itemColor : (isActive ? DesignColors.primary : DesignColors.muted.opacity(0.3)),
                             lineWidth: isRevealed ? 2 : 1
                         )
                 )
@@ -396,7 +396,7 @@ struct DataPacketCard: View {
             // Progress bar
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color(hex: "1a1a24") ?? Color.gray)
+                    .fill(Color(hex: "1a1a24") ?? DesignColors.muted)
                     .frame(width: 70, height: 4)
 
                 RoundedRectangle(cornerRadius: 2)

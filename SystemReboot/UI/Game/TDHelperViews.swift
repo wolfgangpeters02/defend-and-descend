@@ -60,7 +60,7 @@ struct WaveProgressBar: View {
             ZStack(alignment: .leading) {
                 // Background
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.gray.opacity(0.3))
+                    .fill(DesignColors.muted.opacity(0.3))
 
                 // Progress fill
                 RoundedRectangle(cornerRadius: 2)
@@ -94,7 +94,7 @@ struct CountdownBar: View {
                 ZStack(alignment: .leading) {
                     // Background
                     RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(DesignColors.muted.opacity(0.3))
 
                     // Progress fill
                     RoundedRectangle(cornerRadius: 2)

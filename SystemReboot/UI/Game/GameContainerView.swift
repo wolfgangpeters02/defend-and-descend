@@ -102,7 +102,7 @@ struct GameContainerView: View {
                                     let barWidth = max(1, geo.size.width * healthPercent)
                                     ZStack(alignment: .leading) {
                                         RoundedRectangle(cornerRadius: 4)
-                                            .fill(Color.gray.opacity(0.3))
+                                            .fill(DesignColors.muted.opacity(0.3))
                                         RoundedRectangle(cornerRadius: 4)
                                             .fill(
                                                 LinearGradient(
@@ -125,7 +125,7 @@ struct GameContainerView: View {
                             VStack(spacing: 2) {
                                 Text(L10n.Game.HUD.time)
                                     .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(DesignColors.textSecondary)
                                 Text(formatTime(state.timeElapsed))
                                     .font(.system(size: 24, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
@@ -189,7 +189,7 @@ struct GameContainerView: View {
                                 let barWidth = max(1, geo.size.width * CGFloat(healthPercent))
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.gray.opacity(0.3))
+                                        .fill(DesignColors.muted.opacity(0.3))
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(
                                             LinearGradient(
@@ -221,7 +221,7 @@ struct GameContainerView: View {
                             HStack(spacing: 4) {
                                 Text(L10n.Game.HUD.level)
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.gray)
+                                    .foregroundColor(DesignColors.textSecondary)
                                 Text("\(state.upgradeLevel + 1)")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.cyan)
@@ -233,7 +233,7 @@ struct GameContainerView: View {
                                 let xpWidth = max(1, geo.size.width * xpPercent)
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.gray.opacity(0.3))
+                                        .fill(DesignColors.muted.opacity(0.3))
                                     RoundedRectangle(cornerRadius: 3)
                                         .fill(Color.cyan)
                                         .frame(width: xpWidth)
@@ -273,7 +273,7 @@ struct GameContainerView: View {
                         onExit: {
                             // Save run stats with Hash rewards
                             if let state = gameState {
-                                appState.recordSurvivorRun(
+                                appState.recordBossRun(
                                     time: state.timeElapsed,
                                     kills: state.stats.enemiesKilled,
                                     sessionHash: state.sessionHash,
@@ -299,7 +299,7 @@ struct GameContainerView: View {
                         },
                         onExit: {
                             if let state = gameState {
-                                appState.recordSurvivorRun(
+                                appState.recordBossRun(
                                     time: state.timeElapsed,
                                     kills: state.stats.enemiesKilled,
                                     sessionHash: state.sessionHash,
@@ -394,7 +394,7 @@ struct GameContainerView: View {
         }
     }
 
-    /// Maps arena/dungeon type to boss type for boss encounters
+    /// Maps arena config type to boss type for boss encounters
     private func mapArenaToBoss(_ arenaType: String) -> String {
         switch arenaType {
         // New boss IDs from BossEncounter
@@ -485,7 +485,7 @@ struct GameOverOverlay: View {
                                     Text(L10n.GameOver.hashCollected)
                                 }
                                 .font(.system(size: 14))
-                                .foregroundColor(.gray)
+                                .foregroundColor(DesignColors.textSecondary)
 
                                 Spacer()
 
@@ -580,7 +580,7 @@ struct StatRow: View {
         HStack {
             Text(label)
                 .font(.system(size: 16))
-                .foregroundColor(.gray)
+                .foregroundColor(DesignColors.textSecondary)
             Spacer()
             Text(value)
                 .font(.system(size: 20, weight: .bold))

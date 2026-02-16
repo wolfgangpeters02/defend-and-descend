@@ -12,7 +12,7 @@ extension TDGameContainerView {
             // Hint text
             Text(L10n.Motherboard.dragToDeploy)
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
-                .foregroundColor(.gray)
+                .foregroundColor(DesignColors.textSecondary)
                 .padding(.top, 6)
 
             // Scrollable tower cards - large and touch-friendly
@@ -224,13 +224,13 @@ extension TDGameContainerView {
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
                             Text(L10n.Stats.dmgRng(Int(proto.firewallStats.damage), rng: Int(proto.firewallStats.range)))
                                 .font(.system(size: 11, design: .monospaced))
-                                .foregroundColor(.gray)
+                                .foregroundColor(DesignColors.textSecondary)
                         }
 
                         Spacer()
 
                         Text("Ħ\(cost)")
-                            .foregroundColor(canAfford ? .cyan : .red)
+                            .foregroundColor(canAfford ? DesignColors.primary : DesignColors.danger)
                             .fontWeight(.bold)
                             .font(.system(size: 14, design: .monospaced))
                     }
@@ -247,7 +247,7 @@ extension TDGameContainerView {
                 selectedSlotId = nil
             }
             .font(.system(size: 12, weight: .medium, design: .monospaced))
-            .foregroundColor(.gray)
+            .foregroundColor(DesignColors.textSecondary)
             .padding(.top, 8)
         }
         .padding(16)
@@ -278,7 +278,7 @@ extension TDGameContainerView {
 
             Text(L10n.TD.levelMax(tower.level, max: 10))
                 .font(DesignTypography.caption(12))
-                .foregroundColor(.gray)
+                .foregroundColor(DesignColors.textSecondary)
 
             Divider().background(Color.white.opacity(0.3))
 
@@ -311,7 +311,7 @@ extension TDGameContainerView {
                         .foregroundColor(.black)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background((gameState?.hash ?? 0) >= tower.upgradeCost ? Color.cyan : Color.gray)
+                        .background((gameState?.hash ?? 0) >= tower.upgradeCost ? DesignColors.primary : DesignColors.muted)
                         .cornerRadius(6)
                     }
                     .disabled((gameState?.hash ?? 0) < tower.upgradeCost)
@@ -378,7 +378,7 @@ extension TDGameContainerView {
 
             Text(L10n.TD.levelMax(proto.level, max: BalanceConfig.maxUpgradeLevel))
                 .font(DesignTypography.caption(12))
-                .foregroundColor(.gray)
+                .foregroundColor(DesignColors.textSecondary)
 
             Divider().background(Color.white.opacity(0.3))
 
@@ -411,7 +411,7 @@ extension TDGameContainerView {
                         .foregroundColor(.black)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(currentHash >= proto.upgradeCost ? Color.cyan : Color.gray)
+                        .background(currentHash >= proto.upgradeCost ? DesignColors.primary : DesignColors.muted)
                         .cornerRadius(6)
                     }
                     .disabled(currentHash < proto.upgradeCost)

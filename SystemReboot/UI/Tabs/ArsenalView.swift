@@ -303,7 +303,7 @@ struct ArsenalView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "161b22") ?? Color.gray.opacity(0.2))
+                    .fill(DesignColors.surfaceElevated)
             )
             .padding(.horizontal)
         }

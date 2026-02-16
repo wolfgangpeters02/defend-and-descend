@@ -204,7 +204,7 @@ struct SettingsSheet: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(hex: "161b22") ?? Color.gray.opacity(0.2))
+                    .fill(DesignColors.surfaceElevated)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.red.opacity(0.3), lineWidth: 1)
@@ -228,7 +228,7 @@ struct SettingsSheet: View {
 
     private var settingsCardBackground: some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(Color(hex: "161b22") ?? Color.gray.opacity(0.2))
+            .fill(DesignColors.surfaceElevated)
     }
 
     // MARK: - Actions
@@ -277,9 +277,6 @@ struct SettingsSheet: View {
 
         // Reset tutorial state - clear any active hints
         TutorialHintManager.shared.activeHints.removeAll()
-
-        // Trigger intro sequence for "new player" experience
-        appState.showIntroSequence = true
 
         // Dismiss settings
         dismiss()

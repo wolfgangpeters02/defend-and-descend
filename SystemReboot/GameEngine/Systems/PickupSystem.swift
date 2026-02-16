@@ -5,16 +5,26 @@ import CoreGraphics
 
 class PickupSystem {
 
+    /// Maximum pickups on screen before oldest are auto-collected
+    private static let maxPickups = BalanceConfig.Pickups.maxPickupsOnScreen
+
     /// Update all pickups - magnetize and collect
     static func update(state: inout GameState, context: FrameContext) {
         let player = state.player
+        let collectDist = player.size + 5
 
-        var indicesToRemove: [Int] = []
+        // Auto-collect oldest pickups when over cap
+        while state.pickups.count > maxPickups {
+            collectPickup(state: &state, pickupIndex: 0)
+            state.pickups.removeFirst()
+        }
+
+        // Track which pickups to keep
+        var writeIndex = 0
 
         for i in 0..<state.pickups.count {
             // Check lifetime
             if context.timestamp - state.pickups[i].createdAt > state.pickups[i].lifetime {
-                indicesToRemove.append(i)
                 continue
             }
 
@@ -23,28 +33,27 @@ class PickupSystem {
             let dy = player.y - state.pickups[i].y
             let dist = sqrt(dx * dx + dy * dy)
 
-            // Check if in pickup range
+            // Collect if touching player
+            if dist < collectDist {
+                collectPickup(state: &state, pickupIndex: i)
+                continue
+            }
+
+            // Magnetize toward player if in range
             if dist <= player.pickupRange {
-                // Magnetize toward player
                 state.pickups[i].magnetized = true
                 let speed: CGFloat = BalanceConfig.Player.pickupMagnetSpeed
                 state.pickups[i].x += (dx / dist) * speed * CGFloat(context.deltaTime)
                 state.pickups[i].y += (dy / dist) * speed * CGFloat(context.deltaTime)
-
-                // Collect if touching player
-                if dist < player.size + 5 {
-                    collectPickup(state: &state, pickupIndex: i)
-                    indicesToRemove.append(i)
-                }
             }
+
+            // Keep this pickup - compact in-place
+            state.pickups[writeIndex] = state.pickups[i]
+            writeIndex += 1
         }
 
-        // Remove collected pickups (in reverse order)
-        for index in indicesToRemove.sorted().reversed() {
-            if index < state.pickups.count {
-                state.pickups.remove(at: index)
-            }
-        }
+        // Trim removed entries
+        state.pickups.removeSubrange(writeIndex..<state.pickups.count)
     }
 
     /// Drop a Hash pickup (Ħ)
@@ -62,9 +71,6 @@ class PickupSystem {
             createdAt: currentTime,
             magnetized: false
         ))
-
-        // Hash sparkle effect (cyan)
-        ParticleFactory.createHashSparkle(state: &state, x: x, y: y)
     }
 
     /// Collect a pickup
@@ -76,9 +82,6 @@ class PickupSystem {
             state.sessionHash += pickup.value
             state.stats.hashCollected += pickup.value
             state.stats.hashEarned += pickup.value
-
-            // Charge potions with collected hash
-            chargePotions(state: &state, amount: pickup.value)
 
             // Collection particle - cyan for Hash (use state time instead of Date())
             state.particles.append(Particle(
@@ -101,32 +104,4 @@ class PickupSystem {
         }
     }
 
-    /// Charge potions based on collected Data
-    private static func chargePotions(state: inout GameState, amount: Int) {
-        let chargeAmount = CGFloat(amount)
-
-        // Health potion
-        state.potions.health = min(
-            BalanceConfig.Potions.healthMaxCharge,
-            state.potions.health + chargeAmount * BalanceConfig.Potions.healthChargeMultiplier
-        )
-
-        // Bomb potion
-        state.potions.bomb = min(
-            BalanceConfig.Potions.bombMaxCharge,
-            state.potions.bomb + chargeAmount * BalanceConfig.Potions.bombChargeMultiplier
-        )
-
-        // Magnet potion
-        state.potions.magnet = min(
-            BalanceConfig.Potions.magnetMaxCharge,
-            state.potions.magnet + chargeAmount * BalanceConfig.Potions.magnetChargeMultiplier
-        )
-
-        // Shield potion
-        state.potions.shield = min(
-            BalanceConfig.Potions.shieldMaxCharge,
-            state.potions.shield + chargeAmount * BalanceConfig.Potions.shieldChargeMultiplier
-        )
-    }
 }

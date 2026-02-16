@@ -720,6 +720,9 @@ struct BalanceConfig {
 
         /// Projectile base lifetime before despawning
         static let projectileLifetime: TimeInterval = 2.0
+
+        /// Maximum pickups on screen before oldest are auto-collected
+        static let maxPickupsOnScreen: Int = 50
     }
 
     // MARK: - Timing
@@ -1378,7 +1381,9 @@ struct BalanceConfig {
         static let maxMVPSectorIndex: Int = 3
 
         /// Check if a sector is beyond the current MVP content boundary
+        /// The CPU core sector is excluded — it's always part of gameplay regardless of MVP boundary
         static func isBeyondMVP(_ sectorId: String) -> Bool {
+            if sectorId == SectorID.cpu.rawValue { return false }
             guard let index = unlockIndex(for: sectorId) else { return false }
             return index > maxMVPSectorIndex
         }
@@ -2173,6 +2178,9 @@ extension BalanceConfig {
 
         /// Default max game time for simulations (5 minutes)
         static let defaultMaxGameTime: TimeInterval = 300
+
+        /// Passive mode leak chance per tick per threat level (~0.2% per second per threat)
+        static let passiveLeakChancePerThreat: Double = 0.002
 
         /// How often to sample efficiency for graphs
         static let efficiencySampleInterval: TimeInterval = 5.0

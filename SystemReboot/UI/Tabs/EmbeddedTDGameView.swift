@@ -203,7 +203,7 @@ struct EmbeddedTDGameView: View {
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                         .frame(width: 120, height: 50)
-                        .background(Color.gray.opacity(0.3))
+                        .background(DesignColors.muted.opacity(0.3))
                         .cornerRadius(8)
                 }
 
@@ -218,7 +218,7 @@ struct EmbeddedTDGameView: View {
                     .font(.system(size: 16, weight: .bold, design: .monospaced))
                     .foregroundColor(status?.canUnlock == true ? .black : DesignColors.textSecondary)
                     .frame(width: 140, height: 50)
-                    .background(status?.canUnlock == true ? Color.cyan : Color.gray.opacity(0.3))
+                    .background(status?.canUnlock == true ? DesignColors.primary : DesignColors.muted.opacity(0.3))
                     .cornerRadius(8)
                 }
                 .disabled(status?.canUnlock != true)
