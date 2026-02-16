@@ -144,6 +144,7 @@ extension BossRenderingManager {
             removeBossNode(key: "overclocker_shredder")
         }
 
+        renderPhaseIndicator(phase: bossState.phase, bossType: "overclocker", gameState: gameState)
         updateOverclockerBodyVisuals(phase: bossState.phase, boss: boss, gameState: gameState, isSuctionActive: bossState.isSuctionActive)
     }
 

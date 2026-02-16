@@ -85,6 +85,7 @@ class BossRenderingManager {
 
     var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
     var zonePhaseCache: [String: Bool] = [:]       // id -> isActive
+    var lastIndicatorPhase: [String: Int] = [:]    // bossType -> last phase (for transition detection)
 
     // MARK: - Boss Body Visual References
 
@@ -174,6 +175,7 @@ class BossRenderingManager {
         bossMechanicNodes.removeAll()
         puddlePhaseCache.removeAll()
         zonePhaseCache.removeAll()
+        lastIndicatorPhase.removeAll()
         cachedBossBodyNode = nil
         lastKnownBossHealth = -1
         cachedCyberbossPhase = -1
@@ -243,26 +245,134 @@ class BossRenderingManager {
         return sqrt(pow(point.x - projX, 2) + pow(point.y - projY, 2))
     }
 
-    // MARK: - Phase Indicator
+    // MARK: - Phase Indicator (7b: glow, color-coding, fade in/out)
 
     func renderPhaseIndicator(phase: Int, bossType: String, isInvulnerable: Bool = false, gameState: GameState) {
         guard let scene = scene else { return }
         let nodeKey = "\(bossType)_phase_indicator"
 
-        if let label = bossMechanicNodes[nodeKey] as? SKLabelNode {
-            label.text = isInvulnerable ? L10n.Boss.phaseInvulnerable(phase) : L10n.Boss.phase(phase)
-            label.fontColor = isInvulnerable ? DesignColors.warningUI : DesignColors.primaryUI
-        } else {
-            let label = SKLabelNode(text: L10n.Boss.phase(phase))
-            label.fontName = "Menlo-Bold"
-            label.fontSize = 18
-            label.fontColor = DesignColors.primaryUI
-            label.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height - 60)
-            label.zPosition = 200
-            label.name = nodeKey
+        // 7a: Detect phase transition
+        let previousPhase = lastIndicatorPhase[bossType] ?? 0
+        let isTransition = previousPhase > 0 && phase != previousPhase
+        lastIndicatorPhase[bossType] = phase
 
-            scene.addChild(label)
-            bossMechanicNodes[nodeKey] = label
+        if isTransition {
+            triggerPhaseTransitionEffects(phase: phase, bossType: bossType, gameState: gameState)
+        }
+
+        // 7b: Phase color coding
+        let phaseColor: UIColor
+        if isInvulnerable {
+            phaseColor = DesignColors.warningUI
+        } else {
+            switch phase {
+            case 1: phaseColor = UIColor(hex: "22c55e") ?? .green
+            case 2: phaseColor = UIColor(hex: "fbbf24") ?? .yellow
+            case 3: phaseColor = UIColor(hex: "f97316") ?? .orange
+            case 4: phaseColor = UIColor(hex: "ef4444") ?? .red
+            default: phaseColor = DesignColors.primaryUI
+            }
+        }
+
+        let labelText = isInvulnerable ? L10n.Boss.phaseInvulnerable(phase) : L10n.Boss.phase(phase)
+
+        if let container = bossMechanicNodes[nodeKey] {
+            // Update text and color on existing indicator
+            if let label = container.childNode(withName: "phaseLabel") as? SKLabelNode {
+                label.text = labelText
+                label.fontColor = phaseColor
+            }
+            if let glow = container.childNode(withName: "phaseGlow") as? SKLabelNode {
+                glow.text = labelText
+                glow.fontColor = phaseColor
+            }
+
+            // On phase change, re-trigger fade-in → hold → fade-out
+            if isTransition {
+                container.removeAction(forKey: "phaseFade")
+                container.alpha = 0
+                let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.3)
+                fadeIn.timingMode = .easeOut
+                let wait = SKAction.wait(forDuration: 3.0)
+                let fadeOut = SKAction.fadeAlpha(to: 0, duration: 0.5)
+                fadeOut.timingMode = .easeIn
+                container.run(SKAction.sequence([fadeIn, wait, fadeOut]), withKey: "phaseFade")
+            }
+        } else {
+            // Create phase indicator with glow layer
+            let container = SKNode()
+            container.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height - 60)
+            container.zPosition = 200
+            container.name = nodeKey
+
+            // Glow layer behind label
+            let glow = SKLabelNode(fontNamed: "Menlo-Bold")
+            glow.text = labelText
+            glow.fontSize = 18
+            glow.fontColor = phaseColor
+            glow.verticalAlignmentMode = .center
+            glow.horizontalAlignmentMode = .center
+            glow.alpha = 0.4
+            glow.setScale(1.2)
+            glow.name = "phaseGlow"
+            container.addChild(glow)
+
+            // Main label
+            let label = SKLabelNode(fontNamed: "Menlo-Bold")
+            label.text = labelText
+            label.fontSize = 18
+            label.fontColor = phaseColor
+            label.verticalAlignmentMode = .center
+            label.horizontalAlignmentMode = .center
+            label.name = "phaseLabel"
+            container.addChild(label)
+
+            // Fade in on creation, hold 3s, then fade out
+            container.alpha = 0
+            let fadeIn = SKAction.fadeAlpha(to: 1.0, duration: 0.3)
+            fadeIn.timingMode = .easeOut
+            let wait = SKAction.wait(forDuration: 3.0)
+            let fadeOut = SKAction.fadeAlpha(to: 0, duration: 0.5)
+            fadeOut.timingMode = .easeIn
+            container.run(SKAction.sequence([fadeIn, wait, fadeOut]), withKey: "phaseFade")
+
+            scene.addChild(container)
+            bossMechanicNodes[nodeKey] = container
+        }
+    }
+
+    // MARK: - Phase Transition Effects (7a)
+
+    private func triggerPhaseTransitionEffects(phase: Int, bossType: String, gameState: GameState) {
+        // 1. Boss body scale pulse (1.0 → 1.15 → 1.0 over 0.4s)
+        if let bodyNode = cachedBossBodyNode {
+            let scaleUp = SKAction.scale(to: 1.15, duration: 0.2)
+            scaleUp.timingMode = .easeInEaseOut
+            let scaleDown = SKAction.scale(to: 1.0, duration: 0.2)
+            scaleDown.timingMode = .easeInEaseOut
+            bodyNode.run(SKAction.sequence([scaleUp, scaleDown]), withKey: "phaseTransition")
+        }
+
+        // 2. Screen flash + shake via GameScene
+        let flashColor: SKColor
+        switch bossType {
+        case "cyberboss":     flashColor = SKColor.cyan
+        case "voidharbinger": flashColor = SKColor.magenta
+        case "overclocker":   flashColor = SKColor.orange
+        case "trojanwyrm":    flashColor = SKColor.green
+        default:              flashColor = SKColor.white
+        }
+
+        if let gameScene = scene as? GameScene {
+            gameScene.flashScreen(color: flashColor, intensity: 0.15, duration: 0.2)
+            gameScene.shakeScreen(intensity: 6, duration: 0.3)
+        }
+
+        // 3. SCT dramatic text at boss position
+        if let boss = cachedBossEnemy {
+            let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y + 60)
+            let phaseText = L10n.Boss.phase(phase).uppercased()
+            scene?.combatText.show(phaseText, type: .levelUp, at: bossScenePos, config: .dramatic)
         }
     }
 }

@@ -387,7 +387,20 @@ bossBodyNode.run(flash, withKey: "damageFlash")
 
 ---
 
-## Stage 7: Phase Transition Polish
+## Stage 7: Phase Transition Polish -- DONE
+
+Phase transition effects, indicator polish, and health bar animation for all 4 bosses.
+
+**Changes made:**
+- **7a**: Added phase transition detection via `lastIndicatorPhase` dict in `renderPhaseIndicator()`. On phase change: boss body scale pulse (1.0→1.15→1.0, 0.4s easeInEaseOut), screen flash in boss theme color (cyan/magenta/orange/green, 0.15 alpha, 0.2s), screen shake (intensity 6, 0.3s), and SCT dramatic text ("PHASE X") at boss position. Added `triggerPhaseTransitionEffects()` helper.
+- **7b**: Rewrote `renderPhaseIndicator()` — phase label now has glow layer behind it (1.2x scale, 0.4 alpha), color-coded per phase (green→yellow→orange→red), fades in on creation/transition (0→1.0, 0.3s), auto-fades out after 3s (1.0→0, 0.5s). Container-based node replaces bare SKLabelNode.
+- **7c**: Added `.animation(.easeOut(duration: 0.25))` to boss health bar width for smooth transitions. Added phase tick marks at 75%, 50%, 25% as thin white lines. Added red flash overlay on large damage spikes (>10% max HP) via `showBossHealthFlash` state and `triggerBossHealthFlash()` helper.
+- **Fix**: Added missing `renderPhaseIndicator()` calls to Overclocker and TrojanWyrm boss extensions (were only called for Cyberboss and Void Harbinger).
+- **Fix**: Added `config` parameter to `ScrollingCombatText.show()` for dramatic preset usage.
+
+**Files changed: 5 files (BossRenderingManager.swift, +Overclocker, +TrojanWyrm, ScrollingCombatText.swift, GameContainerView.swift). Build verified clean.**
+
+---
 
 Phase changes are the dramatic peaks of a boss fight but currently happen silently.
 

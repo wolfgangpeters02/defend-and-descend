@@ -25,6 +25,7 @@ struct GameContainerView: View {
     @State private var scanLineOffset: CGFloat = 0
     @State private var previousHealth: CGFloat = 0
     @State private var showBossFightTutorial = false
+    @State private var showBossHealthFlash = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -183,13 +184,22 @@ struct GameContainerView: View {
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(.purple)
 
-                            // Boss HP bar - full width
+                            // Boss HP bar - full width (7c: animated + tick marks + flash)
                             GeometryReader { geo in
                                 let healthPercent = boss.maxHealth > 0 ? max(0, min(1, boss.health / boss.maxHealth)) : 0
                                 let barWidth = max(1, geo.size.width * CGFloat(healthPercent))
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(DesignColors.muted.opacity(0.3))
+
+                                    // Phase tick marks at 75%, 50%, 25%
+                                    ForEach([0.75, 0.50, 0.25], id: \.self) { tick in
+                                        Rectangle()
+                                            .fill(Color.white.opacity(0.3))
+                                            .frame(width: 1, height: 12)
+                                            .position(x: geo.size.width * tick, y: 6)
+                                    }
+
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(
                                             LinearGradient(
@@ -199,6 +209,14 @@ struct GameContainerView: View {
                                             )
                                         )
                                         .frame(width: barWidth)
+                                        .animation(.easeOut(duration: 0.25), value: healthPercent)
+
+                                    // Red flash overlay on large damage spikes
+                                    if showBossHealthFlash {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.red.opacity(0.6))
+                                            .frame(width: barWidth)
+                                    }
                                 }
                             }
                             .frame(height: 12)
@@ -378,6 +396,16 @@ struct GameContainerView: View {
                 if updatedState.player.health < currentState.player.health {
                     triggerGlitchEffect()
                 }
+
+                // 7c: Detect large boss damage spikes (>10% max HP) for health bar flash
+                if let currentBoss = currentState.enemies.first(where: { $0.isBoss && !$0.isDead }),
+                   let updatedBoss = updatedState.enemies.first(where: { $0.isBoss && !$0.isDead }),
+                   currentBoss.maxHealth > 0 {
+                    let damagePct = (currentBoss.health - updatedBoss.health) / currentBoss.maxHealth
+                    if damagePct > 0.1 {
+                        triggerBossHealthFlash()
+                    }
+                }
             }
             gameState = updatedState
         }
@@ -414,6 +442,14 @@ struct GameContainerView: View {
 
     private func formatTime(_ seconds: TimeInterval) -> String {
         DesignHelpers.formatTime(seconds)
+    }
+
+    /// Trigger red flash on the boss health bar for large damage spikes (7c)
+    private func triggerBossHealthFlash() {
+        showBossHealthFlash = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            showBossHealthFlash = false
+        }
     }
 
     /// Trigger the glitch visual effect when taking damage

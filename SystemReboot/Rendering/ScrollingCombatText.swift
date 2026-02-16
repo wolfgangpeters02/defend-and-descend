@@ -192,9 +192,9 @@ class ScrollingCombatTextManager {
         spawn(text: "\(damage)", type: .burn, at: position, config: .quick)
     }
 
-    /// Show generic text with custom type
-    func show(_ text: String, type: SCTType, at position: CGPoint) {
-        spawn(text: text, type: type, at: position)
+    /// Show generic text with custom type and optional config
+    func show(_ text: String, type: SCTType, at position: CGPoint, config: SCTConfig? = nil) {
+        spawn(text: text, type: type, at: position, config: config)
     }
 
     /// Batch show multiple damage numbers (for AoE attacks)

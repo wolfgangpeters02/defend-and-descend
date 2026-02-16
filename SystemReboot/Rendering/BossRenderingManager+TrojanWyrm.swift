@@ -234,6 +234,8 @@ extension BossRenderingManager {
             }
         }
 
+        renderPhaseIndicator(phase: bossState.phase, bossType: "trojanwyrm", gameState: gameState)
+
         // Phase 4: Render aim line during aiming state
         if bossState.phase == 4 && bossState.phase4SubState == .aiming {
             let aimKey = "trojanwyrm_aimline"
