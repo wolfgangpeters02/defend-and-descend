@@ -49,8 +49,6 @@ extension TowerAnimations {
             playBeamMuzzleFlash(barrel: barrel, color: color)
         case .tesla:
             playTeslaMuzzleFlash(barrel: barrel, color: color)
-        case .pyro:
-            playPyroMuzzleFlash(barrel: barrel, color: color)
         case .frost:
             playFrostMuzzleFlash(barrel: barrel, color: color)
         default:
@@ -221,46 +219,6 @@ extension TowerAnimations {
             spark.run(SKAction.sequence([
                 SKAction.repeat(flicker, count: 2),
                 SKAction.group([moveOut, fade]),
-                SKAction.removeFromParent()
-            ]))
-        }
-    }
-
-    /// Pyro: Flame gout with fire particles
-    private static func playPyroMuzzleFlash(barrel: SKNode, color: UIColor) {
-        // Orange flash
-        if let flash = barrel.childNode(withName: "muzzleFlash") as? SKShapeNode {
-            flash.fillColor = UIColor.orange
-            let flashSequence = SKAction.sequence([
-                SKAction.group([
-                    SKAction.scale(to: 1.8, duration: 0.05),
-                    SKAction.fadeAlpha(to: 1.0, duration: 0.03)
-                ]),
-                SKAction.group([
-                    SKAction.scale(to: 1.2, duration: 0.15),
-                    SKAction.fadeAlpha(to: 0, duration: 0.2)
-                ])
-            ])
-            flash.run(flashSequence)
-        }
-
-        // Fire particles shooting upward
-        let flameColors: [UIColor] = [.red, .orange, UIColor(red: 1, green: 0.6, blue: 0, alpha: 1), .yellow]
-        for _ in 0..<Int.random(in: 5...8) {
-            let flame = SKShapeNode(rectOf: CGSize(width: CGFloat.random(in: 4...8), height: CGFloat.random(in: 8...14)))
-            flame.position = CGPoint(x: CGFloat.random(in: -6...6), y: 22)
-            flame.fillColor = flameColors.randomElement()!.withAlphaComponent(CGFloat.random(in: 0.6...0.9))
-            flame.strokeColor = .clear
-            flame.zRotation = CGFloat.random(in: -0.3...0.3)
-            flame.blendMode = .add
-            flame.zPosition = 15
-            barrel.addChild(flame)
-
-            let rise = SKAction.moveBy(x: CGFloat.random(in: -10...10), y: CGFloat.random(in: 25...45), duration: 0.3)
-            let fade = SKAction.fadeOut(withDuration: 0.3)
-            let shrink = SKAction.scale(to: 0.3, duration: 0.3)
-            flame.run(SKAction.sequence([
-                SKAction.group([rise, fade, shrink]),
                 SKAction.removeFromParent()
             ]))
         }

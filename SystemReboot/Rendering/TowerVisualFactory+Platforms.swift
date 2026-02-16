@@ -45,46 +45,6 @@ extension TowerVisualFactory {
         return platform
     }
 
-    // PERF: Batched 6 rune markers into single compound path (6→1 node)
-    static func createArcaneCircle(radius: CGFloat, color: UIColor) -> SKShapeNode {
-        let container = SKShapeNode()
-        container.fillColor = .clear
-        container.strokeColor = .clear
-
-        // Outer circle
-        let outer = SKShapeNode(circleOfRadius: radius)
-        outer.fillColor = .clear
-        outer.strokeColor = color.withAlphaComponent(0.5)
-        outer.lineWidth = 2
-        outer.glowWidth = 0
-        container.addChild(outer)
-
-        // Inner circle
-        let inner = SKShapeNode(circleOfRadius: radius * 0.7)
-        inner.fillColor = color.withAlphaComponent(0.1)
-        inner.strokeColor = color.withAlphaComponent(0.3)
-        inner.lineWidth = 1
-        container.addChild(inner)
-
-        // Rune markers — batched into single compound path
-        let markerRadius: CGFloat = 2
-        let markersPath = CGMutablePath()
-        for i in 0..<6 {
-            let angle = CGFloat(i) * .pi / 3
-            let cx = cos(angle) * radius
-            let cy = sin(angle) * radius
-            markersPath.addEllipse(in: CGRect(x: cx - markerRadius, y: cy - markerRadius,
-                                               width: markerRadius * 2, height: markerRadius * 2))
-        }
-        let markers = SKShapeNode(path: markersPath)
-        markers.fillColor = color
-        markers.strokeColor = .clear
-        markers.glowWidth = 0
-        container.addChild(markers)
-
-        return container
-    }
-
     static func createTechGrid(size: CGFloat, color: UIColor) -> SKShapeNode {
         let platform = SKShapeNode(rectOf: CGSize(width: size, height: size), cornerRadius: 4)
         platform.fillColor = color.withAlphaComponent(0.1)
@@ -131,50 +91,6 @@ extension TowerVisualFactory {
         platform.addChild(ring)
 
         return platform
-    }
-
-    static func createIndustrialBase(size: CGFloat, color: UIColor) -> SKShapeNode {
-        let platform = SKShapeNode(rectOf: CGSize(width: size, height: size - 4), cornerRadius: 2)
-        platform.fillColor = UIColor.darkGray.withAlphaComponent(0.8)
-        platform.strokeColor = .gray
-        platform.lineWidth = 2
-        return platform
-    }
-
-    static func createSacredPlatform(radius: CGFloat, color: UIColor) -> SKShapeNode {
-        let container = SKShapeNode()
-        container.fillColor = .clear
-        container.strokeColor = .clear
-
-        // Outer ring
-        let outer = SKShapeNode(circleOfRadius: radius)
-        outer.fillColor = UIColor(hex: "f59e0b")?.withAlphaComponent(0.15) ?? color.withAlphaComponent(0.15)
-        outer.strokeColor = UIColor(hex: "fbbf24") ?? .yellow
-        outer.lineWidth = 2
-        outer.glowWidth = 0
-        container.addChild(outer)
-
-        // Inner sacred geometry (hexagram)
-        let innerPath = UIBezierPath()
-        for i in 0..<6 {
-            let angle = CGFloat(i) * .pi / 3 - .pi / 2
-            let point = CGPoint(x: cos(angle) * radius * 0.8, y: sin(angle) * radius * 0.8)
-            if i == 0 {
-                innerPath.move(to: point)
-            } else {
-                innerPath.addLine(to: point)
-            }
-        }
-        innerPath.close()
-
-        let inner = SKShapeNode(path: innerPath.cgPath)
-        inner.fillColor = .clear
-        inner.strokeColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.5) ?? .yellow.withAlphaComponent(0.5)
-        inner.lineWidth = 1
-        inner.name = "sacredGeometry"
-        container.addChild(inner)
-
-        return container
     }
 
     // PERF: Batched 3 server rack slot nodes into single compound path (3→1 node)

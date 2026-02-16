@@ -25,11 +25,8 @@ final class TowerAnimations {
         static let orbiting = "orbiting"
         static let electricArcs = "electricArcs"
         static let frostParticles = "frostParticles"
-        static let divineParticles = "divineParticles"
         static let glitchEffect = "glitchEffect"
         static let bracketPulse = "bracketPulse"
-        static let flameFlicker = "flameFlicker"
         static let dataFlow = "dataFlow"
-        static let runeOrbit = "runeOrbit"
     }
 }

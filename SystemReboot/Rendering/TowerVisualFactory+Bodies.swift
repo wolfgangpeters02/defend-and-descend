@@ -15,16 +15,10 @@ extension TowerVisualFactory {
             return createArtilleryBody(color: color, rarity: rarity)
         case .frost:
             return createCrystalBody(color: color, rarity: rarity)
-        case .magic:
-            return createArcaneBody(color: color, rarity: rarity)
         case .beam:
             return createEmitterBody(color: color, rarity: rarity)
         case .tesla:
             return createTeslaBody(color: color, rarity: rarity)
-        case .pyro:
-            return createIncineratorBody(color: color, rarity: rarity)
-        case .legendary:
-            return createDivineBody(color: color)
         case .multishot:
             return createReplicatorBody(color: color, rarity: rarity)
         case .execute:
@@ -204,56 +198,6 @@ extension TowerVisualFactory {
         return crystal
     }
 
-    // MARK: - Magic Archetype (Arcane)
-
-    private static func createArcaneBody(color: UIColor, rarity: RarityTier) -> SKShapeNode {
-        let container = SKShapeNode()
-        container.fillColor = .clear
-        container.strokeColor = .clear
-
-        // Floating orb platform
-        let orbPlatform = SKShapeNode(circleOfRadius: 12)
-        orbPlatform.fillColor = color.withAlphaComponent(0.3)
-        orbPlatform.strokeColor = color
-        orbPlatform.lineWidth = 2
-        orbPlatform.glowWidth = 0
-        container.addChild(orbPlatform)
-
-        // Central power orb
-        let orb = SKShapeNode(circleOfRadius: 8)
-        orb.fillColor = color
-        orb.strokeColor = .white
-        orb.lineWidth = 1
-        orb.glowWidth = 0
-        orb.blendMode = .add
-        orb.name = "powerOrb"
-        container.addChild(orb)
-
-        // Orbiting rune symbols (3)
-        for i in 0..<3 {
-            let angle = CGFloat(i) * 2 * .pi / 3
-            let runeOrbit = SKNode()
-            runeOrbit.name = "runeOrbit_\(i)"
-
-            let rune = createRuneSymbol(index: i, color: color)
-            rune.position = CGPoint(x: cos(angle) * 16, y: sin(angle) * 16)
-            runeOrbit.addChild(rune)
-            container.addChild(runeOrbit)
-        }
-
-        return container
-    }
-
-    private static func createRuneSymbol(index: Int, color: UIColor) -> SKShapeNode {
-        let rune = SKShapeNode(circleOfRadius: 4)
-        rune.fillColor = color.withAlphaComponent(0.8)
-        rune.strokeColor = .white
-        rune.lineWidth = 1
-        rune.glowWidth = 0
-        rune.name = "rune_\(index)"
-        return rune
-    }
-
     // MARK: - Beam Archetype (Tech Emitter)
 
     private static func createEmitterBody(color: UIColor, rarity: RarityTier) -> SKShapeNode {
@@ -320,95 +264,6 @@ extension TowerVisualFactory {
         }
 
         return container
-    }
-
-    // MARK: - Pyro Archetype (Incinerator)
-
-    private static func createIncineratorBody(color: UIColor, rarity: RarityTier) -> SKShapeNode {
-        let body = SKShapeNode(rectOf: CGSize(width: 28, height: 24), cornerRadius: 4)
-        body.fillColor = color.withAlphaComponent(0.8)
-        body.strokeColor = .gray
-        body.lineWidth = 3
-
-        // Fuel tanks (2 cylinders)
-        let leftTank = SKShapeNode(ellipseOf: CGSize(width: 8, height: 16))
-        leftTank.fillColor = UIColor.darkGray
-        leftTank.strokeColor = color
-        leftTank.lineWidth = 1
-        leftTank.position = CGPoint(x: -8, y: 0)
-        leftTank.name = "leftTank"
-        body.addChild(leftTank)
-
-        let rightTank = SKShapeNode(ellipseOf: CGSize(width: 8, height: 16))
-        rightTank.fillColor = UIColor.darkGray
-        rightTank.strokeColor = color
-        rightTank.lineWidth = 1
-        rightTank.position = CGPoint(x: 8, y: 0)
-        rightTank.name = "rightTank"
-        body.addChild(rightTank)
-
-        // Pilot flame indicator
-        let pilotFlame = SKShapeNode(circleOfRadius: 4)
-        pilotFlame.fillColor = UIColor.orange
-        pilotFlame.strokeColor = UIColor.yellow
-        pilotFlame.lineWidth = 1
-        pilotFlame.glowWidth = 0
-        pilotFlame.blendMode = .add
-        pilotFlame.name = "pilotFlame"
-        body.addChild(pilotFlame)
-
-        return body
-    }
-
-    // MARK: - Legendary Archetype (Divine)
-
-    private static func createDivineBody(color: UIColor) -> SKShapeNode {
-        let container = SKShapeNode()
-        container.fillColor = .clear
-        container.strokeColor = .clear
-
-        // Sacred circle base
-        let circle = SKShapeNode(circleOfRadius: 18)
-        circle.fillColor = UIColor(hex: "f59e0b")?.withAlphaComponent(0.3) ?? color.withAlphaComponent(0.3)
-        circle.strokeColor = UIColor(hex: "f59e0b") ?? color
-        circle.lineWidth = 2
-        circle.glowWidth = 0
-        container.addChild(circle)
-
-        // Floating sword silhouette
-        let swordPath = createSwordPath()
-        let sword = SKShapeNode(path: swordPath)
-        sword.fillColor = UIColor(hex: "fbbf24") ?? .yellow
-        sword.strokeColor = .white
-        sword.lineWidth = 1
-        sword.glowWidth = 0
-        sword.name = "sword"
-        container.addChild(sword)
-
-        // Divine aura particles (handled in detail elements)
-
-        return container
-    }
-
-    private static func createSwordPath() -> CGPath {
-        let path = UIBezierPath()
-        // Simplified sword shape
-        path.move(to: CGPoint(x: 0, y: 14))     // Tip
-        path.addLine(to: CGPoint(x: 3, y: 4))   // Right edge
-        path.addLine(to: CGPoint(x: 6, y: 2))   // Right guard
-        path.addLine(to: CGPoint(x: 6, y: 0))
-        path.addLine(to: CGPoint(x: 2, y: 0))   // Handle top
-        path.addLine(to: CGPoint(x: 2, y: -10)) // Handle
-        path.addLine(to: CGPoint(x: 4, y: -12)) // Pommel
-        path.addLine(to: CGPoint(x: 0, y: -14)) // Pommel bottom
-        path.addLine(to: CGPoint(x: -4, y: -12))
-        path.addLine(to: CGPoint(x: -2, y: -10))
-        path.addLine(to: CGPoint(x: -2, y: 0))
-        path.addLine(to: CGPoint(x: -6, y: 0))
-        path.addLine(to: CGPoint(x: -6, y: 2))  // Left guard
-        path.addLine(to: CGPoint(x: -3, y: 4))  // Left edge
-        path.close()
-        return path.cgPath
     }
 
     // MARK: - Multishot Archetype (Replicator)

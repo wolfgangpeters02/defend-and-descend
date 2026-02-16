@@ -23,10 +23,6 @@ extension TowerVisualFactory {
             // Electric arc nodes
             addElectricArcs(to: container, color: color)
 
-        case .legendary:
-            // Divine particles and light rays
-            addDivineParticles(to: container)
-
         case .execute:
             // Glitch artifacts
             addGlitchArtifacts(to: container)
@@ -61,13 +57,6 @@ extension TowerVisualFactory {
         let arcIndicator = SKNode()
         arcIndicator.name = "arcContainer"
         container.addChild(arcIndicator)
-    }
-
-    private static func addDivineParticles(to container: SKNode) {
-        // Particle container for animation
-        let particleContainer = SKNode()
-        particleContainer.name = "divineParticles"
-        container.addChild(particleContainer)
     }
 
     private static func addGlitchArtifacts(to container: SKNode) {
@@ -167,44 +156,4 @@ extension TowerVisualFactory {
         container.addChild(caps)
     }
 
-    // MARK: - Hazard Stripes
-
-    static func addHazardStripes(to container: SKNode) {
-        let stripePath = UIBezierPath()
-        for i in 0..<4 {
-            let x = CGFloat(i - 2) * 8 + 4
-            stripePath.move(to: CGPoint(x: x, y: -15))
-            stripePath.addLine(to: CGPoint(x: x + 4, y: -15))
-            stripePath.addLine(to: CGPoint(x: x - 4, y: -11))
-            stripePath.addLine(to: CGPoint(x: x - 8, y: -11))
-            stripePath.close()
-        }
-
-        let stripes = SKShapeNode(path: stripePath.cgPath)
-        stripes.fillColor = .yellow
-        stripes.strokeColor = .clear
-        stripes.alpha = 0.5
-        stripes.name = "hazardStripes"
-        container.addChild(stripes)
-    }
-
-    // MARK: - Divine Rays
-    // PERF: Batched 4 individual ray nodes into single compound path (4→1 node)
-
-    static func addDivineRays(to container: SKNode, color: UIColor) {
-        let raysPath = CGMutablePath()
-        for i in 0..<4 {
-            let angle = CGFloat(i) * .pi / 2
-            raysPath.move(to: CGPoint(x: cos(angle) * 20, y: sin(angle) * 20))
-            raysPath.addLine(to: CGPoint(x: cos(angle) * 40, y: sin(angle) * 40))
-        }
-
-        let rays = SKShapeNode(path: raysPath)
-        rays.strokeColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.4) ?? .yellow.withAlphaComponent(0.4)
-        rays.lineWidth = 3
-        rays.glowWidth = 1.5  // Divine radiance (1 batched node per legendary tower)
-        rays.blendMode = .add
-        rays.name = "divineRays"
-        container.addChild(rays)
-    }
 }

@@ -22,16 +22,10 @@ extension TowerAnimations {
             startArtilleryIdleAnimation(node: node, color: color)
         case .frost:
             startFrostIdleAnimation(node: node, color: color)
-        case .magic:
-            startMagicIdleAnimation(node: node, color: color)
         case .beam:
             startBeamIdleAnimation(node: node, color: color)
         case .tesla:
             startTeslaIdleAnimation(node: node, color: color)
-        case .pyro:
-            startPyroIdleAnimation(node: node, color: color)
-        case .legendary:
-            startLegendaryIdleAnimation(node: node, color: color)
         case .multishot:
             startMultishotIdleAnimation(node: node, color: color)
         case .execute:
@@ -235,56 +229,6 @@ extension TowerAnimations {
         node.run(SKAction.repeatForever(SKAction.sequence([emitParticle, wait])), withKey: AnimationKey.frostParticles)
     }
 
-    // MARK: - Magic Idle
-
-    private static func startMagicIdleAnimation(node: SKNode, color: UIColor) {
-        guard let body = node.childNode(withName: "body") as? SKShapeNode else { return }
-
-        // Power orb pulse
-        if let orb = body.childNode(withName: "powerOrb") as? SKShapeNode {
-            let pulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.group([
-                    SKAction.scale(to: 1.15, duration: 1.0),
-                    SKAction.run { orb.glowWidth = 0 }
-                ]),
-                SKAction.group([
-                    SKAction.scale(to: 1.0, duration: 1.0),
-                    SKAction.run { orb.glowWidth = 0 }
-                ])
-            ]))
-            orb.run(pulse)
-        }
-
-        // Rune orbit animation
-        for i in 0..<3 {
-            if let runeOrbit = body.childNode(withName: "runeOrbit_\(i)") {
-                let duration: TimeInterval = 4.0 + Double(i) * 0.3
-                let direction: CGFloat = (i % 2 == 0) ? 1 : -1
-                let orbit = SKAction.rotate(byAngle: .pi * 2 * direction, duration: duration)
-                runeOrbit.run(SKAction.repeatForever(orbit), withKey: AnimationKey.runeOrbit)
-            }
-        }
-
-        // Magic circle rotation (in platform)
-        if let platform = node.childNode(withName: "basePlatform") {
-            let rotate = SKAction.rotate(byAngle: -.pi * 2, duration: 15)
-            platform.run(SKAction.repeatForever(rotate), withKey: AnimationKey.idleRotation)
-        }
-
-        // Emitter orb glow
-        if let barrel = node.childNode(withName: "barrel") {
-            if let emitterOrb = barrel.childNode(withName: "emitterOrb") as? SKShapeNode {
-                let pulse = SKAction.repeatForever(SKAction.sequence([
-                    SKAction.run { emitterOrb.glowWidth = 0 },
-                    SKAction.wait(forDuration: 0.5),
-                    SKAction.run { emitterOrb.glowWidth = 0 },
-                    SKAction.wait(forDuration: 0.5)
-                ]))
-                emitterOrb.run(pulse)
-            }
-        }
-    }
-
     // MARK: - Beam (Tech Emitter) Idle
 
     private static func startBeamIdleAnimation(node: SKNode, color: UIColor) {
@@ -421,169 +365,6 @@ extension TowerAnimations {
 
         path.addLine(to: end)
         return path.cgPath
-    }
-
-    // MARK: - Pyro Idle
-
-    private static func startPyroIdleAnimation(node: SKNode, color: UIColor) {
-        guard let body = node.childNode(withName: "body") as? SKShapeNode else { return }
-
-        // Pilot flame flicker
-        if let pilotFlame = body.childNode(withName: "pilotFlame") as? SKShapeNode {
-            let flicker = SKAction.repeatForever(SKAction.sequence([
-                SKAction.group([
-                    SKAction.scale(to: CGFloat.random(in: 0.8...1.2), duration: 0.1),
-                    SKAction.run { pilotFlame.glowWidth = 0 }
-                ]),
-                SKAction.wait(forDuration: 0.05)
-            ]))
-            pilotFlame.run(flicker, withKey: AnimationKey.flameFlicker)
-        }
-
-        // Heat shimmer effect
-        startHeatShimmer(node: node, color: color)
-
-        // Fuel tank level animation
-        if let leftTank = body.childNode(withName: "leftTank") as? SKShapeNode,
-           let rightTank = body.childNode(withName: "rightTank") as? SKShapeNode {
-
-            let tankPulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.run {
-                    leftTank.fillColor = UIColor.darkGray.withAlphaComponent(0.9)
-                    rightTank.fillColor = UIColor.darkGray.withAlphaComponent(0.7)
-                },
-                SKAction.wait(forDuration: 0.8),
-                SKAction.run {
-                    leftTank.fillColor = UIColor.darkGray.withAlphaComponent(0.7)
-                    rightTank.fillColor = UIColor.darkGray.withAlphaComponent(0.9)
-                },
-                SKAction.wait(forDuration: 0.8)
-            ]))
-            body.run(tankPulse)
-        }
-    }
-
-    private static func startHeatShimmer(node: SKNode, color: UIColor) {
-        let emitShimmer = SKAction.run { [weak node] in
-            guard let node = node else { return }
-            guard TowerAnimations.currentCameraScale < 0.5 else { return }
-
-            let shimmer = SKShapeNode(rectOf: CGSize(width: CGFloat.random(in: 2...4), height: CGFloat.random(in: 3...6)), cornerRadius: 1)
-            shimmer.fillColor = UIColor.orange.withAlphaComponent(0.3)
-            shimmer.strokeColor = .clear
-            shimmer.blendMode = .add
-            shimmer.position = CGPoint(
-                x: CGFloat.random(in: -8...8),
-                y: CGFloat.random(in: 5...12)
-            )
-            shimmer.zPosition = 6
-
-            let rise = SKAction.moveBy(x: CGFloat.random(in: -3...3), y: 20, duration: 0.8)
-            let fade = SKAction.fadeOut(withDuration: 0.8)
-            let scale = SKAction.scale(to: 0.5, duration: 0.8)
-
-            shimmer.run(SKAction.sequence([
-                SKAction.group([rise, fade, scale]),
-                SKAction.removeFromParent()
-            ]))
-
-            node.addChild(shimmer)
-        }
-
-        let wait = SKAction.wait(forDuration: 0.15, withRange: 0.1)
-        node.run(SKAction.repeatForever(SKAction.sequence([emitShimmer, wait])), withKey: "heatShimmer")
-    }
-
-    // MARK: - Legendary Idle
-
-    private static func startLegendaryIdleAnimation(node: SKNode, color: UIColor) {
-        guard let body = node.childNode(withName: "body") as? SKShapeNode else { return }
-
-        // Sword rotation
-        if let sword = body.childNode(withName: "sword") as? SKShapeNode {
-            let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 8)
-            sword.run(SKAction.repeatForever(rotate), withKey: AnimationKey.idleRotation)
-
-            // Sword float
-            let float = SKAction.repeatForever(SKAction.sequence([
-                SKAction.moveBy(x: 0, y: 3, duration: 1.5),
-                SKAction.moveBy(x: 0, y: -3, duration: 1.5)
-            ]))
-            sword.run(float, withKey: AnimationKey.idleFloat)
-
-            // Sword glow pulse
-            let glow = SKAction.repeatForever(SKAction.sequence([
-                SKAction.run { sword.glowWidth = 0 },
-                SKAction.wait(forDuration: 0.8),
-                SKAction.run { sword.glowWidth = 0 },
-                SKAction.wait(forDuration: 0.8)
-            ]))
-            sword.run(glow)
-        }
-
-        // Sacred geometry rotation (opposite direction)
-        if let platform = node.childNode(withName: "basePlatform") {
-            if let geometry = platform.childNode(withName: "sacredGeometry") {
-                let rotate = SKAction.rotate(byAngle: -.pi * 2, duration: 12)
-                geometry.run(SKAction.repeatForever(rotate))
-            }
-        }
-
-        // Divine particle emission
-        startDivineParticleEmission(node: node)
-
-        // Divine ray pulse (batched node)
-        if let platform = node.childNode(withName: "basePlatform"),
-           let rays = platform.childNode(withName: "divineRays") as? SKShapeNode {
-            let pulse = SKAction.repeatForever(SKAction.sequence([
-                SKAction.fadeAlpha(to: 0.6, duration: 0.5),
-                SKAction.fadeAlpha(to: 0.2, duration: 0.5)
-            ]))
-            rays.run(pulse)
-        }
-
-        // Divine beam in barrel
-        if let barrel = node.childNode(withName: "barrel") {
-            if let beam = barrel.childNode(withName: "divineBeam") as? SKShapeNode {
-                let pulse = SKAction.repeatForever(SKAction.sequence([
-                    SKAction.fadeAlpha(to: 0.5, duration: 0.6),
-                    SKAction.fadeAlpha(to: 0.2, duration: 0.6)
-                ]))
-                beam.run(pulse)
-            }
-        }
-    }
-
-    private static func startDivineParticleEmission(node: SKNode) {
-        let emitParticle = SKAction.run { [weak node] in
-            guard let node = node else { return }
-            guard TowerAnimations.currentCameraScale < 0.5 else { return }
-
-            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 1.5...3))
-            particle.fillColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.8) ?? .yellow.withAlphaComponent(0.8)
-            particle.strokeColor = .clear
-            particle.glowWidth = 0
-            particle.blendMode = .add
-
-            let angle = CGFloat.random(in: 0...(.pi * 2))
-            let radius = CGFloat.random(in: 5...20)
-            particle.position = CGPoint(x: cos(angle) * radius, y: sin(angle) * radius)
-            particle.zPosition = 5
-
-            let rise = SKAction.moveBy(x: 0, y: CGFloat.random(in: 20...35), duration: 2.0)
-            let fade = SKAction.fadeOut(withDuration: 2.0)
-            let scale = SKAction.scale(to: 0.2, duration: 2.0)
-
-            particle.run(SKAction.sequence([
-                SKAction.group([rise, fade, scale]),
-                SKAction.removeFromParent()
-            ]))
-
-            node.addChild(particle)
-        }
-
-        let wait = SKAction.wait(forDuration: 0.2, withRange: 0.15)
-        node.run(SKAction.repeatForever(SKAction.sequence([emitParticle, wait])), withKey: AnimationKey.divineParticles)
     }
 
     // MARK: - Multishot Idle

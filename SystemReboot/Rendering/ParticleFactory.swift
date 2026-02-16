@@ -6,7 +6,7 @@ import CoreGraphics
 class ParticleFactory {
 
     /// Maximum particles allowed (prevents lag from particle accumulation)
-    private static let maxParticles = 300
+    private static let maxParticles = 80
 
     /// Get current timestamp from game state (avoids Date() calls)
     private static func timestamp(from state: GameState) -> TimeInterval {
@@ -16,14 +16,6 @@ class ParticleFactory {
     /// Check if we can add more particles (enforces cap)
     private static func canAddParticles(state: GameState, count: Int = 1) -> Bool {
         return state.particles.count + count < maxParticles
-    }
-
-    /// Trim excess particles if over limit (removes oldest)
-    private static func enforceParticleLimit(state: inout GameState) {
-        if state.particles.count > maxParticles {
-            // Use suffix instead of removeFirst to avoid O(n) array shift
-            state.particles = Array(state.particles.suffix(maxParticles))
-        }
     }
 
     /// Create explosion particles
@@ -37,7 +29,7 @@ class ParticleFactory {
     ) {
         // Limit particle count based on current particle count
         let availableSlots = max(0, maxParticles - state.particles.count)
-        let actualCount = min(count, availableSlots)
+        let actualCount = min(min(count, 4), availableSlots)
         guard actualCount > 0 else { return }
 
         let now = timestamp(from: state)
@@ -72,9 +64,11 @@ class ParticleFactory {
         y: CGFloat,
         count: Int
     ) {
+        let actualCount = min(count, 2)
+        guard canAddParticles(state: state, count: actualCount) else { return }
         let now = timestamp(from: state)
 
-        for i in 0..<count {
+        for i in 0..<actualCount {
             let angle = CGFloat.random(in: 0...(2 * .pi))
             let speed = CGFloat.random(in: 30...100)
 
@@ -83,39 +77,12 @@ class ParticleFactory {
                 type: .blood,
                 x: x,
                 y: y,
-                lifetime: Double.random(in: 0.2...0.5),
+                lifetime: Double.random(in: 0.2...0.4),
                 createdAt: now,
                 color: "#8b0000",
                 size: CGFloat.random(in: 2...5),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
                 drag: 0.05
-            ))
-        }
-    }
-
-    /// Create Hash sparkle effect (cyan)
-    static func createHashSparkle(
-        state: inout GameState,
-        x: CGFloat,
-        y: CGFloat
-    ) {
-        let now = timestamp(from: state)
-
-        for i in 0..<5 {
-            let angle = CGFloat.random(in: 0...(2 * .pi))
-            let speed = CGFloat.random(in: 20...60)
-
-            state.particles.append(Particle(
-                id: "\(RandomUtils.generateId())-sparkle-\(i)",
-                type: .hash,
-                x: x,
-                y: y,
-                lifetime: 0.4,
-                createdAt: now,
-                color: "#06b6d4",  // Cyan for Hash
-                size: CGFloat.random(in: 2...4),
-                velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
-                shape: .star
             ))
         }
     }
@@ -128,29 +95,28 @@ class ParticleFactory {
         angle: CGFloat,
         protocolId: String
     ) {
+        guard canAddParticles(state: state) else { return }
         let now = timestamp(from: state)
         let color = getProtocolColor(protocolId)
 
-        for i in 0..<3 {
-            let spread = CGFloat.random(in: -0.3...0.3)
-            let speed = CGFloat.random(in: 100...200)
+        let spread = CGFloat.random(in: -0.3...0.3)
+        let speed = CGFloat.random(in: 100...200)
 
-            state.particles.append(Particle(
-                id: "\(RandomUtils.generateId())-muzzle-\(i)",
-                type: .muzzle,
-                x: x + cos(angle) * 15,
-                y: y + sin(angle) * 15,
-                lifetime: 0.15,
-                createdAt: now,
-                color: color,
-                size: CGFloat.random(in: 3...6),
-                velocity: CGPoint(
-                    x: cos(angle + spread) * speed,
-                    y: sin(angle + spread) * speed
-                ),
-                shape: .spark
-            ))
-        }
+        state.particles.append(Particle(
+            id: "\(RandomUtils.generateId())-muzzle",
+            type: .muzzle,
+            x: x + cos(angle) * 15,
+            y: y + sin(angle) * 15,
+            lifetime: 0.1,
+            createdAt: now,
+            color: color,
+            size: CGFloat.random(in: 3...5),
+            velocity: CGPoint(
+                x: cos(angle + spread) * speed,
+                y: sin(angle + spread) * speed
+            ),
+            shape: .spark
+        ))
     }
 
     /// Create impact effect
@@ -160,10 +126,11 @@ class ParticleFactory {
         y: CGFloat,
         protocolId: String
     ) {
+        guard canAddParticles(state: state, count: 2) else { return }
         let now = timestamp(from: state)
         let color = getProtocolColor(protocolId)
 
-        for i in 0..<5 {
+        for i in 0..<2 {
             let angle = CGFloat.random(in: 0...(2 * .pi))
             let speed = CGFloat.random(in: 30...80)
 
@@ -172,10 +139,10 @@ class ParticleFactory {
                 type: .impact,
                 x: x,
                 y: y,
-                lifetime: 0.2,
+                lifetime: 0.15,
                 createdAt: now,
                 color: color,
-                size: CGFloat.random(in: 2...5),
+                size: CGFloat.random(in: 2...4),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed)
             ))
         }
@@ -188,8 +155,9 @@ class ParticleFactory {
         y: CGFloat,
         protocolId: String
     ) {
-        // Only spawn trail particles occasionally
-        guard RandomUtils.randomBool(probability: 0.3) else { return }
+        // Only spawn trail particles rarely and when under particle budget
+        guard RandomUtils.randomBool(probability: 0.1),
+              canAddParticles(state: state) else { return }
 
         let now = timestamp(from: state)
         let color = getProtocolColor(protocolId)

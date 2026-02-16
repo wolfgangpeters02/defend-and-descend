@@ -69,7 +69,6 @@ class BossRenderingManager {
 
     // MARK: - State Caching
 
-    var bossMechanicFrameCounter: Int = 0
     var puddlePhaseCache: [String: String] = [:]  // id -> "warning", "active", "pop"
     var zonePhaseCache: [String: Bool] = [:]       // id -> isActive
 
@@ -77,6 +76,7 @@ class BossRenderingManager {
 
     weak var enemyLayer: SKNode?
     var cachedBossBodyNode: SKNode?
+    var cachedBossEnemy: Enemy?  // Cached per frame to avoid repeated O(n) searches
     var cachedCyberbossPhase: Int = -1
     var cachedVoidHarbingerPhase: Int = -1
     var cachedOverclockerPhase: Int = -1
@@ -92,6 +92,9 @@ class BossRenderingManager {
     // MARK: - Public Rendering API
 
     func renderFrame(gameState: GameState) {
+        // Cache boss enemy lookup once per frame (avoids 6 O(n) scans)
+        cachedBossEnemy = gameState.enemies.first(where: { $0.isBoss && !$0.isDead })
+
         if let bossState = gameState.cyberbossState {
             renderCyberbossMechanics(bossState: bossState, gameState: gameState)
         } else {
@@ -210,7 +213,7 @@ class BossRenderingManager {
 
     func renderCyberbossMechanics(bossState: CyberbossAI.CyberbossState, gameState: GameState) {
         guard let scene = scene else { return }
-        guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+        guard let boss = cachedBossEnemy else { return }
 
         renderChainsawEffect(bossState: bossState, boss: boss, gameState: gameState)
 
@@ -237,17 +240,17 @@ class BossRenderingManager {
                         node.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                         node.strokeColor = DesignColors.warningUI
                         node.lineWidth = 3
-                        node.glowWidth = 1.5
+                        node.glowWidth = 0
                     } else if isAboutToPop {
                         node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.5)
                         node.strokeColor = DesignColors.dangerUI
                         node.lineWidth = 5
-                        node.glowWidth = 3.0  // Danger! About to pop
+                        node.glowWidth = 0
                     } else {
                         node.fillColor = DesignColors.dangerUI.withAlphaComponent(0.25)
                         node.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.8)
                         node.lineWidth = 3
-                        node.glowWidth = 1.0
+                        node.glowWidth = 0
                     }
                 }
             } else {
@@ -255,7 +258,7 @@ class BossRenderingManager {
                 puddleNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                 puddleNode.strokeColor = DesignColors.warningUI
                 puddleNode.lineWidth = 3
-                puddleNode.glowWidth = 1.5  // Danger puddle glow (boss fight only)
+                puddleNode.glowWidth = 0
                 puddleNode.position = CGPoint(x: puddle.x, y: gameState.arena.height - puddle.y)
                 puddleNode.zPosition = 5
                 puddleNode.name = nodeKey
@@ -303,7 +306,7 @@ class BossRenderingManager {
                 let laserNode = SKShapeNode(path: path)
                 laserNode.strokeColor = laserColor
                 laserNode.lineWidth = laserWidth
-                laserNode.glowWidth = 2.0  // Laser beam glow (boss fight only)
+                laserNode.glowWidth = 0
                 laserNode.zPosition = 100
                 laserNode.name = nodeKey
                 laserNode.position = CGPoint(x: bossSceneX, y: bossSceneY)
@@ -442,7 +445,7 @@ class BossRenderingManager {
                 dangerCircle.fillColor = DesignColors.dangerUI.withAlphaComponent(0.15)
                 dangerCircle.strokeColor = DesignColors.dangerUI.withAlphaComponent(0.6)
                 dangerCircle.lineWidth = 2
-                dangerCircle.glowWidth = 1.5  // Chainsaw danger zone
+                dangerCircle.glowWidth = 0
                 dangerCircle.name = "dangerCircle"
                 chainsawNode.addChild(dangerCircle)
 
@@ -529,7 +532,7 @@ class BossRenderingManager {
                 if zone.isActive {
                     zoneNode.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.3)
                     zoneNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
-                    zoneNode.glowWidth = 1.5  // Active void zone
+                    zoneNode.glowWidth = 0
                 } else {
                     zoneNode.fillColor = DesignColors.warningUI.withAlphaComponent(0.1)
                     zoneNode.strokeColor = DesignColors.warningUI
@@ -573,14 +576,14 @@ class BossRenderingManager {
                 pylonBody.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
                 pylonBody.strokeColor = DesignColors.secondaryUI
                 pylonBody.lineWidth = 2
-                pylonBody.glowWidth = 1.0  // Pylon structure glow
+                pylonBody.glowWidth = 0
                 container.addChild(pylonBody)
 
                 let crystal = SKShapeNode(circleOfRadius: 12)
                 crystal.fillColor = DesignColors.secondaryUI
                 crystal.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.6)
                 crystal.position = CGPoint(x: 0, y: 40)
-                crystal.glowWidth = 2.0  // Pylon crystal glow
+                crystal.glowWidth = 0
                 container.addChild(crystal)
 
                 let healthBg = SKShapeNode(rectOf: CGSize(width: 50, height: 6))
@@ -613,7 +616,7 @@ class BossRenderingManager {
 
         // Render shield around boss during Phase 2
         let shieldKey = "voidharbinger_shield"
-        let bossEnemy = gameState.enemies.first { $0.isBoss && !$0.isDead }
+        let bossEnemy = cachedBossEnemy
         if bossState.phase == 2 && bossState.isInvulnerable, let boss = bossEnemy {
             let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
 
@@ -640,7 +643,7 @@ class BossRenderingManager {
                 shieldNode.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.15)
                 shieldNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
                 shieldNode.lineWidth = 3
-                shieldNode.glowWidth = 2.0  // Shield glow
+                shieldNode.glowWidth = 0
                 shieldNode.position = bossScenePos
                 shieldNode.zPosition = 45
                 shieldNode.name = shieldKey
@@ -693,7 +696,7 @@ class BossRenderingManager {
                     let lineNode = SKShapeNode(path: linePath)
                     lineNode.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.6)
                     lineNode.lineWidth = 2
-                    lineNode.glowWidth = 1.5  // Energy tether glow
+                    lineNode.glowWidth = 0
                     lineNode.zPosition = 40
                     lineNode.name = lineKey
 
@@ -833,7 +836,7 @@ class BossRenderingManager {
                 let riftNode = SKShapeNode(path: path)
                 riftNode.strokeColor = DesignColors.secondaryUI
                 riftNode.lineWidth = rift.width
-                riftNode.glowWidth = 2.0  // Void rift glow
+                riftNode.glowWidth = 0
                 riftNode.alpha = 0.8
                 riftNode.zPosition = 10
                 riftNode.name = nodeKey
@@ -871,7 +874,7 @@ class BossRenderingManager {
                 let innerCircle = SKShapeNode(circleOfRadius: 30)
                 innerCircle.fillColor = SKColor.black.withAlphaComponent(0.7)
                 innerCircle.strokeColor = DesignColors.secondaryUI
-                innerCircle.glowWidth = 2.5  // Gravity well singularity
+                innerCircle.glowWidth = 0
                 wellNode.addChild(innerCircle)
 
                 wellNode.run(SKAction.repeatForever(gravityWellRotateAction), withKey: "rotate")
@@ -905,7 +908,7 @@ class BossRenderingManager {
                 arenaNode.fillColor = SKColor.clear
                 arenaNode.strokeColor = DesignColors.dangerUI
                 arenaNode.lineWidth = 4
-                arenaNode.glowWidth = 3.0  // Shrinking arena danger boundary
+                arenaNode.glowWidth = 0
                 arenaNode.zPosition = 3
                 arenaNode.name = arenaKey
                 arenaNode.position = CGPoint(x: bossState.arenaCenter.x, y: centerSceneY)
@@ -940,7 +943,7 @@ class BossRenderingManager {
 
         // Find boss body node
         if cachedBossBodyNode == nil || cachedBossBodyNode?.parent == nil {
-            guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+            guard let boss = cachedBossEnemy else { return }
             let bossScenePos = CGPoint(x: boss.x, y: gameState.arena.height - boss.y)
             cachedBossBodyNode = enemyLayer?.children.first(where: {
                 abs($0.position.x - bossScenePos.x) < 5 && abs($0.position.y - bossScenePos.y) < 5
@@ -957,7 +960,7 @@ class BossRenderingManager {
         }
 
         // Phase 2+: aura stroke thickens
-        if let aura = bossNode.children.first(where: { ($0 as? SKShapeNode)?.glowWidth ?? 0 > 1.5 }) as? SKShapeNode {
+        if let aura = bossNode.childNode(withName: "aura") as? SKShapeNode {
             switch phase {
             case 2: aura.lineWidth = 4
             case 3: aura.lineWidth = 5
@@ -973,7 +976,7 @@ class BossRenderingManager {
         if phase >= 3 {
             let crackKey = "voidCracks"
             if bossNode.childNode(withName: crackKey) == nil {
-                let bossSize = (gameState.enemies.first(where: { $0.isBoss && !$0.isDead })?.size ?? 60)
+                let bossSize = (cachedBossEnemy?.size ?? 60)
                 let crackPath = CGMutablePath()
                 // 3-4 crack lines radiating from center
                 for i in 0..<4 {
@@ -1022,7 +1025,7 @@ class BossRenderingManager {
 
     func renderOverclockerMechanics(bossState: OverclockerAI.OverclockerState, gameState: GameState) {
         guard let scene = scene else { return }
-        guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+        guard let boss = cachedBossEnemy else { return }
         let bossPos = CGPoint(x: boss.x, y: boss.y)
         let arenaH = gameState.arena.height
 
@@ -1289,7 +1292,7 @@ class BossRenderingManager {
         guard let scene = scene else { return }
         let arenaH = gameState.arena.height
 
-        guard let boss = gameState.enemies.first(where: { $0.isBoss && !$0.isDead }) else { return }
+        guard let boss = cachedBossEnemy else { return }
 
         let wyrmGreen = SKColor(red: 0, green: 1, blue: 0.27, alpha: 1.0)
         let wyrmDark = SKColor(red: 0, green: 0.6, blue: 0.15, alpha: 1.0)

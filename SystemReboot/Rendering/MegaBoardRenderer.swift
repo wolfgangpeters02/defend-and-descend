@@ -12,10 +12,6 @@ final class MegaBoardRenderer {
     private var lockedSectorNodes: [String: SKNode] = [:]
     private var unlockableSectorNodes: [String: SKNode] = [:]
     private var comingSoonSectorNodes: [String: SKNode] = [:]
-    // Animation timing
-    private var noisePhase: CGFloat = 0
-    private var pulsePhase: CGFloat = 0
-
     // Pre-generated binary strings to avoid per-frame allocation
     private let preGeneratedBinaryStrings: [String] = (0..<8).map { _ in
         (0..<8).map { _ in Bool.random() ? "1" : "0" }.joined(separator: "\n")
@@ -435,11 +431,4 @@ final class MegaBoardRenderer {
         comingSoonSectorNodes.removeAll()
     }
 
-    // MARK: - Update
-
-    /// Update animations (call from game loop)
-    func update(deltaTime: TimeInterval) {
-        noisePhase += CGFloat(deltaTime)
-        pulsePhase += CGFloat(deltaTime)
-    }
 }

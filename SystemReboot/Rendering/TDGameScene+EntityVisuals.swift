@@ -49,29 +49,40 @@ extension TDGameScene {
         }
 
         // Clean up old damage events (older than 2 seconds)
-        state.damageEvents.removeAll { state.gameTime - $0.timestamp > 2.0 }
+        // Early-exit: events are appended chronologically, so if oldest is recent, skip scan
+        if let oldest = state.damageEvents.first, state.gameTime - oldest.timestamp > 2.0 {
+            state.damageEvents.removeAll { state.gameTime - $0.timestamp > 2.0 }
+        }
     }
 
     // MARK: - Visual Updates
 
     func updateTowerVisuals(state: TDGameState) {
-        // Remove old tower nodes
-        for (id, node) in towerNodes {
-            if !state.towers.contains(where: { $0.id == id }) {
-                node.removeFromParent()
-                towerNodes.removeValue(forKey: id)
-                towerNodeRefs.removeValue(forKey: id)
-                towerLastAttackTimes.removeValue(forKey: id)
-                towerBarrelRotations.removeValue(forKey: id)
-                pausedTowerAnimations.remove(id)  // Clean up animation LOD tracking
-            }
+        // Remove old tower nodes (Set lookup: O(1) per node)
+        let activeTowerIds = Set(state.towers.map { $0.id })
+        for (id, node) in towerNodes where !activeTowerIds.contains(id) {
+            node.removeFromParent()
+            towerNodes.removeValue(forKey: id)
+            towerNodeRefs.removeValue(forKey: id)
+            towerLastAttackTimes.removeValue(forKey: id)
+            towerBarrelRotations.removeValue(forKey: id)
+            pausedTowerAnimations.remove(id)  // Clean up animation LOD tracking
         }
+
+        // Performance: calculate visible rect once to skip off-screen tower updates
+        let towerVisibleRect = calculateVisibleRect().insetBy(dx: -120, dy: -120)
 
         // Update/create tower nodes
         for tower in state.towers {
             if let node = towerNodes[tower.id] {
                 // Update existing
                 node.position = convertToScene(tower.position)
+
+                // Skip expensive visual updates for off-screen towers
+                guard towerVisibleRect.contains(node.position) || tower.id == selectedTowerId else {
+                    towerLastAttackTimes[tower.id] = tower.lastAttackTime
+                    continue
+                }
 
                 // Get or build cached refs
                 var refs = towerNodeRefs[tower.id] ?? TowerNodeRefs()
@@ -82,7 +93,7 @@ extension TDGameScene {
                     // Lazily create range indicator on first need
                     if refs.rangeNode == nil {
                         let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
-                        let rangeIndicator = TowerVisualFactory.createRangeIndicator(range: tower.range, color: towerColor)
+                        let rangeIndicator = TowerVisualFactory.createRangeIndicator(range: tower.effectiveRange, color: towerColor)
                         rangeIndicator.name = "range"
                         rangeIndicator.isHidden = true
                         rangeIndicator.zPosition = -2  // Below tower body but above background (effective: 4-2=2)
@@ -141,6 +152,38 @@ extension TDGameScene {
                     }
                 }
 
+                // Update star indicator if star level changed
+                if tower.starLevel > 0 {
+                    if refs.starIndicator == nil {
+                        // No star indicator yet — create one
+                        let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
+                        let starIndicator = TowerVisualFactory.createStarIndicator(starLevel: tower.starLevel, color: towerColor)
+                        starIndicator.name = "starIndicator"
+                        starIndicator.position = CGPoint(x: 0, y: -38)
+                        starIndicator.zPosition = 25
+                        node.addChild(starIndicator)
+                        refs.starIndicator = starIndicator
+                    } else if let existing = refs.starIndicator {
+                        // Check if star label text changed
+                        let expectedStars = String(repeating: "\u{2605}", count: tower.starLevel)
+                        let currentLabel = existing.childNode(withName: "starChar") as? SKLabelNode
+                        if currentLabel?.text != expectedStars {
+                            existing.removeFromParent()
+                            let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
+                            let starIndicator = TowerVisualFactory.createStarIndicator(starLevel: tower.starLevel, color: towerColor)
+                            starIndicator.name = "starIndicator"
+                            starIndicator.position = CGPoint(x: 0, y: -38)
+                            starIndicator.zPosition = 25
+                            node.addChild(starIndicator)
+                            refs.starIndicator = starIndicator
+                        }
+                    }
+                } else if let existing = refs.starIndicator {
+                    // Star level is 0 but indicator exists — clean up
+                    existing.removeFromParent()
+                    refs.starIndicator = nil
+                }
+
                 // Save refs before cooldown arc (which may lazily create the cooldown node)
                 towerNodeRefs[tower.id] = refs
 
@@ -192,11 +235,6 @@ extension TDGameScene {
 
         // Special effects for certain archetypes
         switch archetype {
-        case .legendary:
-            // Excalibur golden flash on attack
-            if Bool.random() && Bool.random() {  // ~25% chance for special effect
-                TowerAnimations.playLegendarySpecialEffect(node: node)
-            }
         case .execute:
             // Null pointer glitch effect
             TowerAnimations.playExecuteEffect(node: node)
@@ -238,7 +276,7 @@ extension TDGameScene {
     /// Update cooldown arc indicator on tower (cached refs + lazy creation + arc path caching)
     func updateCooldownArc(for tower: Tower, node: SKNode, currentTime: TimeInterval) {
         // Guard against invalid attack speed (prevents NaN/Infinity angles)
-        guard tower.attackSpeed > 0 else {
+        guard tower.effectiveAttackSpeed > 0 else {
             // Hide if it exists
             if let refs = towerNodeRefs[tower.id], let cooldownNode = refs.cooldownNode {
                 cooldownNode.isHidden = true
@@ -246,7 +284,7 @@ extension TDGameScene {
             return
         }
 
-        let attackInterval = 1.0 / tower.attackSpeed
+        let attackInterval = 1.0 / tower.effectiveAttackSpeed
         let timeSinceAttack = currentTime - tower.lastAttackTime
         let cooldownProgress = min(1.0, max(0.0, timeSinceAttack / attackInterval))
 
@@ -335,10 +373,11 @@ extension TDGameScene {
         return TowerVisualFactory.createTowerNode(
             protocolId: tower.protocolId,
             color: towerColor,
-            range: tower.range,
+            range: tower.effectiveRange,
             level: tower.level,
-            damage: tower.damage,
-            attackSpeed: tower.attackSpeed,
+            starLevel: tower.starLevel,
+            damage: tower.effectiveDamage,
+            attackSpeed: tower.effectiveAttackSpeed,
             projectileCount: tower.projectileCount,
             rarity: rarityString
         )
@@ -363,8 +402,8 @@ extension TDGameScene {
                 if refs.lodDetail == nil, let tower = state?.towers.first(where: { $0.id == towerId }) {
                     let towerColor = UIColor(hex: tower.color) ?? TowerColors.color(for: tower.protocolId)
                     let lodDetail = TowerVisualFactory.createLODDetail(
-                        damage: tower.damage,
-                        attackSpeed: tower.attackSpeed,
+                        damage: tower.effectiveDamage,
+                        attackSpeed: tower.effectiveAttackSpeed,
                         projectileCount: tower.projectileCount,
                         level: tower.level,
                         color: towerColor
@@ -377,6 +416,15 @@ extension TDGameScene {
                     towerNodeRefs[towerId] = refs
                 }
                 if let lodDetail = refs.lodDetail {
+                    // Update DPS label if tower stats changed (e.g. after merge)
+                    if let tower = state?.towers.first(where: { $0.id == towerId }),
+                       let dpsLabel = lodDetail.childNode(withName: "dpsLabel") as? SKLabelNode {
+                        let currentDPS = tower.effectiveDamage * tower.effectiveAttackSpeed * CGFloat(tower.projectileCount)
+                        let newText = L10n.Stats.dpsValue(currentDPS)
+                        if dpsLabel.text != newText {
+                            dpsLabel.text = newText
+                        }
+                    }
                     if abs(lodDetail.alpha - targetAlpha) > 0.01 {
                         lodDetail.removeAction(forKey: "lodFade")
                         let fadeAction = SKAction.fadeAlpha(to: targetAlpha, duration: 0.2)
@@ -394,7 +442,7 @@ extension TDGameScene {
                 }
             }
 
-            // Animation LOD: Pause animations for off-screen towers
+            // Animation LOD: pause/resume actions for off-screen towers
             let isVisible = paddedRect.contains(node.position)
 
             if isVisible && pausedTowerAnimations.contains(towerId) {
@@ -670,8 +718,30 @@ extension TDGameScene {
                 }
                 innerNode = nil
 
+            } else if enemy.type == "void_harbinger" {
+                // Void Harbinger — full octagonal void core composition
+                let _ = EntityRenderer.createVoidHarbingerComposition(in: container, size: enemy.size)
+                body = (container.childNode(withName: "body") as? SKShapeNode)
+                    ?? SKShapeNode(path: createHexagonPath(radius: enemy.size))
+                if body.parent == nil {
+                    body.name = "body"
+                    container.addChild(body)
+                }
+                innerNode = nil
+
+            } else if enemy.type == "trojan_wyrm" {
+                // Trojan Wyrm — segmented worm head + trailing body
+                let _ = EntityRenderer.createTrojanWyrmComposition(in: container, size: enemy.size)
+                body = (container.childNode(withName: "body") as? SKShapeNode)
+                    ?? SKShapeNode(path: createHexagonPath(radius: enemy.size))
+                if body.parent == nil {
+                    body.name = "body"
+                    container.addChild(body)
+                }
+                innerNode = nil
+
             } else {
-                // Other bosses (Void Harbinger, Trojan Wyrm, generic): shape-based rendering
+                // Generic/unknown bosses: shape-based rendering
                 switch enemy.shape {
                 case "triangle":
                     let path = UIBezierPath()
@@ -760,7 +830,7 @@ extension TDGameScene {
                 let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 5.0)
                 innerNode?.run(SKAction.repeatForever(rotate))
 
-            } else if enemy.isBoss && enemy.type != EnemyID.cyberboss.rawValue && enemy.type != EnemyID.overclocker.rawValue {
+            } else if enemy.isBoss && enemy.type != EnemyID.cyberboss.rawValue && enemy.type != EnemyID.overclocker.rawValue && enemy.type != "void_harbinger" && enemy.type != "trojan_wyrm" {
                 // Regular/legacy boss (not handled by archetype compositions)
                 let bossLabel = SKLabelNode(text: L10n.Enemy.bossIndicator)
                 bossLabel.fontName = "Menlo-Bold"
@@ -856,11 +926,10 @@ extension TDGameScene {
         // Track enemies to remove
         var enemiesToRemove: [String] = []
 
-        // Remove old enemy nodes with death animation
-        for (id, node) in enemyNodes {
-            if !state.enemies.contains(where: { $0.id == id && !$0.isDead }) {
-                enemiesToRemove.append(id)
-            }
+        // Remove old enemy nodes with death animation (Set lookup: O(1) per node)
+        let livingEnemyIds = Set(state.enemies.lazy.filter { !$0.isDead }.map { $0.id })
+        for (id, _) in enemyNodes where !livingEnemyIds.contains(id) {
+            enemiesToRemove.append(id)
         }
 
         for id in enemiesToRemove {
@@ -888,8 +957,10 @@ extension TDGameScene {
                 // Update position (always, even off-screen)
                 node.position = convertToScene(enemy.position)
 
-                // Performance: skip expensive visual updates for off-screen enemies
-                guard paddedRect.contains(node.position) else { continue }
+                // Viewport culling: hide off-screen enemies (saves GPU draw calls)
+                let isOnScreen = paddedRect.contains(node.position)
+                node.isHidden = !isOnScreen
+                guard isOnScreen else { continue }
 
                 // Health arc indicator — lazy thin arc above enemy, only when damaged
                 let healthFraction = enemy.health / enemy.maxHealth
@@ -1084,25 +1155,6 @@ extension TDGameScene {
         let rotate = SKAction.repeatForever(SKAction.rotate(byAngle: 2 * .pi, duration: 3.0))
         container.run(rotate, withKey: "frostOrbit")
 
-        // Subtle pulsing glow
-        let pulseGlow = SKAction.repeatForever(SKAction.sequence([
-            SKAction.customAction(withDuration: 0.5) { node, elapsed in
-                for child in node.children {
-                    if let shape = child as? SKShapeNode {
-                        shape.glowWidth = 0  // PERF: was 3 + 2 * sin(elapsed / 0.5 * .pi) (GPU Gaussian blur)
-                    }
-                }
-            },
-            SKAction.customAction(withDuration: 0.5) { node, elapsed in
-                for child in node.children {
-                    if let shape = child as? SKShapeNode {
-                        shape.glowWidth = 0  // PERF: was 5 - 2 * sin(elapsed / 0.5 * .pi) (GPU Gaussian blur)
-                    }
-                }
-            }
-        ]))
-        container.run(pulseGlow, withKey: "frostPulse")
-
         return container
     }
 
@@ -1148,13 +1200,12 @@ extension TDGameScene {
     }
 
     func updateProjectileVisuals(state: TDGameState) {
-        // Remove old projectile nodes and trails
-        for (id, node) in projectileNodes {
-            if !state.projectiles.contains(where: { $0.id == id }) {
-                node.removeFromParent()
-                projectileNodes.removeValue(forKey: id)
-                projectileTrails.removeValue(forKey: id)
-            }
+        // Remove old projectile nodes and trails (Set lookup: O(1) per node)
+        let activeProjectileIds = Set(state.projectiles.map { $0.id })
+        for (id, node) in projectileNodes where !activeProjectileIds.contains(id) {
+            tdNodePool.release(node, type: "td_projectile")
+            projectileNodes.removeValue(forKey: id)
+            projectileTrails.removeValue(forKey: id)
         }
 
         // Update/create projectile nodes and trails
@@ -1167,26 +1218,35 @@ extension TDGameScene {
                 // Update trail (optimized - single path node)
                 updateProjectileTrail(projId: proj.id, position: scenePos, color: UIColor(hex: proj.color) ?? .yellow)
             } else {
-                // Create new projectile node
-                let container = SKNode()
+                // Acquire from pool (reuses nodes instead of alloc/dealloc)
+                let container = tdNodePool.acquire(type: "td_projectile") {
+                    let c = SKNode()
+                    let projectile = SKShapeNode(circleOfRadius: BalanceConfig.Towers.projectileHitboxRadius)
+                    projectile.strokeColor = .white
+                    projectile.lineWidth = 1
+                    projectile.name = "projectile"
+                    c.addChild(projectile)
+
+                    let trailNode = SKShapeNode()
+                    trailNode.name = "trail"
+                    trailNode.zPosition = -1
+                    trailNode.lineCap = .round
+                    trailNode.lineJoin = .round
+                    c.addChild(trailNode)
+                    return c
+                }
+
                 container.position = scenePos
 
-                let projectile = SKShapeNode(circleOfRadius: proj.radius)
-                projectile.fillColor = UIColor(hex: proj.color) ?? .yellow
-                projectile.strokeColor = .white
-                projectile.lineWidth = 1
-                projectile.name = "projectile"
-                // REMOVED: glowWidth = 3 (expensive blur shader)
-                container.addChild(projectile)
+                // Reset color for this projectile
+                if let projectileShape = container.childNode(withName: "projectile") as? SKShapeNode {
+                    projectileShape.fillColor = UIColor(hex: proj.color) ?? .yellow
+                }
 
-                // Trail: single SKShapeNode (will update path, not recreate nodes)
-                let trailNode = SKShapeNode()
-                trailNode.name = "trail"
-                trailNode.zPosition = -1
-                trailNode.lineCap = .round
-                trailNode.lineJoin = .round
-                // REMOVED: glowWidth, blendMode = .add
-                container.addChild(trailNode)
+                // Clear stale trail path
+                if let trailNode = container.childNode(withName: "trail") as? SKShapeNode {
+                    trailNode.path = nil
+                }
 
                 projectileLayer.addChild(container)
                 projectileNodes[proj.id] = container
@@ -1235,52 +1295,80 @@ extension TDGameScene {
     func updateCoreVisual(state: TDGameState, currentTime: TimeInterval) {
         guard let coreContainer = backgroundLayer.childNode(withName: "core") else { return }
 
-        // Get efficiency for color updates
         let efficiency = state.efficiency
+        let cpuTier = state.cpuTier
+        let tierColor = CPUTierColors.color(for: cpuTier)
 
-        // Determine color based on efficiency
+        // Determine color based on efficiency (overrides tier color for critical elements)
         let efficiencyColor: UIColor
-        let glowIntensity: CGFloat
         if efficiency >= 70 {
             efficiencyColor = DesignColors.successUI  // Green
-            glowIntensity = 15
         } else if efficiency >= 40 {
             efficiencyColor = DesignColors.warningUI  // Yellow/Amber
-            glowIntensity = 10
         } else if efficiency >= 20 {
             efficiencyColor = UIColor.orange
-            glowIntensity = 8
         } else {
             efficiencyColor = DesignColors.dangerUI   // Red - critical
-            glowIntensity = 20  // More intense glow when critical
         }
 
-        // Update CPU body stroke color
+        // IHS body uses tier color at high efficiency, efficiency color when under stress
+        let bodyStrokeColor = efficiency >= 70 ? tierColor : efficiencyColor
         if let cpuBody = coreContainer.childNode(withName: "cpuBody") as? SKShapeNode {
-            cpuBody.strokeColor = efficiencyColor
-            cpuBody.glowWidth = 0  // PERF: was glowIntensity (GPU Gaussian blur)
+            cpuBody.strokeColor = bodyStrokeColor
         }
 
-        // Update inner chip
+        // Inner chip uses efficiency color (always shows health status)
         if let innerChip = coreContainer.childNode(withName: "innerChip") as? SKShapeNode {
             innerChip.strokeColor = efficiencyColor.withAlphaComponent(0.6)
         }
 
-        // Update efficiency label
+        // Efficiency label
         if let efficiencyLabel = coreContainer.childNode(withName: "efficiencyLabel") as? SKLabelNode {
             efficiencyLabel.text = "\(Int(efficiency))%"
             efficiencyLabel.fontColor = efficiencyColor
         }
 
-        // Update glow ring
-        if let glowRing = coreContainer.childNode(withName: "glowRing") as? SKShapeNode {
-            glowRing.strokeColor = efficiencyColor.withAlphaComponent(0.3)
-            glowRing.glowWidth = 0  // PERF: was glowIntensity (GPU Gaussian blur)
+        // Tier label
+        if let tierLabel = coreContainer.childNode(withName: "tierLabel") as? SKLabelNode {
+            tierLabel.text = "T\(cpuTier)"
+            tierLabel.fontColor = tierColor.withAlphaComponent(0.6)
         }
 
-        // Pulse effect - more intense when efficiency is low
+        // Glow ring — blends efficiency + tier color
+        if let glowRing = coreContainer.childNode(withName: "glowRing") as? SKShapeNode {
+            let glowColor = efficiency >= 70 ? tierColor : efficiencyColor
+            glowRing.strokeColor = glowColor.withAlphaComponent(0.3)
+        }
+
+        // Inner glow uses tier color
+        if let innerGlow = coreContainer.childNode(withName: "innerGlow") as? SKShapeNode {
+            innerGlow.strokeColor = tierColor.withAlphaComponent(0.35)
+        }
+
+        // Update core block visibility based on tier
+        let coresVisible = min(cpuTier * 2, 8)
+        for i in 0..<8 {
+            if let block = coreContainer.childNode(withName: "coreBlock_\(i)") as? SKShapeNode {
+                block.isHidden = i >= coresVisible
+                block.strokeColor = tierColor.withAlphaComponent(0.5)
+            }
+        }
+
+        // Update cache bar visibility based on tier
+        for i in 0..<2 {
+            if let bar = coreContainer.childNode(withName: "cacheBar_L2_\(i)") as? SKShapeNode {
+                bar.isHidden = cpuTier < 3
+                bar.strokeColor = tierColor.withAlphaComponent(0.35)
+            }
+        }
+        if let l3 = coreContainer.childNode(withName: "cacheBar_L3") as? SKShapeNode {
+            l3.isHidden = cpuTier < 4
+            l3.strokeColor = tierColor.withAlphaComponent(0.3)
+        }
+
+        // Pulse effect — more intense when efficiency is low
         let baseScale = CoreSystem.getCorePulseScale(state: state, currentTime: currentTime)
-        let pulseIntensity: CGFloat = efficiency < 30 ? 1.15 : 1.0  // More intense pulse when critical
+        let pulseIntensity: CGFloat = efficiency < 30 ? 1.15 : 1.0
         coreContainer.setScale(baseScale * pulseIntensity)
     }
 

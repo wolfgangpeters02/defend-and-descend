@@ -10,35 +10,26 @@ final class TowerVisualFactory {
     // MARK: - Tower Archetype
 
     enum TowerArchetype {
-        case projectile     // Bow, TraceRoute, KernelPulse - Targeting reticle
-        case artillery      // Cannon, Bomb, BurstProtocol - Heavy platform
+        case projectile     // TraceRoute, KernelPulse - Targeting reticle
+        case artillery      // BurstProtocol - Heavy platform
         case frost          // IceShard - Crystalline spire
-        case magic          // Staff, Wand - Arcane beacon
-        case beam           // Laser, RootAccess - Tech emitter
-        case tesla          // Lightning, Overflow - Tesla coil
-        case pyro           // Flamethrower - Incinerator
-        case legendary      // Excalibur - Divine altar
+        case beam           // RootAccess - Tech emitter
+        case tesla          // Overflow - Tesla coil
         case multishot      // ForkBomb - Replication array
         case execute        // NullPointer - System exception
 
         static func from(protocolId: String) -> TowerArchetype {
             switch protocolId.lowercased() {
-            case "bow", "crossbow", "trace_route", "kernel_pulse":
+            case "trace_route", "kernel_pulse":
                 return .projectile
-            case "cannon", "bomb", "burst_protocol":
+            case "burst_protocol":
                 return .artillery
-            case "ice_shard", "snowflake":
+            case "ice_shard":
                 return .frost
-            case "staff", "wand":
-                return .magic
-            case "laser", "root_access":
+            case "root_access":
                 return .beam
-            case "lightning", "overflow":
+            case "overflow":
                 return .tesla
-            case "flamethrower":
-                return .pyro
-            case "excalibur", "sword", "katana":
-                return .legendary
             case "fork_bomb":
                 return .multishot
             case "null_pointer":
@@ -56,6 +47,7 @@ final class TowerVisualFactory {
         color: UIColor,
         range: CGFloat,
         level: Int,
+        starLevel: Int = 0,
         damage: CGFloat,
         attackSpeed: CGFloat,
         projectileCount: Int,
@@ -66,7 +58,7 @@ final class TowerVisualFactory {
         let rarityTier = RarityTier.from(rarity)
 
         // Single glow layer (Performance: collapsed from 3 layers to 1)
-        let baseRadius: CGFloat = archetype == .legendary ? 22 : 18
+        let baseRadius: CGFloat = 18
         let glowOpacity: CGFloat = rarityTier == .legendary ? 0.35 : 0.25
         let glow = SKShapeNode(circleOfRadius: baseRadius)
         glow.fillColor = color.withAlphaComponent(glowOpacity)
@@ -129,83 +121,21 @@ final class TowerVisualFactory {
         levelIndicator.zPosition = 4
         container.addChild(levelIndicator)
 
+        // Star indicators (show merge level 0-3) — positioned above tower, high zPosition to stay on top
+        if starLevel > 0 {
+            let starIndicator = createStarIndicator(starLevel: starLevel, color: color)
+            starIndicator.name = "starIndicator"
+            starIndicator.position = CGPoint(x: 0, y: -38)
+            starIndicator.zPosition = 25
+            container.addChild(starIndicator)
+        }
+
         // NOTE: Range indicator, cooldown arc, and LOD detail are created lazily
         // on first access in TDGameScene+EntityVisuals.swift to save ~6 nodes per tower.
         // Muzzle flash is kept here because it's attached to barrel and used frequently.
 
         // Start idle animations
         TowerAnimations.startIdleAnimation(node: container, archetype: archetype, color: color)
-
-        return container
-    }
-
-    // MARK: - Glow Layers
-
-    private static func createOuterGlow(color: UIColor, archetype: TowerArchetype, rarity: RarityTier) -> SKNode {
-        let container = SKNode()
-
-        let baseRadius: CGFloat = archetype == .legendary ? 35 : 28
-        let glowOpacity: CGFloat = rarity == .legendary ? 0.12 : 0.08
-
-        let glow = SKShapeNode(circleOfRadius: baseRadius)
-        glow.fillColor = color.withAlphaComponent(glowOpacity)
-        glow.strokeColor = .clear
-        glow.glowWidth = 0  // Disabled for performance (GPU Gaussian blur)
-        glow.blendMode = .add
-        container.addChild(glow)
-
-        // Add subtle rotating ring for epic+ rarity
-        if rarity.rawValue >= RarityTier.epic.rawValue {
-            let ring = SKShapeNode(circleOfRadius: baseRadius - 2)
-            ring.fillColor = .clear
-            ring.strokeColor = color.withAlphaComponent(0.1)
-            ring.lineWidth = 1
-            ring.glowWidth = 0
-            ring.name = "outerRing"
-            container.addChild(ring)
-        }
-
-        return container
-    }
-
-    private static func createMidGlow(color: UIColor, archetype: TowerArchetype, rarity: RarityTier) -> SKNode {
-        let container = SKNode()
-
-        let baseRadius: CGFloat = archetype == .legendary ? 26 : 22
-        let glowOpacity: CGFloat = rarity == .legendary ? 0.25 : 0.18
-
-        let glow = SKShapeNode(circleOfRadius: baseRadius)
-        glow.fillColor = color.withAlphaComponent(glowOpacity)
-        glow.strokeColor = color.withAlphaComponent(0.15)
-        glow.lineWidth = 1
-        glow.glowWidth = 0
-        glow.blendMode = .add
-        container.addChild(glow)
-
-        return container
-    }
-
-    private static func createCoreGlow(color: UIColor, archetype: TowerArchetype) -> SKNode {
-        let container = SKNode()
-
-        let baseRadius: CGFloat = archetype == .legendary ? 20 : 16
-
-        let glow = SKShapeNode(circleOfRadius: baseRadius)
-        glow.fillColor = color.withAlphaComponent(0.4)
-        glow.strokeColor = color.withAlphaComponent(0.6)
-        glow.lineWidth = 2
-        glow.glowWidth = 0
-        glow.blendMode = .add
-        container.addChild(glow)
-
-        // Bright center highlight
-        let highlight = SKShapeNode(circleOfRadius: 4)
-        highlight.fillColor = UIColor.white.withAlphaComponent(0.8)
-        highlight.strokeColor = .clear
-        highlight.glowWidth = 0
-        highlight.blendMode = .add
-        highlight.name = "coreHighlight"
-        container.addChild(highlight)
 
         return container
     }
@@ -234,11 +164,6 @@ final class TowerVisualFactory {
             container.addChild(platform)
             addFrostParticles(to: container, color: color)
 
-        case .magic:
-            // Arcane circle with rotating runes
-            let platform = createArcaneCircle(radius: 20, color: color)
-            container.addChild(platform)
-
         case .beam:
             // Tech grid platform with capacitor nodes
             let platform = createTechGrid(size: 32, color: color)
@@ -249,18 +174,6 @@ final class TowerVisualFactory {
             // Insulator base with coil foundation
             let platform = createInsulatorBase(radius: 18, color: color)
             container.addChild(platform)
-
-        case .pyro:
-            // Industrial base with hazard markings
-            let platform = createIndustrialBase(size: 34, color: color)
-            container.addChild(platform)
-            addHazardStripes(to: container)
-
-        case .legendary:
-            // Ornate golden platform with sacred geometry
-            let platform = createSacredPlatform(radius: 24, color: color)
-            container.addChild(platform)
-            addDivineRays(to: container, color: color)
 
         case .multishot:
             // Server rack style base
@@ -286,16 +199,10 @@ final class TowerVisualFactory {
             return createHeavyBarrel(color: color)
         case .frost:
             return createCrystalEmitter(color: color)
-        case .magic:
-            return createOrbEmitter(color: color)
         case .beam:
             return createLensArray(color: color)
         case .tesla:
             return createTeslaAntenna(color: color)
-        case .pyro:
-            return createFlameNozzle(color: color)
-        case .legendary:
-            return createDivineBeam(color: color)
         case .multishot:
             return createMultiEmitter(color: color)
         case .execute:
@@ -355,31 +262,6 @@ final class TowerVisualFactory {
         return barrel
     }
 
-    private static func createOrbEmitter(color: UIColor) -> SKSpriteNode {
-        let barrel = SKSpriteNode(color: .clear, size: CGSize(width: 6, height: 18))
-
-        // Floating orb at top
-        let orb = SKShapeNode(circleOfRadius: 6)
-        orb.fillColor = color
-        orb.strokeColor = .white
-        orb.lineWidth = 1
-        orb.glowWidth = 0
-        orb.blendMode = .add
-        orb.position = CGPoint(x: 0, y: 18)
-        orb.name = "emitterOrb"
-        barrel.addChild(orb)
-
-        // Energy trail
-        let trail = SKShapeNode(rectOf: CGSize(width: 2, height: 12), cornerRadius: 1)
-        trail.fillColor = color.withAlphaComponent(0.5)
-        trail.strokeColor = .clear
-        trail.glowWidth = 0
-        trail.position = CGPoint(x: 0, y: 6)
-        barrel.addChild(trail)
-
-        return barrel
-    }
-
     private static func createLensArray(color: UIColor) -> SKSpriteNode {
         let barrel = SKSpriteNode(color: color.withAlphaComponent(0.6), size: CGSize(width: 8, height: 24))
 
@@ -417,38 +299,6 @@ final class TowerVisualFactory {
         sphere.position = CGPoint(x: 0, y: 24)
         sphere.name = "teslaSphere"
         barrel.addChild(sphere)
-
-        return barrel
-    }
-
-    private static func createFlameNozzle(color: UIColor) -> SKSpriteNode {
-        let barrel = SKSpriteNode(color: .darkGray, size: CGSize(width: 14, height: 16))
-
-        // Triple nozzle tips
-        for i in -1...1 {
-            let nozzle = SKShapeNode(rectOf: CGSize(width: 4, height: 6), cornerRadius: 1)
-            nozzle.fillColor = .gray
-            nozzle.strokeColor = color
-            nozzle.lineWidth = 1
-            nozzle.position = CGPoint(x: CGFloat(i) * 5, y: 10)
-            barrel.addChild(nozzle)
-        }
-
-        return barrel
-    }
-
-    private static func createDivineBeam(color: UIColor) -> SKSpriteNode {
-        let barrel = SKSpriteNode(color: .clear, size: CGSize(width: 8, height: 20))
-
-        // Vertical light beam
-        let beam = SKShapeNode(rectOf: CGSize(width: 4, height: 40), cornerRadius: 2)
-        beam.fillColor = UIColor(hex: "fbbf24")?.withAlphaComponent(0.3) ?? .yellow.withAlphaComponent(0.3)
-        beam.strokeColor = .clear
-        beam.glowWidth = 0
-        beam.blendMode = .add
-        beam.position = CGPoint(x: 0, y: 20)
-        beam.name = "divineBeam"
-        barrel.addChild(beam)
 
         return barrel
     }
