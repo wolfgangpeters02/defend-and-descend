@@ -677,5 +677,5 @@ struct GlitchEffectOverlay: View {
 }
 
 #Preview {
-    GameContainerView(gameMode: .survival, onExit: {})
+    GameContainerView(gameMode: .boss, onExit: {})
 }

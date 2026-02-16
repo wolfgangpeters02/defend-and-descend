@@ -88,7 +88,8 @@ In **EntityIDs.swift**:
 
 Fix all compilation errors from removed types. For `abilities: nil` in `GameStateFactory.createPlayer()`, just remove the parameter.
 
-### Stage 4: Clean survival code from GameContainerView and AppState [TODO]
+### Stage 4: Clean survival code from GameContainerView and AppState [DONE]
+Removed recordRun() survival-only wrapper from AppState; removed gameMode == .survival branch from GameRewardService.applySurvivorResult; changed GameContainerView preview from .survival to .boss.
 
 In **GameContainerView.swift**:
 
@@ -183,7 +184,7 @@ Global sweep:
 - [x] Stage 1: Survival system files deleted
 - [x] Stage 2: DebugGameView and debug arenas removed
 - [x] Stage 3: Survival types cleaned from shared files
-- [ ] Stage 4: Survival UI and reward code cleaned
+- [x] Stage 4: Survival UI and reward code cleaned
 - [ ] Stage 5: Balance config and L10n cleaned
 - [ ] Stage 6: Player profile fields cleaned
 - [ ] Stage 7: Unused arena themes removed

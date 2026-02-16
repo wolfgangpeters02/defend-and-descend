@@ -107,11 +107,6 @@ class AppState: ObservableObject {
 
     // MARK: - Stats
 
-    func recordRun(kills: Int, time: TimeInterval, sessionHash: Int) {
-        // Use the full survivor run recording with Hash rewards
-        recordSurvivorRun(time: time, kills: kills, sessionHash: sessionHash, gameMode: .survival, victory: false)
-    }
-
     func unlockItem(category: String, id: String, rarity: Rarity) {
         updatePlayer { profile in
             _ = LevelingSystem.unlockItem(profile: &profile, category: category, id: id)

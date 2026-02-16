@@ -80,9 +80,7 @@ struct GameRewardService {
         if time > profile.bestTime { profile.bestTime = time }
 
         // Mode-specific stats
-        if gameMode == .survival {
-            profile.survivorStats.arenaRuns += 1
-        } else if gameMode == .boss {
+        if gameMode == .boss {
             profile.survivorStats.dungeonRuns += 1
             if victory {
                 profile.survivorStats.dungeonsCompleted += 1
