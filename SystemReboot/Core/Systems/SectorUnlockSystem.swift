@@ -40,12 +40,16 @@ final class SectorUnlockSystem {
         let prerequisitesMet: Bool
         let missingPrerequisites: [String]  // Display names of missing prereqs
         let isAlreadyUnlocked: Bool
+        let isComingSoon: Bool              // Beyond MVP boundary
 
         var canUnlock: Bool {
-            canAfford && prerequisitesMet && !isAlreadyUnlocked
+            canAfford && prerequisitesMet && !isAlreadyUnlocked && !isComingSoon
         }
 
         var statusMessage: String {
+            if isComingSoon {
+                return "Coming Soon"
+            }
             if isAlreadyUnlocked {
                 return L10n.Sector.alreadyDecrypted
             }
@@ -65,6 +69,22 @@ final class SectorUnlockSystem {
     func getUnlockStatus(for sectorId: String, profile: PlayerProfile) -> UnlockStatus? {
         guard let sector = MegaBoardSystem.shared.sector(id: sectorId) else {
             return nil
+        }
+
+        // Beyond MVP boundary — return a "Coming Soon" status
+        if BalanceConfig.SectorUnlock.isBeyondMVP(sectorId) {
+            return UnlockStatus(
+                sectorId: sectorId,
+                displayName: sector.displayName,
+                description: sector.description,
+                unlockCost: 0,
+                currentHash: profile.hash,
+                canAfford: false,
+                prerequisitesMet: false,
+                missingPrerequisites: [],
+                isAlreadyUnlocked: false,
+                isComingSoon: true
+            )
         }
 
         let isUnlocked = MegaBoardSystem.shared.isSectorUnlocked(sectorId, profile: profile)
@@ -97,7 +117,8 @@ final class SectorUnlockSystem {
             canAfford: currentHash >= sector.unlockCost,
             prerequisitesMet: prerequisitesMet,
             missingPrerequisites: allMissing,
-            isAlreadyUnlocked: isUnlocked
+            isAlreadyUnlocked: isUnlocked,
+            isComingSoon: false
         )
     }
 
@@ -117,6 +138,11 @@ final class SectorUnlockSystem {
     /// Returns result indicating success/failure
     @discardableResult
     func unlockSector(_ sectorId: String, profile: inout PlayerProfile) -> UnlockResult {
+        // Beyond MVP boundary — cannot unlock
+        if BalanceConfig.SectorUnlock.isBeyondMVP(sectorId) {
+            return .failure(sectorId: sectorId, reason: "Coming Soon")
+        }
+
         guard let status = getUnlockStatus(for: sectorId, profile: profile) else {
             return .failure(sectorId: sectorId, reason: "Sector not found")
         }
@@ -144,6 +170,8 @@ final class SectorUnlockSystem {
 
         // Update cache in MegaBoardSystem
         MegaBoardSystem.shared.updateUnlockCache(from: profile)
+
+        AnalyticsService.shared.trackSectorUnlocked(sectorId: sectorId, cost: cost)
 
         return .success(sectorId: sectorId, hashSpent: cost)
     }

@@ -109,7 +109,7 @@ extension TDGameScene {
             switch renderMode {
             case .unlocked: dimAlpha = 1.0
             case .unlockable: dimAlpha = 0.5
-            case .locked: dimAlpha = 0.2
+            case .locked, .comingSoon: dimAlpha = 0.2
             }
 
             // Create Manhattan-style path (straight lines, 90° turns)
@@ -145,8 +145,8 @@ extension TDGameScene {
                 // Theme-tinted copper for blueprint-found sectors
                 let themeColor = UIColor(hex: lane.themeColorHex) ?? UIColor.yellow
                 pathNode.strokeColor = themeColor.withAlphaComponent(dimAlpha)
-            case .locked:
-                // Desaturated gray-copper for locked (no blueprints)
+            case .locked, .comingSoon:
+                // Desaturated gray-copper for locked (no blueprints) or coming soon
                 pathNode.strokeColor = UIColor(red: 0.45, green: 0.40, blue: 0.35, alpha: dimAlpha)
             }
             pathNode.lineWidth = traceWidth

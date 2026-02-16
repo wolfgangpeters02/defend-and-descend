@@ -15,6 +15,7 @@ enum SectorRenderMode {
     case locked       // Blueprint not found — corrupted data, mystery
     case unlockable   // Blueprint found — schematic/wireframe preview
     case unlocked     // Fully decrypted — full component rendering
+    case comingSoon   // Beyond MVP boundary — visible but not unlockable
 }
 
 // MARK: - Sector Theme
@@ -115,8 +116,8 @@ struct MegaBoardConfig: Codable {
     var gridRows: Int = 3
 
     // Sector size (all sectors same size for uniform grid)
-    var sectorWidth: CGFloat = 1400
-    var sectorHeight: CGFloat = 1400
+    var sectorWidth: CGFloat = BalanceConfig.Motherboard.sectorSize
+    var sectorHeight: CGFloat = BalanceConfig.Motherboard.sectorSize
 
     // Total canvas size (computed)
     var totalWidth: CGFloat {
@@ -164,15 +165,6 @@ struct MegaBoardConfig: Codable {
     }
 }
 
-// MARK: - Sector Unlock State
-
-/// Runtime state for sector unlocks (stored in PlayerProfile)
-struct SectorUnlockProgress: Codable {
-    var sectorId: String
-    var isUnlocked: Bool
-    var unlockedAt: Date?
-}
-
 // MARK: - Factory Methods
 
 extension MegaBoardConfig {
@@ -191,8 +183,8 @@ extension MegaBoardConfig {
         // PSU (0 Ħ) → RAM (25k Ħ) → GPU (50k Ħ) → Cache (75k Ħ) → Storage (100k Ħ)
         // → Expansion (150k Ħ) → Network (200k Ħ) → I/O (300k Ħ) → CPU (500k Ħ)
 
-        let sectorWidth: CGFloat = 1400
-        let sectorHeight: CGFloat = 1400
+        let sectorWidth: CGFloat = BalanceConfig.Motherboard.sectorSize
+        let sectorHeight: CGFloat = BalanceConfig.Motherboard.sectorSize
 
         // Helper to get prerequisite array from BalanceConfig
         func prereqs(for sectorId: String) -> [String] {

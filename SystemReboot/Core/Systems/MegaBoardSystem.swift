@@ -131,6 +131,11 @@ final class MegaBoardSystem {
 
     /// Determine the visual render mode for a sector
     func getRenderMode(for sectorId: String, profile: PlayerProfile) -> SectorRenderMode {
+        // Beyond MVP boundary = coming soon (visible but not unlockable)
+        if BalanceConfig.SectorUnlock.isBeyondMVP(sectorId) {
+            return .comingSoon
+        }
+
         // Already unlocked = full rendering
         if isSectorUnlocked(sectorId, profile: profile) {
             return .unlocked
@@ -173,7 +178,7 @@ final class MegaBoardSystem {
             switch getRenderMode(for: sector.id, profile: profile) {
             case .unlockable:
                 unlockable.append(sector)
-            case .locked:
+            case .locked, .comingSoon:
                 locked.append(sector)
             case .unlocked:
                 break  // Shouldn't happen for visible locked sectors

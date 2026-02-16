@@ -71,9 +71,9 @@ Implement a clear "end of content" boundary at **Sector 4 (Cache)** so the game 
 ---
 
 ### Stage 2: Sector Gating Logic
-- **Status:** TODO
-- **Summary:** _to be filled by implementing agent_
-- **Commit:** _to be filled_
+- **Status:** DONE
+- **Summary:** Added `comingSoon` case to `SectorRenderMode`, wired `isBeyondMVP()` into `MegaBoardSystem.getRenderMode()`, added `isComingSoon` field to `UnlockStatus` with early-return gating in `getUnlockStatus`/`unlockSector`, and fixed all switch exhaustiveness in rendering code.
+- **Commit:** 573ff2a
 
 **Goal:** Make sectors beyond the MVP boundary un-unlockable and show a distinct "coming soon" status.
 
