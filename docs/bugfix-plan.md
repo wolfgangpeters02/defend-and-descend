@@ -4,7 +4,7 @@
 > All related to tower icons in the bottom drag-and-drop bar and board view.
 
 - [x] **1a.** Drag bar tower icons are black/white — should reflect rarity color — ✅ Changed icon foregroundColor from .white/.gray to rarityColor in TowerDeckCards.swift
-- [ ] **1b.** Drag bar tower icons should show hash cost in the standard blue
+- [x] **1b.** Drag bar tower icons should show hash cost in the standard blue — ✅ Removed conditional red color; hash cost now always uses DesignColors.primary (cyan) in TowerDeckCards.swift, relying on card opacity for affordability
 - [ ] **1c.** Tower DPS display is inconsistent — sometimes shows, sometimes doesn't
 - [ ] **1d.** Towers in settings sheet don't show DPS either; clarify where DPS is shown
 - [ ] **1e.** Tapping a tower icon in the drag bar should open the same info/upgrade popup as tapping the placed tower on the board

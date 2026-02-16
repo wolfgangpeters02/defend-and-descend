@@ -244,7 +244,7 @@ struct ProtocolDeckCard: View {
                 Text("\(cost)")
                     .font(.system(size: 13, weight: .bold, design: .monospaced))
             }
-            .foregroundColor(canAfford ? DesignColors.primary : .red)
+            .foregroundColor(DesignColors.primary)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(Color.black.opacity(0.5))
