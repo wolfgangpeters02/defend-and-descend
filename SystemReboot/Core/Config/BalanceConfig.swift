@@ -66,7 +66,7 @@ struct BalanceConfig {
         static let pickupRange: CGFloat = 50
 
         /// Base health regeneration per second
-        static let baseRegen: CGFloat = 1.5
+        static let baseRegen: CGFloat = 3.0
 
         /// Duration of invulnerability after taking damage
         static let invulnerabilityDuration: TimeInterval = 0.5
@@ -83,14 +83,14 @@ struct BalanceConfig {
         /// Speed of pickups being magnetized toward player
         static let pickupMagnetSpeed: CGFloat = 400
 
-        /// Player weapon projectile speed (survivor/boss mode)
+        /// Player weapon projectile speed (boss mode)
         static let weaponProjectileSpeed: CGFloat = 500
 
-        /// Maximum player armor (damage reduction cap in boss/survivor mode)
+        /// Maximum player armor (damage reduction cap in boss mode)
         static let maxArmor: CGFloat = 0.75
     }
 
-    // MARK: - Enemy Time Scaling (Survivor Mode)
+    // MARK: - Enemy Time Scaling (Boss Mode)
 
     struct EnemyScaling {
         /// HP increase per minute (+10%)
@@ -116,7 +116,7 @@ struct BalanceConfig {
 
     struct EnemyDefaults {
         /// Default health when config is missing (Double for EnemyConfig compat)
-        static let health: Double = 20
+        static let health: Double = 16
 
         /// Default speed when config is missing (Double for EnemyConfig compat)
         static let speed: Double = 80
@@ -131,7 +131,7 @@ struct BalanceConfig {
         static let collisionSize: CGFloat = 20
 
         /// Default hash/xp value when config is missing
-        static let hashValue: Int = 1
+        static let hashValue: Int = 2
 
         /// Default boss size when config is missing
         static let bossSize: CGFloat = 60
@@ -170,14 +170,14 @@ struct BalanceConfig {
     // MARK: - Wave Scaling (TD Mode)
 
     struct Waves {
-        /// Health multiplier increase per wave (+15% = 0.15)
-        static let healthScalingPerWave: CGFloat = 0.15
+        /// Health multiplier increase per wave (+18% = 0.18)
+        static let healthScalingPerWave: CGFloat = 0.18
 
         /// Speed multiplier increase per wave (+2% = 0.02)
         static let speedScalingPerWave: CGFloat = 0.02
 
         /// Base enemy count formula: baseCount + (waveNumber * countPerWave)
-        static let baseEnemyCount: Int = 5
+        static let baseEnemyCount: Int = 4
         static let enemiesPerWave: Int = 2
 
         /// Boss waves occur every N waves
@@ -195,7 +195,7 @@ struct BalanceConfig {
         static let spawnDelayReductionPerWave: CGFloat = 0.02
 
         /// Bonus Hash per wave completion (waveNumber × this value)
-        static let hashBonusPerWave: Int = 10
+        static let hashBonusPerWave: Int = 20
 
         /// Seconds between waves
         static let waveCooldown: TimeInterval = 10.0
@@ -218,14 +218,14 @@ struct BalanceConfig {
         /// A Lv10 tower (10x damage) can still handle this with proper placement
         static let maxThreatLevel: CGFloat = 100.0
 
-        /// Health scaling per threat level (+15%)
-        static let healthScaling: CGFloat = 0.15
+        /// Health scaling per threat level (+8%)
+        static let healthScaling: CGFloat = 0.08
 
         /// Speed scaling per threat level (+2%)
         static let speedScaling: CGFloat = 0.02
 
-        /// Damage scaling per threat level (+5%)
-        static let damageScaling: CGFloat = 0.05
+        /// Damage scaling per threat level (+3%)
+        static let damageScaling: CGFloat = 0.03
 
         /// Threat level thresholds for enemy type unlocks
         static let fastEnemyThreshold: CGFloat = 2.0
@@ -252,10 +252,10 @@ struct BalanceConfig {
         static let baseIdleSpawnRate: TimeInterval = 2.0
 
         /// Minimum spawn interval (floor at high threat)
-        static let minSpawnInterval: TimeInterval = 0.3
+        static let minSpawnInterval: TimeInterval = 0.5
 
         /// Spawn rate scaling with threat (divisor increases with threat)
-        static let spawnRateThreatScaling: CGFloat = 0.1
+        static let spawnRateThreatScaling: CGFloat = 0.06
 
         /// Online threat growth rate (per second)
         static let onlineThreatGrowthRate: CGFloat = 0.01
@@ -313,7 +313,7 @@ struct BalanceConfig {
 
     // MARK: - Boss Scaling (Generic Enemy Boss Phases)
 
-    struct BossSurvivor {
+    struct BossPhaseScaling {
         /// Phase transition health thresholds (percentage)
         static let phase2Threshold: CGFloat = 0.75
         static let phase3Threshold: CGFloat = 0.50
@@ -328,7 +328,7 @@ struct BalanceConfig {
 
     struct Cyberboss {
         // Base health for boss arena fight
-        static let baseHealth: CGFloat = 4000
+        static let baseHealth: CGFloat = 2000
 
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.75
@@ -431,7 +431,7 @@ struct BalanceConfig {
 
     struct VoidHarbinger {
         // Base health for boss arena fight
-        static let baseHealth: CGFloat = 5000
+        static let baseHealth: CGFloat = 3000
 
         // Phase thresholds (health percentage)
         // Uses 70/40/20 split (30-30-20-20) for longer early phases vs Cyberboss/Overclocker's equal 25% split
@@ -551,7 +551,7 @@ struct BalanceConfig {
 
     struct Overclocker {
         // Base health for boss arena fight
-        static let baseHealth: CGFloat = 4500
+        static let baseHealth: CGFloat = 2500
 
         // Phase thresholds (health percentage)
         static let phase2Threshold: CGFloat = 0.75
@@ -608,7 +608,7 @@ struct BalanceConfig {
 
     struct TrojanWyrm {
         // Base health for boss arena fight
-        static let baseHealth: CGFloat = 5500
+        static let baseHealth: CGFloat = 3500
 
         // Phase thresholds (health percentage)
         // Uses 70/40/20 split (30-30-20-20) for longer early phases vs Cyberboss/Overclocker's equal 25% split
@@ -712,37 +712,6 @@ struct BalanceConfig {
         }
     }
 
-    // MARK: - Potion System
-
-    struct Potions {
-        /// Max charges for each potion type
-        static let healthMaxCharge: CGFloat = 100
-        static let bombMaxCharge: CGFloat = 150
-        static let magnetMaxCharge: CGFloat = 75
-        static let shieldMaxCharge: CGFloat = 100
-
-        /// Charge multipliers (how fast each potion charges)
-        static let healthChargeMultiplier: CGFloat = 2.0
-        static let bombChargeMultiplier: CGFloat = 1.0
-        static let magnetChargeMultiplier: CGFloat = 1.5
-        static let shieldChargeMultiplier: CGFloat = 1.2
-
-        /// Health potion: restore percentage of max HP
-        static let healthRestorePercent: CGFloat = 0.5  // 50%
-
-        /// Magnet potion: expanded pickup range
-        static let magnetPickupRange: CGFloat = 2000
-
-        /// Shield potion: invulnerability duration
-        static let shieldDuration: TimeInterval = 5.0
-
-        /// Bomb potion: screen flash duration
-        static let bombFlashDuration: TimeInterval = 0.3
-
-        /// Magnet potion: expanded range duration
-        static let magnetDuration: TimeInterval = 0.5
-    }
-
     // MARK: - Pickups
 
     struct Pickups {
@@ -756,7 +725,7 @@ struct BalanceConfig {
     // MARK: - Timing
 
     struct Timing {
-        /// Upgrade selection interval (survivor mode)
+        /// Upgrade selection interval (boss mode)
         static let upgradeInterval: TimeInterval = 60  // 1 minute
     }
 
@@ -898,7 +867,7 @@ struct BalanceConfig {
 
     struct TDRewards {
         /// XP per wave completed
-        static let xpPerWave: Int = 10
+        static let xpPerWave: Int = 15
 
         /// Bonus XP for victory
         static let victoryXPBonus: Int = 50
@@ -906,20 +875,20 @@ struct BalanceConfig {
         /// Hash reward divisor (earn 20% of session hash — was 10% at divisor 10)
         static let hashRewardDivisor: Int = 5
 
-        /// Victory hash bonus per wave (20 waves = 1,000 Ħ — was 100 Ħ)
-        static let victoryHashPerWave: Int = 50
+        /// Victory hash bonus per wave (20 waves = 1,500 Ħ)
+        static let victoryHashPerWave: Int = 75
 
         /// Death penalty: fraction of hash kept (0.5 = 50%)
         static let deathHashPenalty: CGFloat = 0.5
     }
 
-    // MARK: - Survivor Mode Rewards
+    // MARK: - Boss Run Rewards
 
-    struct SurvivorRewards {
+    struct BossRunRewards {
         /// XP granted per N seconds survived (1 XP per this many seconds)
         static let xpPerTimePeriod: TimeInterval = 10
 
-        /// Bonus XP for winning / extracting
+        /// Bonus XP for winning
         static let victoryXPBonus: Int = 25
 
         /// Hash reward divisor (earn 1/N of collected coins)
@@ -945,7 +914,7 @@ struct BalanceConfig {
         /// Boss health multipliers by difficulty
         /// Scaled up to counter weapon mastery (Level 10 = 10x damage)
         static let healthMultipliers: [String: CGFloat] = [
-            "Easy": 1.2,       // Learning mode — slightly forgiving (was 1.0)
+            "Easy": 0.6,       // Reduced HP — ~20s TTK with starter weapon
             "Normal": 1.5,     // A real fight even with mid-level weapons
             "Hard": 3.0,       // Level 5 weapon (5x) still needs good play
             "Nightmare": 6.0   // Level 10 weapon (10x) → TTK still 60% of base
@@ -953,15 +922,15 @@ struct BalanceConfig {
 
         /// Boss damage multipliers by difficulty
         static let damageMultipliers: [String: CGFloat] = [
-            "Easy": 0.7,       // Forgiving but not trivial (was 0.5)
+            "Easy": 0.35,      // Very forgiving — melee survivable for 6-7s
             "Normal": 1.0,
-            "Hard": 1.5,       // Mistakes punished (was 1.3)
-            "Nightmare": 2.5   // Unforgiving (was 1.8)
+            "Hard": 1.5,       // Mistakes punished
+            "Nightmare": 2.5   // Unforgiving
         ]
 
         /// Player health multipliers by difficulty
         static let playerHealthMultipliers: [String: CGFloat] = [
-            "Easy": 1.5,       // Safety net (was 2.0)
+            "Easy": 1.75,      // Extra safety net for learning patterns
             "Normal": 1.0,
             "Hard": 1.0,
             "Nightmare": 0.8   // Glass cannon pressure (was 1.0)
@@ -969,8 +938,8 @@ struct BalanceConfig {
 
         /// Player damage multipliers by difficulty
         static let playerDamageMultipliers: [String: CGFloat] = [
-            "Easy": 1.5,       // Helpful but not steamroll (was 2.0)
-            "Normal": 1.0,     // No training wheels (was 1.5)
+            "Easy": 2.5,       // Player hits hard — fights end before fatigue
+            "Normal": 1.0,     // No training wheels
             "Hard": 1.0,
             "Nightmare": 1.0
         ]
@@ -978,10 +947,10 @@ struct BalanceConfig {
         /// Hash rewards by difficulty
         /// Steep scaling rewards skill: Easy:Normal:Hard:Nightmare ≈ 1:6:20:50
         static let hashRewards: [String: Int] = [
-            "Easy": 500,       // Training mode (was 1000)
+            "Easy": 1000,      // Meaningful reward for first boss kill
             "Normal": 3000,    // Standard progression
-            "Hard": 10000,     // Big paydays (was 8000)
-            "Nightmare": 25000 // Jackpot (was 20000)
+            "Hard": 10000,     // Big paydays
+            "Nightmare": 25000 // Jackpot
         ]
 
     }
@@ -990,14 +959,14 @@ struct BalanceConfig {
     // Per-level stat increases when upgrading towers
 
     struct TowerUpgrades {
-        /// Damage multiplier per level (+10%)
-        static let damageMultiplier: CGFloat = 1.1
+        /// Damage multiplier per level (+12%)
+        static let damageMultiplier: CGFloat = 1.12
 
         /// Range multiplier per level (+5%)
         static let rangeMultiplier: CGFloat = 1.05
 
-        /// Attack speed multiplier per level (+3%)
-        static let attackSpeedMultiplier: CGFloat = 1.03
+        /// Attack speed multiplier per level (+4%)
+        static let attackSpeedMultiplier: CGFloat = 1.04
 
         /// Chain lightning target count
         static let chainTargets: Int = 3
@@ -1010,8 +979,8 @@ struct BalanceConfig {
         static let tierMultipliers: [CGFloat] = [1.0, 2.0, 4.0, 8.0, 16.0]
 
         /// Cost in Hash to upgrade to next tier (tier 1→2, 2→3, 3→4, 4→5)
-        /// Tier 5 (16x) is a late-game investment (was 100K)
-        static let upgradeCosts: [Int] = [1000, 5000, 25000, 500000]
+        /// Tier 2 reachable after 2-3 play sessions, Tier 5 is endgame
+        static let upgradeCosts: [Int] = [750, 5000, 25000, 500000]
 
         /// Maximum CPU tier
         static let maxTier: Int = 5
@@ -1061,7 +1030,8 @@ struct BalanceConfig {
         static let hashMultiplier: CGFloat = 4.0  // Meaningful boost (was 2.0)
 
         /// Threat growth multiplier during overclock
-        static let threatMultiplier: CGFloat = 3.0  // Fair trade (was 10.0)
+        /// At 14x: 45s overclock = +6.3 threat → guaranteed boss spawn (milestone interval = 6)
+        static let threatMultiplier: CGFloat = 14.0  // Guarantees boss spawn
 
         /// Power demand multiplier during overclock
         static let powerDemandMultiplier: CGFloat = 1.5  // Less punishing (was 2.0)
@@ -1074,7 +1044,7 @@ struct BalanceConfig {
         /// Difficulty-based Hash bonus for defeating a boss
         /// Scales steeply to reward higher difficulty
         static let difficultyHashBonus: [BossDifficulty: Int] = [
-            .easy: 100,        // Training mode (was 250)
+            .easy: 250,        // Meaningful first boss reward
             .normal: 500,
             .hard: 2000,       // Worth the risk (was 1500)
             .nightmare: 5000   // Major reward (was 3000)
@@ -1145,15 +1115,6 @@ struct BalanceConfig {
         static let phoenixParticleLifetime: TimeInterval = 1.0
         static let phoenixParticleSize: CGFloat = 8
 
-        /// Heal particles (potion)
-        static let healParticleCount: Int = 20
-        static let healParticleSpeedMin: CGFloat = 30
-        static let healParticleSpeedMax: CGFloat = 80
-        static let healParticleVelocityOffset: CGFloat = -30  // Upward drift for healing effect
-
-        /// Shield particles
-        static let shieldParticleCount: Int = 30
-
         /// Boss rage particles
         static let rageParticleCount: Int = 30
         static let rageParticleSize: CGFloat = 15
@@ -1171,17 +1132,6 @@ struct BalanceConfig {
         static let collectionParticleSize: CGFloat = 12
         static let collectionParticleVelocity: CGFloat = -50
 
-        /// Bomb explosion particles per enemy
-        static let bombParticleCountPerEnemy: Int = 10
-
-        /// Magnet trail particles
-        static let magnetParticleLifetime: TimeInterval = 0.3
-        static let magnetParticleSize: CGFloat = 4
-
-        /// Shield activation particles
-        static let shieldActivationParticleLifetime: TimeInterval = 0.5
-        static let shieldActivationParticleSize: CGFloat = 6
-        static let shieldActivationParticleSpeed: CGFloat = 50
     }
 
     // MARK: - Visual Effects
@@ -1224,14 +1174,14 @@ struct BalanceConfig {
         /// Weapon mastery max level
         static let maxWeaponLevel: Int = 10
 
-        /// Max player level (survivor mode)
+        /// Max player level (boss mode)
         static let maxPlayerLevel: Int = 20
     }
 
-    // MARK: - Upgrade Rarity Weights (Survivor Mode)
+    // MARK: - Upgrade Rarity Weights (Boss Mode)
 
     struct UpgradeRarity {
-        /// Weight for common upgrades appearing in survivor mode selection
+        /// Weight for common upgrades appearing in boss mode selection
         static let commonWeight: Double = 60
         /// Weight for rare upgrades
         static let rareWeight: Double = 25
@@ -1404,21 +1354,31 @@ struct BalanceConfig {
         ]
 
         /// Hash cost to unlock each sector (index matches unlockOrder)
-        /// PSU is free, then costs escalate significantly
+        /// Early sectors affordable in first sessions, late sectors require real progression
         static let hashCosts: [Int] = [
             0,           // PSU - starter, always free
-            25_000,      // RAM - first paid unlock
-            50_000,      // GPU
-            75_000,      // Cache
-            100_000,     // Storage
-            150_000,     // Expansion
-            200_000,     // Network
-            300_000,     // I/O
-            500_000      // CPU - final unlock, most expensive
+            600,         // RAM - achievable in first 10 min session
+            2_500,       // GPU - after first idle cycle
+            6_000,       // Cache - day 2-3
+            15_000,      // Storage - end of week 1
+            35_000,      // Expansion - mid game
+            75_000,      // Network - late game
+            150_000,     // I/O - late game
+            300_000      // CPU - endgame
         ]
 
         /// Blueprint drop chance on first boss kill (100% = guaranteed)
         static let firstKillBlueprintChance: CGFloat = 1.0
+
+        /// Last sector index included in V1 MVP content (Cache = index 3)
+        /// Sectors beyond this index show "Coming Soon" instead of unlock costs
+        static let maxMVPSectorIndex: Int = 3
+
+        /// Check if a sector is beyond the current MVP content boundary
+        static func isBeyondMVP(_ sectorId: String) -> Bool {
+            guard let index = unlockIndex(for: sectorId) else { return false }
+            return index > maxMVPSectorIndex
+        }
 
         /// Get unlock cost for a sector
         static func unlockCost(for sectorId: String) -> Int {
@@ -1509,7 +1469,7 @@ struct BalanceConfig {
         // MARK: - PSU (Power Supply) - Starter Component
         /// Power capacity in Watts per level
         static let psuCapacities: [Int] = [300, 400, 550, 700, 900, 1100, 1350, 1600, 1900, 2300]
-        static let psuBaseCost: Int = 500
+        static let psuBaseCost: Int = 400
 
         static func psuCapacity(at level: Int) -> Int {
             return psuCapacities[min(max(level - 1, 0), psuCapacities.count - 1)]
@@ -1522,7 +1482,7 @@ struct BalanceConfig {
         /// Offline earning rate: 20% at Lv1, scales to 60% at Lv10
         static let storageBaseOfflineRate: CGFloat = 0.20
         static let storageOfflineRatePerLevel: CGFloat = 0.044  // (0.60 - 0.20) / 9
-        static let storageBaseCost: Int = 400
+        static let storageBaseCost: Int = 350
 
         static func storageCapacity(at level: Int) -> Int {
             return Int(Double(storageBaseCapacity) * pow(storageCapacityMultiplier, Double(level - 1)))
@@ -1536,7 +1496,7 @@ struct BalanceConfig {
         /// Efficiency recovery multiplier: 1.0x at Lv1, 2.0x at Lv10
         static let ramBaseEfficiencyRegen: CGFloat = 1.0
         static let ramEfficiencyRegenPerLevel: CGFloat = 0.111  // (2.0 - 1.0) / 9
-        static let ramBaseCost: Int = 400
+        static let ramBaseCost: Int = 350
 
         /// RAM health bonus (for Active/Boss mode): base + (level-1) × perLevel
         static let ramBaseHealth: CGFloat = 100
@@ -1550,7 +1510,7 @@ struct BalanceConfig {
         /// Damage multiplier: 1.0x at Lv1, 1.5x at Lv10 (+50%)
         static let gpuBaseDamageMultiplier: CGFloat = 1.0
         static let gpuDamagePerLevel: CGFloat = 0.055  // (1.5 - 1.0) / 9
-        static let gpuBaseCost: Int = 600
+        static let gpuBaseCost: Int = 500
 
         static func gpuDamageMultiplier(at level: Int) -> CGFloat {
             return gpuBaseDamageMultiplier + CGFloat(level - 1) * gpuDamagePerLevel
@@ -1560,7 +1520,7 @@ struct BalanceConfig {
         /// Attack speed multiplier: 1.0x at Lv1, 1.3x at Lv10 (+30%)
         static let cacheBaseAttackSpeed: CGFloat = 1.0
         static let cacheAttackSpeedPerLevel: CGFloat = 0.033  // (1.3 - 1.0) / 9
-        static let cacheBaseCost: Int = 550
+        static let cacheBaseCost: Int = 450
 
         static func cacheAttackSpeedMultiplier(at level: Int) -> CGFloat {
             return cacheBaseAttackSpeed + CGFloat(level - 1) * cacheAttackSpeedPerLevel
@@ -1569,7 +1529,7 @@ struct BalanceConfig {
         // MARK: - Expansion (Expansion Card) - Extra Tower Slots
         /// Extra slots: Lv1=0, Lv2-4=+1, Lv5-7=+2, Lv8-10=+3
         /// First upgrade immediately gives benefit (no dead zone)
-        static let expansionBaseCost: Int = 800
+        static let expansionBaseCost: Int = 700
 
         static func expansionExtraSlots(at level: Int) -> Int {
             if level >= 8 { return 3 }
@@ -1582,7 +1542,7 @@ struct BalanceConfig {
         /// Pickup radius multiplier: 1.0x at Lv1, 2.5x at Lv10
         static let ioBasePickupRadius: CGFloat = 1.0
         static let ioPickupRadiusPerLevel: CGFloat = 0.167  // (2.5 - 1.0) / 9
-        static let ioBaseCost: Int = 450
+        static let ioBaseCost: Int = 400
 
         static func ioPickupRadiusMultiplier(at level: Int) -> CGFloat {
             return ioBasePickupRadius + CGFloat(level - 1) * ioPickupRadiusPerLevel
@@ -1592,7 +1552,7 @@ struct BalanceConfig {
         /// Hash multiplier: 1.0x at Lv1, 1.5x at Lv10 (+50% all Hash)
         static let networkBaseHashMultiplier: CGFloat = 1.0
         static let networkHashMultiplierPerLevel: CGFloat = 0.055  // (1.5 - 1.0) / 9
-        static let networkBaseCost: Int = 1000
+        static let networkBaseCost: Int = 800
 
         static func networkHashMultiplier(at level: Int) -> CGFloat {
             return networkBaseHashMultiplier + CGFloat(level - 1) * networkHashMultiplierPerLevel
@@ -1601,7 +1561,7 @@ struct BalanceConfig {
         // MARK: - CPU (Processor) - Hash Generation Rate
         /// Hash/second: uses exponential scaling from HashEconomy
         /// 1 Ħ/s at Lv1, ~38 Ħ/s at Lv10
-        static let cpuBaseCost: Int = 750
+        static let cpuBaseCost: Int = 600
 
         static func cpuHashPerSecond(at level: Int) -> CGFloat {
             return HashEconomy.hashPerSecond(at: level)
@@ -1647,7 +1607,7 @@ struct BalanceConfig {
         }
     }
 
-    // MARK: - XP System (Survivor Mode)
+    // MARK: - XP System (Boss Mode)
 
     struct XPSystem {
         /// XP values by enemy type
@@ -1715,7 +1675,7 @@ struct BalanceConfig {
 
         struct KernelPulse {
             // Firewall (Tower) Stats
-            static let firewallDamage: CGFloat = 8
+            static let firewallDamage: CGFloat = 10
             static let firewallRange: CGFloat = 120
             static let firewallFireRate: CGFloat = 1.0
             static let firewallProjectileCount: Int = 1
@@ -1725,7 +1685,7 @@ struct BalanceConfig {
             static let firewallSlowDuration: TimeInterval = 0
             static let firewallPowerDraw: Int = 15
             // Weapon (Active/Debug) Stats
-            static let weaponDamage: CGFloat = 8
+            static let weaponDamage: CGFloat = 12
             static let weaponFireRate: CGFloat = 2.0
             static let weaponProjectileCount: Int = 1
             static let weaponSpread: CGFloat = 0

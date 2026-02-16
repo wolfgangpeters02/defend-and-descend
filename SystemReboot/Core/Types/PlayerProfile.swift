@@ -55,8 +55,10 @@ struct PlayerProfile: Codable, HashStorable {
         case componentLevels, unlockedComponents  // Upgrade systems
         case tdSectorUnlockProgress, unlockedTDSectors
         case defeatedSectorBosses = "defeatedDistrictBosses"  // Preserved key for save compat
+        case campaignCompleted
         case unlocks, weaponLevels
-        case survivorStats, tdStats
+        case bossStats = "survivorStats"  // Preserved key for save compat
+        case tdStats
         case totalRuns, bestTime, totalKills, legendariesUnlocked
         case bossKillRecords  // Blueprint system
     }
@@ -96,6 +98,9 @@ struct PlayerProfile: Codable, HashStorable {
     /// Defeating a sector boss unlocks visibility of the next sector
     var defeatedSectorBosses: [String] = []
 
+    /// Whether the player has completed the V1 campaign (all MVP bosses defeated)
+    var campaignCompleted: Bool = false
+
     // MARK: - Legacy Fields (Preserved for save backward compat — do NOT read from these)
     // Canonical data lives in compiledProtocols/protocolLevels.
     // These are kept so old saves decode; migrate() copies them into the protocol system.
@@ -106,7 +111,7 @@ struct PlayerProfile: Codable, HashStorable {
     var weaponLevels: [String: Int]
 
     // Stats by mode
-    var survivorStats: SurvivorModeStats
+    var bossStats: BossModeStats
     var tdStats: TDModeStats
 
     // Legacy stats (preserved)
@@ -121,12 +126,20 @@ struct PlayerUnlocks: Codable {
     var weapons: [String] = []  // Legacy: migrated to compiledProtocols
 }
 
-struct SurvivorModeStats: Codable {
-    var dungeonRuns: Int = 0
-    var totalSurvivorKills: Int = 0
-    var longestSurvival: TimeInterval = 0
-    var dungeonsCompleted: Int = 0
+struct BossModeStats: Codable {
+    var bossRuns: Int = 0
+    var totalBossKills: Int = 0
+    var longestBossFight: TimeInterval = 0
+    var bossesCompleted: Int = 0
     var bossesDefeated: Int = 0
+
+    enum CodingKeys: String, CodingKey {
+        case bossRuns = "dungeonRuns"
+        case totalBossKills = "totalSurvivorKills"
+        case longestBossFight = "longestSurvival"
+        case bossesCompleted = "dungeonsCompleted"
+        case bossesDefeated
+    }
 }
 
 struct TDModeStats: Codable {
@@ -199,7 +212,7 @@ extension PlayerProfile {
                 weapons: [defaultProtocolId]  // Default Protocol (unified weapon system)
             ),
             weaponLevels: [defaultProtocolId: 1],  // Default Protocol level
-            survivorStats: SurvivorModeStats(),
+            bossStats: BossModeStats(),
             tdStats: TDModeStats(),
             totalRuns: 0,
             bestTime: 0,
