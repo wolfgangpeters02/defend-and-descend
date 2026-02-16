@@ -4561,6 +4561,23 @@
         }
       }
     },
+    "tabs.upgrades" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UPGRADES"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "UPGRADES"
+          }
+        }
+      }
+    },
     "td.bossActive" : {
       "extractionState" : "manual",
       "localizations" : {

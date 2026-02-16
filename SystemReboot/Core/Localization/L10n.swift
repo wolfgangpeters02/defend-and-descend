@@ -170,6 +170,7 @@ enum L10n {
         static let board = String(localized: "tabs.board")
         static let boss = String(localized: "tabs.boss")
         static let arsenal = String(localized: "tabs.arsenal")
+        static let upgrades = String(localized: "tabs.upgrades")
         static let tdMode = String(localized: "tabs.tdMode")
         static let encounters = String(localized: "tabs.encounters")
         static let protocols = String(localized: "tabs.protocols")

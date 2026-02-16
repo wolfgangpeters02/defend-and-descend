@@ -4,21 +4,44 @@ import SwiftUI
 
 struct SystemMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedTab: SystemMenuTab = .arsenal
+
+    enum SystemMenuTab: String, CaseIterable {
+        case arsenal
+        case upgrades
+    }
 
     var body: some View {
         NavigationView {
-            ArsenalView()
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(DesignColors.muted)
-                        }
+            VStack(spacing: 0) {
+                // Segmented tab picker
+                Picker("", selection: $selectedTab) {
+                    Text(L10n.Tabs.arsenal).tag(SystemMenuTab.arsenal)
+                    Text(L10n.Tabs.upgrades).tag(SystemMenuTab.upgrades)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+                // Tab content
+                switch selectedTab {
+                case .arsenal:
+                    ArsenalView()
+                case .upgrades:
+                    UpgradesView()
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(DesignColors.muted)
                     }
                 }
+            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)

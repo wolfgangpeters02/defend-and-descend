@@ -35,7 +35,7 @@
 ## Bundle 6: Sector Upgrades (investigation)
 > May be a bug or a missing feature.
 
-- [ ] **6a.** Verify whether CPU and other sectors are actually upgradeable; if not, clarify in UI or implement
+- [x] **6a.** Verify whether CPU and other sectors are actually upgradeable; if not, clarify in UI or implement — ✅ All 9 components were upgradeable in code but UpgradesView was orphaned; added segmented Arsenal/Upgrades tab picker to SystemMenuSheet so players can reach component upgrades via SYS button
 
 ---
 
