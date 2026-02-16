@@ -912,6 +912,91 @@
         }
       }
     },
+    "campaignComplete.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Sektor-Bosse neutralisiert.\nJede Firewall hat gehalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All sector bosses neutralized.\nEvery firewall held."
+          }
+        }
+      }
+    },
+    "campaignComplete.challenge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meistere härtere Schwierigkeitsgrade und verbessere deine Protokolle!"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Master harder difficulties and upgrade your protocols!"
+          }
+        }
+      }
+    },
+    "campaignComplete.comingSoon" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weitere Sektoren werden entwickelt. Bleib dran!"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More sectors are being developed. Stay tuned!"
+          }
+        }
+      }
+    },
+    "campaignComplete.continue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "WEITER"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CONTINUE"
+          }
+        }
+      }
+    },
+    "campaignComplete.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SYSTEM REBOOT v1.0 ABGESCHLOSSEN"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SYSTEM REBOOT v1.0 COMPLETE"
+          }
+        }
+      }
+    },
     "common.abort" : {
       "extractionState" : "manual",
       "localizations" : {

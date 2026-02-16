@@ -8,6 +8,7 @@ struct MotherboardView: View {
     @Binding var showSystemMenu: Bool  // Controls Arsenal/Settings sheet
     @State private var showManualOverride = false
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
+    @State private var showBossTutorial = false
 
     // Boss Fight Coordinator (replaces NotificationCenter pattern)
     @StateObject private var bossCoordinator = BossFightCoordinator()
@@ -92,13 +93,30 @@ struct MotherboardView: View {
                 }
 
                 // Boss alert overlay (when boss spawns and not yet engaged)
-                // Hide during transitions: boss fight active/starting, or loot modal showing
+                // Hide during transitions: boss fight active/starting, loot modal, or tutorial
                 if embeddedGameController.isBossActive &&
                    !embeddedGameController.showBossDifficultySelector &&
                    !embeddedGameController.bossAlertDismissed &&
                    !bossCoordinator.showBossFight &&
-                   !bossCoordinator.showBossLootModal {
+                   !bossCoordinator.showBossLootModal &&
+                   !showBossTutorial {
                     bossAlertOverlay
+                }
+
+                // Boss tutorial overlay (FTUE — first boss ever)
+                if showBossTutorial {
+                    BossTutorialOverlay(
+                        controller: embeddedGameController,
+                        bossType: embeddedGameController.activeBossType ?? "cyberboss",
+                        onEngage: {
+                            withAnimation {
+                                showBossTutorial = false
+                                embeddedGameController.showBossDifficultySelector = true
+                            }
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(45)
                 }
 
                 // Boss difficulty selector modal
@@ -115,11 +133,38 @@ struct MotherboardView: View {
                 if embeddedGameController.overclockActive {
                     overclockActiveIndicator
                 }
+
+                // Camera tutorial overlay (FTUE — first-time players)
+                if embeddedGameController.showCameraTutorial {
+                    CameraTutorialOverlay(
+                        controller: embeddedGameController,
+                        onComplete: {
+                            embeddedGameController.completeCameraTutorial()
+                        }
+                    )
+                    .transition(.opacity)
+                    .zIndex(50)
+                }
             }
             .coordinateSpace(name: "motherboardGameArea")
             .animation(.easeInOut(duration: 0.3), value: embeddedGameController.isSystemFrozen)
             .animation(.easeInOut(duration: 0.3), value: showManualOverride)
             .animation(.easeInOut(duration: 0.3), value: embeddedGameController.isBossActive)
+            .animation(.easeInOut(duration: 0.3), value: embeddedGameController.showCameraTutorial)
+            .animation(.easeInOut(duration: 0.3), value: showBossTutorial)
+            .onChange(of: embeddedGameController.isBossActive) { isActive in
+                // FTUE: Show boss tutorial instead of normal alert for first boss ever
+                if isActive && !appState.currentPlayer.hasSeenBossTutorial {
+                    embeddedGameController.bossAlertDismissed = true  // Suppress normal alert
+                    showBossTutorial = true
+                }
+            }
+            .onChange(of: appState.currentPlayer.firstTowerPlaced) { placed in
+                // Tutorial: complete when first tower is placed
+                if placed && embeddedGameController.showCameraTutorial {
+                    embeddedGameController.completeCameraTutorial()
+                }
+            }
         }
         .fullScreenCover(isPresented: $bossCoordinator.showBossFight) {
             if let bossType = embeddedGameController.activeBossType,
@@ -142,6 +187,11 @@ struct MotherboardView: View {
                     bossCoordinator.onLootCollected()
                 }
             )
+        }
+        .fullScreenCover(isPresented: $bossCoordinator.showCampaignComplete) {
+            CampaignCompleteOverlay {
+                bossCoordinator.showCampaignComplete = false
+            }
         }
         .onAppear {
             setupBossCoordinator()
@@ -640,6 +690,7 @@ struct MotherboardView: View {
 
             // Pause TD scene before starting boss fight
             embeddedGameController.scene?.isPaused = true
+            bossCoordinator.onFightStarted()
             // Small delay before showing boss fight to let animation complete
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 bossCoordinator.showBossFight = true

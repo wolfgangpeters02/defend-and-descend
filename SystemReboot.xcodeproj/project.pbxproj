@@ -7,13 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		BSSGMVWBL0 /* BossGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSGMVWRF0 /* BossGameView.swift */; };
-		BSSENCRBL0 /* BossEncounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSENCRRF0 /* BossEncounter.swift */; };
-		CRINFTYBL0 /* CurrencyInfoType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRINFTYRF0 /* CurrencyInfoType.swift */; };
-		BSSSTTSBL0 /* BossStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSSTTSRF0 /* BossStates.swift */; };
-		TDSESSTBL0 /* TDSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSESSTRF0 /* TDSessionState.swift */; };
-		WAVTYPBL01 /* WaveTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAVTYPRF01 /* WaveTypes.swift */; };
-		BSSLTRWBL0 /* BossLootReward.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSLTRWRF0 /* BossLootReward.swift */; };
 		01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */; };
 		06461EF9164A14B078C039E1 /* BossLootModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */; };
 		132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */; };
@@ -23,7 +16,6 @@
 		24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652706E4D090EB81125BDB8E /* TowerSystem.swift */; };
 		41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */; };
 		44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */; };
-		MNOVSCVSBLD /* ManualOverrideScene+Visuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */; };
 		469B93F994E728C789F86031 /* Protocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5F896AC2E9B27982965DBAF /* Protocol.swift */; };
 		50A8B0A9C7780F96391DAD35 /* BlueprintDropSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */; };
 		594042117873415AD5954A69 /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */; };
@@ -34,10 +26,9 @@
 		80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */; };
 		8286A13527D7335AC91D79E4 /* CoreSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BC456BE2F341A8C1006B747 /* CoreSystem.swift */; };
 		8BA8D266E8CD517FA0918203 /* TDBossSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */; };
-		TDCOLSYBL01 /* TDCollisionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDCOLSYRF01 /* TDCollisionSystem.swift */; };
-		TDGMLPBL001 /* TDGameLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGMLPRF001 /* TDGameLoop.swift */; };
 		8F2433B0984EE3015CE09545 /* MegaBoardSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */; };
 		9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE64BB27463A150B6F32451C /* TDTypes.swift */; };
+		9EF7C3992F43227B0017A5C8 /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = 9EF7C3982F43227B0017A5C8 /* Mixpanel */; };
 		A322E4133BD75AF92145044F /* WaveSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260E703394574A0E21D9E82C /* WaveSystem.swift */; };
 		AA000001 /* SystemRebootApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100001 /* SystemRebootApp.swift */; };
 		AA000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100002 /* ContentView.swift */; };
@@ -49,8 +40,6 @@
 		AA000009 /* PlayerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100009 /* PlayerSystem.swift */; };
 		AA000010 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100010 /* GameScene.swift */; };
 		AA000011 /* EntityRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100011 /* EntityRenderer.swift */; };
-		ENTRNEDBL01 /* EntityRenderer+EnemyDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTRNEDRF01 /* EntityRenderer+EnemyDetails.swift */; };
-		ENTRNBDBL01 /* EntityRenderer+BossDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTRNBDRF01 /* EntityRenderer+BossDetails.swift */; };
 		AA000012 /* GameContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100012 /* GameContainerView.swift */; };
 		AA000013 /* VirtualJoystick.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* VirtualJoystick.swift */; };
 		AA000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100014 /* Assets.xcassets */; };
@@ -62,7 +51,6 @@
 		AA000021 /* ParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100022 /* ParticleFactory.swift */; };
 		AA000022 /* VisualEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100023 /* VisualEffects.swift */; };
 		AA000024 /* UpgradeSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100025 /* UpgradeSystem.swift */; };
-		AA000025 /* PotionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100026 /* PotionSystem.swift */; };
 		AA000026 /* LevelingSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100027 /* LevelingSystem.swift */; };
 		AA000027 /* XPSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100028 /* XPSystem.swift */; };
 		AA000029 /* UpgradeModalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100030 /* UpgradeModalView.swift */; };
@@ -75,24 +63,8 @@
 		AA00003B /* TrojanWyrmAI.swift in Sources */ = {isa = PBXBuildFile; fileRef = TROJANWYRM1 /* TrojanWyrmAI.swift */; };
 		AA000040 /* HapticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100041 /* HapticsService.swift */; };
 		AA000042 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100042 /* NotificationService.swift */; };
+		AA000043 /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100043 /* AnalyticsService.swift */; };
 		AA000044 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100044 /* SettingsSheet.swift */; };
-		BALCFGBLD /* BalanceConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BALCFGREF /* BalanceConfig.swift */; };
-		D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */; };
-		COMPTYPBLD /* ComponentTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = COMPTYPREF /* ComponentTypes.swift */; };
-		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
-		E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651BD9A10095829CA07C1FDB /* OverclockSystem.swift */; };
-		ENTID00001 /* EntityIDs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTIDFILE1 /* EntityIDs.swift */; };
-		FRMCTXBLD /* FrameContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRMCTX001 /* FrameContext.swift */; };
-		L10NSWBLD /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = L10NSWREF /* L10n.swift */; };
-		LOCSTRSBLD /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = LOCSTRSREF /* Localizable.xcstrings */; };
-		MBRD00001 /* MotherboardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = MBRDFILE01 /* MotherboardTypes.swift */; };
-		NODEPLBLD /* NodePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = NODEPOOL1 /* NodePool.swift */; };
-		OBJPOLBLD /* ObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJPOOL01 /* ObjectPool.swift */; };
-		SCRLCTBLD /* ScrollingCombatText.swift in Sources */ = {isa = PBXBuildFile; fileRef = SCROLLCT1 /* ScrollingCombatText.swift */; };
-		SPTGRDBLD /* SpatialGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPTGRID01 /* SpatialGrid.swift */; };
-		TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */; };
-		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
-		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
 		AAC10001 /* TowerVisualFactory+Bodies.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00001 /* TowerVisualFactory+Bodies.swift */; };
 		AAC10002 /* TowerVisualFactory+Platforms.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00002 /* TowerVisualFactory+Platforms.swift */; };
 		AAC10003 /* TowerVisualFactory+Details.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00003 /* TowerVisualFactory+Details.swift */; };
@@ -100,73 +72,96 @@
 		AAC10005 /* TowerAnimations+Idle.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00005 /* TowerAnimations+Idle.swift */; };
 		AAC10006 /* TowerAnimations+Combat.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00006 /* TowerAnimations+Combat.swift */; };
 		AAC10007 /* TowerAnimations+Special.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAC00007 /* TowerAnimations+Special.swift */; };
-		F1A2B3C4D5E60718293F4A5B /* TDSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */; };
-		B2C3D4E5F6A70819293B4C5E /* TDBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F70819293A4B5D /* TDBot.swift */; };
-		D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */; };
-		BOSSSIM01BLD /* BossSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSSIM01REF /* BossSimulator.swift */; };
-		BOSSBOT01BLD /* BossBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSBOT01REF /* BossBot.swift */; };
-		TDHLPVWBLD /* TDHelperViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDHLPVW01 /* TDHelperViews.swift */; };
-		TWRDCKBLD0 /* TowerDeckCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRDCK001 /* TowerDeckCards.swift */; };
 		APSTUTBLD0 /* AppState+Tutorial.swift in Sources */ = {isa = PBXBuildFile; fileRef = APSTUT001 /* AppState+Tutorial.swift */; };
-		TDPARTFBLD /* TDParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDPARTF01 /* TDParticleFactory.swift */; };
-		CAMCTRLBLD /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMCTRL01 /* CameraController.swift */; };
-		PARTFXSVBLD /* ParticleEffectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = PARTFXSV01 /* ParticleEffectService.swift */; };
+		ARSNLVWBL0 /* ArsenalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ARSNLVWRF0 /* ArsenalView.swift */; };
+		B2C3D4E5F6A70819293B4C5E /* TDBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F70819293A4B5D /* TDBot.swift */; };
+		BALCFGBLD /* BalanceConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BALCFGREF /* BalanceConfig.swift */; };
+		BFIGHTTBL1 /* BossFightTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFIGHTRF01 /* BossFightTutorialOverlay.swift */; };
+		CMPGNCLBL1 /* CampaignCompleteOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CMPGNCLRF1 /* CampaignCompleteOverlay.swift */; };
+		BOSSBOT01BLD /* BossBot.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSBOT01REF /* BossBot.swift */; };
+		BOSSSIM01BLD /* BossSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSSIM01REF /* BossSimulator.swift */; };
+		BOSSTUTBL1 /* BossTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSTUTRF1 /* BossTutorialOverlay.swift */; };
+		BSSENCRBL0 /* BossEncounter.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSENCRRF0 /* BossEncounter.swift */; };
+		BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSFGHTCDRF /* BossFightCoordinator.swift */; };
+		BSSGMVWBL0 /* BossGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSGMVWRF0 /* BossGameView.swift */; };
+		BSSLTRWBL0 /* BossLootReward.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSLTRWRF0 /* BossLootReward.swift */; };
 		BSSRM0BLD1 /* BossRenderingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSRM00001 /* BossRenderingManager.swift */; };
-		UICLRBLD0001 /* UIColor+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = UICLRUTL0001 /* UIColor+Utilities.swift */; };
-		TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNBG00001 /* TDGameScene+Background.swift */; };
-		TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */; };
-		TDSCNDFB0001 /* TDGameScene+SectorFoundation.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNDF00001 /* TDGameScene+SectorFoundation.swift */; };
-		TDSCNPCB0001 /* TDGameScene+PSUComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPC00001 /* TDGameScene+PSUComponents.swift */; };
-		TDSCNCPB0001 /* TDGameScene+CPUComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNCP00001 /* TDGameScene+CPUComponents.swift */; };
-		TDSCNSCB0001 /* TDGameScene+SectorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSC00001 /* TDGameScene+SectorComponents.swift */; };
+		BSSSTTSBL0 /* BossStates.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSSTTSRF0 /* BossStates.swift */; };
+		CAMCTRLBLD /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMCTRL01 /* CameraController.swift */; };
+		CAMTUTBL01 /* CameraTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMTUTRF01 /* CameraTutorialOverlay.swift */; };
 		CMBTTYPB0001 /* CombatTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = CMBTTYP00001 /* CombatTypes.swift */; };
+		COMPTYPBLD /* ComponentTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = COMPTYPREF /* ComponentTypes.swift */; };
+		CRINFTYBL0 /* CurrencyInfoType.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRINFTYRF0 /* CurrencyInfoType.swift */; };
+		CRNCINFSBL0 /* CurrencyInfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRNCINFSRF0 /* CurrencyInfoSheet.swift */; };
+		D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */; };
+		D2E3F4A5B6C70819293D4E5A /* SimulationRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */; };
+		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
+		E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651BD9A10095829CA07C1FDB /* OverclockSystem.swift */; };
+		EMBTDCBBL0 /* EmbeddedTDGameController+BossState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */; };
+		EMBTDCDBL0 /* EmbeddedTDGameController+Drag.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */; };
+		EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCTRF0 /* EmbeddedTDGameController.swift */; };
+		EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDGVRF0 /* EmbeddedTDGameView.swift */; };
+		ENTID00001 /* EntityIDs.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTIDFILE1 /* EntityIDs.swift */; };
+		ENTRNBDBL01 /* EntityRenderer+BossDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTRNBDRF01 /* EntityRenderer+BossDetails.swift */; };
+		ENTRNEDBL01 /* EntityRenderer+EnemyDetails.swift in Sources */ = {isa = PBXBuildFile; fileRef = ENTRNEDRF01 /* EntityRenderer+EnemyDetails.swift */; };
+		F1A2B3C4D5E60718293F4A5B /* TDSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */; };
+		FRMCTXBLD /* FrameContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRMCTX001 /* FrameContext.swift */; };
+		FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRZRCVREF0 /* FreezeRecoveryService.swift */; };
+		GMRWDSVCBL /* GameRewardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GMRWDSVCRF /* GameRewardService.swift */; };
+		GSCNBRB0001 /* GameScene+BossRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNBR00001 /* GameScene+BossRendering.swift */; };
+		GSCNDBB0001 /* GameScene+DebugOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNDB00001 /* GameScene+DebugOverlay.swift */; };
+		GSCNEFB0001 /* GameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNEF00001 /* GameScene+Effects.swift */; };
+		GSCNERB0001 /* GameScene+EntityRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNER00001 /* GameScene+EntityRendering.swift */; };
+		L10NSWBLD /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = L10NSWREF /* L10n.swift */; };
+		LOCSTRSBLD /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = LOCSTRSREF /* Localizable.xcstrings */; };
+		MBRD00001 /* MotherboardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = MBRDFILE01 /* MotherboardTypes.swift */; };
+		MNLOVRSYSBL /* ManualOverrideSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = MNLOVRSYSRF /* ManualOverrideSystem.swift */; };
+		MNOVSCVSBLD /* ManualOverrideScene+Visuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */; };
+		MTHRBRDVBL0 /* MotherboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTHRBRDVRF0 /* MotherboardView.swift */; };
+		NODEPLBLD /* NodePool.swift in Sources */ = {isa = PBXBuildFile; fileRef = NODEPOOL1 /* NodePool.swift */; };
+		OBJPOLBLD /* ObjectPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJPOOL01 /* ObjectPool.swift */; };
+		OFLNSMBLD0 /* OfflineSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OFLNSMREF0 /* OfflineSimulator.swift */; };
+		PARTFXSVBLD /* ParticleEffectService.swift in Sources */ = {isa = PBXBuildFile; fileRef = PARTFXSV01 /* ParticleEffectService.swift */; };
 		PLYRPRFB0001 /* PlayerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRF00001 /* PlayerProfile.swift */; };
 		PLYRPRGB0001 /* PlayerProfile+Progression.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRG00001 /* PlayerProfile+Progression.swift */; };
 		PLYRPRIB0001 /* PlayerProfile+Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRI00001 /* PlayerProfile+Inventory.swift */; };
 		PLYRPRUB0001 /* PlayerProfile+Unlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = PLYRPRU00001 /* PlayerProfile+Unlocks.swift */; };
-		TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPT00001 /* TDGameScene+Paths.swift */; };
+		SCRLCTBLD /* ScrollingCombatText.swift in Sources */ = {isa = PBXBuildFile; fileRef = SCROLLCT1 /* ScrollingCombatText.swift */; };
+		SPTGRDBLD /* SpatialGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = SPTGRID01 /* SpatialGrid.swift */; };
+		SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SYSFRZOVRF0 /* SystemFreezeOverlay.swift */; };
+		TDCOLSYBL01 /* TDCollisionSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDCOLSYRF01 /* TDCollisionSystem.swift */; };
+		TDGCVHDBL01 /* TDGameContainerView+HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVHDRF01 /* TDGameContainerView+HUD.swift */; };
+		TDGCVOVBL01 /* TDGameContainerView+Overlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */; };
+		TDGCVPNBL01 /* TDGameContainerView+Panels.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVPNRF01 /* TDGameContainerView+Panels.swift */; };
+		TDGCVTWBL01 /* TDGameContainerView+Towers.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVTWRF01 /* TDGameContainerView+Towers.swift */; };
+		TDGMLPBL001 /* TDGameLoop.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGMLPRF001 /* TDGameLoop.swift */; };
+		TDHLPVWBLD /* TDHelperViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDHLPVW01 /* TDHelperViews.swift */; };
+		TDPARTFBLD /* TDParticleFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDPARTF01 /* TDParticleFactory.swift */; };
+		TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNAC00001 /* TDGameScene+Actions.swift */; };
+		TDSCNBGB0001 /* TDGameScene+Background.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNBG00001 /* TDGameScene+Background.swift */; };
+		TDSCNCPB0001 /* TDGameScene+CPUComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNCP00001 /* TDGameScene+CPUComponents.swift */; };
+		TDSCNDBB0001 /* TDGameScene+DebugOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNDB00001 /* TDGameScene+DebugOverlay.swift */; };
+		TDSCNDFB0001 /* TDGameScene+SectorFoundation.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNDF00001 /* TDGameScene+SectorFoundation.swift */; };
 		TDSCNEFB0001 /* TDGameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEF00001 /* TDGameScene+Effects.swift */; };
 		TDSCNEVB0001 /* TDGameScene+EntityVisuals.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */; };
 		TDSCNINB0001 /* TDGameScene+Input.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNIN00001 /* TDGameScene+Input.swift */; };
-		TDSCNACB0001 /* TDGameScene+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNAC00001 /* TDGameScene+Actions.swift */; };
-		TDSCNDBB0001 /* TDGameScene+DebugOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNDB00001 /* TDGameScene+DebugOverlay.swift */; };
-		GSCNEFB0001 /* GameScene+Effects.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNEF00001 /* GameScene+Effects.swift */; };
-		GSCNBRB0001 /* GameScene+BossRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNBR00001 /* GameScene+BossRendering.swift */; };
-		GSCNERB0001 /* GameScene+EntityRendering.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNER00001 /* GameScene+EntityRendering.swift */; };
-		GSCNDBB0001 /* GameScene+DebugOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = GSCNDB00001 /* GameScene+DebugOverlay.swift */; };
-		MTHRBRDVBL0 /* MotherboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = MTHRBRDVRF0 /* MotherboardView.swift */; };
-		EMBTDCTBL0 /* EmbeddedTDGameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCTRF0 /* EmbeddedTDGameController.swift */; };
-		EMBTDCDBL0 /* EmbeddedTDGameController+Drag.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */; };
-		EMBTDCBBL0 /* EmbeddedTDGameController+BossState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */; };
-		EMBTDGVBL0 /* EmbeddedTDGameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EMBTDGVRF0 /* EmbeddedTDGameView.swift */; };
-		SYSFRZOVBL0 /* SystemFreezeOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = SYSFRZOVRF0 /* SystemFreezeOverlay.swift */; };
-		ARSNLVWBL0 /* ArsenalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ARSNLVWRF0 /* ArsenalView.swift */; };
-		UPGRDVWBL0 /* UpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPGRDVWRF0 /* UpgradesView.swift */; };
-		CRNCINFSBL0 /* CurrencyInfoSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CRNCINFSRF0 /* CurrencyInfoSheet.swift */; };
-		OFLNSMBLD0 /* OfflineSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = OFLNSMREF0 /* OfflineSimulator.swift */; };
-		FRZRCVBLD0 /* FreezeRecoveryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FRZRCVREF0 /* FreezeRecoveryService.swift */; };
-		GMRWDSVCBL /* GameRewardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = GMRWDSVCRF /* GameRewardService.swift */; };
+		TDSCNPCB0001 /* TDGameScene+PSUComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPC00001 /* TDGameScene+PSUComponents.swift */; };
+		TDSCNPTB0001 /* TDGameScene+Paths.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNPT00001 /* TDGameScene+Paths.swift */; };
+		TDSCNSAB0001 /* TDGameScene+SectorAmbient.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */; };
+		TDSCNSCB0001 /* TDGameScene+SectorComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSCNSC00001 /* TDGameScene+SectorComponents.swift */; };
+		TDSESSTBL0 /* TDSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDSESSTRF0 /* TDSessionState.swift */; };
+		TUTHNTBLD1234567890ABCDEF /* TutorialHintOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */; };
+		TWRANMBLD /* TowerAnimations.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERANIM /* TowerAnimations.swift */; };
+		TWRDCKBLD0 /* TowerDeckCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRDCK001 /* TowerDeckCards.swift */; };
 		TWRPLCSVCBL /* TowerPlacementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = TWRPLCSVCRF /* TowerPlacementService.swift */; };
-		BSSFGHTCDBL /* BossFightCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = BSSFGHTCDRF /* BossFightCoordinator.swift */; };
-		MNLOVRSYSBL /* ManualOverrideSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = MNLOVRSYSRF /* ManualOverrideSystem.swift */; };
-		TDGCVOVBL01 /* TDGameContainerView+Overlays.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */; };
-		TDGCVHDBL01 /* TDGameContainerView+HUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVHDRF01 /* TDGameContainerView+HUD.swift */; };
-		TDGCVTWBL01 /* TDGameContainerView+Towers.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVTWRF01 /* TDGameContainerView+Towers.swift */; };
-		TDGCVPNBL01 /* TDGameContainerView+Panels.swift in Sources */ = {isa = PBXBuildFile; fileRef = TDGCVPNRF01 /* TDGameContainerView+Panels.swift */; };
-		CAMTUTBL01 /* CameraTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAMTUTRF01 /* CameraTutorialOverlay.swift */; };
-		BOSSTUTBL1 /* BossTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BOSSTUTRF1 /* BossTutorialOverlay.swift */; };
-		BFIGHTTBL1 /* BossFightTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFIGHTRF01 /* BossFightTutorialOverlay.swift */; };
+		TWRVFABLD /* TowerVisualFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = TOWERVF01 /* TowerVisualFactory.swift */; };
+		UICLRBLD0001 /* UIColor+Utilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = UICLRUTL0001 /* UIColor+Utilities.swift */; };
+		UPGRDVWBL0 /* UpgradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = UPGRDVWRF0 /* UpgradesView.swift */; };
+		WAVTYPBL01 /* WaveTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = WAVTYPRF01 /* WaveTypes.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		BSSENCRRF0 /* BossEncounter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossEncounter.swift; sourceTree = "<group>"; };
-		CRINFTYRF0 /* CurrencyInfoType.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurrencyInfoType.swift; sourceTree = "<group>"; };
-		BSSSTTSRF0 /* BossStates.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossStates.swift; sourceTree = "<group>"; };
-		TDSESSTRF0 /* TDSessionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSessionState.swift; sourceTree = "<group>"; };
-		WAVTYPRF01 /* WaveTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveTypes.swift; sourceTree = "<group>"; };
-		BSSLTRWRF0 /* BossLootReward.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootReward.swift; sourceTree = "<group>"; };
 		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardSystem.swift; sourceTree = "<group>"; };
-		COMPTYPREF /* ComponentTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComponentTypes.swift; sourceTree = "<group>"; };
 		09DD228498839C35BD9C1D41 /* PathSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PathSystem.swift; sourceTree = "<group>"; };
 		0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintDropSystem.swift; sourceTree = "<group>"; };
 		1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorUnlockSystem.swift; sourceTree = "<group>"; };
@@ -174,14 +169,14 @@
 		260E703394574A0E21D9E82C /* WaveSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveSystem.swift; sourceTree = "<group>"; };
 		3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeBackModal.swift; sourceTree = "<group>"; };
 		524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideView.swift; sourceTree = "<group>"; };
-		MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ManualOverrideScene+Visuals.swift"; sourceTree = "<group>"; };
 		529D24D2EF82C2EEECE9B970 /* TDGameScene.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameScene.swift; sourceTree = "<group>"; };
 		642FC35778370BD58869415C /* MegaBoardTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardTypes.swift; sourceTree = "<group>"; };
 		651BD9A10095829CA07C1FDB /* OverclockSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OverclockSystem.swift; sourceTree = "<group>"; };
 		652706E4D090EB81125BDB8E /* TowerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerSystem.swift; sourceTree = "<group>"; };
-		9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootModal.swift; sourceTree = "<group>"; };
 		9BC456BE2F341A8C1006B747 /* CoreSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreSystem.swift; sourceTree = "<group>"; };
+		9C9E64D9B78CFAD391735AC5 /* BossLootModal.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootModal.swift; sourceTree = "<group>"; };
 		A0DF9C1FE08F41AF3A00A75A /* SystemTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemTabView.swift; sourceTree = "<group>"; };
+		A2B3C4D5E6F70819293A4B5D /* TDBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBot.swift; sourceTree = "<group>"; };
 		AA100001 /* SystemRebootApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemRebootApp.swift; sourceTree = "<group>"; };
 		AA100002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA100003 /* GameTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameTypes.swift; sourceTree = "<group>"; };
@@ -192,9 +187,6 @@
 		AA100009 /* PlayerSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerSystem.swift; sourceTree = "<group>"; };
 		AA100010 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
 		AA100011 /* EntityRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EntityRenderer.swift; sourceTree = "<group>"; };
-		ENTRNEDRF01 /* EntityRenderer+EnemyDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntityRenderer+EnemyDetails.swift"; sourceTree = "<group>"; };
-		ENTRNBDRF01 /* EntityRenderer+BossDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntityRenderer+BossDetails.swift"; sourceTree = "<group>"; };
-		BSSGMVWRF0 /* BossGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossGameView.swift; sourceTree = "<group>"; };
 		AA100012 /* GameContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameContainerView.swift; sourceTree = "<group>"; };
 		AA100013 /* VirtualJoystick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VirtualJoystick.swift; sourceTree = "<group>"; };
 		AA100014 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -207,7 +199,6 @@
 		AA100022 /* ParticleFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleFactory.swift; sourceTree = "<group>"; };
 		AA100023 /* VisualEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffects.swift; sourceTree = "<group>"; };
 		AA100025 /* UpgradeSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeSystem.swift; sourceTree = "<group>"; };
-		AA100026 /* PotionSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PotionSystem.swift; sourceTree = "<group>"; };
 		AA100027 /* LevelingSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelingSystem.swift; sourceTree = "<group>"; };
 		AA100028 /* XPSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XPSystem.swift; sourceTree = "<group>"; };
 		AA100030 /* UpgradeModalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpgradeModalView.swift; sourceTree = "<group>"; };
@@ -216,49 +207,11 @@
 		AA100038 /* ArenaSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArenaSystem.swift; sourceTree = "<group>"; };
 		AA100039 /* CyberbossAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CyberbossAI.swift; sourceTree = "<group>"; };
 		AA100040 /* VoidHarbingerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoidHarbingerAI.swift; sourceTree = "<group>"; };
-		OVERCLOCK01 /* OverclockerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverclockerAI.swift; sourceTree = "<group>"; };
-		TROJANWYRM1 /* TrojanWyrmAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrojanWyrmAI.swift; sourceTree = "<group>"; };
-		OFLNSMREF0 /* OfflineSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OfflineSimulator.swift; sourceTree = "<group>"; };
-		FRZRCVREF0 /* FreezeRecoveryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreezeRecoveryService.swift; sourceTree = "<group>"; };
-		GMRWDSVCRF /* GameRewardService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameRewardService.swift; sourceTree = "<group>"; };
-		TWRPLCSVCRF /* TowerPlacementService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerPlacementService.swift; sourceTree = "<group>"; };
-		BSSFGHTCDRF /* BossFightCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossFightCoordinator.swift; sourceTree = "<group>"; };
-		MNLOVRSYSRF /* ManualOverrideSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideSystem.swift; sourceTree = "<group>"; };
 		AA100041 /* HapticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticsService.swift; sourceTree = "<group>"; };
 		AA100042 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		AA100043 /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
 		AA100044 /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		AA200001 /* SystemReboot.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SystemReboot.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBossSystem.swift; sourceTree = "<group>"; };
-		TDCOLSYRF01 /* TDCollisionSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDCollisionSystem.swift; sourceTree = "<group>"; };
-		TDGMLPRF001 /* TDGameLoop.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameLoop.swift; sourceTree = "<group>"; };
-		B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PillarSystem.swift; sourceTree = "<group>"; };
-		BALCFGREF /* BalanceConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BalanceConfig.swift; sourceTree = "<group>"; };
-		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
-		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
-		TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Overlays.swift"; sourceTree = "<group>"; };
-		TDGCVHDRF01 /* TDGameContainerView+HUD.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+HUD.swift"; sourceTree = "<group>"; };
-		TDGCVTWRF01 /* TDGameContainerView+Towers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Towers.swift"; sourceTree = "<group>"; };
-		TDGCVPNRF01 /* TDGameContainerView+Panels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Panels.swift"; sourceTree = "<group>"; };
-		CAMTUTRF01 /* CameraTutorialOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraTutorialOverlay.swift; sourceTree = "<group>"; };
-		BOSSTUTRF1 /* BossTutorialOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossTutorialOverlay.swift; sourceTree = "<group>"; };
-		BFIGHTRF01 /* BossFightTutorialOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossFightTutorialOverlay.swift; sourceTree = "<group>"; };
-		D0730EB976BE58FD41672919 /* SectorSchematics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorSchematics.swift; sourceTree = "<group>"; };
-		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
-		ENTIDFILE1 /* EntityIDs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntityIDs.swift; sourceTree = "<group>"; };
-		F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardRenderer.swift; sourceTree = "<group>"; };
-		F5F896AC2E9B27982965DBAF /* Protocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
-		F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IdleSpawnSystem.swift; sourceTree = "<group>"; };
-		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
-		FRMCTX001 /* FrameContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameContext.swift; sourceTree = "<group>"; };
-		L10NSWREF /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
-		LOCSTRSREF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
-		MBRDFILE01 /* MotherboardTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardTypes.swift; sourceTree = "<group>"; };
-		NODEPOOL1 /* NodePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodePool.swift; sourceTree = "<group>"; };
-		OBJPOOL01 /* ObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectPool.swift; sourceTree = "<group>"; };
-		SCROLLCT1 /* ScrollingCombatText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCombatText.swift; sourceTree = "<group>"; };
-		SPTGRID01 /* SpatialGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialGrid.swift; sourceTree = "<group>"; };
-		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
-		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
 		AAC00001 /* TowerVisualFactory+Bodies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Bodies.swift"; sourceTree = "<group>"; };
 		AAC00002 /* TowerVisualFactory+Platforms.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Platforms.swift"; sourceTree = "<group>"; };
 		AAC00003 /* TowerVisualFactory+Details.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerVisualFactory+Details.swift"; sourceTree = "<group>"; };
@@ -266,50 +219,100 @@
 		AAC00005 /* TowerAnimations+Idle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerAnimations+Idle.swift"; sourceTree = "<group>"; };
 		AAC00006 /* TowerAnimations+Combat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerAnimations+Combat.swift"; sourceTree = "<group>"; };
 		AAC00007 /* TowerAnimations+Special.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TowerAnimations+Special.swift"; sourceTree = "<group>"; };
-		TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TutorialHintOverlay.swift; sourceTree = "<group>"; };
-		E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSimulator.swift; sourceTree = "<group>"; };
-		A2B3C4D5E6F70819293A4B5D /* TDBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBot.swift; sourceTree = "<group>"; };
-		C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimulationRunner.swift; sourceTree = "<group>"; };
-		BOSSSIM01REF /* BossSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossSimulator.swift; sourceTree = "<group>"; };
-		BOSSBOT01REF /* BossBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossBot.swift; sourceTree = "<group>"; };
-		TDHLPVW01 /* TDHelperViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDHelperViews.swift; sourceTree = "<group>"; };
-		TWRDCK001 /* TowerDeckCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerDeckCards.swift; sourceTree = "<group>"; };
+		AE2BB52D7ABE2015A94B5FA3 /* TDBossSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDBossSystem.swift; sourceTree = "<group>"; };
 		APSTUT001 /* AppState+Tutorial.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "AppState+Tutorial.swift"; sourceTree = "<group>"; };
-		TDPARTF01 /* TDParticleFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDParticleFactory.swift; sourceTree = "<group>"; };
-		CAMCTRL01 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
-		PARTFXSV01 /* ParticleEffectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleEffectService.swift; sourceTree = "<group>"; };
+		ARSNLVWRF0 /* ArsenalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArsenalView.swift; sourceTree = "<group>"; };
+		B0E31CD9D6765DA7C7AEB9B8 /* PillarSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PillarSystem.swift; sourceTree = "<group>"; };
+		BALCFGREF /* BalanceConfig.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BalanceConfig.swift; sourceTree = "<group>"; };
+		BE64BB27463A150B6F32451C /* TDTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDTypes.swift; sourceTree = "<group>"; };
+		BFIGHTRF01 /* BossFightTutorialOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossFightTutorialOverlay.swift; sourceTree = "<group>"; };
+		CMPGNCLRF1 /* CampaignCompleteOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CampaignCompleteOverlay.swift; sourceTree = "<group>"; };
+		BOSSBOT01REF /* BossBot.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossBot.swift; sourceTree = "<group>"; };
+		BOSSSIM01REF /* BossSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossSimulator.swift; sourceTree = "<group>"; };
+		BOSSTUTRF1 /* BossTutorialOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossTutorialOverlay.swift; sourceTree = "<group>"; };
+		BSSENCRRF0 /* BossEncounter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossEncounter.swift; sourceTree = "<group>"; };
+		BSSFGHTCDRF /* BossFightCoordinator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossFightCoordinator.swift; sourceTree = "<group>"; };
+		BSSGMVWRF0 /* BossGameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossGameView.swift; sourceTree = "<group>"; };
+		BSSLTRWRF0 /* BossLootReward.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootReward.swift; sourceTree = "<group>"; };
 		BSSRM00001 /* BossRenderingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BossRenderingManager.swift; sourceTree = "<group>"; };
-		UICLRUTL0001 /* UIColor+Utilities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UIColor+Utilities.swift"; sourceTree = "<group>"; };
-		TDSCNBG00001 /* TDGameScene+Background.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Background.swift"; sourceTree = "<group>"; };
-		TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorAmbient.swift"; sourceTree = "<group>"; };
-		TDSCNDF00001 /* TDGameScene+SectorFoundation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorFoundation.swift"; sourceTree = "<group>"; };
-		TDSCNPC00001 /* TDGameScene+PSUComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+PSUComponents.swift"; sourceTree = "<group>"; };
-		TDSCNCP00001 /* TDGameScene+CPUComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+CPUComponents.swift"; sourceTree = "<group>"; };
-		TDSCNSC00001 /* TDGameScene+SectorComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorComponents.swift"; sourceTree = "<group>"; };
+		BSSSTTSRF0 /* BossStates.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossStates.swift; sourceTree = "<group>"; };
+		C2D3E4F5A6B70819293C4D5F /* SimulationRunner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SimulationRunner.swift; sourceTree = "<group>"; };
+		CAMCTRL01 /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
+		CAMTUTRF01 /* CameraTutorialOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CameraTutorialOverlay.swift; sourceTree = "<group>"; };
+		CC72E98D972777DB4AA482F1 /* TDGameContainerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameContainerView.swift; sourceTree = "<group>"; };
 		CMBTTYP00001 /* CombatTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CombatTypes.swift; sourceTree = "<group>"; };
+		COMPTYPREF /* ComponentTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComponentTypes.swift; sourceTree = "<group>"; };
+		CRINFTYRF0 /* CurrencyInfoType.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurrencyInfoType.swift; sourceTree = "<group>"; };
+		CRNCINFSRF0 /* CurrencyInfoSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurrencyInfoSheet.swift; sourceTree = "<group>"; };
+		D0730EB976BE58FD41672919 /* SectorSchematics.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SectorSchematics.swift; sourceTree = "<group>"; };
+		E1F2A3B4C5D60718293E4F5A /* TDSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSimulator.swift; sourceTree = "<group>"; };
+		E2301A5EEEE90F2F1C451D29 /* DesignSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "EmbeddedTDGameController+BossState.swift"; sourceTree = "<group>"; };
+		EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "EmbeddedTDGameController+Drag.swift"; sourceTree = "<group>"; };
+		EMBTDCTRF0 /* EmbeddedTDGameController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameController.swift; sourceTree = "<group>"; };
+		EMBTDGVRF0 /* EmbeddedTDGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameView.swift; sourceTree = "<group>"; };
+		ENTIDFILE1 /* EntityIDs.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EntityIDs.swift; sourceTree = "<group>"; };
+		ENTRNBDRF01 /* EntityRenderer+BossDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntityRenderer+BossDetails.swift"; sourceTree = "<group>"; };
+		ENTRNEDRF01 /* EntityRenderer+EnemyDetails.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntityRenderer+EnemyDetails.swift"; sourceTree = "<group>"; };
+		F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardRenderer.swift; sourceTree = "<group>"; };
+		F5F896AC2E9B27982965DBAF /* Protocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
+		F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IdleSpawnSystem.swift; sourceTree = "<group>"; };
+		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
+		FRMCTX001 /* FrameContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameContext.swift; sourceTree = "<group>"; };
+		FRZRCVREF0 /* FreezeRecoveryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreezeRecoveryService.swift; sourceTree = "<group>"; };
+		GMRWDSVCRF /* GameRewardService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GameRewardService.swift; sourceTree = "<group>"; };
+		GSCNBR00001 /* GameScene+BossRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+BossRendering.swift"; sourceTree = "<group>"; };
+		GSCNDB00001 /* GameScene+DebugOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+DebugOverlay.swift"; sourceTree = "<group>"; };
+		GSCNEF00001 /* GameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+Effects.swift"; sourceTree = "<group>"; };
+		GSCNER00001 /* GameScene+EntityRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+EntityRendering.swift"; sourceTree = "<group>"; };
+		L10NSWREF /* L10n.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
+		LOCSTRSREF /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		MBRDFILE01 /* MotherboardTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotherboardTypes.swift; sourceTree = "<group>"; };
+		MNLOVRSYSRF /* ManualOverrideSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ManualOverrideSystem.swift; sourceTree = "<group>"; };
+		MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "ManualOverrideScene+Visuals.swift"; sourceTree = "<group>"; };
+		MTHRBRDVRF0 /* MotherboardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardView.swift; sourceTree = "<group>"; };
+		NODEPOOL1 /* NodePool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NodePool.swift; sourceTree = "<group>"; };
+		OBJPOOL01 /* ObjectPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectPool.swift; sourceTree = "<group>"; };
+		OFLNSMREF0 /* OfflineSimulator.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OfflineSimulator.swift; sourceTree = "<group>"; };
+		OVERCLOCK01 /* OverclockerAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverclockerAI.swift; sourceTree = "<group>"; };
+		PARTFXSV01 /* ParticleEffectService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticleEffectService.swift; sourceTree = "<group>"; };
 		PLYRPRF00001 /* PlayerProfile.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PlayerProfile.swift; sourceTree = "<group>"; };
 		PLYRPRG00001 /* PlayerProfile+Progression.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "PlayerProfile+Progression.swift"; sourceTree = "<group>"; };
 		PLYRPRI00001 /* PlayerProfile+Inventory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "PlayerProfile+Inventory.swift"; sourceTree = "<group>"; };
 		PLYRPRU00001 /* PlayerProfile+Unlocks.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "PlayerProfile+Unlocks.swift"; sourceTree = "<group>"; };
-		TDSCNPT00001 /* TDGameScene+Paths.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Paths.swift"; sourceTree = "<group>"; };
+		SCROLLCT1 /* ScrollingCombatText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollingCombatText.swift; sourceTree = "<group>"; };
+		SPTGRID01 /* SpatialGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpatialGrid.swift; sourceTree = "<group>"; };
+		SYSFRZOVRF0 /* SystemFreezeOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemFreezeOverlay.swift; sourceTree = "<group>"; };
+		TDCOLSYRF01 /* TDCollisionSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDCollisionSystem.swift; sourceTree = "<group>"; };
+		TDGCVHDRF01 /* TDGameContainerView+HUD.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+HUD.swift"; sourceTree = "<group>"; };
+		TDGCVOVRF01 /* TDGameContainerView+Overlays.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Overlays.swift"; sourceTree = "<group>"; };
+		TDGCVPNRF01 /* TDGameContainerView+Panels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Panels.swift"; sourceTree = "<group>"; };
+		TDGCVTWRF01 /* TDGameContainerView+Towers.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameContainerView+Towers.swift"; sourceTree = "<group>"; };
+		TDGMLPRF001 /* TDGameLoop.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDGameLoop.swift; sourceTree = "<group>"; };
+		TDHLPVW01 /* TDHelperViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDHelperViews.swift; sourceTree = "<group>"; };
+		TDPARTF01 /* TDParticleFactory.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDParticleFactory.swift; sourceTree = "<group>"; };
+		TDSCNAC00001 /* TDGameScene+Actions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Actions.swift"; sourceTree = "<group>"; };
+		TDSCNBG00001 /* TDGameScene+Background.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Background.swift"; sourceTree = "<group>"; };
+		TDSCNCP00001 /* TDGameScene+CPUComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+CPUComponents.swift"; sourceTree = "<group>"; };
+		TDSCNDB00001 /* TDGameScene+DebugOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+DebugOverlay.swift"; sourceTree = "<group>"; };
+		TDSCNDF00001 /* TDGameScene+SectorFoundation.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorFoundation.swift"; sourceTree = "<group>"; };
 		TDSCNEF00001 /* TDGameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Effects.swift"; sourceTree = "<group>"; };
 		TDSCNEV00001 /* TDGameScene+EntityVisuals.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+EntityVisuals.swift"; sourceTree = "<group>"; };
 		TDSCNIN00001 /* TDGameScene+Input.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Input.swift"; sourceTree = "<group>"; };
-		TDSCNAC00001 /* TDGameScene+Actions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Actions.swift"; sourceTree = "<group>"; };
-		TDSCNDB00001 /* TDGameScene+DebugOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+DebugOverlay.swift"; sourceTree = "<group>"; };
-		GSCNEF00001 /* GameScene+Effects.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+Effects.swift"; sourceTree = "<group>"; };
-		GSCNBR00001 /* GameScene+BossRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+BossRendering.swift"; sourceTree = "<group>"; };
-		GSCNER00001 /* GameScene+EntityRendering.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+EntityRendering.swift"; sourceTree = "<group>"; };
-		GSCNDB00001 /* GameScene+DebugOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "GameScene+DebugOverlay.swift"; sourceTree = "<group>"; };
-		MTHRBRDVRF0 /* MotherboardView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotherboardView.swift; sourceTree = "<group>"; };
-		EMBTDCTRF0 /* EmbeddedTDGameController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameController.swift; sourceTree = "<group>"; };
-		EMBTDCDRF0 /* EmbeddedTDGameController+Drag.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "EmbeddedTDGameController+Drag.swift"; sourceTree = "<group>"; };
-		EMBTDCBRF0 /* EmbeddedTDGameController+BossState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "EmbeddedTDGameController+BossState.swift"; sourceTree = "<group>"; };
-		EMBTDGVRF0 /* EmbeddedTDGameView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EmbeddedTDGameView.swift; sourceTree = "<group>"; };
-		SYSFRZOVRF0 /* SystemFreezeOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SystemFreezeOverlay.swift; sourceTree = "<group>"; };
-		ARSNLVWRF0 /* ArsenalView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ArsenalView.swift; sourceTree = "<group>"; };
+		TDSCNPC00001 /* TDGameScene+PSUComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+PSUComponents.swift"; sourceTree = "<group>"; };
+		TDSCNPT00001 /* TDGameScene+Paths.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+Paths.swift"; sourceTree = "<group>"; };
+		TDSCNSA00001 /* TDGameScene+SectorAmbient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorAmbient.swift"; sourceTree = "<group>"; };
+		TDSCNSC00001 /* TDGameScene+SectorComponents.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "TDGameScene+SectorComponents.swift"; sourceTree = "<group>"; };
+		TDSESSTRF0 /* TDSessionState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TDSessionState.swift; sourceTree = "<group>"; };
+		TOWERANIM /* TowerAnimations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerAnimations.swift; sourceTree = "<group>"; };
+		TOWERVF01 /* TowerVisualFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TowerVisualFactory.swift; sourceTree = "<group>"; };
+		TROJANWYRM1 /* TrojanWyrmAI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrojanWyrmAI.swift; sourceTree = "<group>"; };
+		TUTHNTREF1234567890ABCDEF /* TutorialHintOverlay.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TutorialHintOverlay.swift; sourceTree = "<group>"; };
+		TWRDCK001 /* TowerDeckCards.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerDeckCards.swift; sourceTree = "<group>"; };
+		TWRPLCSVCRF /* TowerPlacementService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TowerPlacementService.swift; sourceTree = "<group>"; };
+		UICLRUTL0001 /* UIColor+Utilities.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "UIColor+Utilities.swift"; sourceTree = "<group>"; };
 		UPGRDVWRF0 /* UpgradesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UpgradesView.swift; sourceTree = "<group>"; };
-		CRNCINFSRF0 /* CurrencyInfoSheet.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CurrencyInfoSheet.swift; sourceTree = "<group>"; };
+		WAVTYPRF01 /* WaveTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveTypes.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -317,6 +320,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9EF7C3992F43227B0017A5C8 /* Mixpanel in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -452,6 +456,7 @@
 				AA100032 /* StorageService.swift */,
 				AA100041 /* HapticsService.swift */,
 				AA100042 /* NotificationService.swift */,
+				AA100043 /* AnalyticsService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -525,7 +530,6 @@
 				AA100019 /* ProjectileSystem.swift */,
 				AA100021 /* PickupSystem.swift */,
 				AA100025 /* UpgradeSystem.swift */,
-				AA100026 /* PotionSystem.swift */,
 				AA100027 /* LevelingSystem.swift */,
 				AA100028 /* XPSystem.swift */,
 				AA100038 /* ArenaSystem.swift */,
@@ -600,6 +604,7 @@
 				CAMTUTRF01 /* CameraTutorialOverlay.swift */,
 				BOSSTUTRF1 /* BossTutorialOverlay.swift */,
 				BFIGHTRF01 /* BossFightTutorialOverlay.swift */,
+				CMPGNCLRF1 /* CampaignCompleteOverlay.swift */,
 				524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */,
 				MNOVSCVSREF /* ManualOverrideScene+Visuals.swift */,
 				TDHLPVW01 /* TDHelperViews.swift */,
@@ -701,6 +706,9 @@
 				Base,
 			);
 			mainGroup = AA400001;
+			packageReferences = (
+				9EF7C3972F43227B0017A5C8 /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
+			);
 			productRefGroup = AA400003 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -754,7 +762,6 @@
 				AA000021 /* ParticleFactory.swift in Sources */,
 				AA000022 /* VisualEffects.swift in Sources */,
 				AA000024 /* UpgradeSystem.swift in Sources */,
-				AA000025 /* PotionSystem.swift in Sources */,
 				AA000026 /* LevelingSystem.swift in Sources */,
 				AA000027 /* XPSystem.swift in Sources */,
 				AA000029 /* UpgradeModalView.swift in Sources */,
@@ -767,6 +774,7 @@
 				AA00003B /* TrojanWyrmAI.swift in Sources */,
 				AA000040 /* HapticsService.swift in Sources */,
 				AA000042 /* NotificationService.swift in Sources */,
+				AA000043 /* AnalyticsService.swift in Sources */,
 				AA000044 /* SettingsSheet.swift in Sources */,
 				41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */,
 				9EDABF2B31A14E0C2280899C /* TDTypes.swift in Sources */,
@@ -783,6 +791,7 @@
 				CAMTUTBL01 /* CameraTutorialOverlay.swift in Sources */,
 				BOSSTUTBL1 /* BossTutorialOverlay.swift in Sources */,
 				BFIGHTTBL1 /* BossFightTutorialOverlay.swift in Sources */,
+				CMPGNCLBL1 /* CampaignCompleteOverlay.swift in Sources */,
 				594042117873415AD5954A69 /* DesignSystem.swift in Sources */,
 				132D341FD93DC073BD0C1452 /* BlockerSystem.swift in Sources */,
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
@@ -1079,6 +1088,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9EF7C3972F43227B0017A5C8 /* XCRemoteSwiftPackageReference "mixpanel-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/mixpanel/mixpanel-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.2.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9EF7C3982F43227B0017A5C8 /* Mixpanel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9EF7C3972F43227B0017A5C8 /* XCRemoteSwiftPackageReference "mixpanel-swift" */;
+			productName = Mixpanel;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AA900001 /* Project object */;
 }

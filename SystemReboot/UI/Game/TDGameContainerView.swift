@@ -172,6 +172,11 @@ struct TDGameContainerView: View {
                 }
             )
         }
+        .fullScreenCover(isPresented: $bossCoordinator.showCampaignComplete) {
+            CampaignCompleteOverlay {
+                bossCoordinator.showCampaignComplete = false
+            }
+        }
     }
 
     /// Configure the boss fight coordinator with context-specific callbacks
@@ -241,7 +246,7 @@ struct TDGameContainerView: View {
     // MARK: - Game Setup
 
     private func setupGame() {
-        guard var state = TDGameStateFactory.createTDGameState(playerProfile: appState.currentPlayer) else {
+        guard var state = TDGameStateFactory.createMotherboardGameState(playerProfile: appState.currentPlayer) else {
             return
         }
 

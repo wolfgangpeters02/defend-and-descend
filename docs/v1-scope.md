@@ -157,9 +157,9 @@ Implement a clear "end of content" boundary at **Sector 4 (Cache)** so the game 
 ---
 
 ### Stage 5: Campaign Complete Celebration Overlay
-- **Status:** TODO
-- **Summary:** _to be filled by implementing agent_
-- **Commit:** _to be filled_
+- **Status:** DONE
+- **Summary:** Created `CampaignCompleteOverlay` SwiftUI view with tech/hacker aesthetic (checkmark shield icon, monospaced text, pulsing continue button, success haptics), added 5 L10n keys with EN+DE translations, and wired it as a `fullScreenCover` in both `TDGameContainerView` and `MotherboardView` observing `bossCoordinator.showCampaignComplete`.
+- **Commit:** ae462b0
 
 **Goal:** Show a one-time celebration screen when the player completes the V1 campaign, then encourage continued play on harder difficulties.
 

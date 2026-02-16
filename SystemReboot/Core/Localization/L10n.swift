@@ -420,6 +420,15 @@ enum L10n {
         }
     }
 
+    // MARK: - Campaign Complete
+    enum CampaignComplete {
+        static let title = String(localized: "campaignComplete.title")
+        static let body = String(localized: "campaignComplete.body")
+        static let comingSoon = String(localized: "campaignComplete.comingSoon")
+        static let challenge = String(localized: "campaignComplete.challenge")
+        static let continueButton = String(localized: "campaignComplete.continue")
+    }
+
     // MARK: - Rarity
     enum RarityStrings {
         static let common = String(localized: "rarity.common")
