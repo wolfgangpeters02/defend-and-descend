@@ -411,7 +411,7 @@ struct MotherboardView: View {
                         Text(L10n.Stats.dmg)
                             .font(DesignTypography.caption(9))
                             .foregroundColor(DesignColors.muted)
-                        Text("\(Int(tower.damage))")
+                        Text("\(Int(tower.effectiveDamage))")
                             .font(DesignTypography.headline(14))
                             .foregroundColor(DesignColors.danger)
                     }
@@ -419,7 +419,7 @@ struct MotherboardView: View {
                         Text(L10n.Stats.rng)
                             .font(DesignTypography.caption(9))
                             .foregroundColor(DesignColors.muted)
-                        Text("\(Int(tower.range))")
+                        Text("\(Int(tower.effectiveRange))")
                             .font(DesignTypography.headline(14))
                             .foregroundColor(DesignColors.success)
                     }
@@ -427,7 +427,7 @@ struct MotherboardView: View {
                         Text(L10n.Stats.spd)
                             .font(DesignTypography.caption(9))
                             .foregroundColor(DesignColors.muted)
-                        Text(String(format: "%.1f", tower.attackSpeed))
+                        Text(String(format: "%.1f", tower.effectiveAttackSpeed))
                             .font(DesignTypography.headline(14))
                             .foregroundColor(DesignColors.primary)
                     }

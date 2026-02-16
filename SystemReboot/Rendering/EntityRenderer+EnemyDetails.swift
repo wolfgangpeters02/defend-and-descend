@@ -11,22 +11,11 @@ extension EntityRenderer {
     // Theme: Organic, pulsating threat. Simple but alive.
     // Nodes: body, membrane ring, nucleus, flagella (compound path) = 4
 
-    /// Creates the full "Malware Blob" composition for basic virus enemies.
+    /// Creates the "Malware Blob" composition for basic virus enemies.
+    /// Simplified: body + nucleus = 2 nodes, no repeating animations.
     /// - Returns: The body SKShapeNode for animation hookup by the caller.
     @discardableResult
     static func createBasicVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
-        // Membrane ring — outer "cell wall"
-        let membrane = SKShapeNode(circleOfRadius: size * 1.2)
-        membrane.fillColor = .clear
-        membrane.strokeColor = color.withAlphaComponent(0.25)
-        membrane.lineWidth = 1
-        membrane.zPosition = -0.1
-        container.addChild(membrane)
-
-        // Membrane slow counter-rotation
-        let membraneRotate = SKAction.rotate(byAngle: -.pi * 2, duration: 8.0)
-        membrane.run(SKAction.repeatForever(membraneRotate))
-
         // Body — main circle
         let body = SKShapeNode(circleOfRadius: size)
         body.fillColor = color
@@ -38,34 +27,9 @@ extension EntityRenderer {
         // Nucleus — inner darker core
         let nucleus = SKShapeNode(circleOfRadius: size * 0.35)
         nucleus.fillColor = color.darker(by: 0.5)
-        nucleus.strokeColor = color.withAlphaComponent(0.5)
-        nucleus.lineWidth = 1
+        nucleus.strokeColor = .clear
         nucleus.zPosition = 0.1
         container.addChild(nucleus)
-
-        // Nucleus slow rotation
-        let nucleusRotate = SKAction.rotate(byAngle: -.pi * 2, duration: 6.0)
-        nucleus.run(SKAction.repeatForever(nucleusRotate))
-
-        // Flagella — 3 trailing curved tentacles (compound path, single node)
-        let flagellaPath = CGMutablePath()
-        for i in 0..<3 {
-            let baseAngle = CGFloat(i) * (2 * .pi / 3) + .pi // spread behind/below
-            let startR = size * 0.8
-            let endR = size * 1.5
-            let ctrlR = size * 1.2
-            let startPt = CGPoint(x: cos(baseAngle) * startR, y: sin(baseAngle) * startR)
-            let endPt = CGPoint(x: cos(baseAngle) * endR, y: sin(baseAngle) * endR)
-            let ctrlPt = CGPoint(x: cos(baseAngle + 0.3) * ctrlR, y: sin(baseAngle + 0.3) * ctrlR)
-            flagellaPath.move(to: startPt)
-            flagellaPath.addQuadCurve(to: endPt, control: ctrlPt)
-        }
-        let flagella = SKShapeNode(path: flagellaPath)
-        flagella.strokeColor = color.withAlphaComponent(0.35)
-        flagella.lineWidth = 1.5
-        flagella.lineCap = .round
-        flagella.zPosition = -0.2
-        container.addChild(flagella)
 
         return body
     }
@@ -74,7 +38,8 @@ extension EntityRenderer {
     // Theme: Sleek, angular, aerodynamic. Data packet in transit.
     // Nodes: body (diamond/chevron), speed lines, core dot, directional arrow = 4
 
-    /// Creates the full "Packet Runner" composition for fast virus enemies.
+    /// Creates the "Packet Runner" composition for fast virus enemies.
+    /// Simplified: body only = 1 node, no animations.
     @discardableResult
     static func createFastVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
         // Body — elongated diamond/chevron (pointy top, shorter bottom)
@@ -92,46 +57,6 @@ extension EntityRenderer {
         body.name = "body"
         container.addChild(body)
 
-        // Speed lines — 2 trailing dashes behind (compound path, single node)
-        let speedPath = CGMutablePath()
-        speedPath.move(to: CGPoint(x: -size * 0.25, y: -size * 0.5))
-        speedPath.addLine(to: CGPoint(x: -size * 0.25, y: -size * 1.3))
-        speedPath.move(to: CGPoint(x: size * 0.25, y: -size * 0.5))
-        speedPath.addLine(to: CGPoint(x: size * 0.25, y: -size * 1.3))
-        let speedLines = SKShapeNode(path: speedPath)
-        speedLines.strokeColor = color.withAlphaComponent(0.3)
-        speedLines.lineWidth = 1.5
-        speedLines.lineCap = .round
-        speedLines.zPosition = -0.1
-        container.addChild(speedLines)
-
-        // Core dot — bright center
-        let core = SKShapeNode(circleOfRadius: size * 0.15)
-        core.fillColor = color.lighter(by: 0.5)
-        core.strokeColor = .clear
-        core.zPosition = 0.1
-        container.addChild(core)
-
-        // Core pulse
-        let pulse = SKAction.sequence([
-            SKAction.scale(to: 1.3, duration: 0.3),
-            SKAction.scale(to: 0.8, duration: 0.3)
-        ])
-        core.run(SKAction.repeatForever(pulse))
-
-        // Directional arrow — tiny forward indicator embedded in body
-        let arrowPath = CGMutablePath()
-        arrowPath.move(to: CGPoint(x: -size * 0.15, y: size * 0.25))
-        arrowPath.addLine(to: CGPoint(x: 0, y: size * 0.65))
-        arrowPath.addLine(to: CGPoint(x: size * 0.15, y: size * 0.25))
-        let arrow = SKShapeNode(path: arrowPath)
-        arrow.strokeColor = color.lighter(by: 0.3)
-        arrow.fillColor = .clear
-        arrow.lineWidth = 1.5
-        arrow.lineCap = .round
-        arrow.zPosition = 0.1
-        container.addChild(arrow)
-
         return body
     }
 
@@ -139,10 +64,11 @@ extension EntityRenderer {
     // Theme: Heavy, layered, industrial. Ransomware that's hard to crack.
     // Nodes: body (rounded rect), outer armor, armor plates (compound), inner core = 4
 
-    /// Creates the full "Armored Payload" composition for tank virus enemies.
+    /// Creates the "Armored Payload" composition for tank virus enemies.
+    /// Simplified: body + bolts = 2 nodes, no animations.
     @discardableResult
     static func createTankVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
-        // Body — rounded rectangle (not plain square)
+        // Body — rounded rectangle
         let bodySize = CGSize(width: size * 1.8, height: size * 1.8)
         let body = SKShapeNode(rectOf: bodySize, cornerRadius: size * 0.25)
         body.fillColor = color
@@ -150,14 +76,6 @@ extension EntityRenderer {
         body.lineWidth = 3
         body.name = "body"
         container.addChild(body)
-
-        // Outer armor border — double-stroke effect
-        let outerSize = CGSize(width: size * 1.8 + 6, height: size * 1.8 + 6)
-        let outerBorder = SKShapeNode(rectOf: outerSize, cornerRadius: size * 0.3)
-        outerBorder.fillColor = .clear
-        outerBorder.strokeColor = color.darker(by: 0.5)
-        outerBorder.lineWidth = 1.5
-        container.addChild(outerBorder)
 
         // Armor plates — 4 bolt heads at corners (compound path, single node)
         let platePath = CGMutablePath()
@@ -172,25 +90,10 @@ extension EntityRenderer {
         }
         let plates = SKShapeNode(path: platePath)
         plates.fillColor = color.darker(by: 0.4)
-        plates.strokeColor = color.withAlphaComponent(0.5)
-        plates.lineWidth = 1
+        plates.strokeColor = .clear
+        plates.lineWidth = 0
         plates.zPosition = 0.1
         container.addChild(plates)
-
-        // Inner core — lock/keyhole icon
-        let corePath = CGMutablePath()
-        // Lock body (small rectangle)
-        corePath.addRect(CGRect(x: -size * 0.18, y: -size * 0.3,
-                                width: size * 0.36, height: size * 0.3))
-        // Lock ring (arc above body)
-        corePath.addArc(center: CGPoint(x: 0, y: 0), radius: size * 0.2,
-                        startAngle: 0, endAngle: .pi, clockwise: false)
-        let core = SKShapeNode(path: corePath)
-        core.fillColor = color.darker(by: 0.6)
-        core.strokeColor = color.withAlphaComponent(0.4)
-        core.lineWidth = 1.5
-        core.zPosition = 0.1
-        container.addChild(core)
 
         return body
     }
@@ -199,24 +102,10 @@ extension EntityRenderer {
     // Theme: Glitchy, unstable, dangerous. Corrupted data visualization.
     // Nodes: aura ring, body (irregular hex), crosshair, glitch overlay, data fragments = 5
 
-    /// Creates the full elite virus composition for elite virus enemies.
+    /// Creates the elite virus composition for elite virus enemies.
+    /// Simplified: body + crosshair = 2 nodes, no animations.
     @discardableResult
     static func createEliteVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
-        // Aura ring — outer threat indicator
-        let aura = SKShapeNode(circleOfRadius: size * 1.3)
-        aura.fillColor = .clear
-        aura.strokeColor = color.withAlphaComponent(0.35)
-        aura.lineWidth = 1.5
-        aura.zPosition = -0.1
-        container.addChild(aura)
-
-        // Aura breathing
-        let auraPulse = SKAction.sequence([
-            SKAction.scale(to: 1.06, duration: 0.6),
-            SKAction.scale(to: 0.96, duration: 0.6)
-        ])
-        aura.run(SKAction.repeatForever(auraPulse))
-
         // Body — irregular hexagon (glitched vertices for "corrupted" look)
         let bodyPath = CGMutablePath()
         for i in 0..<6 {
@@ -238,75 +127,17 @@ extension EntityRenderer {
         body.name = "body"
         container.addChild(body)
 
-        // Inner crosshair pattern — circuit trace feel
+        // Inner crosshair pattern — circuit trace feel (compound path, single node)
         let crossPath = CGMutablePath()
         crossPath.move(to: CGPoint(x: 0, y: size * 0.45))
         crossPath.addLine(to: CGPoint(x: 0, y: -size * 0.45))
         crossPath.move(to: CGPoint(x: -size * 0.45, y: 0))
         crossPath.addLine(to: CGPoint(x: size * 0.45, y: 0))
-        // Small corner ticks
-        let tickLen: CGFloat = size * 0.12
-        for (cx, cy) in [(size * 0.3, size * 0.3), (-size * 0.3, size * 0.3),
-                          (size * 0.3, -size * 0.3), (-size * 0.3, -size * 0.3)] as [(CGFloat, CGFloat)] {
-            crossPath.move(to: CGPoint(x: cx - tickLen, y: cy))
-            crossPath.addLine(to: CGPoint(x: cx + tickLen, y: cy))
-            crossPath.move(to: CGPoint(x: cx, y: cy - tickLen))
-            crossPath.addLine(to: CGPoint(x: cx, y: cy + tickLen))
-        }
         let crosshair = SKShapeNode(path: crossPath)
         crosshair.strokeColor = color.withAlphaComponent(0.4)
         crosshair.lineWidth = 1
         crosshair.zPosition = 0.1
         container.addChild(crosshair)
-
-        // Glitch overlay — jittering semi-transparent band
-        let glitch = SKShapeNode(rectOf: CGSize(width: size * 1.2, height: size * 0.25))
-        glitch.fillColor = color.withAlphaComponent(0.12)
-        glitch.strokeColor = color.withAlphaComponent(0.25)
-        glitch.lineWidth = 1
-        glitch.zPosition = 0.2
-        container.addChild(glitch)
-
-        // Glitch jitter animation
-        let jitter = SKAction.repeatForever(SKAction.sequence([
-            SKAction.run {
-                glitch.position = CGPoint(
-                    x: CGFloat.random(in: -size * 0.15...size * 0.15),
-                    y: CGFloat.random(in: -size * 0.15...size * 0.15)
-                )
-                glitch.alpha = CGFloat.random(in: 0.1...0.35)
-            },
-            SKAction.wait(forDuration: 0.12),
-            SKAction.run {
-                glitch.position = .zero
-                glitch.alpha = 0.15
-            },
-            SKAction.wait(forDuration: TimeInterval.random(in: 0.2...0.5))
-        ]))
-        glitch.run(jitter)
-
-        // Data fragments — 3 orbiting small diamonds (compound path, single node)
-        let fragmentPath = CGMutablePath()
-        let fragSize: CGFloat = size * 0.12
-        for i in 0..<3 {
-            let angle = CGFloat(i) * (2 * .pi / 3)
-            let cx = cos(angle) * size * 0.65
-            let cy = sin(angle) * size * 0.65
-            fragmentPath.move(to: CGPoint(x: cx, y: cy + fragSize))
-            fragmentPath.addLine(to: CGPoint(x: cx + fragSize, y: cy))
-            fragmentPath.addLine(to: CGPoint(x: cx, y: cy - fragSize))
-            fragmentPath.addLine(to: CGPoint(x: cx - fragSize, y: cy))
-            fragmentPath.closeSubpath()
-        }
-        let fragments = SKShapeNode(path: fragmentPath)
-        fragments.fillColor = color.withAlphaComponent(0.6)
-        fragments.strokeColor = .clear
-        fragments.zPosition = 0.1
-        container.addChild(fragments)
-
-        // Orbit fragments around body
-        let orbit = SKAction.rotate(byAngle: .pi * 2, duration: 2.5)
-        fragments.run(SKAction.repeatForever(orbit))
 
         return body
     }
@@ -340,11 +171,6 @@ extension EntityRenderer {
             let collapse = SKAction.group([shrink, fade])
             node.run(SKAction.sequence([expand, hold, collapse, SKAction.removeFromParent()]))
 
-            // Spawn 4 plate fragments scattering outward
-            spawnDeathFragments(at: node.position, in: node.parent, count: 4,
-                                color: color.darker(by: 0.3), size: size * 0.3,
-                                speed: size * 1.5, shape: .square)
-
         case "hexagon":
             // Elite virus: glitch-out (rapid jitter) + dissolve
             let jitterCount = 6
@@ -374,8 +200,8 @@ extension EntityRenderer {
             let shatter = SKAction.group([shrink, fade])
             node.run(SKAction.sequence([flash, expand, shatter, SKAction.removeFromParent()]))
 
-            // Spawn 8 fragments for dramatic boss death
-            spawnDeathFragments(at: node.position, in: node.parent, count: 8,
+            // Spawn fragments for dramatic boss death
+            spawnDeathFragments(at: node.position, in: node.parent, count: 5,
                                 color: color, size: size * 0.2,
                                 speed: size * 3, shape: .diamond)
 
@@ -389,15 +215,12 @@ extension EntityRenderer {
             let collapse = SKAction.group([shrink, fade])
             node.run(SKAction.sequence([pop, collapse, SKAction.removeFromParent()]))
 
-            // Spawn 4 small circle fragments
-            spawnDeathFragments(at: node.position, in: node.parent, count: 4,
-                                color: color, size: size * 0.15,
-                                speed: size * 2, shape: .circle)
+            // No fragments for basic virus death — just the pop animation
         }
     }
 
     /// Spawns a lightweight death effect (node-pool compatible).
-    /// Creates a temporary flash + fragments without needing the original node.
+    /// Skipped entirely when many enemies are on screen (>10 siblings) to preserve FPS.
     static func spawnDeathEffect(
         at position: CGPoint,
         in parent: SKNode?,
@@ -406,6 +229,11 @@ extension EntityRenderer {
         size: CGFloat
     ) {
         guard let parent = parent else { return }
+
+        // Skip death effects entirely when scene is busy (performance)
+        if parent.children.count > 15 && shape != "boss" {
+            return
+        }
 
         // Quick flash at death position
         let flash = SKShapeNode(circleOfRadius: size * 0.8)
@@ -426,30 +254,12 @@ extension EntityRenderer {
         ])
         flash.run(flashFade)
 
-        // Type-specific fragment count and shape
-        let fragShape: FragmentShape
-        let fragCount: Int
-        switch shape {
-        case "triangle":
-            fragShape = .diamond
-            fragCount = 2
-        case "square":
-            fragShape = .square
-            fragCount = 4
-        case "hexagon":
-            fragShape = .diamond
-            fragCount = 3
-        case "boss":
-            fragShape = .diamond
-            fragCount = 8
-        default:
-            fragShape = .circle
-            fragCount = 3
+        // Only spawn fragments for boss deaths (skip for regular enemies)
+        if shape == "boss" {
+            spawnDeathFragments(at: position, in: parent, count: 6,
+                                color: color, size: size * 0.15,
+                                speed: size * 2, shape: .diamond)
         }
-
-        spawnDeathFragments(at: position, in: parent, count: fragCount,
-                            color: color, size: size * 0.15,
-                            speed: size * 2, shape: fragShape)
     }
 
     // MARK: - Type-Specific Spawn Animations (Phase 7C)

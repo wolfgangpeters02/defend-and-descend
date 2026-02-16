@@ -50,9 +50,16 @@ extension GameScene {
             gameState.damageEvents[i].displayed = true
         }
 
-        // Clean up old damage events (older than 2 seconds)
+        // Clean up old damage events in-place
         let currentTime = gameState.startTime + gameState.timeElapsed
-        gameState.damageEvents.removeAll { currentTime - $0.timestamp > 2.0 }
+        var writeIdx = 0
+        for idx in 0..<gameState.damageEvents.count {
+            if currentTime - gameState.damageEvents[idx].timestamp <= 2.0 {
+                gameState.damageEvents[writeIdx] = gameState.damageEvents[idx]
+                writeIdx += 1
+            }
+        }
+        gameState.damageEvents.removeSubrange(writeIdx..<gameState.damageEvents.count)
     }
 
     func renderPlayer() {

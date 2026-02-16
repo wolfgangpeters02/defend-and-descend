@@ -52,6 +52,11 @@ extension EmbeddedTDGameController {
            canAffordDraggedTower {
             scene?.placeTower(protocolId: protocolId, slotId: slot.id, profile: profile)
             HapticsService.shared.play(.towerPlace)
+
+            // FTUE: Track first tower placement
+            if !AppState.shared.currentPlayer.firstTowerPlaced {
+                AppState.shared.recordFirstTowerPlacement()
+            }
         }
     }
 

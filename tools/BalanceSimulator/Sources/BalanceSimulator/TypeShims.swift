@@ -28,7 +28,8 @@ enum BossDifficulty: String, Codable, CaseIterable, Hashable {
 // Only stored properties needed — BalanceConfig.Simulation uses the memberwise init.
 
 struct ComponentLevels: Codable, Equatable {
-    var psu: Int = 1
+    var power: Int = 1
+    var psu: Int { power }  // Alias for power
     var storage: Int = 1
     var ram: Int = 1
     var gpu: Int = 1
@@ -42,4 +43,10 @@ struct ComponentLevels: Codable, Equatable {
     var hashMultiplier: CGFloat {
         BalanceConfig.Components.networkHashMultiplier(at: network)
     }
+}
+
+// MARK: - TDMapID (from GameTypes.swift)
+
+enum TDMapID: String {
+    case grasslands, volcano, iceCave, castle, space, temple
 }

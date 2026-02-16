@@ -71,7 +71,7 @@ struct Protocol: Identifiable, Codable, Equatable {
 
     /// Whether this protocol is at max level
     var isMaxLevel: Bool {
-        return level >= 10
+        return level >= BalanceConfig.maxUpgradeLevel
     }
 
     // MARK: - Level Scaling
@@ -240,28 +240,28 @@ struct ProtocolLibrary {
         iconName: "dot.circle.and.hand.point.up.left.fill",
         color: "#00d4ff",
         firewallBaseStats: FirewallStats(
-            damage: 8,             // Nerfed: 10 → 8 (Common should be weaker than Rare)
-            range: 120,
-            fireRate: 1.0,
-            projectileCount: 1,
-            pierce: 1,
-            splash: 0,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallSlowDuration,
             special: nil,
-            powerDraw: 15  // Common: 15W
+            powerDraw: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 8,
-            fireRate: 2.0,
-            projectileCount: 1,
-            spread: 0,
-            pierce: 1,
-            projectileSpeed: 400,
+            damage: BalanceConfig.ProtocolBaseStats.KernelPulse.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.KernelPulse.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.KernelPulse.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.KernelPulse.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.KernelPulse.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.KernelPulse.weaponProjectileSpeed,
             special: nil
         ),
-        compileCost: 0,
-        baseUpgradeCost: 50
+        compileCost: BalanceConfig.ProtocolBaseStats.KernelPulse.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.KernelPulse.baseUpgradeCost
     )
 
     /// Burst Protocol - Splash tower / Shotgun
@@ -275,28 +275,28 @@ struct ProtocolLibrary {
         iconName: "burst.fill",
         color: "#f97316",
         firewallBaseStats: FirewallStats(
-            damage: 10,       // Balanced: Common splash (8→12→10)
-            range: 140,       // Buffed: 100 → 140 (matches utility towers)
-            fireRate: 0.8,
-            projectileCount: 1,
-            pierce: 1,
-            splash: 40,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallSlowDuration,
             special: nil,
-            powerDraw: 20  // Common: 20W
+            powerDraw: BalanceConfig.ProtocolBaseStats.BurstProtocol.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 6,
-            fireRate: 0.8,
-            projectileCount: 5,
-            spread: 0.5,
-            pierce: 1,
-            projectileSpeed: 350,
+            damage: BalanceConfig.ProtocolBaseStats.BurstProtocol.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.BurstProtocol.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.BurstProtocol.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.BurstProtocol.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.BurstProtocol.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.BurstProtocol.weaponProjectileSpeed,
             special: nil
         ),
-        compileCost: 100,
-        baseUpgradeCost: 50
+        compileCost: BalanceConfig.ProtocolBaseStats.BurstProtocol.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.BurstProtocol.baseUpgradeCost
     )
 
     /// Trace Route - Sniper tower / Railgun
@@ -310,28 +310,28 @@ struct ProtocolLibrary {
         iconName: "scope",
         color: "#3b82f6",
         firewallBaseStats: FirewallStats(
-            damage: 50,
-            range: 250,
-            fireRate: 0.4,
-            projectileCount: 1,
-            pierce: 3,
-            splash: 0,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallSlowDuration,
             special: nil,
-            powerDraw: 35  // Rare: 35W
+            powerDraw: BalanceConfig.ProtocolBaseStats.TraceRoute.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 40,
-            fireRate: 0.5,
-            projectileCount: 1,
-            spread: 0,
-            pierce: 5,
-            projectileSpeed: 800,
+            damage: BalanceConfig.ProtocolBaseStats.TraceRoute.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.TraceRoute.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.TraceRoute.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.TraceRoute.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.TraceRoute.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.TraceRoute.weaponProjectileSpeed,
             special: nil
         ),
-        compileCost: 200,
-        baseUpgradeCost: 100
+        compileCost: BalanceConfig.ProtocolBaseStats.TraceRoute.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.TraceRoute.baseUpgradeCost
     )
 
     /// Ice Shard - Slow tower / Freeze gun
@@ -345,28 +345,28 @@ struct ProtocolLibrary {
         iconName: "snowflake",
         color: "#22d3ee",
         firewallBaseStats: FirewallStats(
-            damage: 5,
-            range: 130,
-            fireRate: 1.5,
-            projectileCount: 1,
-            pierce: 1,
-            splash: 0,
-            slow: 0.5,
-            slowDuration: 2.0,
+            damage: BalanceConfig.ProtocolBaseStats.IceShard.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.IceShard.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.IceShard.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.IceShard.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.IceShard.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.IceShard.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.IceShard.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.IceShard.firewallSlowDuration,
             special: nil,
-            powerDraw: 30  // Rare: 30W
+            powerDraw: BalanceConfig.ProtocolBaseStats.IceShard.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 4,
-            fireRate: 3.0,
-            projectileCount: 1,
-            spread: 0,
-            pierce: 1,
-            projectileSpeed: 500,
+            damage: BalanceConfig.ProtocolBaseStats.IceShard.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.IceShard.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.IceShard.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.IceShard.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.IceShard.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.IceShard.weaponProjectileSpeed,
             special: nil
         ),
-        compileCost: 200,
-        baseUpgradeCost: 100
+        compileCost: BalanceConfig.ProtocolBaseStats.IceShard.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.IceShard.baseUpgradeCost
     )
 
     /// Fork Bomb - Multi-target tower / Spread cannon
@@ -380,28 +380,28 @@ struct ProtocolLibrary {
         iconName: "arrow.triangle.branch",
         color: "#a855f7",
         firewallBaseStats: FirewallStats(
-            damage: 12,
-            range: 140,
-            fireRate: 0.7,
-            projectileCount: 3,
-            pierce: 1,
-            splash: 0,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallSlowDuration,
             special: nil,
-            powerDraw: 40  // Buffed: 60 → 40W (allows more Recursion towers)
+            powerDraw: BalanceConfig.ProtocolBaseStats.ForkBomb.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 10,
-            fireRate: 1.0,
-            projectileCount: 8,
-            spread: 0.8,
-            pierce: 1,
-            projectileSpeed: 380,
+            damage: BalanceConfig.ProtocolBaseStats.ForkBomb.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.ForkBomb.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.ForkBomb.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.ForkBomb.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.ForkBomb.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.ForkBomb.weaponProjectileSpeed,
             special: nil
         ),
-        compileCost: 400,
-        baseUpgradeCost: 200
+        compileCost: BalanceConfig.ProtocolBaseStats.ForkBomb.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.ForkBomb.baseUpgradeCost
     )
 
     /// Root Access - High damage single target / Laser beam
@@ -415,28 +415,28 @@ struct ProtocolLibrary {
         iconName: "terminal.fill",
         color: "#ef4444",
         firewallBaseStats: FirewallStats(
-            damage: 80,
-            range: 160,
-            fireRate: 0.3,
-            projectileCount: 1,
-            pierce: 1,
-            splash: 0,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.RootAccess.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.RootAccess.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.RootAccess.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.RootAccess.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.RootAccess.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.RootAccess.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.RootAccess.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.RootAccess.firewallSlowDuration,
             special: nil,
-            powerDraw: 75  // Epic: 75W
+            powerDraw: BalanceConfig.ProtocolBaseStats.RootAccess.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 60,
-            fireRate: 0.4,
-            projectileCount: 1,
-            spread: 0,
-            pierce: 1,
-            projectileSpeed: 600,
+            damage: BalanceConfig.ProtocolBaseStats.RootAccess.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.RootAccess.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.RootAccess.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.RootAccess.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.RootAccess.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.RootAccess.weaponProjectileSpeed,
             special: nil
         ),
-        compileCost: 400,
-        baseUpgradeCost: 200
+        compileCost: BalanceConfig.ProtocolBaseStats.RootAccess.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.RootAccess.baseUpgradeCost
     )
 
     /// Overflow - Chain lightning tower / Arc weapon
@@ -450,28 +450,28 @@ struct ProtocolLibrary {
         iconName: "bolt.horizontal.fill",
         color: "#f59e0b",
         firewallBaseStats: FirewallStats(
-            damage: 15,
-            range: 150,
-            fireRate: 0.8,
-            projectileCount: 1,
-            pierce: 1,
-            splash: 0,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.Overflow.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.Overflow.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.Overflow.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.Overflow.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.Overflow.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.Overflow.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.Overflow.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.Overflow.firewallSlowDuration,
             special: .chain,
-            powerDraw: 120  // Legendary: 120W
+            powerDraw: BalanceConfig.ProtocolBaseStats.Overflow.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 12,
-            fireRate: 1.2,
-            projectileCount: 1,
-            spread: 0,
-            pierce: 1,
-            projectileSpeed: 450,
+            damage: BalanceConfig.ProtocolBaseStats.Overflow.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.Overflow.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.Overflow.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.Overflow.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.Overflow.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.Overflow.weaponProjectileSpeed,
             special: .ricochet
         ),
-        compileCost: 800,
-        baseUpgradeCost: 400
+        compileCost: BalanceConfig.ProtocolBaseStats.Overflow.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.Overflow.baseUpgradeCost
     )
 
     /// Null Pointer - Execute tower / Instakill crits
@@ -485,27 +485,27 @@ struct ProtocolLibrary {
         iconName: "exclamationmark.triangle.fill",
         color: "#dc2626",
         firewallBaseStats: FirewallStats(
-            damage: 25,
-            range: 140,
-            fireRate: 0.6,
-            projectileCount: 1,
-            pierce: 1,
-            splash: 0,
-            slow: 0,
-            slowDuration: 0,
+            damage: BalanceConfig.ProtocolBaseStats.NullPointer.firewallDamage,
+            range: BalanceConfig.ProtocolBaseStats.NullPointer.firewallRange,
+            fireRate: BalanceConfig.ProtocolBaseStats.NullPointer.firewallFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.NullPointer.firewallProjectileCount,
+            pierce: BalanceConfig.ProtocolBaseStats.NullPointer.firewallPierce,
+            splash: BalanceConfig.ProtocolBaseStats.NullPointer.firewallSplash,
+            slow: BalanceConfig.ProtocolBaseStats.NullPointer.firewallSlow,
+            slowDuration: BalanceConfig.ProtocolBaseStats.NullPointer.firewallSlowDuration,
             special: .execute,
-            powerDraw: 100  // Legendary: 100W
+            powerDraw: BalanceConfig.ProtocolBaseStats.NullPointer.firewallPowerDraw
         ),
         weaponBaseStats: WeaponStats(
-            damage: 20,
-            fireRate: 0.8,
-            projectileCount: 1,
-            spread: 0,
-            pierce: 1,
-            projectileSpeed: 500,
+            damage: BalanceConfig.ProtocolBaseStats.NullPointer.weaponDamage,
+            fireRate: BalanceConfig.ProtocolBaseStats.NullPointer.weaponFireRate,
+            projectileCount: BalanceConfig.ProtocolBaseStats.NullPointer.weaponProjectileCount,
+            spread: BalanceConfig.ProtocolBaseStats.NullPointer.weaponSpread,
+            pierce: BalanceConfig.ProtocolBaseStats.NullPointer.weaponPierce,
+            projectileSpeed: BalanceConfig.ProtocolBaseStats.NullPointer.weaponProjectileSpeed,
             special: .critical
         ),
-        compileCost: 800,
-        baseUpgradeCost: 400
+        compileCost: BalanceConfig.ProtocolBaseStats.NullPointer.compileCost,
+        baseUpgradeCost: BalanceConfig.ProtocolBaseStats.NullPointer.baseUpgradeCost
     )
 }

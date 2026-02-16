@@ -7,19 +7,26 @@ class ProjectileSystem {
 
     /// Update all projectiles - movement and collision
     static func update(state: inout GameState, context: FrameContext) {
-        var indicesToRemove: [Int] = []
+        // Build enemy ID → index map for O(1) lookups (replaces O(n) firstIndex calls)
+        var enemyIndexMap: [String: Int] = [:]
+        enemyIndexMap.reserveCapacity(state.enemies.count)
+        for j in 0..<state.enemies.count {
+            enemyIndexMap[state.enemies[j].id] = j
+        }
+
+        var writeIndex = 0
 
         for i in 0..<state.projectiles.count {
             // Check lifetime
             let createdAt = state.projectiles[i].createdAt ?? context.timestamp
             if context.timestamp - createdAt > state.projectiles[i].lifetime {
-                indicesToRemove.append(i)
                 continue
             }
 
-            // Homing projectiles
+            // Homing projectiles — O(1) target lookup via index map
             if state.projectiles[i].isHoming, let targetId = state.projectiles[i].targetId {
-                if let target = state.enemies.first(where: { $0.id == targetId && !$0.isDead }) {
+                if let j = enemyIndexMap[targetId], !state.enemies[j].isDead {
+                    let target = state.enemies[j]
                     let dx = target.x - state.projectiles[i].x
                     let dy = target.y - state.projectiles[i].y
                     let dist = sqrt(dx * dx + dy * dy)
@@ -58,7 +65,6 @@ class ProjectileSystem {
             }
 
             if hitObstacle {
-                indicesToRemove.append(i)
                 continue
             }
 
@@ -72,7 +78,7 @@ class ProjectileSystem {
                 )
             }
 
-            // Check collision with enemies using spatial grid (Phase 3: O(n) instead of O(n×m))
+            // Check collision with enemies using spatial grid
             var hit = false
             let searchRadius = projectileSize + BalanceConfig.ProjectileSystem.searchRadiusBuffer
 
@@ -86,6 +92,7 @@ class ProjectileSystem {
 
             // Enemy projectiles hit the player, not enemies
             if state.projectiles[i].isEnemyProjectile {
+                var hitPlayer = false
                 // Check collision with player
                 if !state.player.invulnerable || state.player.invulnerableUntil < context.timestamp {
                     let dx = state.player.x - state.projectiles[i].x
@@ -108,10 +115,13 @@ class ProjectileSystem {
                         // Brief invulnerability after hit
                         state.player.invulnerable = true
                         state.player.invulnerableUntil = context.timestamp + BalanceConfig.Player.invulnerabilityDuration
-
-                        indicesToRemove.append(i)
+                        hitPlayer = true
                     }
                 }
+                if hitPlayer { continue }
+                // Keep enemy projectile that didn't hit
+                state.projectiles[writeIndex] = state.projectiles[i]
+                writeIndex += 1
                 continue
             }
 
@@ -131,7 +141,6 @@ class ProjectileSystem {
                         let enemySize = enemy.size ?? BalanceConfig.EnemyDefaults.collisionSize
 
                         if dist < enemySize + projectileSize {
-                            // Emit IMMUNE scrolling combat text (throttle to avoid spam)
                             let immuneEvent = DamageEvent(
                                 type: .immune,
                                 amount: 0,
@@ -144,8 +153,8 @@ class ProjectileSystem {
                     }
                 }
 
-                // Find enemy index for damage handling
-                guard let j = state.enemies.firstIndex(where: { $0.id == enemy.id }) else { continue }
+                // O(1) enemy index lookup via map
+                guard let j = enemyIndexMap[enemy.id] else { continue }
 
                 let dx = enemy.x - state.projectiles[i].x
                 let dy = enemy.y - state.projectiles[i].y
@@ -172,17 +181,16 @@ class ProjectileSystem {
             }
 
             if hit {
-                indicesToRemove.append(i)
                 continue
             }
+
+            // Keep this projectile — compact in-place
+            state.projectiles[writeIndex] = state.projectiles[i]
+            writeIndex += 1
         }
 
-        // Remove projectiles (in reverse order to maintain indices)
-        for index in indicesToRemove.sorted().reversed() {
-            if index < state.projectiles.count {
-                state.projectiles.remove(at: index)
-            }
-        }
+        // Trim removed entries
+        state.projectiles.removeSubrange(writeIndex..<state.projectiles.count)
     }
 
     /// Check collision with obstacle

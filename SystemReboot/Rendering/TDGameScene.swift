@@ -54,6 +54,7 @@ class TDGameScene: SKScene {
         weak var levelLabel: SKLabelNode?
         weak var glowNode: SKNode?
         weak var lodDetail: SKNode?
+        weak var starIndicator: SKNode?
     }
     var towerNodeRefs: [String: TowerNodeRefs] = [:]
 
@@ -74,6 +75,7 @@ class TDGameScene: SKScene {
     var dragNode: SKNode?
     var longPressTimer: Timer?
     var validMoveSlots: Set<String> = []  // Empty slots for tower repositioning
+    var mergeCandidateIds: Set<String> = []  // Tower IDs eligible for merge during drag
 
     // Particle layer
     var particleLayer: SKNode!
@@ -83,6 +85,9 @@ class TDGameScene: SKScene {
 
     // Particle effect service (particles, arcs, shake, boss effects — extracted in Step 4.3)
     let particleEffectService = ParticleEffectService()
+
+    // Node pool for TD projectiles (reduces alloc/dealloc churn)
+    let tdNodePool = NodePool(maxPerType: 150)
 
     // Forwarding properties so extensions keep compiling unchanged
     var cameraNode: SKCameraNode! { cameraController.cameraNode }
@@ -521,63 +526,141 @@ class TDGameScene: SKScene {
     private func setupCore() {
         guard let state = state else { return }
 
-        // Copper/Gold colors matching trace aesthetic
-        let copperColor = UIColor(red: 184/255, green: 115/255, blue: 51/255, alpha: 1.0)  // #b87333
-        let goldGlowColor = UIColor(red: 212/255, green: 168/255, blue: 75/255, alpha: 1.0)  // #d4a84b
+        let cpuTier = state.cpuTier
+        let tierColor = CPUTierColors.color(for: cpuTier)
+        let tierGlowColor = CPUTierColors.glowColor(for: cpuTier)
 
         // Create CPU container node
         let coreContainer = SKNode()
         coreContainer.position = convertToScene(state.core.position)
         coreContainer.name = "core"
 
-        // CPU body - rounded square (Heatsink/Chip aesthetic)
-        let cpuSize: CGFloat = 90
-        let cpuBody = SKShapeNode(rectOf: CGSize(width: cpuSize, height: cpuSize), cornerRadius: 12)
+        // --- IHS (Integrated Heat Spreader) body ---
+        let cpuSize = BalanceConfig.Motherboard.cpuSize  // 300pt
+        let cpuBody = SKShapeNode(rectOf: CGSize(width: cpuSize, height: cpuSize), cornerRadius: 16)
         cpuBody.fillColor = DesignColors.surfaceUI
-        cpuBody.strokeColor = copperColor
-        cpuBody.lineWidth = 4
-        cpuBody.glowWidth = 2.0  // Important focal point (1 CPU per game)
+        cpuBody.strokeColor = tierColor
+        cpuBody.lineWidth = 5
         cpuBody.name = "cpuBody"
         coreContainer.addChild(cpuBody)
 
-        // Inner chip detail - smaller square with copper accent
-        let innerSize: CGFloat = 60
-        let innerChip = SKShapeNode(rectOf: CGSize(width: innerSize, height: innerSize), cornerRadius: 6)
-        innerChip.fillColor = DesignColors.backgroundUI
-        innerChip.strokeColor = copperColor.withAlphaComponent(0.6)
+        // --- Silicon die (inner detail) ---
+        let dieSize = BalanceConfig.Motherboard.cpuDieSize  // 200pt
+        let innerChip = SKShapeNode(rectOf: CGSize(width: dieSize, height: dieSize), cornerRadius: 4)
+        innerChip.fillColor = UIColor(red: 0.06, green: 0.06, blue: 0.10, alpha: 1.0)
+        innerChip.strokeColor = tierColor.withAlphaComponent(0.6)
         innerChip.lineWidth = 2
         innerChip.name = "innerChip"
         coreContainer.addChild(innerChip)
 
-        // CPU label with copper color
+        // --- Tier-responsive core blocks on die surface ---
+        // Each tier reveals more processing cores (created once, toggled via isHidden)
+        let coreBlockSize: CGFloat = 36
+        let coreBlockGap: CGFloat = 8
+        let coreBlockPositions: [CGPoint] = [
+            // Row 1 (bottom)
+            CGPoint(x: -coreBlockSize - coreBlockGap / 2, y: -coreBlockSize * 1.5 - coreBlockGap),
+            CGPoint(x: coreBlockGap / 2, y: -coreBlockSize * 1.5 - coreBlockGap),
+            // Row 2
+            CGPoint(x: -coreBlockSize - coreBlockGap / 2, y: -coreBlockSize / 2),
+            CGPoint(x: coreBlockGap / 2, y: -coreBlockSize / 2),
+            // Row 3
+            CGPoint(x: -coreBlockSize - coreBlockGap / 2, y: coreBlockSize / 2 + coreBlockGap),
+            CGPoint(x: coreBlockGap / 2, y: coreBlockSize / 2 + coreBlockGap),
+            // Row 4 (top)
+            CGPoint(x: -coreBlockSize - coreBlockGap / 2, y: coreBlockSize * 1.5 + coreBlockGap * 2),
+            CGPoint(x: coreBlockGap / 2, y: coreBlockSize * 1.5 + coreBlockGap * 2),
+        ]
+
+        let coreBlockColor = UIColor(red: 0.10, green: 0.10, blue: 0.16, alpha: 1.0)
+        let coresVisible = min(cpuTier * 2, coreBlockPositions.count)
+        for (index, pos) in coreBlockPositions.enumerated() {
+            let block = SKShapeNode(rectOf: CGSize(width: coreBlockSize, height: coreBlockSize), cornerRadius: 3)
+            block.position = pos
+            block.fillColor = coreBlockColor
+            block.strokeColor = tierColor.withAlphaComponent(0.5)
+            block.lineWidth = 1
+            block.name = "coreBlock_\(index)"
+            block.isHidden = index >= coresVisible
+            block.zPosition = 0.1
+            coreContainer.addChild(block)
+        }
+
+        // --- L2 cache bars (visible at tier 3+) ---
+        let cacheBarWidth: CGFloat = dieSize * 0.35
+        let cacheBarHeight: CGFloat = 10
+        let cacheBarColor = UIColor(red: 0.08, green: 0.08, blue: 0.14, alpha: 1.0)
+        let l2Positions: [CGPoint] = [
+            CGPoint(x: -dieSize / 2 + cacheBarWidth / 2 + 8, y: 0),
+            CGPoint(x: dieSize / 2 - cacheBarWidth / 2 - 8, y: 0),
+        ]
+        for (index, pos) in l2Positions.enumerated() {
+            let bar = SKShapeNode(rectOf: CGSize(width: cacheBarWidth, height: cacheBarHeight), cornerRadius: 2)
+            bar.position = pos
+            bar.fillColor = cacheBarColor
+            bar.strokeColor = tierColor.withAlphaComponent(0.35)
+            bar.lineWidth = 0.5
+            bar.name = "cacheBar_L2_\(index)"
+            bar.isHidden = cpuTier < 3
+            bar.zPosition = 0.1
+            coreContainer.addChild(bar)
+        }
+
+        // --- L3 cache block (visible at tier 4+) ---
+        let l3Block = SKShapeNode(rectOf: CGSize(width: dieSize * 0.7, height: 16), cornerRadius: 2)
+        l3Block.position = CGPoint(x: 0, y: -dieSize / 2 + 20)
+        l3Block.fillColor = cacheBarColor
+        l3Block.strokeColor = tierColor.withAlphaComponent(0.3)
+        l3Block.lineWidth = 0.5
+        l3Block.name = "cacheBar_L3"
+        l3Block.isHidden = cpuTier < 4
+        l3Block.zPosition = 0.1
+        coreContainer.addChild(l3Block)
+
+        // --- CPU label ---
         let cpuLabel = SKLabelNode(text: "CPU")
         cpuLabel.fontName = "Menlo-Bold"
-        cpuLabel.fontSize = 20
-        cpuLabel.fontColor = copperColor
+        cpuLabel.fontSize = 32
+        cpuLabel.fontColor = tierColor
         cpuLabel.verticalAlignmentMode = .center
         cpuLabel.horizontalAlignmentMode = .center
+        cpuLabel.position = CGPoint(x: 0, y: dieSize / 2 + 20)
+        cpuLabel.zPosition = 0.2
         coreContainer.addChild(cpuLabel)
 
-        // Efficiency percentage (below CPU text)
+        // --- Efficiency percentage ---
         let efficiencyLabel = SKLabelNode(text: "100%")
         efficiencyLabel.fontName = "Menlo-Bold"
-        efficiencyLabel.fontSize = 12
+        efficiencyLabel.fontSize = 18
         efficiencyLabel.fontColor = DesignColors.successUI
         efficiencyLabel.verticalAlignmentMode = .center
         efficiencyLabel.horizontalAlignmentMode = .center
-        efficiencyLabel.position = CGPoint(x: 0, y: -18)
+        efficiencyLabel.position = CGPoint(x: 0, y: dieSize / 2 + 48)
         efficiencyLabel.name = "efficiencyLabel"
+        efficiencyLabel.zPosition = 0.2
         coreContainer.addChild(efficiencyLabel)
 
-        // PERF: Heatsink fins batched into single compound path (8→1 node)
-        let finCount = 8
-        let finLength: CGFloat = 20
-        let finWidth: CGFloat = 6
-        let finOffset = cpuSize / 2 + finLength / 2 + 2
+        // --- Tier label (below CPU) ---
+        let tierLabel = SKLabelNode(text: "T\(cpuTier)")
+        tierLabel.fontName = "Menlo-Bold"
+        tierLabel.fontSize = 14
+        tierLabel.fontColor = tierColor.withAlphaComponent(0.6)
+        tierLabel.verticalAlignmentMode = .center
+        tierLabel.horizontalAlignmentMode = .center
+        tierLabel.position = CGPoint(x: 0, y: -dieSize / 2 - 20)
+        tierLabel.name = "tierLabel"
+        tierLabel.zPosition = 0.2
+        coreContainer.addChild(tierLabel)
+
+        // --- PERF: Heatsink fins batched into single compound path ---
+        let finCount = BalanceConfig.Motherboard.cpuFinCount  // 16
+        let finLength: CGFloat = 30
+        let finWidth: CGFloat = 8
+        let finOffset = cpuSize / 2 + finLength / 2 + 4
         let finsPath = CGMutablePath()
 
         for i in 0..<finCount {
-            let angle = CGFloat(i) * .pi / 4
+            let angle = CGFloat(i) * (.pi * 2 / CGFloat(finCount))
             let cx = cos(angle) * finOffset
             let cy = sin(angle) * finOffset
             let finRect = CGRect(x: -finWidth / 2, y: -finLength / 2, width: finWidth, height: finLength)
@@ -586,16 +669,16 @@ class TDGameScene: SKScene {
         }
 
         let finsNode = SKShapeNode(path: finsPath)
-        finsNode.fillColor = copperColor.withAlphaComponent(0.7)
-        finsNode.strokeColor = copperColor
+        finsNode.fillColor = tierColor.withAlphaComponent(0.7)
+        finsNode.strokeColor = tierColor
         finsNode.lineWidth = 1
         finsNode.zPosition = -0.5
         coreContainer.addChild(finsNode)
 
-        // PERF: Pin connectors batched into single compound path (24→1 node)
-        let pinCount = 6
-        let pinLength: CGFloat = 15
-        let pinWidth: CGFloat = 4
+        // --- PERF: Pin connectors batched into single compound path ---
+        let pinCount = BalanceConfig.Motherboard.cpuPinsPerSide  // 12
+        let pinLength: CGFloat = 18
+        let pinWidth: CGFloat = 6
         let pinSpacing = cpuSize / CGFloat(pinCount + 1)
         let pinsPath = CGMutablePath()
 
@@ -618,34 +701,34 @@ class TDGameScene: SKScene {
         }
 
         let pinsNode = SKShapeNode(path: pinsPath)
-        pinsNode.fillColor = copperColor.withAlphaComponent(0.5)
+        pinsNode.fillColor = tierColor.withAlphaComponent(0.5)
         pinsNode.strokeColor = .clear
         coreContainer.addChild(pinsNode)
 
-        // Glow ring (pulsing gold glow - intensity based on efficiency)
-        let glowRing = SKShapeNode(circleOfRadius: cpuSize / 2 + 25)
+        // --- Glow ring (pulsing, tier-colored) ---
+        let glowRadius = BalanceConfig.Motherboard.cpuGlowRingRadius  // 200
+        let glowRing = SKShapeNode(circleOfRadius: glowRadius)
         glowRing.fillColor = .clear
-        glowRing.strokeColor = goldGlowColor.withAlphaComponent(0.4)
-        glowRing.lineWidth = 4
-        glowRing.glowWidth = 3.0  // Pulsing CPU halo (1 ring per game)
+        glowRing.strokeColor = tierGlowColor.withAlphaComponent(0.35)
+        glowRing.lineWidth = 5
         glowRing.name = "glowRing"
         glowRing.zPosition = -1
         coreContainer.addChild(glowRing)
 
-        // Pulse animation for glow ring (synced to game rhythm)
-        let pulseOut = SKAction.scale(to: 1.15, duration: 0.8)
-        let pulseIn = SKAction.scale(to: 0.9, duration: 0.8)
+        // Pulse animation for glow ring
+        let pulseOut = SKAction.scale(to: 1.12, duration: 1.0)
+        let pulseIn = SKAction.scale(to: 0.92, duration: 1.0)
         pulseOut.timingMode = .easeInEaseOut
         pulseIn.timingMode = .easeInEaseOut
         let pulse = SKAction.sequence([pulseOut, pulseIn])
         glowRing.run(SKAction.repeatForever(pulse))
 
-        // Secondary inner glow (copper)
-        let innerGlow = SKShapeNode(circleOfRadius: cpuSize / 2 + 5)
+        // --- Inner glow ring (tier-colored) ---
+        let innerGlowRadius = cpuSize / 2 + 15
+        let innerGlow = SKShapeNode(circleOfRadius: innerGlowRadius)
         innerGlow.fillColor = .clear
-        innerGlow.strokeColor = copperColor.withAlphaComponent(0.5)
-        innerGlow.lineWidth = 2
-        innerGlow.glowWidth = 1.5  // Inner copper glow (1 ring per game)
+        innerGlow.strokeColor = tierColor.withAlphaComponent(0.4)
+        innerGlow.lineWidth = 3
         innerGlow.name = "innerGlow"
         innerGlow.zPosition = -0.5
         coreContainer.addChild(innerGlow)
@@ -656,6 +739,37 @@ class TDGameScene: SKScene {
         glowNodes.append((cpuBody, 2.0))
         glowNodes.append((glowRing, 3.0))
         glowNodes.append((innerGlow, 1.5))
+    }
+
+    /// CPU tier color palette — progresses from copper to platinum as tiers increase
+    struct CPUTierColors {
+        static let copper = UIColor(red: 184/255, green: 115/255, blue: 51/255, alpha: 1.0)           // #b87333 - Tier 1
+        static let brighterCopper = UIColor(red: 212/255, green: 149/255, blue: 106/255, alpha: 1.0)  // #d4956a - Tier 2
+        static let goldTint = UIColor(red: 212/255, green: 168/255, blue: 75/255, alpha: 1.0)         // #d4a84b - Tier 3
+        static let warmGold = UIColor(red: 255/255, green: 215/255, blue: 0/255, alpha: 1.0)          // #ffd700 - Tier 4
+        static let platinum = UIColor(red: 255/255, green: 232/255, blue: 138/255, alpha: 1.0)        // #ffe88a - Tier 5
+
+        static func color(for tier: Int) -> UIColor {
+            switch tier {
+            case 1: return copper
+            case 2: return brighterCopper
+            case 3: return goldTint
+            case 4: return warmGold
+            case 5: return platinum
+            default: return copper
+            }
+        }
+
+        static func glowColor(for tier: Int) -> UIColor {
+            switch tier {
+            case 1: return copper
+            case 2: return brighterCopper
+            case 3: return UIColor(red: 230/255, green: 190/255, blue: 100/255, alpha: 1.0)
+            case 4: return UIColor(red: 255/255, green: 230/255, blue: 80/255, alpha: 1.0)
+            case 5: return UIColor(red: 255/255, green: 240/255, blue: 180/255, alpha: 1.0)
+            default: return copper
+            }
+        }
     }
 
     // MARK: - Update Loop

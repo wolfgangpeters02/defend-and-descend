@@ -58,10 +58,6 @@ struct GameState {
     // Resources (Hash collected during this session)
     var sessionHash: Int = 0
 
-    // Potions
-    var potions: PotionCharges = PotionCharges()
-    var activePotionEffects: ActivePotionEffects = ActivePotionEffects()
-
     // Time & XP
     var runStartTime: TimeInterval
     var timeElapsed: TimeInterval = 0
@@ -80,10 +76,6 @@ struct GameState {
 
     // Spatial partitioning (Phase 3: O(n) collision detection)
     var enemyGrid: SpatialGrid<Enemy>?
-
-    // Object pools (Phase 4: reduced GC pressure)
-    var particlePool: ObjectPool<Particle>?
-    var projectilePool: ObjectPool<Projectile>?
 
     // Upgrades
     var upgradeLevel: Int = 0
@@ -178,21 +170,6 @@ struct SessionStats {
     var hashEarned: Int = 0              // Running total of Hash earned
 }
 
-// MARK: - Potions
-
-struct PotionCharges {
-    var health: CGFloat = 0
-    var bomb: CGFloat = 0
-    var magnet: CGFloat = 0
-    var shield: CGFloat = 0
-}
-
-struct ActivePotionEffects {
-    var shieldUntil: TimeInterval?
-    var magnetUntil: TimeInterval?
-    var originalPickupRange: CGFloat?
-}
-
 // MARK: - Player
 
 struct Player {
@@ -231,7 +208,7 @@ struct Player {
 }
 
 struct PlayerAbilities {
-    // Dungeon-only abilities (don't translate to TD)
+    // Boss-only abilities (don't translate to TD)
     var lifesteal: CGFloat?
     var revive: Int?
     var thorns: CGFloat?

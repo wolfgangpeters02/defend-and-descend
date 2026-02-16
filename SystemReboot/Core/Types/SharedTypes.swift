@@ -21,7 +21,7 @@ extension HashStorable {
     }
 }
 
-// MARK: - Shared Types for Survivor + TD Unified Progression
+// MARK: - Shared Types for Boss + TD Unified Progression
 // These types work identically in both modes
 
 struct MapObstacle: Codable, Identifiable {

@@ -1,6 +1,6 @@
 import SpriteKit
 
-// MARK: - Debug Overlay (Boss / Survivor Scenes)
+// MARK: - Debug Overlay (Boss Scenes)
 // Camera-attached overlay showing FPS, entity counts, and game state.
 // Toggled via Settings > Debug > Debug Overlay.
 // Fixed size, pinned to top-left corner of the visible screen.

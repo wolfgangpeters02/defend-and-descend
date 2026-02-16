@@ -15,7 +15,7 @@ struct GameRewardService {
         let hashReward: Int
     }
 
-    struct SurvivorRewardResult {
+    struct BossRewardResult {
         let xpReward: Int
         let hashReward: Int
     }
@@ -51,50 +51,48 @@ struct GameRewardService {
         checkLevelUp(profile: &profile)
     }
 
-    // MARK: - Survivor Rewards
+    // MARK: - Boss Rewards
 
     /// Calculate XP and Hash rewards for a boss run
-    static func calculateSurvivorRewards(kills: Int, time: TimeInterval, victory: Bool, hashEarned: Int) -> SurvivorRewardResult {
+    static func calculateBossRewards(kills: Int, time: TimeInterval, victory: Bool, hashEarned: Int) -> BossRewardResult {
         let xp = kills
-            + Int(time / BalanceConfig.SurvivorRewards.xpPerTimePeriod)
-            + (victory ? BalanceConfig.SurvivorRewards.victoryXPBonus : 0)
+            + Int(time / BalanceConfig.BossRunRewards.xpPerTimePeriod)
+            + (victory ? BalanceConfig.BossRunRewards.victoryXPBonus : 0)
 
         let hash: Int
         if hashEarned > 0 {
-            hash = victory ? hashEarned : Int(CGFloat(hashEarned) * BalanceConfig.SurvivorRewards.deathHashPenalty)
+            hash = victory ? hashEarned : Int(CGFloat(hashEarned) * BalanceConfig.BossRunRewards.deathHashPenalty)
         } else {
             // Legacy fallback
-            let hashFromKills = kills / BalanceConfig.SurvivorRewards.legacyHashPerKills
-            let hashFromTime = Int(time / TimeInterval(BalanceConfig.SurvivorRewards.legacyHashPerSeconds))
-            let hashVictoryBonus = victory ? BalanceConfig.SurvivorRewards.legacyVictoryHashBonus : 0
+            let hashFromKills = kills / BalanceConfig.BossRunRewards.legacyHashPerKills
+            let hashFromTime = Int(time / TimeInterval(BalanceConfig.BossRunRewards.legacyHashPerSeconds))
+            let hashVictoryBonus = victory ? BalanceConfig.BossRunRewards.legacyVictoryHashBonus : 0
             hash = max(1, hashFromKills + hashFromTime + hashVictoryBonus)
         }
 
-        return SurvivorRewardResult(xpReward: xp, hashReward: hash)
+        return BossRewardResult(xpReward: xp, hashReward: hash)
     }
 
     /// Record a boss run onto a player profile (stats + rewards + level-up)
-    static func applySurvivorResult(to profile: inout PlayerProfile, time: TimeInterval, kills: Int, gameMode: GameMode, victory: Bool, hashEarned: Int) {
+    static func applyBossResult(to profile: inout PlayerProfile, time: TimeInterval, kills: Int, victory: Bool, hashEarned: Int) {
         profile.totalRuns += 1
         profile.totalKills += kills
         if time > profile.bestTime { profile.bestTime = time }
 
-        // Mode-specific stats
-        if gameMode == .boss {
-            profile.survivorStats.dungeonRuns += 1
-            if victory {
-                profile.survivorStats.dungeonsCompleted += 1
-                profile.survivorStats.bossesDefeated += 1
-            }
+        // Boss stats
+        profile.bossStats.bossRuns += 1
+        if victory {
+            profile.bossStats.bossesCompleted += 1
+            profile.bossStats.bossesDefeated += 1
         }
 
-        profile.survivorStats.totalSurvivorKills += kills
-        if time > profile.survivorStats.longestSurvival {
-            profile.survivorStats.longestSurvival = time
+        profile.bossStats.totalBossKills += kills
+        if time > profile.bossStats.longestBossFight {
+            profile.bossStats.longestBossFight = time
         }
 
         // Rewards
-        let rewards = calculateSurvivorRewards(kills: kills, time: time, victory: victory, hashEarned: hashEarned)
+        let rewards = calculateBossRewards(kills: kills, time: time, victory: victory, hashEarned: hashEarned)
         profile.xp += rewards.xpReward
         profile.addHash(rewards.hashReward)
 
@@ -109,6 +107,7 @@ struct GameRewardService {
         while profile.xp >= PlayerProfile.xpForLevel(profile.level) {
             profile.xp -= PlayerProfile.xpForLevel(profile.level)
             profile.level += 1
+            AnalyticsService.shared.trackLevelUp(newLevel: profile.level)
         }
     }
 }

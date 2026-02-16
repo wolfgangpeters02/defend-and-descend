@@ -301,8 +301,18 @@ struct BalanceConfig {
         static let projectileSpeed: CGFloat = 600
         static let projectileHitboxRadius: CGFloat = 8
         static let projectileLifetime: TimeInterval = 3.0
+        static let projectileLifetimeRangeMultiplier: CGFloat = 2.5
+        static let projectileMinLifetime: TimeInterval = 0.4
         static let homingStrength: CGFloat = 8.0
         static let multiShotSpreadAngle: CGFloat = 0.15
+
+        /// Calculate projectile lifetime based on tower range.
+        /// Lifetime = (range × multiplier) / speed, clamped to [min, max].
+        static func projectileLifetimeForRange(_ range: CGFloat) -> TimeInterval {
+            let travelDistance = range * projectileLifetimeRangeMultiplier
+            let time = TimeInterval(travelDistance / projectileSpeed)
+            return max(projectileMinLifetime, min(time, projectileLifetime))
+        }
 
         /// Lead targeting prediction cap (seconds)
         static let maxPredictionTime: CGFloat = 0.8
@@ -1022,6 +1032,42 @@ struct BalanceConfig {
         }
     }
 
+    // MARK: - Tower Merge (Star) System
+    // Consolidate multiple towers into fewer, stronger ones
+
+    struct TowerMerge {
+        /// Maximum star level a tower can reach (0★ base → 3★ max)
+        static let maxStars: Int = 3
+
+        /// Stat multiplier per star level (damage, range, attackSpeed)
+        /// 0★ = 1.0x, 1★ = 2.0x, 2★ = 4.0x, 3★ = 8.0x
+        static let statMultiplierPerStar: CGFloat = 2.0
+
+        /// Power efficiency per star (0.9 = 10% savings per merge level)
+        /// Merged towers draw slightly less than the sum of their components
+        static let powerEfficiencyPerStar: CGFloat = 0.90
+
+        /// Calculate stat multiplier for a given star level
+        static func statMultiplier(stars: Int) -> CGFloat {
+            return pow(statMultiplierPerStar, CGFloat(stars))
+        }
+
+        /// Calculate power draw for a star level (given base power draw)
+        /// Formula: basePower × 2^stars × efficiency^stars
+        static func starPowerDraw(basePower: Int, stars: Int) -> Int {
+            guard stars > 0 else { return basePower }
+            let rawPower = CGFloat(basePower) * pow(2.0, CGFloat(stars))
+            let efficiencyDiscount = pow(powerEfficiencyPerStar, CGFloat(stars))
+            return max(1, Int(ceil(rawPower * efficiencyDiscount)))
+        }
+
+        /// Number of original towers invested in a tower at given star level
+        /// 0★ = 1, 1★ = 2, 2★ = 4, 3★ = 8
+        static func towersInvested(stars: Int) -> Int {
+            return Int(pow(2.0, Double(stars)))
+        }
+    }
+
     // MARK: - Overclock System
     // Player can overclock CPU for risk/reward gameplay
 
@@ -1330,10 +1376,10 @@ struct BalanceConfig {
         /// Get display name for a boss
         static func bossDisplayName(_ bossId: String) -> String {
             switch bossId {
-            case "cyberboss": return "Cyberboss"
-            case "void_harbinger": return "Void Harbinger"
-            case "overclocker": return "Overclocker"
-            case "trojan_wyrm": return "Trojan Wyrm"
+            case "cyberboss": return L10n.Boss.cyberboss
+            case "void_harbinger": return L10n.Boss.voidHarbinger
+            case "overclocker": return L10n.Boss.overclocker
+            case "trojan_wyrm": return L10n.Boss.trojanWyrm
             default: return bossId.capitalized
             }
         }
@@ -1348,7 +1394,7 @@ struct BalanceConfig {
         /// Each boss defeat makes the NEXT sector VISIBLE
         /// Player must then pay Hash to actually UNLOCK the sector
         static let unlockOrder: [String] = [
-            "psu",        // 0 - Starter (free, no boss defeat needed)
+            "power",      // 0 - Starter (free, no boss defeat needed) — matches SectorID.power.rawValue
             "ram",        // 1 - After PSU boss
             "gpu",        // 2 - After RAM boss
             "cache",      // 3 - After GPU boss
@@ -1363,7 +1409,7 @@ struct BalanceConfig {
         /// Early sectors affordable in first sessions, late sectors require real progression
         static let hashCosts: [Int] = [
             0,           // PSU - starter, always free
-            600,         // RAM - achievable in first 10 min session
+            1_500,       // RAM - requires at least one boss kill
             2_500,       // GPU - after first idle cycle
             6_000,       // Cache - day 2-3
             15_000,      // Storage - end of week 1
@@ -1446,7 +1492,7 @@ struct BalanceConfig {
         /// Hash multiplier by sector (later = more rewarding)
         /// Makes expanding to new sectors worthwhile despite increased difficulty
         static let multipliers: [String: CGFloat] = [
-            "psu": 1.0,        // Starter - baseline
+            "power": 1.0,      // Starter - baseline (matches SectorID.power.rawValue)
             "ram": 1.2,        // +20% - first expansion reward
             "gpu": 1.4,        // +40%
             "cache": 1.6,      // +60%
@@ -2793,6 +2839,12 @@ extension BalanceConfig {
             "maxArmor": Double(Player.maxArmor)
         ]
 
+        let towerMergeDict: [String: Any] = [
+            "maxStars": TowerMerge.maxStars,
+            "statMultiplierPerStar": Double(TowerMerge.statMultiplierPerStar),
+            "powerEfficiencyPerStar": Double(TowerMerge.powerEfficiencyPerStar)
+        ]
+
         let config: [String: Any] = [
             "waves": wavesDict,
             "threatLevel": threatDict,
@@ -2810,7 +2862,8 @@ extension BalanceConfig {
             "sectorUnlock": sectorUnlockDict,
             "sectorHashBonus": sectorHashBonusDict,
             "upgradeRarity": upgradeRarityDict,
-            "player": playerDict
+            "player": playerDict,
+            "towerMerge": towerMergeDict
         ]
 
         if let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .sortedKeys]),

@@ -9,7 +9,12 @@ struct GameConfigData: Codable {
     var enemies: [String: EnemyConfig]
     var spawning: SpawnConfig
     var upgrades: UpgradePool
-    var dungeonUpgrades: UpgradePool?  // Boss-only upgrades (lifesteal, thorns, phoenix, etc.)
+    var bossUpgrades: UpgradePool?  // Boss-only upgrades (lifesteal, thorns, phoenix, etc.)
+
+    enum CodingKeys: String, CodingKey {
+        case weapons, arenas, enemies, spawning, upgrades
+        case bossUpgrades = "dungeonUpgrades"  // JSON key preserved for config compat
+    }
 }
 
 // MARK: - Weapon Config
@@ -49,13 +54,19 @@ struct ArenaConfig: Codable {
     var height: Double
     var backgroundColor: String
     var theme: String
-    var dungeonType: String?
+    var bossType: String?
     var particleEffect: String?
     var obstacles: [ObstacleConfig]?
     var hazards: [HazardConfig]?
     var effectZones: [EffectZoneConfig]?
     var events: [EventConfig]?
     var globalModifier: GlobalModifierConfig?
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, rarity, width, height, backgroundColor, theme
+        case bossType = "dungeonType"  // JSON key preserved for config compat
+        case particleEffect, obstacles, hazards, effectZones, events, globalModifier
+    }
 }
 
 struct ObstacleConfig: Codable {
@@ -236,9 +247,9 @@ class GameConfigLoader {
         }
     }
 
-    /// Get dungeon-only upgrades (lifesteal, thorns, phoenix, etc.)
-    func getDungeonUpgrades(rarity: Rarity) -> [UpgradeConfig] {
-        guard let pool = config?.dungeonUpgrades else { return [] }
+    /// Get boss-only upgrades (lifesteal, thorns, phoenix, etc.)
+    func getBossUpgrades(rarity: Rarity) -> [UpgradeConfig] {
+        guard let pool = config?.bossUpgrades else { return [] }
         switch rarity {
         case .common: return pool.common
         case .rare: return pool.rare

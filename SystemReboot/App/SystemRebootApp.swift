@@ -6,6 +6,12 @@ struct SystemRebootApp: App {
     @State private var previousScenePhase: ScenePhase = .active
 
     init() {
+        let isFirstLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
+        AnalyticsService.shared.trackAppLaunched(firstLaunch: isFirstLaunch)
+        if isFirstLaunch {
+            UserDefaults.standard.set(true, forKey: "hasLaunchedBefore")
+        }
+
         #if DEBUG
         // Run boss fight test suite on launch (background thread)
         DispatchQueue.global(qos: .background).async { SimulationRunner.runBossFightTestSuite() }
@@ -26,10 +32,12 @@ struct SystemRebootApp: App {
             case .background:
                 // Save timestamp when going to background
                 AppState.shared.onAppBackground()
+                AnalyticsService.shared.flush()
             case .active:
                 // Check for offline earnings when returning
                 if previousScenePhase == .background {
                     AppState.shared.onAppForeground()
+                    AnalyticsService.shared.trackSessionStart()
                 }
             @unknown default:
                 break

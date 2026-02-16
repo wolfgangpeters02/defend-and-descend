@@ -31,6 +31,13 @@ struct TDCollisionSystem {
     ) -> [VisualEvent] {
         var events: [VisualEvent] = []
 
+        // Precompute enemy ID → index map (O(n) once, replaces O(n) filter per projectile)
+        var enemyIndexMap: [String: Int] = [:]
+        enemyIndexMap.reserveCapacity(state.enemies.count)
+        for i in 0..<state.enemies.count {
+            enemyIndexMap[state.enemies[i].id] = i
+        }
+
         for projIndex in (0..<state.projectiles.count).reversed() {
             var proj = state.projectiles[projIndex]
 
@@ -49,11 +56,12 @@ struct TDCollisionSystem {
             let candidateIndices: [Int]
             if let grid = state.enemyGrid {
                 let candidates = grid.query(x: midX, y: midY, radius: searchRadius)
-                let candidateIds = Set(candidates.map { $0.id })
-                candidateIndices = state.enemies.indices.filter { candidateIds.contains(state.enemies[$0].id) }
+                candidateIndices = candidates.compactMap { enemyIndexMap[$0.id] }
             } else {
                 candidateIndices = Array(state.enemies.indices)
             }
+
+            var projConsumed = false
 
             for enemyIndex in candidateIndices {
                 var enemy = state.enemies[enemyIndex]
@@ -104,9 +112,10 @@ struct TDCollisionSystem {
                             state: &state,
                             center: CGPoint(x: enemy.x, y: enemy.y),
                             radius: splash,
-                            damage: proj.damage * 0.5,
+                            damage: proj.damage * BalanceConfig.ProjectileSystem.splashDamageMultiplier,
                             slow: proj.slow,
-                            slowDuration: proj.slowDuration
+                            slowDuration: proj.slowDuration,
+                            enemyIndexMap: enemyIndexMap
                         )
                     }
 
@@ -132,13 +141,17 @@ struct TDCollisionSystem {
                     if proj.piercing > 0 {
                         proj.piercing -= 1
                     } else {
-                        state.projectiles.remove(at: projIndex)
+                        projConsumed = true
                         break
                     }
                 }
             }
 
-            if projIndex < state.projectiles.count {
+            // Swap-remove consumed projectiles (O(1) vs O(n) shift)
+            if projConsumed {
+                state.projectiles.swapAt(projIndex, state.projectiles.count - 1)
+                state.projectiles.removeLast()
+            } else {
                 state.projectiles[projIndex] = proj
             }
         }
@@ -205,14 +218,19 @@ struct TDCollisionSystem {
         radius: CGFloat,
         damage: CGFloat,
         slow: CGFloat?,
-        slowDuration: TimeInterval?
+        slowDuration: TimeInterval?,
+        enemyIndexMap: [String: Int]? = nil
     ) {
         // Use spatial grid to narrow candidates
         let candidateIndices: [Int]
         if let grid = state.enemyGrid {
             let candidates = grid.query(x: center.x, y: center.y, radius: radius)
-            let candidateIds = Set(candidates.map { $0.id })
-            candidateIndices = state.enemies.indices.filter { candidateIds.contains(state.enemies[$0].id) }
+            if let indexMap = enemyIndexMap {
+                candidateIndices = candidates.compactMap { indexMap[$0.id] }
+            } else {
+                let candidateIds = Set(candidates.map { $0.id })
+                candidateIndices = state.enemies.indices.filter { candidateIds.contains(state.enemies[$0].id) }
+            }
         } else {
             candidateIndices = Array(state.enemies.indices)
         }

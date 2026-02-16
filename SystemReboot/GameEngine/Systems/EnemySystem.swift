@@ -186,19 +186,19 @@ class EnemySystem {
                 let hpPercent = state.enemies[i].health / state.enemies[i].maxHealth
                 var newPhase = phase
 
-                if hpPercent <= BalanceConfig.BossSurvivor.phase4Threshold && phase < 4 {
+                if hpPercent <= BalanceConfig.BossPhaseScaling.phase4Threshold && phase < 4 {
                     newPhase = 4
-                } else if hpPercent <= BalanceConfig.BossSurvivor.phase3Threshold && phase < 3 {
+                } else if hpPercent <= BalanceConfig.BossPhaseScaling.phase3Threshold && phase < 3 {
                     newPhase = 3
-                } else if hpPercent <= BalanceConfig.BossSurvivor.phase2Threshold && phase < 2 {
+                } else if hpPercent <= BalanceConfig.BossPhaseScaling.phase2Threshold && phase < 2 {
                     newPhase = 2
                 }
 
                 if newPhase != phase {
                     state.enemies[i].bossPhase = newPhase
-                    state.enemies[i].speed *= BalanceConfig.BossSurvivor.phaseSpeedMultiplier
+                    state.enemies[i].speed *= BalanceConfig.BossPhaseScaling.phaseSpeedMultiplier
                     state.enemies[i].currentSpeed = state.enemies[i].speed
-                    state.enemies[i].damage *= BalanceConfig.BossSurvivor.phaseDamageMultiplier
+                    state.enemies[i].damage *= BalanceConfig.BossPhaseScaling.phaseDamageMultiplier
 
                     // Rage particles
                     ParticleFactory.createExplosion(
@@ -251,8 +251,15 @@ class EnemySystem {
             }
         }
 
-        // Remove dead enemies
-        state.enemies = state.enemies.filter { !$0.isDead }
+        // Remove dead enemies (compact in-place, avoids allocating new array)
+        var writeIndex = 0
+        for i in 0..<state.enemies.count {
+            if !state.enemies[i].isDead {
+                state.enemies[writeIndex] = state.enemies[i]
+                writeIndex += 1
+            }
+        }
+        state.enemies.removeSubrange(writeIndex..<state.enemies.count)
     }
 
     /// Resolve obstacle collision

@@ -118,7 +118,7 @@ class WaveSystem {
             waveNumber: number,
             enemies: enemies,
             delayBetweenSpawns: BalanceConfig.spawnDelay(waveNumber: number),
-            bonusGold: bonusHash
+            bonusHash: bonusHash
         )
     }
 
@@ -259,8 +259,10 @@ class WaveSystem {
         state.stats.wavesCompleted += 1
 
         // Award wave completion bonus (subject to Hash storage cap)
-        let actualBonus = state.addHash(wave.bonusGold)
+        let actualBonus = state.addHash(wave.bonusHash)
         state.stats.hashEarned += actualBonus
+
+        AnalyticsService.shared.trackWaveCompleted(waveNumber: state.wavesCompleted)
 
         // Countdown to next wave
         state.nextWaveCountdown = BalanceConfig.Waves.waveCooldown

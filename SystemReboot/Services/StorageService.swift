@@ -94,9 +94,9 @@ class StorageService {
             profile.weaponLevels = weaponLevels
         }
 
-        // Old stats become survivor stats
-        profile.survivorStats.totalSurvivorKills = profile.totalKills
-        profile.survivorStats.longestSurvival = profile.bestTime
+        // Old stats become boss stats
+        profile.bossStats.totalBossKills = profile.totalKills
+        profile.bossStats.longestBossFight = profile.bestTime
 
         // TD stats start fresh
         profile.tdStats = TDModeStats()

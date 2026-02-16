@@ -24,7 +24,7 @@ enum ProtocolID: String, CaseIterable, Codable {
 
 // MARK: - Arena IDs
 
-/// Arena/map types for survivor mode from GameConfig.json
+/// Arena/map types for boss mode from GameConfig.json
 enum ArenaID: String, CaseIterable, Codable {
     case grasslands
     case volcano

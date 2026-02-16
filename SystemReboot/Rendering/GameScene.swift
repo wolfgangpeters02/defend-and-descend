@@ -349,18 +349,6 @@ class GameScene: SKScene {
         }
         gameState.enemyGrid?.rebuild(from: gameState.enemies)
 
-        // Initialize object pools (Phase 4: reduced GC pressure)
-        if gameState.particlePool == nil {
-            gameState.particlePool = ObjectPool<Particle>(maxSize: 500, prewarm: 100) {
-                Particle.defaultParticle
-            }
-        }
-        if gameState.projectilePool == nil {
-            gameState.projectilePool = ObjectPool<Projectile>(maxSize: 200, prewarm: 50) {
-                Projectile.defaultProjectile
-            }
-        }
-
         // Update player
         PlayerSystem.update(state: &gameState, input: inputState, context: context)
 
@@ -435,22 +423,36 @@ class GameScene: SKScene {
     }
 
     private func updateParticles(context: FrameContext) {
-        gameState.particles = gameState.particles.filter { context.timestamp - $0.createdAt < $0.lifetime }
+        let timestamp = context.timestamp
+        let dt = CGFloat(context.deltaTime)
+        var writeIndex = 0
 
-        // Update particle positions
         for i in 0..<gameState.particles.count {
+            // Remove expired particles in-place
+            if timestamp - gameState.particles[i].createdAt >= gameState.particles[i].lifetime {
+                continue
+            }
+
+            // Update position
             if let velocity = gameState.particles[i].velocity {
-                gameState.particles[i].x += velocity.x * CGFloat(context.deltaTime)
-                gameState.particles[i].y += velocity.y * CGFloat(context.deltaTime)
+                gameState.particles[i].x += velocity.x * dt
+                gameState.particles[i].y += velocity.y * dt
 
                 // Apply drag
                 if let drag = gameState.particles[i].drag, drag > 0 {
-                    let newVelX = velocity.x * (1 - drag)
-                    let newVelY = velocity.y * (1 - drag)
-                    gameState.particles[i].velocity = CGPoint(x: newVelX, y: newVelY)
+                    gameState.particles[i].velocity = CGPoint(
+                        x: velocity.x * (1 - drag),
+                        y: velocity.y * (1 - drag)
+                    )
                 }
             }
+
+            // Compact in-place
+            gameState.particles[writeIndex] = gameState.particles[i]
+            writeIndex += 1
         }
+
+        gameState.particles.removeSubrange(writeIndex..<gameState.particles.count)
     }
 
     // MARK: - HUD Setup (Cached - Phase 1.3)

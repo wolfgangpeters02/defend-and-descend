@@ -50,38 +50,17 @@ enum SimulatedWeaponType: String, CaseIterable {
 
     /// Base damage at level 1
     var baseDamage: CGFloat {
-        switch self {
-        case .kernelPulse: return 25
-        case .fragmenter: return 20          // Lower upfront, +50% as DoT
-        case .pinger: return 15              // Tags for team damage bonus
-        case .throttler: return 18           // Utility-focused
-        case .recursion: return 28           // Split into children (nerfed from 30)
-        case .garbageCollector: return 20    // Support weapon (buffed from 12)
-        }
+        BalanceConfig.Simulation.weaponDamage[rawValue] ?? 25
     }
 
     /// Attack interval in seconds
     var attackInterval: TimeInterval {
-        switch self {
-        case .kernelPulse: return 0.4
-        case .fragmenter: return 0.5
-        case .pinger: return 0.6
-        case .throttler: return 0.7
-        case .recursion: return 0.8
-        case .garbageCollector: return 0.5
-        }
+        BalanceConfig.Simulation.weaponAttackInterval[rawValue] ?? 0.5
     }
 
     /// Attack range
     var range: CGFloat {
-        switch self {
-        case .kernelPulse: return 200
-        case .fragmenter: return 180
-        case .pinger: return 250
-        case .throttler: return 220
-        case .recursion: return 200
-        case .garbageCollector: return 200
-        }
+        BalanceConfig.Simulation.weaponRange[rawValue] ?? 200
     }
 }
 
@@ -91,7 +70,7 @@ struct SimulatedWeapon {
 
     /// Damage scaled by level (diminishing returns: Lv1=1x, Lv5=3x, Lv10=5.5x)
     var damage: CGFloat {
-        type.baseDamage * (1.0 + CGFloat(level - 1) * 0.5)
+        type.baseDamage * (1.0 + CGFloat(level - 1) * BalanceConfig.Simulation.weaponDamageScalingPerLevel)
     }
 
     var attackInterval: TimeInterval { type.attackInterval }
@@ -102,13 +81,13 @@ struct SimulatedWeapon {
         let baseDPS = damage / CGFloat(attackInterval)
         switch type {
         case .fragmenter:
-            return baseDPS * 1.5  // +50% from DoT
+            return baseDPS * BalanceConfig.Simulation.fragmenterDPSMultiplier
         case .pinger:
-            return baseDPS * 1.2  // +20% damage bonus while tagged
+            return baseDPS * BalanceConfig.Simulation.pingerDPSMultiplier
         case .recursion:
-            return baseDPS * 1.7  // 2 children at 35% each = +70% (nerfed from 2.5)
+            return baseDPS * BalanceConfig.Simulation.recursionDPSMultiplier
         case .garbageCollector:
-            return baseDPS * 1.15 // Support weapon + 15% self-mark bonus (buffed from 0.8)
+            return baseDPS * BalanceConfig.Simulation.garbageCollectorDPSMultiplier
         default:
             return baseDPS
         }
@@ -133,10 +112,10 @@ struct BossSimulationConfig {
         bossType: "cyberboss",
         difficulty: .normal,
         bot: AggressiveBot(),
-        maxFightTime: 300,
-        playerWeaponDamage: 50,
-        playerHealth: 200,
-        arenaSize: 1500,
+        maxFightTime: BalanceConfig.Simulation.defaultMaxGameTime,
+        playerWeaponDamage: BalanceConfig.Simulation.bossPlayerWeaponDamage,
+        playerHealth: BalanceConfig.Player.baseHealth,
+        arenaSize: BalanceConfig.Simulation.bossArenaSize,
         weapon: nil
     )
 }
@@ -197,10 +176,10 @@ class BossSimulator {
     var playerHealth: CGFloat = 0
     var playerMaxHealth: CGFloat = 0
     var playerDamage: CGFloat = 0
-    var playerSpeed: CGFloat = 200
+    var playerSpeed: CGFloat = BalanceConfig.Simulation.bossPlayerSpeed
     var playerInvulnerableUntil: TimeInterval = 0
     var playerAttackCooldown: TimeInterval = 0
-    var playerAttackInterval: TimeInterval = 0.5
+    var playerAttackInterval: TimeInterval = BalanceConfig.Simulation.bossPlayerAttackInterval
 
     // Boss state
     var bossX: CGFloat = 0
@@ -208,12 +187,12 @@ class BossSimulator {
     var bossHealth: CGFloat = 0
     var bossMaxHealth: CGFloat = 0
     var bossPhase: Int = 1
-    var bossSpeed: CGFloat = 100
+    var bossSpeed: CGFloat = BalanceConfig.Simulation.bossDefaultSpeed
     var bossInvulnerable: Bool = false
 
     // Arena
-    var arenaWidth: CGFloat = 1500
-    var arenaHeight: CGFloat = 1500
+    var arenaWidth: CGFloat = BalanceConfig.Simulation.bossArenaSize
+    var arenaHeight: CGFloat = BalanceConfig.Simulation.bossArenaSize
     var arenaCenter: CGPoint { CGPoint(x: arenaWidth / 2, y: arenaHeight / 2) }
 
     // Hazards
@@ -1441,14 +1420,14 @@ class BossSimulator {
 
         // Apply tag bonus if boss is tagged (Pinger)
         if currentTime < bossTaggedUntil {
-            let bonusDamage = damage * 0.2
+            let bonusDamage = damage * BalanceConfig.Simulation.pingerTagBonusDamage
             damage += bonusDamage
             result.bonusDamageDealt += bonusDamage
         }
 
         // Apply mark bonus if boss is marked (Garbage Collector self-buff)
         if currentTime < bossMarkedUntil {
-            let bonusDamage = damage * 0.15
+            let bonusDamage = damage * BalanceConfig.Simulation.garbageCollectorMarkBonusDamage
             damage += bonusDamage
             result.bonusDamageDealt += bonusDamage
         }
@@ -1542,14 +1521,14 @@ class BossSimulator {
         case .throttler:
             // Slow boss
             bossSlowedUntil = currentTime + BalanceConfig.Simulation.throttlerSlowDuration
-            // 15% chance to stun
-            if rng.nextDouble() < 0.15 {
+            // Chance to stun
+            if rng.nextDouble() < BalanceConfig.Simulation.throttlerStunChance {
                 bossStunnedUntil = currentTime + BalanceConfig.Simulation.throttlerStunDuration
             }
 
         case .recursion:
-            // Queue 2 child projectiles (35% damage each, applied next frame) - nerfed from 3 children at 50%
-            pendingChildProjectiles += 2
+            // Queue child projectiles (35% damage each, applied next frame)
+            pendingChildProjectiles += BalanceConfig.Simulation.recursionChildCount
 
         case .garbageCollector:
             // Mark boss for 15% self-damage bonus
@@ -1656,7 +1635,7 @@ class BossSimulator {
     private func checkHazardCollisions() {
         guard currentTime > playerInvulnerableUntil else { return }
 
-        let playerRadius: CGFloat = 20
+        let playerRadius = BalanceConfig.Simulation.bossPlayerCollisionRadius
 
         // Puddles (active only, after warning)
         for puddle in puddles {
@@ -1670,7 +1649,7 @@ class BossSimulator {
         }
 
         // Lasers
-        for laser in lasers where laser.lifetime >= 1.0 {
+        for laser in lasers where laser.lifetime >= BalanceConfig.Simulation.bossLaserCollisionMinLifetime {
             if isHitByLaser(laser) {
                 takeDamage(laser.damage, source: "laser")
                 result.laserHits += 1

@@ -93,13 +93,13 @@ struct OverclockSystem {
         var currentDeficit = -deficit  // Make positive for comparison
 
         // Sort towers by power draw (disable cheapest first)
-        let sortedTowers = state.towers.sorted { $0.powerDraw < $1.powerDraw }
+        let sortedTowers = state.towers.sorted { $0.effectivePowerDraw < $1.effectivePowerDraw }
 
         for tower in sortedTowers {
             if currentDeficit <= 0 { break }
 
-            towersToDisable.append((id: tower.id, powerDraw: tower.powerDraw))
-            currentDeficit -= tower.powerDraw
+            towersToDisable.append((id: tower.id, powerDraw: tower.effectivePowerDraw))
+            currentDeficit -= tower.effectivePowerDraw
         }
 
         // Update disabled tower set

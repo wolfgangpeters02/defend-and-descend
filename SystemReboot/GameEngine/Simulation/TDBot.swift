@@ -151,7 +151,7 @@ struct RushOverclockBot: TDBot {
         }
 
         // Overclock whenever possible and efficiency is healthy
-        if state.canOverclock && state.efficiency >= 70 {
+        if state.canOverclock && state.efficiency >= BalanceConfig.Simulation.botRushOCThreshold {
             return .activateOverclock
         }
 
@@ -213,7 +213,7 @@ struct AdaptiveBot: TDBot {
         if state.bossActive && !state.bossEngaged {
             if isPanicking {
                 return .ignoreBoss  // Can't afford efficiency hit from a loss
-            } else if efficiency > 85 {
+            } else if efficiency > BalanceConfig.Simulation.botHardBossDifficultyThreshold {
                 return .engageBoss(difficulty: .hard)
             } else {
                 return .engageBoss(difficulty: .normal)
@@ -284,7 +284,7 @@ struct AdaptiveBot: TDBot {
         // Calculate available hash for spending:
         // - No reserve needed if we have fewer than 3 towers (get defenses up first!)
         // - Otherwise use normal hash reserve to maintain a buffer
-        let minTowersForReserve = 3
+        let minTowersForReserve = BalanceConfig.Simulation.botMinTowersForReserve
         let hasEnoughTowers = state.towers.count >= minTowersForReserve
         let effectiveSpendableHash = hasEnoughTowers ? spendableHash : state.hash
 
@@ -395,7 +395,7 @@ struct UpgradeFocusBot: TDBot {
                 return .upgradeTower(towerId: firstTower.id)
             }
             // Only place more if first tower is maxed
-            if firstTower.level < 10 {
+            if firstTower.level < BalanceConfig.maxUpgradeLevel {
                 return .idle
             }
         }
@@ -429,7 +429,7 @@ struct UpgradeFocusBot: TDBot {
 
 struct TowersFirstBot: TDBot {
     let name = "TowersFirst"
-    let minTowersBeforeUpgrade = 2
+    let minTowersBeforeUpgrade = BalanceConfig.Simulation.botMinTowersBeforeUpgrade
 
     func decide(state: TDGameState, profile: PlayerProfile) -> TDBotAction {
         // Handle boss

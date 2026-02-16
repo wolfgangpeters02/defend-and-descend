@@ -275,6 +275,61 @@ struct HTMLGenerator {
             s += "</tbody></table>"
         }
 
+        // Component ROI per level ("sweet spot" analysis)
+        s += h3("Component ROI per Level (Sweet Spots)")
+        s += note("Cost-effectiveness decreases at higher levels due to exponential costs with linear gains. Green = best value, Red = diminishing returns.")
+        s += "<table>" + th(["Component", "Lv1&rarr;2", "Lv2&rarr;3", "Lv3&rarr;4", "Lv4&rarr;5", "Lv5&rarr;6", "Best Value"])
+        s += "<tbody>"
+
+        let roiComps: [(id: String, name: String)] = [
+            ("psu", "PSU"), ("gpu", "GPU"), ("cache", "Cache"),
+            ("cpu", "CPU"), ("network", "Network"), ("storage", "Storage"),
+            ("ram", "RAM"), ("io", "I/O"), ("expansion", "Expansion")
+        ]
+
+        for c in roiComps {
+            let base = BalanceConfig.Components.baseCost(for: c.id)
+            var cells = [c.name]
+
+            // Calculate effect gain per level for first 5 upgrades
+            var bestLevel = 1
+            var bestRatio = Double.infinity
+
+            for lv in 1...5 {
+                let cost = BalanceConfig.exponentialUpgradeCost(baseCost: base, currentLevel: lv)
+                let gain: Double
+                switch c.id {
+                case "psu":
+                    gain = Double(BalanceConfig.Components.psuCapacity(at: lv + 1) - BalanceConfig.Components.psuCapacity(at: lv))
+                case "gpu":
+                    gain = Double(BalanceConfig.Components.gpuDamageMultiplier(at: lv + 1) - BalanceConfig.Components.gpuDamageMultiplier(at: lv)) * 1000
+                case "cache":
+                    gain = Double(BalanceConfig.Components.cacheAttackSpeedMultiplier(at: lv + 1) - BalanceConfig.Components.cacheAttackSpeedMultiplier(at: lv)) * 1000
+                case "cpu":
+                    gain = Double(BalanceConfig.Components.cpuHashPerSecond(at: lv + 1) - BalanceConfig.Components.cpuHashPerSecond(at: lv))
+                case "network":
+                    gain = Double(BalanceConfig.Components.networkHashMultiplier(at: lv + 1) - BalanceConfig.Components.networkHashMultiplier(at: lv)) * 1000
+                case "storage":
+                    gain = Double(BalanceConfig.Components.storageCapacity(at: lv + 1) - BalanceConfig.Components.storageCapacity(at: lv))
+                case "ram":
+                    gain = Double(BalanceConfig.Components.ramEfficiencyRegen(at: lv + 1) - BalanceConfig.Components.ramEfficiencyRegen(at: lv)) * 1000
+                case "io":
+                    gain = Double(BalanceConfig.Components.ioPickupRadiusMultiplier(at: lv + 1) - BalanceConfig.Components.ioPickupRadiusMultiplier(at: lv)) * 1000
+                case "expansion":
+                    gain = Double(BalanceConfig.Components.expansionExtraSlots(at: lv + 1) - BalanceConfig.Components.expansionExtraSlots(at: lv))
+                default: gain = 1
+                }
+                let ratio = gain > 0 ? Double(cost) / gain : Double.infinity
+                if ratio < bestRatio { bestRatio = ratio; bestLevel = lv }
+
+                let cls = lv == 1 ? "t1" : (lv <= 3 ? "t2" : (lv <= 4 ? "t3" : "t4"))
+                cells.append("<span class=\"\(cls)\">\(fNum(Double(cost)))</span>")
+            }
+            cells.append("Lv\(bestLevel)&rarr;\(bestLevel + 1)")
+            s += "<tr>" + cells.map { "<td>\($0)</td>" }.joined() + "</tr>"
+        }
+        s += "</tbody></table>"
+
         return s
     }
 
@@ -332,6 +387,85 @@ struct HTMLGenerator {
             let dps = dmg * atk  // DPS = damage * attack_speed
             s += td(["\(lv)", String(format: "%.2f", dmg), String(format: "%.2f", rng),
                       String(format: "%.2f", atk), String(format: "%.2f", dps)])
+        }
+        s += "</tbody></table>"
+
+        // Per-protocol base stats (Firewall)
+        typealias PBS = BalanceConfig.ProtocolBaseStats
+        s += h3("Per-Protocol Base Stats (Firewall Mode)")
+        s += note("Level 1 values before scaling. DPS = Damage &times; FireRate &times; ProjectileCount")
+        s += "<table>" + th(["Protocol", "Rarity", "DMG", "Range", "Rate", "Proj", "Pierce", "Splash", "Slow", "Power", "DPS"])
+        s += "<tbody>"
+
+        let fwProtos: [(String, String, CGFloat, CGFloat, CGFloat, Int, Int, CGFloat, CGFloat, Int)] = [
+            ("Kernel Pulse", "Common", PBS.KernelPulse.firewallDamage, PBS.KernelPulse.firewallRange, PBS.KernelPulse.firewallFireRate, PBS.KernelPulse.firewallProjectileCount, PBS.KernelPulse.firewallPierce, PBS.KernelPulse.firewallSplash, PBS.KernelPulse.firewallSlow, PBS.KernelPulse.firewallPowerDraw),
+            ("Burst Protocol", "Common", PBS.BurstProtocol.firewallDamage, PBS.BurstProtocol.firewallRange, PBS.BurstProtocol.firewallFireRate, PBS.BurstProtocol.firewallProjectileCount, PBS.BurstProtocol.firewallPierce, PBS.BurstProtocol.firewallSplash, PBS.BurstProtocol.firewallSlow, PBS.BurstProtocol.firewallPowerDraw),
+            ("Trace Route", "Rare", PBS.TraceRoute.firewallDamage, PBS.TraceRoute.firewallRange, PBS.TraceRoute.firewallFireRate, PBS.TraceRoute.firewallProjectileCount, PBS.TraceRoute.firewallPierce, PBS.TraceRoute.firewallSplash, PBS.TraceRoute.firewallSlow, PBS.TraceRoute.firewallPowerDraw),
+            ("Ice Shard", "Rare", PBS.IceShard.firewallDamage, PBS.IceShard.firewallRange, PBS.IceShard.firewallFireRate, PBS.IceShard.firewallProjectileCount, PBS.IceShard.firewallPierce, PBS.IceShard.firewallSplash, PBS.IceShard.firewallSlow, PBS.IceShard.firewallPowerDraw),
+            ("Fork Bomb", "Epic", PBS.ForkBomb.firewallDamage, PBS.ForkBomb.firewallRange, PBS.ForkBomb.firewallFireRate, PBS.ForkBomb.firewallProjectileCount, PBS.ForkBomb.firewallPierce, PBS.ForkBomb.firewallSplash, PBS.ForkBomb.firewallSlow, PBS.ForkBomb.firewallPowerDraw),
+            ("Root Access", "Epic", PBS.RootAccess.firewallDamage, PBS.RootAccess.firewallRange, PBS.RootAccess.firewallFireRate, PBS.RootAccess.firewallProjectileCount, PBS.RootAccess.firewallPierce, PBS.RootAccess.firewallSplash, PBS.RootAccess.firewallSlow, PBS.RootAccess.firewallPowerDraw),
+            ("Overflow", "Legendary", PBS.Overflow.firewallDamage, PBS.Overflow.firewallRange, PBS.Overflow.firewallFireRate, PBS.Overflow.firewallProjectileCount, PBS.Overflow.firewallPierce, PBS.Overflow.firewallSplash, PBS.Overflow.firewallSlow, PBS.Overflow.firewallPowerDraw),
+            ("Null Pointer", "Legendary", PBS.NullPointer.firewallDamage, PBS.NullPointer.firewallRange, PBS.NullPointer.firewallFireRate, PBS.NullPointer.firewallProjectileCount, PBS.NullPointer.firewallPierce, PBS.NullPointer.firewallSplash, PBS.NullPointer.firewallSlow, PBS.NullPointer.firewallPowerDraw),
+        ]
+
+        for (name, rarity, dmg, rng, rate, proj, pierce, splash, slow, power) in fwProtos {
+            let dps = dmg * rate * CGFloat(proj)
+            let slowStr = slow > 0 ? pct(Double(slow)) : "-"
+            let splashStr = splash > 0 ? fNum(Double(splash)) : "-"
+            s += td([name, rarity, fNum(Double(dmg)), fNum(Double(rng)), String(format: "%.1f", Double(rate)),
+                      "\(proj)", "\(pierce)", splashStr, slowStr, "\(power)W", String(format: "%.1f", Double(dps))])
+        }
+        s += "</tbody></table>"
+
+        // Per-protocol base stats (Weapon)
+        s += h3("Per-Protocol Base Stats (Weapon Mode)")
+        s += note("Used in Boss/Debug mode. DPS = Damage &times; FireRate &times; ProjectileCount")
+        s += "<table>" + th(["Protocol", "DMG", "Rate", "Proj Count", "Spread", "Pierce", "Proj Speed", "DPS"])
+        s += "<tbody>"
+
+        let wpProtos: [(String, CGFloat, CGFloat, Int, CGFloat, Int, CGFloat)] = [
+            ("Kernel Pulse", PBS.KernelPulse.weaponDamage, PBS.KernelPulse.weaponFireRate, PBS.KernelPulse.weaponProjectileCount, PBS.KernelPulse.weaponSpread, PBS.KernelPulse.weaponPierce, PBS.KernelPulse.weaponProjectileSpeed),
+            ("Burst Protocol", PBS.BurstProtocol.weaponDamage, PBS.BurstProtocol.weaponFireRate, PBS.BurstProtocol.weaponProjectileCount, PBS.BurstProtocol.weaponSpread, PBS.BurstProtocol.weaponPierce, PBS.BurstProtocol.weaponProjectileSpeed),
+            ("Trace Route", PBS.TraceRoute.weaponDamage, PBS.TraceRoute.weaponFireRate, PBS.TraceRoute.weaponProjectileCount, PBS.TraceRoute.weaponSpread, PBS.TraceRoute.weaponPierce, PBS.TraceRoute.weaponProjectileSpeed),
+            ("Ice Shard", PBS.IceShard.weaponDamage, PBS.IceShard.weaponFireRate, PBS.IceShard.weaponProjectileCount, PBS.IceShard.weaponSpread, PBS.IceShard.weaponPierce, PBS.IceShard.weaponProjectileSpeed),
+            ("Fork Bomb", PBS.ForkBomb.weaponDamage, PBS.ForkBomb.weaponFireRate, PBS.ForkBomb.weaponProjectileCount, PBS.ForkBomb.weaponSpread, PBS.ForkBomb.weaponPierce, PBS.ForkBomb.weaponProjectileSpeed),
+            ("Root Access", PBS.RootAccess.weaponDamage, PBS.RootAccess.weaponFireRate, PBS.RootAccess.weaponProjectileCount, PBS.RootAccess.weaponSpread, PBS.RootAccess.weaponPierce, PBS.RootAccess.weaponProjectileSpeed),
+            ("Overflow", PBS.Overflow.weaponDamage, PBS.Overflow.weaponFireRate, PBS.Overflow.weaponProjectileCount, PBS.Overflow.weaponSpread, PBS.Overflow.weaponPierce, PBS.Overflow.weaponProjectileSpeed),
+            ("Null Pointer", PBS.NullPointer.weaponDamage, PBS.NullPointer.weaponFireRate, PBS.NullPointer.weaponProjectileCount, PBS.NullPointer.weaponSpread, PBS.NullPointer.weaponPierce, PBS.NullPointer.weaponProjectileSpeed),
+        ]
+
+        for (name, dmg, rate, proj, spread, pierce, speed) in wpProtos {
+            let dps = dmg * rate * CGFloat(proj)
+            s += td([name, fNum(Double(dmg)), String(format: "%.1f", Double(rate)), "\(proj)",
+                      String(format: "%.1f", Double(spread)), "\(pierce)", fNum(Double(speed)),
+                      String(format: "%.1f", Double(dps))])
+        }
+        s += "</tbody></table>"
+
+        // Compile & upgrade costs
+        s += h3("Protocol Compile & Upgrade Costs")
+        s += "<table>" + th(["Protocol", "Rarity", "Compile Cost", "Base Upgrade", "Total to Max", "Time @ CPU 5"])
+        s += "<tbody>"
+
+        let costProtos: [(String, String, Int, Int)] = [
+            ("Kernel Pulse", "Common", PBS.KernelPulse.compileCost, PBS.KernelPulse.baseUpgradeCost),
+            ("Burst Protocol", "Common", PBS.BurstProtocol.compileCost, PBS.BurstProtocol.baseUpgradeCost),
+            ("Trace Route", "Rare", PBS.TraceRoute.compileCost, PBS.TraceRoute.baseUpgradeCost),
+            ("Ice Shard", "Rare", PBS.IceShard.compileCost, PBS.IceShard.baseUpgradeCost),
+            ("Fork Bomb", "Epic", PBS.ForkBomb.compileCost, PBS.ForkBomb.baseUpgradeCost),
+            ("Root Access", "Epic", PBS.RootAccess.compileCost, PBS.RootAccess.baseUpgradeCost),
+            ("Overflow", "Legendary", PBS.Overflow.compileCost, PBS.Overflow.baseUpgradeCost),
+            ("Null Pointer", "Legendary", PBS.NullPointer.compileCost, PBS.NullPointer.baseUpgradeCost),
+        ]
+
+        for (name, rarity, compile, baseUpgrade) in costProtos {
+            var total = compile
+            for lv in 1..<BalanceConfig.maxUpgradeLevel {
+                total += BalanceConfig.exponentialUpgradeCost(baseCost: baseUpgrade, currentLevel: lv)
+            }
+            s += "<tr><td>\(name)</td><td>\(rarity)</td><td>\(compile > 0 ? fNum(Double(compile)) + " &#x210E;" : "FREE")</td>"
+            s += "<td>\(fNum(Double(baseUpgrade))) &#x210E;</td><td>\(fNum(Double(total))) &#x210E;</td>"
+            s += timeTd(Double(total), hps(5)) + "</tr>"
         }
         s += "</tbody></table>"
 
@@ -578,6 +712,40 @@ struct HTMLGenerator {
                       String(format: "%.2f", hpM), String(format: "%.2f", spdM),
                       "\(count)", String(format: "%.2fs", delay),
                       "\(bonus) &#x210E;", "\(cumHash) &#x210E;", comp])
+        }
+        s += "</tbody></table>"
+
+        // DPS Requirements per wave
+        let baseHP = BalanceConfig.EnemyDefaults.health
+        let dmgMult = Double(BalanceConfig.TowerUpgrades.damageMultiplier)
+        let asMult = Double(BalanceConfig.TowerUpgrades.attackSpeedMultiplier)
+        typealias PBS = BalanceConfig.ProtocolBaseStats
+        let kpBaseDPS = Double(PBS.KernelPulse.firewallDamage * PBS.KernelPulse.firewallFireRate)
+
+        s += h3("Wave DPS Requirements")
+        s += note("Total wave HP / wave duration. Compare against tower DPS (Kernel Pulse shown as reference).")
+        s += "<table>" + th(["Wave", "Total HP", "Duration", "DPS Required", "3&times; KP Lv1", "3&times; KP Lv5", "3&times; KP Lv10", "Verdict"])
+        s += "<tbody>"
+        for w in 1...BalanceConfig.TDSession.totalWaves {
+            let hpM = 1.0 + Double(w - 1) * Double(BalanceConfig.Waves.healthScalingPerWave)
+            let count = BalanceConfig.Waves.baseEnemyCount + w * BalanceConfig.Waves.enemiesPerWave
+            let delay = max(Double(BalanceConfig.Waves.minSpawnDelay),
+                           Double(BalanceConfig.Waves.baseSpawnDelay) - Double(w) * Double(BalanceConfig.Waves.spawnDelayReductionPerWave))
+            let isBoss = w % BalanceConfig.Waves.bossWaveInterval == 0
+            var totalHP = Double(count) * baseHP * hpM
+            if isBoss { totalHP += baseHP * hpM * Double(BalanceConfig.Waves.bossHealthMultiplier) }
+            let waveDur = delay * Double(count)
+            let dpsReq = totalHP / waveDur
+            let kp1 = kpBaseDPS * 3
+            let kp5 = kpBaseDPS * 3 * pow(dmgMult, 4) * pow(asMult, 4)
+            let kp10 = kpBaseDPS * 3 * pow(dmgMult, 9) * pow(asMult, 9)
+            let verdict = kp1 >= dpsReq ? "OK" : (kp5 >= dpsReq ? "Lv5+" : "Lv10+")
+            let verdictClass = kp1 >= dpsReq ? "t1" : (kp5 >= dpsReq ? "t3" : "t5")
+            s += "<tr><td>\(isBoss ? "<strong>\(w)</strong>" : "\(w)")</td><td>\(fNum(totalHP))</td>"
+            s += "<td>\(fTime(waveDur))</td><td>\(String(format: "%.1f", dpsReq))</td>"
+            s += "<td>\(String(format: "%.1f", kp1))</td><td>\(String(format: "%.1f", kp5))</td>"
+            s += "<td>\(String(format: "%.1f", kp10))</td>"
+            s += "<td class=\"\(verdictClass)\">\(verdict)</td></tr>"
         }
         s += "</tbody></table>"
 

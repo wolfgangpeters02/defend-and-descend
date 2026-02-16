@@ -192,15 +192,6 @@ struct VirtualJoystick: View {
         let location = value.location
         let now = Date()
 
-        // Exclude potion area (top-right corner)
-        let potionAreaWidth: CGFloat = 90
-        let potionAreaHeight: CGFloat = isPortrait ? 280 : 320
-
-        let isInPotionArea = location.y < potionAreaHeight &&
-                            location.x > geometry.size.width - potionAreaWidth
-
-        if isInPotionArea { return }
-
         if !isActive {
             // Start touch - set base position
             isActive = true

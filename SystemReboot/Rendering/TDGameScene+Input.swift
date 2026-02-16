@@ -270,6 +270,10 @@ extension TDGameScene {
                 // Tower dropped in removal zone - remove it
                 performTowerRemoval(towerId: draggedId)
             }
+            // Check for merge with compatible tower (before empty slot check)
+            else if let targetTowerId = findMergeCandidateAtLocation(location) {
+                performTowerMerge(sourceTowerId: draggedId, targetTowerId: targetTowerId)
+            }
             // Check for move to empty slot
             else if let targetSlotId = findEmptySlotAtLocation(location) {
                 performTowerMove(towerId: draggedId, toSlotId: targetSlotId)
@@ -311,6 +315,16 @@ extension TDGameScene {
         // Find empty slots for repositioning
         if let state = state {
             validMoveSlots = Set(state.towerSlots.filter { !$0.occupied }.map { $0.id })
+
+            // Find merge-compatible towers (same protocol, same star level, can merge)
+            mergeCandidateIds = Set(
+                state.towers
+                    .filter { $0.id != towerId
+                        && $0.protocolId == tower.protocolId
+                        && $0.starLevel == tower.starLevel
+                        && $0.canMerge }
+                    .map { $0.id }
+            )
         }
 
         // Create drag visual
@@ -337,6 +351,9 @@ extension TDGameScene {
 
         // Show empty slots as valid move targets
         showEmptySlotHighlights()
+
+        // Show merge candidates with distinct highlight
+        showMergeCandidateHighlights()
 
         // Dim the source tower
         if let sourceNode = towerNodes[towerId] {
@@ -376,6 +393,189 @@ extension TDGameScene {
     func hideEmptySlotHighlights() {
         gridDotsLayer.enumerateChildNodes(withName: "*/moveHighlight") { node, _ in
             node.removeFromParent()
+        }
+    }
+
+    // MARK: - Merge Highlights
+
+    /// Show merge-compatible tower highlights during drag
+    func showMergeCandidateHighlights() {
+        for towerId in mergeCandidateIds {
+            guard let towerNode = towerNodes[towerId] else { continue }
+
+            // Yellow pulsing ring
+            let highlight = SKShapeNode(circleOfRadius: 35)
+            highlight.fillColor = UIColor.yellow.withAlphaComponent(0.15)
+            highlight.strokeColor = UIColor.yellow.withAlphaComponent(0.8)
+            highlight.lineWidth = 2.5
+            highlight.name = "mergeHighlight"
+            highlight.zPosition = 10
+            towerNode.addChild(highlight)
+
+            // Star icon above
+            let starLabel = SKLabelNode(text: "\u{2605}")
+            starLabel.fontSize = 14
+            starLabel.fontColor = .yellow
+            starLabel.verticalAlignmentMode = .center
+            starLabel.position = CGPoint(x: 0, y: 36)
+            starLabel.name = "mergeHighlight"
+            towerNode.addChild(starLabel)
+
+            // Pulse animation
+            let pulse = SKAction.sequence([
+                SKAction.scale(to: 1.15, duration: 0.4),
+                SKAction.scale(to: 1.0, duration: 0.4)
+            ])
+            highlight.run(SKAction.repeatForever(pulse))
+        }
+    }
+
+    /// Hide merge candidate highlights
+    func hideMergeCandidateHighlights() {
+        for (_, node) in towerNodes {
+            node.enumerateChildNodes(withName: "mergeHighlight") { child, _ in
+                child.removeFromParent()
+            }
+        }
+    }
+
+    /// Find a merge-compatible tower at the drop location
+    func findMergeCandidateAtLocation(_ location: CGPoint) -> String? {
+        guard let draggedId = draggedTowerId else { return nil }
+
+        for towerId in mergeCandidateIds {
+            guard towerId != draggedId, let node = towerNodes[towerId] else { continue }
+
+            let distance = hypot(node.position.x - location.x, node.position.y - location.y)
+            if distance < 45 {
+                return towerId
+            }
+        }
+        return nil
+    }
+
+    // MARK: - Merge Execution
+
+    /// Merge source tower into target tower
+    func performTowerMerge(sourceTowerId: String, targetTowerId: String) {
+        guard var state = self.state else { return }
+
+        let result = TowerSystem.mergeTowers(
+            state: &state,
+            sourceTowerId: sourceTowerId,
+            targetTowerId: targetTowerId
+        )
+
+        switch result {
+        case .success(let mergedTower):
+            // Capture positions before removing nodes
+            let sourcePosition = towerNodes[sourceTowerId]?.position
+            let targetPosition = towerNodes[targetTowerId]?.position
+
+            // Remove source tower node immediately (no orphan risk)
+            if let sourceNode = towerNodes[sourceTowerId] {
+                sourceNode.removeFromParent()
+            }
+
+            // Clean up source tower tracking
+            towerNodes.removeValue(forKey: sourceTowerId)
+            towerNodeRefs.removeValue(forKey: sourceTowerId)
+            towerLastAttackTimes.removeValue(forKey: sourceTowerId)
+            towerBarrelRotations.removeValue(forKey: sourceTowerId)
+
+            // Update state first so createTowerNode reads correct starLevel
+            self.state = state
+
+            // Rebuild target tower node to immediately reflect new star level
+            if let oldTargetNode = towerNodes[targetTowerId],
+               let targetPos = targetPosition {
+                oldTargetNode.removeFromParent()
+                towerNodes.removeValue(forKey: targetTowerId)
+                towerNodeRefs.removeValue(forKey: targetTowerId)
+
+                // Recreate with updated star level
+                let newNode = createTowerNode(tower: mergedTower)
+                newNode.position = targetPos
+                towerLayer.addChild(newNode)
+                towerNodes[targetTowerId] = newNode
+
+                // Populate cached refs
+                var refs = TowerNodeRefs()
+                refs.barrel = newNode.childNode(withName: "barrel")
+                refs.glowNode = newNode.childNode(withName: "glow")
+                if let levelNode = newNode.childNode(withName: "levelIndicator") {
+                    refs.levelLabel = levelNode.childNode(withName: "levelLabel") as? SKLabelNode
+                }
+                refs.starIndicator = newNode.childNode(withName: "starIndicator")
+                towerNodeRefs[targetTowerId] = refs
+
+                // Lightweight ghost animation: small circle flies from source to target
+                if let srcPos = sourcePosition {
+                    let ghost = SKShapeNode(circleOfRadius: 10)
+                    ghost.fillColor = UIColor.yellow.withAlphaComponent(0.8)
+                    ghost.strokeColor = .white
+                    ghost.lineWidth = 1
+                    ghost.blendMode = .add
+                    ghost.position = srcPos
+                    ghost.zPosition = 55
+                    particleLayer.addChild(ghost)
+
+                    let moveAction = SKAction.move(to: targetPos, duration: 0.2)
+                    moveAction.timingMode = .easeIn
+                    let fadeAction = SKAction.fadeOut(withDuration: 0.2)
+                    let scaleAction = SKAction.scale(to: 0.3, duration: 0.2)
+                    let group = SKAction.group([moveAction, fadeAction, scaleAction])
+                    ghost.run(SKAction.sequence([group, SKAction.removeFromParent()]))
+                }
+
+                // Merge celebration
+                spawnMergeParticles(at: targetPos, starLevel: mergedTower.starLevel)
+
+                // Scale bounce
+                let scaleUp = SKAction.scale(to: 1.4, duration: 0.15)
+                let scaleBack = SKAction.scale(to: 1.0, duration: 0.25)
+                scaleBack.timingMode = .easeOut
+                newNode.run(SKAction.sequence([scaleUp, scaleBack]))
+            }
+
+            gameStateDelegate?.gameStateUpdated(state)
+
+            // Persist
+            StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
+
+            // Haptic
+            HapticsService.shared.play(.towerMerge)
+
+        default:
+            HapticsService.shared.play(.warning)
+        }
+    }
+
+    /// Spawn merge celebration particles
+    func spawnMergeParticles(at position: CGPoint, starLevel: Int) {
+        let particleCount = 12 + starLevel * 4
+        for i in 0..<particleCount {
+            let particle = SKShapeNode(circleOfRadius: CGFloat.random(in: 2...4))
+            particle.fillColor = .yellow
+            particle.strokeColor = .white
+            particle.lineWidth = 0.5
+            particle.position = position
+            particle.zPosition = 55
+            particle.blendMode = .add
+
+            let angle = CGFloat(i) * (.pi * 2 / CGFloat(particleCount))
+            let distance: CGFloat = CGFloat(35 + starLevel * 8)
+
+            let moveAction = SKAction.move(
+                by: CGVector(dx: cos(angle) * distance, dy: sin(angle) * distance),
+                duration: 0.35
+            )
+            moveAction.timingMode = .easeOut
+            let fadeAction = SKAction.fadeOut(withDuration: 0.35)
+            let group = SKAction.group([moveAction, fadeAction])
+            particle.run(SKAction.sequence([group, SKAction.removeFromParent()]))
+
+            particleLayer.addChild(particle)
         }
     }
 
@@ -459,17 +659,32 @@ extension TDGameScene {
         // Remove tower from state
         state.towers.remove(at: towerIndex)
 
-        // Animate removal
+        // Remove tower node immediately, animate a lightweight ghost for visual feedback
         if let towerNode = towerNodes[towerId] {
-            let fadeOut = SKAction.fadeOut(withDuration: 0.2)
-            let scaleDown = SKAction.scale(to: 0.5, duration: 0.2)
+            let pos = towerNode.position
+            let towerColor = UIColor(hex: tower.color) ?? .blue
+            towerNode.removeFromParent()
+
+            // Ghost sell animation in particle layer
+            let ghost = SKShapeNode(circleOfRadius: 14)
+            ghost.fillColor = towerColor.withAlphaComponent(0.5)
+            ghost.strokeColor = .white.withAlphaComponent(0.6)
+            ghost.lineWidth = 1
+            ghost.position = pos
+            ghost.zPosition = 55
+            particleLayer.addChild(ghost)
+
+            let fadeOut = SKAction.fadeOut(withDuration: 0.25)
+            let scaleDown = SKAction.scale(to: 0.3, duration: 0.25)
             let group = SKAction.group([fadeOut, scaleDown])
-            let remove = SKAction.removeFromParent()
-            towerNode.run(SKAction.sequence([group, remove]))
+            ghost.run(SKAction.sequence([group, SKAction.removeFromParent()]))
         }
 
         // Remove from tracking
         towerNodes.removeValue(forKey: towerId)
+        towerNodeRefs.removeValue(forKey: towerId)
+        towerLastAttackTimes.removeValue(forKey: towerId)
+        towerBarrelRotations.removeValue(forKey: towerId)
 
         // Update state
         self.state = state
@@ -494,11 +709,13 @@ extension TDGameScene {
             sourceNode.alpha = 1.0
         }
 
-        // Hide empty slot move highlights
+        // Hide empty slot move highlights and merge highlights
         hideEmptySlotHighlights()
+        hideMergeCandidateHighlights()
 
         draggedTowerId = nil
         validMoveSlots.removeAll()
+        mergeCandidateIds.removeAll()
         dragStartPosition = nil
     }
 

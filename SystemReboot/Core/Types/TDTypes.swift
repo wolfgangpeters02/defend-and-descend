@@ -84,8 +84,8 @@ struct TDGameState: HashStorable {
     // Power is a CEILING, not consumed. Towers allocate power while placed.
     var powerCapacity: Int = BalanceConfig.TDSession.startingPowerCapacity    // PSU capacity (upgradeable)
     var powerUsed: Int {
-        // Sum of all placed towers' power draw
-        return towers.reduce(0) { $0 + $1.powerDraw }
+        // Sum of all placed towers' power draw (accounts for star-level efficiency)
+        return towers.reduce(0) { $0 + $1.effectivePowerDraw }
     }
     var powerAvailable: Int {
         return max(0, powerCapacity - powerUsed)
@@ -529,6 +529,7 @@ struct Tower: Identifiable, Codable {
     var id: String
     var protocolId: String  // Links to Protocol in ProtocolLibrary
     var level: Int = 1
+    var starLevel: Int = 0  // Merge star level (0-3), multiplies on top of protocol level
     var rarity: Rarity = .common  // Tower rarity for cost calculations
 
     // Position
@@ -569,7 +570,7 @@ struct Tower: Identifiable, Codable {
     enum CodingKeys: String, CodingKey {
         case id
         case protocolId = "weaponType"
-        case level, rarity, x, y, slotId
+        case level, starLevel, rarity, x, y, slotId
         case damage, range, attackSpeed, lastAttackTime
         case projectileCount, pierce, splash, homing, slow, slowDuration, chain
         case color, rotation, targetId, towerName
@@ -580,6 +581,33 @@ struct Tower: Identifiable, Codable {
         CGPoint(x: x, y: y)
     }
 
+    /// Whether this tower can be merged (not at max stars)
+    var canMerge: Bool {
+        return starLevel < BalanceConfig.TowerMerge.maxStars
+    }
+
+    // MARK: - Star-Multiplied Effective Stats
+
+    /// Damage with star multiplier applied
+    var effectiveDamage: CGFloat {
+        return damage * BalanceConfig.TowerMerge.statMultiplier(stars: starLevel)
+    }
+
+    /// Range with star multiplier applied
+    var effectiveRange: CGFloat {
+        return range * BalanceConfig.TowerMerge.statMultiplier(stars: starLevel)
+    }
+
+    /// Attack speed with star multiplier applied
+    var effectiveAttackSpeed: CGFloat {
+        return attackSpeed * BalanceConfig.TowerMerge.statMultiplier(stars: starLevel)
+    }
+
+    /// Power draw accounting for star level efficiency discount
+    var effectivePowerDraw: Int {
+        return BalanceConfig.TowerMerge.starPowerDraw(basePower: powerDraw, stars: starLevel)
+    }
+
     /// Calculate upgrade cost
     /// Uses centralized exponential formula from BalanceConfig
     var upgradeCost: Int {
@@ -588,7 +616,7 @@ struct Tower: Identifiable, Codable {
 
     /// Check if can upgrade
     var canUpgrade: Bool {
-        return level < 10
+        return level < BalanceConfig.maxUpgradeLevel
     }
 
     /// Create tower from Protocol (System: Reboot - Firewall mode)
@@ -629,6 +657,39 @@ struct Tower: Identifiable, Codable {
     }
 }
 
+// Backward-compatible decoding: starLevel may not exist in old saves
+// Placed in extension to preserve auto-generated memberwise init
+extension Tower {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        protocolId = try c.decode(String.self, forKey: .protocolId)
+        level = try c.decode(Int.self, forKey: .level)
+        starLevel = try c.decodeIfPresent(Int.self, forKey: .starLevel) ?? 0
+        rarity = try c.decode(Rarity.self, forKey: .rarity)
+        x = try c.decode(CGFloat.self, forKey: .x)
+        y = try c.decode(CGFloat.self, forKey: .y)
+        slotId = try c.decode(String.self, forKey: .slotId)
+        damage = try c.decode(CGFloat.self, forKey: .damage)
+        range = try c.decode(CGFloat.self, forKey: .range)
+        attackSpeed = try c.decode(CGFloat.self, forKey: .attackSpeed)
+        lastAttackTime = try c.decodeIfPresent(TimeInterval.self, forKey: .lastAttackTime) ?? 0
+        projectileCount = try c.decodeIfPresent(Int.self, forKey: .projectileCount) ?? 1
+        pierce = try c.decodeIfPresent(Int.self, forKey: .pierce) ?? 0
+        splash = try c.decodeIfPresent(CGFloat.self, forKey: .splash) ?? 0
+        homing = try c.decodeIfPresent(Bool.self, forKey: .homing) ?? false
+        slow = try c.decodeIfPresent(CGFloat.self, forKey: .slow)
+        slowDuration = try c.decodeIfPresent(TimeInterval.self, forKey: .slowDuration)
+        chain = try c.decodeIfPresent(Int.self, forKey: .chain)
+        color = try c.decode(String.self, forKey: .color)
+        rotation = try c.decodeIfPresent(CGFloat.self, forKey: .rotation) ?? 0
+        targetId = try c.decodeIfPresent(String.self, forKey: .targetId)
+        towerName = try c.decode(String.self, forKey: .towerName)
+        powerDraw = try c.decodeIfPresent(Int.self, forKey: .powerDraw) ?? BalanceConfig.TowerPower.defaultPowerDraw
+        baseUpgradeCost = try c.decodeIfPresent(Int.self, forKey: .baseUpgradeCost) ?? (BalanceConfig.Towers.placementCosts[.common] ?? 50)
+    }
+}
+
 // MARK: - TD Core
 
 struct TDCore {
@@ -640,9 +701,9 @@ struct TDCore {
 
     // Core can auto-attack
     var canAttack: Bool = true
-    var damage: CGFloat = 10
-    var range: CGFloat = 150
-    var attackSpeed: CGFloat = 1.0
+    var damage: CGFloat = BalanceConfig.TDCore.baseDamage
+    var range: CGFloat = BalanceConfig.TDCore.baseRange
+    var attackSpeed: CGFloat = BalanceConfig.TDCore.baseAttackSpeed
     var lastAttackTime: TimeInterval = 0
 
     var position: CGPoint {
@@ -743,13 +804,6 @@ enum TowerPlacementResult {
 // MARK: - TD State Factory
 
 class TDGameStateFactory {
-
-    /// Create initial TD game state (motherboard map)
-    static func createTDGameState(
-        playerProfile: PlayerProfile
-    ) -> TDGameState? {
-        return createMotherboardGameState(playerProfile: playerProfile)
-    }
 
     /// Create blocker slots at path intersections (turns)
     /// Blockers can be placed here to reroute viruses
@@ -868,15 +922,15 @@ class TDGameStateFactory {
     /// Uses path-proximity algorithm for dynamic slot generation
     private static func createMotherboardTowerSlots(avoiding paths: [EnemyPath]) -> [TowerSlot] {
         var slots: [TowerSlot] = []
-        let slotSpacing: CGFloat = 80     // Distance between slots along path
-        let pathDistance: CGFloat = 100   // Max distance from path center to slot
-        let slotSize: CGFloat = 60
-        let minSlotDistance: CGFloat = 70 // Minimum distance between slots
+        let slotSpacing: CGFloat = BalanceConfig.TowerPlacement.pathSlotSpacing
+        let pathDistance: CGFloat = BalanceConfig.TowerPlacement.maxPathDistance
+        let slotSize: CGFloat = BalanceConfig.TowerPlacement.motherboardSlotSize
+        let minSlotDistance: CGFloat = BalanceConfig.TowerPlacement.minSlotDistance
 
         // CPU exclusion zone (don't place slots on the CPU)
         // CPU is at center of 3x3 grid: (1.5 * 1400, 1.5 * 1400) = (2100, 2100)
         let cpuCenter = MotherboardLaneConfig.cpuCenter
-        let cpuRadius: CGFloat = 200
+        let cpuRadius: CGFloat = BalanceConfig.TowerPlacement.cpuExclusionRadius
 
         for path in paths {
             // Walk along each path segment
@@ -956,17 +1010,19 @@ class TDGameStateFactory {
         }
 
         // Add CPU defense area slots (around CPU perimeter in all 8 directions)
+        let cardinalOffset = BalanceConfig.TowerPlacement.cpuDefenseSlotOffset
+        let diagonalOffset = cardinalOffset * 0.77  // ~cos(45°) for even spacing
         let cpuDefenseSlots: [(CGFloat, CGFloat)] = [
             // Cardinals
-            (cpuCenter.x - 220, cpuCenter.y),        // West of CPU
-            (cpuCenter.x + 220, cpuCenter.y),        // East of CPU
-            (cpuCenter.x, cpuCenter.y - 220),        // South of CPU
-            (cpuCenter.x, cpuCenter.y + 220),        // North of CPU
+            (cpuCenter.x - cardinalOffset, cpuCenter.y),        // West of CPU
+            (cpuCenter.x + cardinalOffset, cpuCenter.y),        // East of CPU
+            (cpuCenter.x, cpuCenter.y - cardinalOffset),        // South of CPU
+            (cpuCenter.x, cpuCenter.y + cardinalOffset),        // North of CPU
             // Diagonals
-            (cpuCenter.x - 180, cpuCenter.y - 180),  // Southwest
-            (cpuCenter.x + 180, cpuCenter.y - 180),  // Southeast
-            (cpuCenter.x - 180, cpuCenter.y + 180),  // Northwest
-            (cpuCenter.x + 180, cpuCenter.y + 180),  // Northeast
+            (cpuCenter.x - diagonalOffset, cpuCenter.y - diagonalOffset),  // Southwest
+            (cpuCenter.x + diagonalOffset, cpuCenter.y - diagonalOffset),  // Southeast
+            (cpuCenter.x - diagonalOffset, cpuCenter.y + diagonalOffset),  // Northwest
+            (cpuCenter.x + diagonalOffset, cpuCenter.y + diagonalOffset),  // Northeast
         ]
 
         for (x, y) in cpuDefenseSlots {

@@ -20,16 +20,16 @@ class XPSystem {
     static var tier2Threshold: CGFloat { BalanceConfig.XPSystem.tier2Threshold }
     static var tier3Threshold: CGFloat { BalanceConfig.XPSystem.tier3Threshold }
 
-    /// Get XP multiplier based on weapon level (higher levels = less XP)
-    static func getXPMultiplier(weaponLevel: Int) -> CGFloat {
-        let reduction = CGFloat(weaponLevel - 1) * BalanceConfig.XPSystem.xpReductionPerLevel
+    /// Get XP multiplier based on protocol level (higher levels = less XP)
+    static func getXPMultiplier(protocolLevel: Int) -> CGFloat {
+        let reduction = CGFloat(protocolLevel - 1) * BalanceConfig.XPSystem.xpReductionPerLevel
         return max(BalanceConfig.XPSystem.minXPMultiplier, 1.0 - reduction)
     }
 
     /// Award XP for killing an enemy
-    static func awardXP(state: inout GameState, enemyType: String, weaponLevel: Int) {
+    static func awardXP(state: inout GameState, enemyType: String, protocolLevel: Int) {
         let baseXP = enemyXPValues[enemyType] ?? 1
-        let multiplier = getXPMultiplier(weaponLevel: weaponLevel)
+        let multiplier = getXPMultiplier(protocolLevel: protocolLevel)
         let xpGained = Int(CGFloat(baseXP) * multiplier)
 
         state.xp += xpGained

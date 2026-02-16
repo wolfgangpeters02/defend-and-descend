@@ -140,10 +140,11 @@ class TowerSystem {
 
         let tower = state.towers[towerIndex]
 
-        // Calculate refund based on total investment
+        // Calculate refund based on total investment (accounts for merged towers)
         let baseCost = towerPlacementCost(rarity: tower.rarity)
         let upgradeInvestment = (tower.level - 1) * BalanceConfig.Towers.upgradeInvestmentPerLevel
-        let refund = Int(CGFloat(baseCost + upgradeInvestment) * BalanceConfig.Towers.refundRate)
+        let towersInvested = BalanceConfig.TowerMerge.towersInvested(stars: tower.starLevel)
+        let refund = Int(CGFloat((baseCost + upgradeInvestment) * towersInvested) * BalanceConfig.Towers.refundRate)
 
         // Free up slot
         if let slotIndex = state.towerSlots.firstIndex(where: { $0.id == tower.slotId }) {
@@ -156,6 +157,67 @@ class TowerSystem {
         let actualRefund = state.addHash(refund)
 
         return actualRefund
+    }
+
+    // MARK: - Tower Merging
+
+    enum TowerMergeResult {
+        case success(mergedTower: Tower)
+        case differentProtocol
+        case differentStarLevel
+        case maxStarsReached
+        case invalidTower
+    }
+
+    /// Merge source tower into target tower (same protocol, same star level)
+    /// Source is consumed, target gains a star level, source slot is freed
+    static func mergeTowers(
+        state: inout TDGameState,
+        sourceTowerId: String,
+        targetTowerId: String
+    ) -> TowerMergeResult {
+        guard sourceTowerId != targetTowerId else {
+            return .invalidTower
+        }
+
+        guard let sourceIndex = state.towers.firstIndex(where: { $0.id == sourceTowerId }),
+              let targetIndex = state.towers.firstIndex(where: { $0.id == targetTowerId }) else {
+            return .invalidTower
+        }
+
+        let source = state.towers[sourceIndex]
+        let target = state.towers[targetIndex]
+
+        guard source.protocolId == target.protocolId else {
+            return .differentProtocol
+        }
+
+        guard source.starLevel == target.starLevel else {
+            return .differentStarLevel
+        }
+
+        guard target.canMerge else {
+            return .maxStarsReached
+        }
+
+        // Perform merge: increase target star level
+        state.towers[targetIndex].starLevel += 1
+
+        // Free source tower's slot
+        if let slotIndex = state.towerSlots.firstIndex(where: { $0.id == source.slotId }) {
+            state.towerSlots[slotIndex].occupied = false
+            state.towerSlots[slotIndex].towerId = nil
+        }
+
+        // Remove source tower
+        state.towers.remove(at: sourceIndex)
+
+        // Re-fetch target after removal (index may have shifted)
+        if let newTargetIndex = state.towers.firstIndex(where: { $0.id == targetTowerId }) {
+            return .success(mergedTower: state.towers[newTargetIndex])
+        }
+
+        return .invalidTower
     }
 
     // MARK: - Tower Targeting
@@ -175,7 +237,7 @@ class TowerSystem {
         // Use spatial grid for range query (O(1) cell lookup vs O(n) brute force)
         let candidates: [TDEnemy]
         if let grid = state.enemyGrid {
-            candidates = grid.query(x: towerPos.x, y: towerPos.y, radius: tower.range)
+            candidates = grid.query(x: towerPos.x, y: towerPos.y, radius: tower.effectiveRange)
         } else {
             candidates = state.enemies
         }
@@ -183,7 +245,7 @@ class TowerSystem {
         // Find enemies in range
         var bestTarget: TDEnemy?
         var bestProgress: CGFloat = -1  // Target enemy furthest along path
-        let rangeSq = tower.range * tower.range
+        let rangeSq = tower.effectiveRange * tower.effectiveRange
 
         for enemy in candidates {
             if enemy.isDead || enemy.reachedCore { continue }
@@ -234,7 +296,7 @@ class TowerSystem {
         }
 
         // Check attack cooldown
-        let attackInterval = 1.0 / tower.attackSpeed
+        let attackInterval = 1.0 / tower.effectiveAttackSpeed
         guard currentTime - tower.lastAttackTime >= attackInterval else { return }
 
         // Calculate lead targeting (predict where enemy will be)
@@ -349,10 +411,10 @@ class TowerSystem {
             y: tower.y,
             velocityX: velocityX,
             velocityY: velocityY,
-            damage: tower.damage,
+            damage: tower.effectiveDamage,
             radius: BalanceConfig.Towers.projectileHitboxRadius,
             color: tower.color,
-            lifetime: BalanceConfig.Towers.projectileLifetime,
+            lifetime: BalanceConfig.Towers.projectileLifetimeForRange(tower.effectiveRange),
             piercing: tower.pierce,
             hitEnemies: [],
             isHoming: tower.homing,
@@ -376,10 +438,11 @@ class TowerSystem {
         return [
             "name": tower.towerName,
             "level": "\(tower.level)/10",
-            "damage": String(format: "%.1f", tower.damage),
-            "range": String(format: "%.0f", tower.range),
-            "speed": String(format: "%.2f/s", tower.attackSpeed),
-            "dps": String(format: "%.1f", tower.damage * tower.attackSpeed * CGFloat(tower.projectileCount))
+            "stars": "\(tower.starLevel)/\(BalanceConfig.TowerMerge.maxStars)",
+            "damage": String(format: "%.1f", tower.effectiveDamage),
+            "range": String(format: "%.0f", tower.effectiveRange),
+            "speed": String(format: "%.2f/s", tower.effectiveAttackSpeed),
+            "dps": String(format: "%.1f", tower.effectiveDamage * tower.effectiveAttackSpeed * CGFloat(tower.projectileCount))
         ]
     }
 }

@@ -338,7 +338,7 @@ class TDSimulator {
                         applySplashDamage(
                             center: enemy.position,
                             radius: splashRadius,
-                            damage: proj.damage * 0.5,
+                            damage: proj.damage * BalanceConfig.ProjectileSystem.splashDamageMultiplier,
                             excludeIndex: enemyIndex
                         )
                     }

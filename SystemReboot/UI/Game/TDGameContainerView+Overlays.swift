@@ -29,7 +29,7 @@ extension TDGameContainerView {
                 }
 
                 if let bossType = gameState?.activeBossType {
-                    Text(bossType == "cyberboss" ? L10n.Boss.cyberboss : L10n.Boss.voidHarbinger)
+                    Text(bossDisplayName(bossType))
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
                 }
@@ -95,7 +95,7 @@ extension TDGameContainerView {
                     .foregroundColor(.white)
 
                 if let bossType = gameState?.activeBossType {
-                    Text(bossType == "cyberboss" ? L10n.Boss.cyberboss : L10n.Boss.voidHarbinger)
+                    Text(bossDisplayName(bossType))
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.orange)
                 }
@@ -411,6 +411,17 @@ extension TDGameContainerView {
 
         withAnimation {
             showSystemFreeze = false
+        }
+    }
+
+    /// Localized display name for any boss type string
+    private func bossDisplayName(_ bossType: String) -> String {
+        switch bossType {
+        case "cyberboss": return L10n.Boss.cyberboss
+        case "void_harbinger": return L10n.Boss.voidHarbinger
+        case "overclocker": return L10n.Boss.overclocker
+        case "trojan_wyrm": return L10n.Boss.trojanWyrm
+        default: return bossType.replacingOccurrences(of: "_", with: " ").uppercased()
         }
     }
 

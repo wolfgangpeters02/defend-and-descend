@@ -14,8 +14,7 @@ class UpgradeSystem {
     ]
 
     /// Generate upgrade choices for player selection
-    /// In dungeon mode, includes dungeon-only abilities (lifesteal, thorns, phoenix, etc.)
-    /// In arena mode, only uses shared upgrades that work in both modes
+    /// In boss mode, includes boss-only abilities (lifesteal, thorns, phoenix, etc.)
     static func generateUpgradeChoices(state: GameState, count: Int = 3) -> [UpgradeChoice] {
         let config = GameConfigLoader.shared
         var choices: [UpgradeChoice] = []
@@ -23,7 +22,7 @@ class UpgradeSystem {
         var attempts = 0
         let maxAttempts = 50
 
-        let includeDungeonUpgrades = state.gameMode == .boss
+        let includeBossUpgrades = state.gameMode == .boss
 
         while choices.count < count && attempts < maxAttempts {
             attempts += 1
@@ -34,10 +33,10 @@ class UpgradeSystem {
             // Get upgrades for this rarity (shared upgrades always available)
             var upgrades = config.getUpgrades(rarity: rarity)
 
-            // In dungeon mode, also include dungeon-only upgrades
-            if includeDungeonUpgrades {
-                let dungeonUpgrades = config.getDungeonUpgrades(rarity: rarity)
-                upgrades.append(contentsOf: dungeonUpgrades)
+            // In boss mode, also include boss-only upgrades
+            if includeBossUpgrades {
+                let bossUpgrades = config.getBossUpgrades(rarity: rarity)
+                upgrades.append(contentsOf: bossUpgrades)
             }
 
             guard !upgrades.isEmpty else { continue }
@@ -153,7 +152,7 @@ class UpgradeSystem {
         }
     }
 
-    /// Apply weapon upgrade (works in all modes - shared between survivor and TD)
+    /// Apply weapon upgrade (works in all modes - shared between boss and TD)
     private static func applyWeaponUpgrade(state: inout GameState, target: String, value: CGFloat, isMultiplier: Bool) {
         // Convert string to enum for type safety
         guard let targetType = UpgradeTargetType(rawValue: target) else { return }
@@ -195,7 +194,7 @@ class UpgradeSystem {
         }
     }
 
-    /// Apply ability upgrade (dungeon-only abilities like lifesteal, thorns, phoenix)
+    /// Apply ability upgrade (boss-only abilities like lifesteal, thorns, phoenix)
     private static func applyAbilityUpgrade(state: inout GameState, target: String, value: CGFloat) {
         // Convert string to enum for type safety
         guard let targetType = UpgradeTargetType(rawValue: target) else { return }
@@ -206,32 +205,32 @@ class UpgradeSystem {
 
         switch targetType {
         case .lifesteal:
-            // Dungeon only - heal on damage dealt
+            // Boss only - heal on damage dealt
             let current = state.player.abilities?.lifesteal ?? 0
             state.player.abilities?.lifesteal = current + value
 
         case .revive:
-            // Dungeon only - phoenix rebirth
+            // Boss only - phoenix rebirth
             let current = state.player.abilities?.revive ?? 0
             state.player.abilities?.revive = current + Int(value)
 
         case .thorns:
-            // Dungeon only - reflect damage
+            // Boss only - reflect damage
             let current = state.player.abilities?.thorns ?? 0
             state.player.abilities?.thorns = current + value
 
         case .explosionOnKill:
-            // Dungeon only - enemies explode
+            // Boss only - enemies explode
             let current = state.player.abilities?.explosionOnKill ?? 0
             state.player.abilities?.explosionOnKill = current + value
 
         case .orbitalStrike:
-            // Dungeon only - periodic screen damage
+            // Boss only - periodic screen damage
             let current = state.player.abilities?.orbitalStrike ?? 0
             state.player.abilities?.orbitalStrike = current + value
 
         case .timeFreeze:
-            // Dungeon only - freeze enemies
+            // Boss only - freeze enemies
             let current = state.player.abilities?.timeFreeze ?? 0
             state.player.abilities?.timeFreeze = current + value
 

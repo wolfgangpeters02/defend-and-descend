@@ -192,7 +192,8 @@ struct TDGameLoop {
             if proj.lifetime <= 0 ||
                proj.x < -50 || proj.x > state.map.width + 50 ||
                proj.y < -50 || proj.y > state.map.height + 50 {
-                state.projectiles.remove(at: i)
+                state.projectiles.swapAt(i, state.projectiles.count - 1)
+                state.projectiles.removeLast()
                 continue
             }
 

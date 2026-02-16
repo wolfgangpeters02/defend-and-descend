@@ -61,6 +61,11 @@ class AppState: ObservableObject {
     func collectOfflineEarnings() {
         guard let earnings = pendingOfflineEarnings else { return }
 
+        AnalyticsService.shared.trackOfflineEarningsClaimed(
+            hashAmount: earnings.hashEarned,
+            timeAwayHours: earnings.timeAwaySeconds / 3600
+        )
+
         // Apply earnings to player
         StorageService.shared.applyOfflineEarnings(earnings)
         refreshPlayer()
@@ -158,9 +163,9 @@ class AppState: ObservableObject {
         }
     }
 
-    /// Record survivor/boss run result with unified progression
+    /// Record boss run result with unified progression
     /// - hashEarned: Actual Hash collected during session (from SessionStats)
-    func recordSurvivorRun(
+    func recordBossRun(
         time: TimeInterval,
         kills: Int,
         sessionHash: Int,
@@ -169,11 +174,10 @@ class AppState: ObservableObject {
         hashEarned: Int = 0
     ) {
         updatePlayer { profile in
-            GameRewardService.applySurvivorResult(
+            GameRewardService.applyBossResult(
                 to: &profile,
                 time: time,
                 kills: kills,
-                gameMode: gameMode,
                 victory: victory,
                 hashEarned: hashEarned
             )

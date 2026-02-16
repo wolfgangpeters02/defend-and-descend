@@ -7,16 +7,12 @@ extension AppState {
 
     // MARK: - FTUE (First Time User Experience)
 
-    /// Called when player completes the intro sequence
+    /// Called when player completes the camera tutorial (or skips it)
     func completeIntroSequence() {
         updatePlayer { profile in
             profile.hasCompletedIntro = true
         }
-        showIntroSequence = false
-
-        // Activate initial tutorial hints
-        TutorialHintManager.shared.activateHint(.deckCard)
-        TutorialHintManager.shared.activateHint(.towerSlot)
+        AnalyticsService.shared.trackTutorialCompleted(type: "camera_intro")
     }
 
     /// Called when player places their first tower
@@ -30,6 +26,16 @@ extension AppState {
         // Dismiss the deck card and tower slot hints
         markHintSeen(.deckCard)
         markHintSeen(.towerSlot)
+
+        AnalyticsService.shared.trackFirstTowerPlaced()
+    }
+
+    /// Called when player completes the boss fight tutorial (taps START in boss fight)
+    func completeBossTutorial() {
+        updatePlayer { profile in
+            profile.hasSeenBossTutorial = true
+        }
+        AnalyticsService.shared.trackTutorialCompleted(type: "boss_fight")
     }
 
     /// Mark a tutorial hint as seen (permanently dismissed)

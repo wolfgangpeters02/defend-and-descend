@@ -268,31 +268,50 @@ extension TDGameContainerView {
 
         return VStack(alignment: .leading, spacing: 8) {
             // Header with name and merge stars
-            HStack {
+            HStack(spacing: 4) {
                 Text(tower.towerName)
                     .font(DesignTypography.headline(16))
                     .foregroundColor(.white)
 
+                if tower.starLevel > 0 {
+                    HStack(spacing: 1) {
+                        ForEach(0..<tower.starLevel, id: \.self) { _ in
+                            Image(systemName: "star.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.yellow)
+                        }
+                    }
+                }
+
                 Spacer()
             }
 
-            Text(L10n.TD.levelMax(tower.level, max: 10))
-                .font(DesignTypography.caption(12))
-                .foregroundColor(DesignColors.textSecondary)
+            HStack(spacing: 4) {
+                Text(L10n.TD.levelMax(tower.level, max: 10))
+                    .font(DesignTypography.caption(12))
+                    .foregroundColor(DesignColors.textSecondary)
+
+                if tower.starLevel > 0 {
+                    Text("• \(tower.starLevel)\u{2605}")
+                        .font(DesignTypography.caption(12))
+                        .foregroundColor(.yellow)
+                }
+            }
 
             Divider().background(Color.white.opacity(0.3))
 
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    TDStatRow(icon: "flame.fill", label: L10n.Stats.dmg, value: String(format: "%.1f", tower.damage), color: .orange)
-                    TDStatRow(icon: "scope", label: L10n.Stats.rng, value: String(format: "%.0f", tower.range), color: .blue)
+                    TDStatRow(icon: "flame.fill", label: L10n.Stats.dmg, value: String(format: "%.1f", tower.effectiveDamage), color: .orange)
+                    TDStatRow(icon: "scope", label: L10n.Stats.rng, value: String(format: "%.0f", tower.effectiveRange), color: .blue)
+                    TDStatRow(icon: "bolt.circle.fill", label: "PWR", value: "\(tower.effectivePowerDraw)W", color: .cyan)
                 }
 
                 Spacer()
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    TDStatRow(icon: "bolt.fill", label: L10n.Stats.spd, value: String(format: "%.2f/s", tower.attackSpeed), color: .yellow)
-                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: L10n.Stats.dps, value: String(format: "%.1f", tower.damage * tower.attackSpeed * CGFloat(tower.projectileCount)), color: .green)
+                    TDStatRow(icon: "bolt.fill", label: L10n.Stats.spd, value: String(format: "%.2f/s", tower.effectiveAttackSpeed), color: .yellow)
+                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: L10n.Stats.dps, value: String(format: "%.1f", tower.effectiveDamage * tower.effectiveAttackSpeed * CGFloat(tower.projectileCount)), color: .green)
                 }
             }
             .font(DesignTypography.caption(12))

@@ -226,7 +226,7 @@ struct TDGameContainerView: View {
 
         // Calculate tower defense strength (sum of tower DPS)
         let towerDefenseStrength = state.towers.reduce(0.0) { total, tower in
-            total + (tower.damage * tower.attackSpeed)
+            total + (tower.effectiveDamage * tower.effectiveAttackSpeed)
         }
 
         // Count active (non-paused) lanes

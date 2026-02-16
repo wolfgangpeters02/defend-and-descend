@@ -112,22 +112,22 @@ struct DefensiveBot: BossBot {
         let dx = context.bossX - context.playerX
         let dy = context.bossY - context.playerY
         let bossDist = sqrt(dx * dx + dy * dy)
-        if bossDist < 200 {
-            let weight: CGFloat = 2.0
+        if bossDist < BalanceConfig.BossBotTuning.defensiveBossMeleeRange {
+            let weight = BalanceConfig.BossBotTuning.defensiveBossThreatWeight
             threatX -= (dx / bossDist) * weight
             threatY -= (dy / bossDist) * weight
         }
 
         // Avoid puddles
         for puddle in context.puddles {
-            let threat = calculateThreat(context: context, hazardX: puddle.x, hazardY: puddle.y, radius: puddle.radius + 50)
+            let threat = calculateThreat(context: context, hazardX: puddle.x, hazardY: puddle.y, radius: puddle.radius + BalanceConfig.BossBotTuning.defensiveHazardPadding)
             threatX += threat.dx
             threatY += threat.dy
         }
 
         // Avoid void zones
         for zone in context.voidZones {
-            let threat = calculateThreat(context: context, hazardX: zone.x, hazardY: zone.y, radius: zone.radius + 50)
+            let threat = calculateThreat(context: context, hazardX: zone.x, hazardY: zone.y, radius: zone.radius + BalanceConfig.BossBotTuning.defensiveHazardPadding)
             threatX += threat.dx
             threatY += threat.dy
         }
@@ -135,15 +135,15 @@ struct DefensiveBot: BossBot {
         // Avoid incoming projectiles
         for proj in context.projectiles {
             // Predict where projectile will be
-            let futureX = proj.x + proj.velocityX * 0.5
-            let futureY = proj.y + proj.velocityY * 0.5
-            let threat = calculateThreat(context: context, hazardX: futureX, hazardY: futureY, radius: 80)
-            threatX += threat.dx * 1.5  // Higher weight for projectiles
-            threatY += threat.dy * 1.5
+            let futureX = proj.x + proj.velocityX * BalanceConfig.BossBotTuning.defensiveProjectilePredictionTime
+            let futureY = proj.y + proj.velocityY * BalanceConfig.BossBotTuning.defensiveProjectilePredictionTime
+            let threat = calculateThreat(context: context, hazardX: futureX, hazardY: futureY, radius: BalanceConfig.BossBotTuning.defensiveProjectileAvoidRadius)
+            threatX += threat.dx * BalanceConfig.BossBotTuning.defensiveProjectileThreatWeight
+            threatY += threat.dy * BalanceConfig.BossBotTuning.defensiveProjectileThreatWeight
         }
 
         // Avoid lasers (perpendicular movement)
-        for laser in context.lasers where laser.lifetime >= 1.0 {
+        for laser in context.lasers where laser.lifetime >= BalanceConfig.BossBotTuning.defensiveLaserMinLifetime {
             let angleRad = laser.angle * .pi / 180
             let laserDirX = cos(angleRad)
             let laserDirY = -sin(angleRad)
@@ -157,13 +157,14 @@ struct DefensiveBot: BossBot {
                 // Player is along laser - move perpendicular
                 let perpX = -laserDirY
                 let perpY = laserDirX
+                let dodgeWeight = BalanceConfig.BossBotTuning.defensiveLaserDodgeWeight
                 let cross = toPlayerX * perpY - toPlayerY * perpX
                 if cross > 0 {
-                    threatX += perpX * 3
-                    threatY += perpY * 3
+                    threatX += perpX * dodgeWeight
+                    threatY += perpY * dodgeWeight
                 } else {
-                    threatX -= perpX * 3
-                    threatY -= perpY * 3
+                    threatX -= perpX * dodgeWeight
+                    threatY -= perpY * dodgeWeight
                 }
             }
         }
@@ -181,20 +182,21 @@ struct DefensiveBot: BossBot {
             if dot > 0 && dot < rift.length {
                 let perpX = -riftDirY
                 let perpY = riftDirX
+                let dodgeWeight = BalanceConfig.BossBotTuning.defensiveLaserDodgeWeight
                 let cross = toPlayerX * perpY - toPlayerY * perpX
                 if cross > 0 {
-                    threatX += perpX * 3
-                    threatY += perpY * 3
+                    threatX += perpX * dodgeWeight
+                    threatY += perpY * dodgeWeight
                 } else {
-                    threatX -= perpX * 3
-                    threatY -= perpY * 3
+                    threatX -= perpX * dodgeWeight
+                    threatY -= perpY * dodgeWeight
                 }
             }
         }
 
         // Avoid minions
         for minion in context.minions where !minion.isDead {
-            let threat = calculateThreat(context: context, hazardX: minion.x, hazardY: minion.y, radius: 60)
+            let threat = calculateThreat(context: context, hazardX: minion.x, hazardY: minion.y, radius: BalanceConfig.BossBotTuning.defensiveMinionAvoidRadius)
             threatX += threat.dx
             threatY += threat.dy
         }
@@ -204,9 +206,9 @@ struct DefensiveBot: BossBot {
         let toCenter_dy = context.arenaCenter.y - context.playerY
         let distToCenter = sqrt(toCenter_dx * toCenter_dx + toCenter_dy * toCenter_dy)
 
-        if distToCenter > context.shrinkingArenaRadius - 100 {
-            threatX += toCenter_dx * 2
-            threatY += toCenter_dy * 2
+        if distToCenter > context.shrinkingArenaRadius - BalanceConfig.BossBotTuning.defensiveArenaEdgeMargin {
+            threatX += toCenter_dx * BalanceConfig.BossBotTuning.defensiveArenaCenterPull
+            threatY += toCenter_dy * BalanceConfig.BossBotTuning.defensiveArenaCenterPull
         }
 
         // Handle pylons in Phase 2
@@ -220,8 +222,8 @@ struct DefensiveBot: BossBot {
             // Add slight pull towards pylon
             let toPylonX = closest.x - context.playerX
             let toPylonY = closest.y - context.playerY
-            threatX += toPylonX * 0.3
-            threatY += toPylonY * 0.3
+            threatX += toPylonX * BalanceConfig.BossBotTuning.defensivePylonAttraction
+            threatY += toPylonY * BalanceConfig.BossBotTuning.defensivePylonAttraction
         }
 
         // Normalize and move
@@ -231,7 +233,7 @@ struct DefensiveBot: BossBot {
         }
 
         // If no threats, approach boss at safe distance
-        if context.distanceToBoss > 250 {
+        if context.distanceToBoss > BalanceConfig.BossBotTuning.defensiveSafeApproachDistance {
             return .moveTowards(x: context.bossX, y: context.bossY)
         }
 
@@ -281,15 +283,15 @@ struct BalancedBot: BossBot {
             return .moveTowards(x: closest.x, y: closest.y)
         }
 
-        // Maintain optimal range (150-250 from boss)
+        // Maintain optimal range from boss
         let bossDistance = context.distanceToBoss
-        if bossDistance < 150 {
+        if bossDistance < BalanceConfig.BossBotTuning.balancedMinRange {
             // Too close, back away
             let dx = context.playerX - context.bossX
             let dy = context.playerY - context.bossY
             let d = sqrt(dx * dx + dy * dy)
             return .move(dx: dx / d, dy: dy / d)
-        } else if bossDistance > 280 {
+        } else if bossDistance > BalanceConfig.BossBotTuning.balancedMaxRange {
             // Too far, get closer
             return .moveTowards(x: context.bossX, y: context.bossY)
         }
@@ -305,10 +307,10 @@ struct BalancedBot: BossBot {
     private func checkImmediateThreat(context: BossBotContext) -> (CGFloat, CGFloat)? {
         // Check projectiles
         for proj in context.projectiles {
-            let futureX = proj.x + proj.velocityX * 0.3
-            let futureY = proj.y + proj.velocityY * 0.3
+            let futureX = proj.x + proj.velocityX * BalanceConfig.BossBotTuning.balancedProjectilePredictionTime
+            let futureY = proj.y + proj.velocityY * BalanceConfig.BossBotTuning.balancedProjectilePredictionTime
             let d = dist(context.playerX, context.playerY, futureX, futureY)
-            if d < 60 {
+            if d < BalanceConfig.BossBotTuning.balancedProjectileDodgeThreshold {
                 // Dodge perpendicular to projectile direction
                 let velMag = sqrt(proj.velocityX * proj.velocityX + proj.velocityY * proj.velocityY)
                 if velMag > 0 {
@@ -320,16 +322,16 @@ struct BalancedBot: BossBot {
         // Check puddles/zones about to activate
         for puddle in context.puddles {
             let d = dist(context.playerX, context.playerY, puddle.x, puddle.y)
-            if d < puddle.radius + 30 {
+            if d < puddle.radius + BalanceConfig.BossBotTuning.balancedHazardBuffer {
                 let dx = context.playerX - puddle.x
                 let dy = context.playerY - puddle.y
                 return (dx / d, dy / d)
             }
         }
 
-        for zone in context.voidZones where zone.isActive || zone.lifetime > zone.warningTime - 0.5 {
+        for zone in context.voidZones where zone.isActive || zone.lifetime > zone.warningTime - BalanceConfig.BossBotTuning.balancedVoidZoneWarningBuffer {
             let d = dist(context.playerX, context.playerY, zone.x, zone.y)
-            if d < zone.radius + 30 {
+            if d < zone.radius + BalanceConfig.BossBotTuning.balancedHazardBuffer {
                 let dx = context.playerX - zone.x
                 let dy = context.playerY - zone.y
                 return (dx / d, dy / d)
@@ -337,7 +339,7 @@ struct BalancedBot: BossBot {
         }
 
         // Check lasers
-        for laser in context.lasers where laser.lifetime >= 0.5 {
+        for laser in context.lasers where laser.lifetime >= BalanceConfig.BossBotTuning.balancedLaserMinLifetime {
             let angleRad = laser.angle * .pi / 180
             let laserEndX = laser.originX + cos(angleRad) * laser.length
             let laserEndY = laser.originY - sin(angleRad) * laser.length
@@ -347,7 +349,7 @@ struct BalancedBot: BossBot {
                 x1: laser.originX, y1: laser.originY,
                 x2: laserEndX, y2: laserEndY
             )
-            if d < 50 {
+            if d < BalanceConfig.BossBotTuning.balancedLaserDodgeThreshold {
                 // Move perpendicular
                 let perpX = -sin(angleRad)
                 let perpY = -cos(angleRad)
@@ -410,9 +412,9 @@ struct PhaseAwareBot: BossBot {
         }
 
         // Stay at medium range
-        if context.distanceToBoss > 200 {
+        if context.distanceToBoss > BalanceConfig.BossBotTuning.phaseAwareApproachDistance {
             return .moveTowards(x: context.bossX, y: context.bossY)
-        } else if context.distanceToBoss < 120 {
+        } else if context.distanceToBoss < BalanceConfig.BossBotTuning.phaseAwareTooCloseDistance {
             let dx = context.playerX - context.bossX
             let dy = context.playerY - context.bossY
             let d = sqrt(dx * dx + dy * dy)
@@ -448,28 +450,34 @@ struct PhaseAwareBot: BossBot {
         var moveY: CGFloat = 0
 
         // Avoid puddles
-        for puddle in context.puddles where puddle.lifetime >= puddle.warningTime - 0.3 {
+        let puddleWarningBuffer = BalanceConfig.BossBotTuning.phaseAwarePuddleWarningBuffer
+        let hazardBuffer = BalanceConfig.BossBotTuning.phaseAwareHazardBuffer
+        let hazardWeight = BalanceConfig.BossBotTuning.phaseAwareHazardAvoidWeight
+        for puddle in context.puddles where puddle.lifetime >= puddle.warningTime - puddleWarningBuffer {
             let d = dist(context.playerX, context.playerY, puddle.x, puddle.y)
-            if d < puddle.radius + 80 {
+            if d < puddle.radius + hazardBuffer {
                 let dx = context.playerX - puddle.x
                 let dy = context.playerY - puddle.y
-                moveX += dx / d * 2
-                moveY += dy / d * 2
+                moveX += dx / d * hazardWeight
+                moveY += dy / d * hazardWeight
             }
         }
 
         // Avoid void zones
-        for zone in context.voidZones where zone.isActive || zone.lifetime > zone.warningTime - 0.5 {
+        let voidWarningBuffer = BalanceConfig.BossBotTuning.phaseAwareVoidZoneWarningBuffer
+        for zone in context.voidZones where zone.isActive || zone.lifetime > zone.warningTime - voidWarningBuffer {
             let d = dist(context.playerX, context.playerY, zone.x, zone.y)
-            if d < zone.radius + 80 {
+            if d < zone.radius + hazardBuffer {
                 let dx = context.playerX - zone.x
                 let dy = context.playerY - zone.y
-                moveX += dx / d * 2
-                moveY += dy / d * 2
+                moveX += dx / d * hazardWeight
+                moveY += dy / d * hazardWeight
             }
         }
 
         // Avoid void rifts
+        let riftDodgeThreshold = BalanceConfig.BossBotTuning.phaseAwareRiftDodgeThreshold
+        let riftDodgeWeight = BalanceConfig.BossBotTuning.phaseAwareRiftDodgeWeight
         for rift in context.voidRifts {
             let angleRad = rift.angle * .pi / 180
             let endX = context.arenaCenter.x + cos(angleRad) * rift.length
@@ -480,10 +488,10 @@ struct PhaseAwareBot: BossBot {
                 x1: context.arenaCenter.x, y1: context.arenaCenter.y,
                 x2: endX, y2: endY
             )
-            if d < 60 {
+            if d < riftDodgeThreshold {
                 // Move perpendicular
-                moveX += -sin(angleRad) * 3
-                moveY += cos(angleRad) * 3
+                moveX += -sin(angleRad) * riftDodgeWeight
+                moveY += cos(angleRad) * riftDodgeWeight
             }
         }
 
@@ -493,7 +501,7 @@ struct PhaseAwareBot: BossBot {
         }
 
         // Maintain distance from boss
-        if context.distanceToBoss < 200 {
+        if context.distanceToBoss < BalanceConfig.BossBotTuning.phaseAwareApproachDistance {
             let dx = context.playerX - context.bossX
             let dy = context.playerY - context.bossY
             let d = sqrt(dx * dx + dy * dy)
@@ -512,12 +520,12 @@ struct PhaseAwareBot: BossBot {
         let toCenter_dy = context.arenaCenter.y - context.playerY
         let distToCenter = sqrt(toCenter_dx * toCenter_dx + toCenter_dy * toCenter_dy)
 
-        if distToCenter > context.shrinkingArenaRadius - 80 {
+        if distToCenter > context.shrinkingArenaRadius - BalanceConfig.BossBotTuning.phaseAwareArenaEdgeMargin {
             return .move(dx: toCenter_dx / distToCenter, dy: toCenter_dy / distToCenter)
         }
 
         // Avoid lasers (critical)
-        for laser in context.lasers where laser.lifetime >= 0.8 {
+        for laser in context.lasers where laser.lifetime >= BalanceConfig.BossBotTuning.phaseAwareLaserMinLifetime {
             let angleRad = laser.angle * .pi / 180
             let endX = laser.originX + cos(angleRad) * laser.length
             let endY = laser.originY - sin(angleRad) * laser.length
@@ -527,12 +535,13 @@ struct PhaseAwareBot: BossBot {
                 x1: laser.originX, y1: laser.originY,
                 x2: endX, y2: endY
             )
-            if d < 70 {
+            if d < BalanceConfig.BossBotTuning.phaseAwareLaserDodgeThreshold {
                 // Strong perpendicular dodge
                 let perpX = -sin(angleRad)
                 let perpY = -cos(angleRad)
-                moveX += perpX * 4
-                moveY += perpY * 4
+                let laserWeight = BalanceConfig.BossBotTuning.phaseAwareLaserDodgeWeight
+                moveX += perpX * laserWeight
+                moveY += perpY * laserWeight
             }
         }
 
@@ -557,7 +566,7 @@ struct PhaseAwareBot: BossBot {
 
         for minion in context.minions where !minion.isDead {
             let d = dist(context.playerX, context.playerY, minion.x, minion.y)
-            if d < 100 && d > 0 {
+            if d < BalanceConfig.BossBotTuning.phaseAwareMinionKiteRange && d > 0 {
                 threatX += (context.playerX - minion.x) / d
                 threatY += (context.playerY - minion.y) / d
             }
@@ -572,11 +581,11 @@ struct PhaseAwareBot: BossBot {
 
     private func dodgeProjectiles(context: BossBotContext) -> BossBotAction? {
         for proj in context.projectiles {
-            let futureX = proj.x + proj.velocityX * 0.4
-            let futureY = proj.y + proj.velocityY * 0.4
+            let futureX = proj.x + proj.velocityX * BalanceConfig.BossBotTuning.phaseAwareProjectilePredictionTime
+            let futureY = proj.y + proj.velocityY * BalanceConfig.BossBotTuning.phaseAwareProjectilePredictionTime
             let d = dist(context.playerX, context.playerY, futureX, futureY)
 
-            if d < 70 {
+            if d < BalanceConfig.BossBotTuning.phaseAwareProjectileDodgeThreshold {
                 let velMag = sqrt(proj.velocityX * proj.velocityX + proj.velocityY * proj.velocityY)
                 if velMag > 0 {
                     return .move(dx: -proj.velocityY / velMag, dy: proj.velocityX / velMag)
