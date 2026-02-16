@@ -52,8 +52,8 @@ struct PlayerProfile: Codable, HashStorable {
         case hasCompletedIntro, firstTowerPlaced, tutorialHintsSeen, hasSeenBossTutorial  // FTUE
         case notificationsEnabled  // Settings
         case compiledProtocols, protocolLevels, equippedProtocolId, protocolBlueprints
-        case globalUpgrades, componentLevels, unlockedComponents  // Upgrade systems
-        case unlockedSectors, sectorBestTimes, tdSectorUnlockProgress, unlockedTDSectors
+        case componentLevels, unlockedComponents  // Upgrade systems
+        case tdSectorUnlockProgress, unlockedTDSectors
         case defeatedSectorBosses = "defeatedDistrictBosses"  // Preserved key for save compat
         case unlocks, weaponLevels
         case survivorStats, tdStats
@@ -78,26 +78,13 @@ struct PlayerProfile: Codable, HashStorable {
     /// Boss kill tracking for blueprint drop calculations
     var bossKillRecords: [String: BossKillRecord] = [:]
 
-    // MARK: - Global Upgrades (Legacy - kept for save backward compat only)
-
-    /// DEPRECATED: Use componentLevels. Kept for Codable backward compat.
-    var globalUpgrades: LegacyGlobalUpgrades = LegacyGlobalUpgrades()
-
-    // MARK: - Component Upgrade System (New)
+    // MARK: - Component Upgrade System
 
     /// Levels for each upgradable component (PSU, Storage, RAM, GPU, Cache, Expansion, I/O, Network, CPU)
     var componentLevels: ComponentLevels = ComponentLevels()
 
     /// Tracks which components are unlocked via sector boss defeats
     var unlockedComponents: UnlockedComponents = UnlockedComponents()
-
-    // MARK: - Debug Arena Progress (Legacy — kept for save compat)
-
-    /// IDs of unlocked debug arenas (CodingKey: "unlockedSectors" for save compat)
-    var unlockedSectors: [String] = ["ram", "cathedral"]  // RAM + Cathedral unlocked by default
-
-    /// Arena ID -> Best survival time (CodingKey: "sectorBestTimes" for save compat)
-    var sectorBestTimes: [String: TimeInterval] = [:]
 
     /// TD Mega-Board sector unlock progress (partial payments)
     var tdSectorUnlockProgress: [String: Int] = [:]
@@ -131,12 +118,10 @@ struct PlayerProfile: Codable, HashStorable {
 }
 
 struct PlayerUnlocks: Codable {
-    var arenas: [String]   // Also unlocks TD maps
-    var weapons: [String]  // Also unlocks towers
+    var weapons: [String] = []  // Legacy: migrated to compiledProtocols
 }
 
 struct SurvivorModeStats: Codable {
-    var arenaRuns: Int = 0
     var dungeonRuns: Int = 0
     var totalSurvivorKills: Int = 0
     var longestSurvival: TimeInterval = 0
@@ -192,9 +177,6 @@ extension PlayerProfile {
     /// Default starter protocol ID (single source: ProtocolID.starter)
     static let defaultProtocolId = ProtocolID.starter.rawValue
 
-    /// Default starter sector ID (legacy debug arena)
-    static let defaultSectorId = "ram"
-
     /// Create a default profile for new players
     static var defaultProfile: PlayerProfile {
         PlayerProfile(
@@ -213,10 +195,7 @@ extension PlayerProfile {
             equippedProtocolId: defaultProtocolId,
             protocolBlueprints: [],
             bossKillRecords: [:],  // Blueprint system tracking
-            unlockedSectors: [defaultSectorId, "cathedral"],  // RAM + Cathedral unlocked by default
-            sectorBestTimes: [:],
             unlocks: PlayerUnlocks(
-                arenas: ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"],  // All arenas unlocked for testing
                 weapons: [defaultProtocolId]  // Default Protocol (unified weapon system)
             ),
             weaponLevels: [defaultProtocolId: 1],  // Default Protocol level
@@ -242,29 +221,6 @@ extension PlayerProfile {
         if profile.protocolLevels[defaultProtocolId] == nil {
             profile.protocolLevels[defaultProtocolId] = 1
         }
-
-        // Ensure starter debug arenas are unlocked (RAM + Cathedral)
-        if !profile.unlockedSectors.contains(defaultSectorId) {
-            profile.unlockedSectors.append(defaultSectorId)
-        }
-        if !profile.unlockedSectors.contains("cathedral") {
-            profile.unlockedSectors.append("cathedral")
-        }
-
-        // Unlock all arenas/dungeons for testing
-        let allArenas = ["grasslands", "volcano", "ice_cave", "castle", "space", "temple", "cyberboss", "voidrealm"]
-        for arena in allArenas {
-            if !profile.unlocks.arenas.contains(arena) {
-                profile.unlocks.arenas.append(arena)
-            }
-        }
-
-        // Migrate legacy globalUpgrades → componentLevels (take max of each)
-        profile.componentLevels.power = max(profile.componentLevels.power, profile.globalUpgrades.psuLevel)
-        profile.componentLevels.cpu = max(profile.componentLevels.cpu, profile.globalUpgrades.cpuLevel)
-        profile.componentLevels.ram = max(profile.componentLevels.ram, profile.globalUpgrades.ramLevel)
-        profile.componentLevels.cache = max(profile.componentLevels.cache, profile.globalUpgrades.coolingLevel)
-        profile.componentLevels.storage = max(profile.componentLevels.storage, profile.globalUpgrades.hddLevel)
 
         // Existing players who already fought bosses should skip the tutorial
         if !profile.defeatedSectorBosses.isEmpty {

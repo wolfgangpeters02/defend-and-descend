@@ -25,11 +25,7 @@ class StorageService {
             // First try to decode with current schema
             do {
                 let profile = try JSONDecoder().decode(PlayerProfile.self, from: data)
-                // Apply migrations (unlocks all arenas for testing)
                 let migratedProfile = PlayerProfile.migrate(profile)
-                if migratedProfile.unlocks.arenas.count != profile.unlocks.arenas.count {
-                    savePlayer(migratedProfile)
-                }
                 return migratedProfile
             } catch {
                 print("[StorageService] WARNING: Failed to decode PlayerProfile, attempting legacy migration: \(error)")
@@ -91,9 +87,6 @@ class StorageService {
             if let weapons = unlocksData["weapons"] as? [String] {
                 profile.unlocks.weapons = weapons
             }
-            if let arenas = unlocksData["arenas"] as? [String] {
-                profile.unlocks.arenas = arenas
-            }
         }
 
         // Migrate item levels
@@ -102,7 +95,6 @@ class StorageService {
         }
 
         // Old stats become survivor stats
-        profile.survivorStats.arenaRuns = profile.totalRuns
         profile.survivorStats.totalSurvivorKills = profile.totalKills
         profile.survivorStats.longestSurvival = profile.bestTime
 

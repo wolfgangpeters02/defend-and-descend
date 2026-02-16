@@ -79,7 +79,6 @@
 		AA000044 /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100044 /* SettingsSheet.swift */; };
 		BALCFGBLD /* BalanceConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = BALCFGREF /* BalanceConfig.swift */; };
 		D12722CA83FE38E637AF3886 /* SectorUnlockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E56EE626092F9ADEC962B0B /* SectorUnlockSystem.swift */; };
-		D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */; };
 		COMPTYPBLD /* ComponentTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = COMPTYPREF /* ComponentTypes.swift */; };
 		DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8E338914F9E07D0B723EC2 /* WelcomeBackModal.swift */; };
 		E2CB23521807163E621574B3 /* OverclockSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 651BD9A10095829CA07C1FDB /* OverclockSystem.swift */; };
@@ -168,7 +167,6 @@
 		WAVTYPRF01 /* WaveTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WaveTypes.swift; sourceTree = "<group>"; };
 		BSSLTRWRF0 /* BossLootReward.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BossLootReward.swift; sourceTree = "<group>"; };
 		02B5E6817BAB23FC2F7DFE4F /* MegaBoardSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardSystem.swift; sourceTree = "<group>"; };
-		05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GlobalUpgrades.swift; sourceTree = "<group>"; };
 		COMPTYPREF /* ComponentTypes.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ComponentTypes.swift; sourceTree = "<group>"; };
 		09DD228498839C35BD9C1D41 /* PathSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PathSystem.swift; sourceTree = "<group>"; };
 		0A0864F1DC489D8FAB94D0EC /* BlueprintDropSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlueprintDropSystem.swift; sourceTree = "<group>"; };
@@ -479,7 +477,6 @@
 				BE64BB27463A150B6F32451C /* TDTypes.swift */,
 				F5F896AC2E9B27982965DBAF /* Protocol.swift */,
 				ENTIDFILE1 /* EntityIDs.swift */,
-				05CD61F04E3DFCEE4B53606E /* GlobalUpgrades.swift */,
 				COMPTYPREF /* ComponentTypes.swift */,
 				MBRDFILE01 /* MotherboardTypes.swift */,
 				642FC35778370BD58869415C /* MegaBoardTypes.swift */,
@@ -795,7 +792,6 @@
 				DF05D338EC463EE954882827 /* WelcomeBackModal.swift in Sources */,
 				469B93F994E728C789F86031 /* Protocol.swift in Sources */,
 				ENTID00001 /* EntityIDs.swift in Sources */,
-				D817F5739FA9ED9B57CA10C5 /* GlobalUpgrades.swift in Sources */,
 				COMPTYPBLD /* ComponentTypes.swift in Sources */,
 				80D7D638D0392D445B34D53C /* SystemTabView.swift in Sources */,
 				MBRD00001 /* MotherboardTypes.swift in Sources */,

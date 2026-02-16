@@ -101,10 +101,6 @@ class AppState: ObservableObject {
         currentPlayer.compiledProtocols
     }
 
-    var unlockedArenas: [String] {
-        currentPlayer.unlocks.arenas
-    }
-
     // MARK: - Stats
 
     func unlockItem(category: String, id: String, rarity: Rarity) {
@@ -144,18 +140,6 @@ class AppState: ObservableObject {
         }
         let prevIndex = (currentIndex - 1 + protocols.count) % protocols.count
         updatePlayer { $0.equippedProtocolId = protocols[prevIndex] }
-    }
-
-    func selectNextArena() {
-        guard let currentIndex = unlockedArenas.firstIndex(of: selectedArena) else { return }
-        let nextIndex = (currentIndex + 1) % unlockedArenas.count
-        selectedArena = unlockedArenas[nextIndex]
-    }
-
-    func selectPreviousArena() {
-        guard let currentIndex = unlockedArenas.firstIndex(of: selectedArena) else { return }
-        let prevIndex = (currentIndex - 1 + unlockedArenas.count) % unlockedArenas.count
-        selectedArena = unlockedArenas[prevIndex]
     }
 
     // MARK: - TD Mode Support

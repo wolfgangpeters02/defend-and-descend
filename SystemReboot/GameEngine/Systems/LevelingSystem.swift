@@ -18,8 +18,6 @@ class LevelingSystem {
         switch category {
         case "protocol":
             return profile.compiledProtocols.contains(id)
-        case "arena":
-            return profile.unlocks.arenas.contains(id)
         default:
             return false
         }
@@ -53,11 +51,6 @@ class LevelingSystem {
             if !profile.compiledProtocols.contains(id) {
                 profile.compiledProtocols.append(id)
                 profile.protocolLevels[id] = 1
-                return true
-            }
-        case "arena":
-            if !profile.unlocks.arenas.contains(id) {
-                profile.unlocks.arenas.append(id)
                 return true
             }
         default:

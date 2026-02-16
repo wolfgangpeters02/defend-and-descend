@@ -133,7 +133,8 @@ In **Localizable.xcstrings**:
 - Remove `mode.arena` entry if the L10n key was removed
 - Remove any other orphaned survival string entries
 
-### Stage 6: Clean deprecated player profile fields [TODO]
+### Stage 6: Clean deprecated player profile fields [DONE]
+Removed unlockedSectors, sectorBestTimes, PlayerUnlocks.arenas, SurvivorModeStats.arenaRuns, LegacyGlobalUpgrades; deleted GlobalUpgrades.swift; cleaned dead arena cycling from AppState and LevelingSystem; cleaned StorageService migration code.
 
 In **PlayerProfile.swift**:
 
@@ -187,6 +188,6 @@ Global sweep:
 - [x] Stage 3: Survival types cleaned from shared files
 - [x] Stage 4: Survival UI and reward code cleaned
 - [x] Stage 5: Balance config and L10n cleaned
-- [ ] Stage 6: Player profile fields cleaned
+- [x] Stage 6: Player profile fields cleaned
 - [ ] Stage 7: Unused arena themes removed
 - [ ] Stage 8: GameMode.survival removed, final sweep done
