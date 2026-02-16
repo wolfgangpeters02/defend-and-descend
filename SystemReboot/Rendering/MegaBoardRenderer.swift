@@ -11,6 +11,7 @@ final class MegaBoardRenderer {
     private weak var scene: SKScene?
     private var lockedSectorNodes: [String: SKNode] = [:]
     private var unlockableSectorNodes: [String: SKNode] = [:]
+    private var comingSoonSectorNodes: [String: SKNode] = [:]
     // Animation timing
     private var noisePhase: CGFloat = 0
     private var pulsePhase: CGFloat = 0
@@ -313,6 +314,82 @@ final class MegaBoardRenderer {
         return container
     }
 
+    // MARK: - Coming Soon Sector Rendering
+    // Beyond MVP boundary — visible but not unlockable, distinct from locked
+
+    /// Render a coming soon sector with a clean "not yet available" overlay
+    func renderComingSoonSector(_ sector: MegaBoardSector, in parentNode: SKNode) {
+        comingSoonSectorNodes[sector.id]?.removeFromParent()
+
+        let containerNode = SKNode()
+        containerNode.name = "comingSoon_\(sector.id)"
+        containerNode.position = CGPoint(x: sector.worldX, y: sector.worldY)
+        containerNode.zPosition = 5
+
+        // 1. Dark blue-tinted background (slightly different from locked to suggest "future")
+        let background = SKShapeNode(rect: CGRect(x: 0, y: 0, width: sector.width, height: sector.height))
+        background.fillColor = UIColor(red: 0.05, green: 0.05, blue: 0.12, alpha: 0.85)
+        background.strokeColor = UIColor(red: 0.15, green: 0.15, blue: 0.30, alpha: 0.25)
+        background.lineWidth = 1
+        containerNode.addChild(background)
+
+        // 2. Subtle scan lines (lighter than locked)
+        let linePath = CGMutablePath()
+        let lineSpacing: CGFloat = 8
+        let lineCount = Int(sector.height / lineSpacing)
+        for i in 0..<lineCount {
+            let y = CGFloat(i) * lineSpacing
+            linePath.addRect(CGRect(x: 0, y: y, width: sector.width, height: 1))
+        }
+        let linesNode = SKShapeNode(path: linePath)
+        linesNode.fillColor = .black.withAlphaComponent(0.15)
+        linesNode.strokeColor = .clear
+        linesNode.zPosition = 1
+        containerNode.addChild(linesNode)
+
+        // 3. Sector display name at top (players should know what's coming)
+        let nameLabel = SKLabelNode(text: sector.displayName.uppercased())
+        nameLabel.fontName = "Menlo-Bold"
+        nameLabel.fontSize = 18
+        nameLabel.fontColor = UIColor(red: 0.4, green: 0.4, blue: 0.6, alpha: 0.5)
+        nameLabel.position = CGPoint(x: sector.width / 2, y: sector.height - 60)
+        nameLabel.horizontalAlignmentMode = .center
+        nameLabel.verticalAlignmentMode = .center
+        nameLabel.zPosition = 3
+        containerNode.addChild(nameLabel)
+
+        // 4. "COMING SOON" label centered with slow pulse
+        let comingSoonLabel = SKLabelNode(text: L10n.Sector.comingSoon.uppercased())
+        comingSoonLabel.fontName = "Menlo-Bold"
+        comingSoonLabel.fontSize = 28
+        comingSoonLabel.fontColor = UIColor(red: 0.35, green: 0.35, blue: 0.55, alpha: 0.6)
+        comingSoonLabel.position = CGPoint(x: sector.width / 2, y: sector.height / 2)
+        comingSoonLabel.horizontalAlignmentMode = .center
+        comingSoonLabel.verticalAlignmentMode = .center
+        comingSoonLabel.zPosition = 3
+
+        let pulseUp = SKAction.fadeAlpha(to: 0.7, duration: 2.5)
+        let pulseDown = SKAction.fadeAlpha(to: 0.3, duration: 2.5)
+        pulseUp.timingMode = .easeInEaseOut
+        pulseDown.timingMode = .easeInEaseOut
+        comingSoonLabel.run(SKAction.repeatForever(SKAction.sequence([pulseUp, pulseDown])))
+        containerNode.addChild(comingSoonLabel)
+
+        // 5. Slow scan line (5s loop — slower than locked/unlockable)
+        let scanLine = SKShapeNode(rect: CGRect(x: 0, y: 0, width: sector.width, height: 2))
+        scanLine.fillColor = UIColor(red: 0.3, green: 0.3, blue: 0.5, alpha: 0.08)
+        scanLine.strokeColor = .clear
+        scanLine.zPosition = 2
+
+        let moveUp = SKAction.moveTo(y: sector.height, duration: 5.0)
+        let reset = SKAction.moveTo(y: 0, duration: 0)
+        scanLine.run(SKAction.repeatForever(SKAction.sequence([moveUp, reset])))
+        containerNode.addChild(scanLine)
+
+        parentNode.addChild(containerNode)
+        comingSoonSectorNodes[sector.id] = containerNode
+    }
+
     // MARK: - Node Removal
 
     /// Remove a locked sector overlay
@@ -327,13 +404,20 @@ final class MegaBoardRenderer {
         unlockableSectorNodes.removeValue(forKey: sectorId)
     }
 
-    /// Remove ghost sector (removes from both locked and unlockable)
+    /// Remove a coming soon sector overlay
+    func removeComingSoonSector(_ sectorId: String) {
+        comingSoonSectorNodes[sectorId]?.removeFromParent()
+        comingSoonSectorNodes.removeValue(forKey: sectorId)
+    }
+
+    /// Remove ghost sector (removes from locked, unlockable, and coming soon)
     func removeGhostSector(_ sectorId: String) {
         removeLockedSector(sectorId)
         removeUnlockableSector(sectorId)
+        removeComingSoonSector(sectorId)
     }
 
-    /// Remove all ghost sectors (both locked and unlockable)
+    /// Remove all ghost sectors (locked, unlockable, and coming soon)
     func removeAllGhostSectors() {
         for (_, node) in lockedSectorNodes {
             node.removeFromParent()
@@ -344,6 +428,11 @@ final class MegaBoardRenderer {
             node.removeFromParent()
         }
         unlockableSectorNodes.removeAll()
+
+        for (_, node) in comingSoonSectorNodes {
+            node.removeFromParent()
+        }
+        comingSoonSectorNodes.removeAll()
     }
 
     // MARK: - Update

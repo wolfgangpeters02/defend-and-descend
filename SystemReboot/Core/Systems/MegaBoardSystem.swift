@@ -169,23 +169,26 @@ final class MegaBoardSystem {
     }
 
     /// Get visible locked sectors split by render mode
-    func visibleLockedSectorsByMode(for profile: PlayerProfile) -> (locked: [MegaBoardSector], unlockable: [MegaBoardSector]) {
+    func visibleLockedSectorsByMode(for profile: PlayerProfile) -> (locked: [MegaBoardSector], unlockable: [MegaBoardSector], comingSoon: [MegaBoardSector]) {
         let allVisible = visibleLockedSectors(for: profile)
         var locked: [MegaBoardSector] = []
         var unlockable: [MegaBoardSector] = []
+        var comingSoon: [MegaBoardSector] = []
 
         for sector in allVisible {
             switch getRenderMode(for: sector.id, profile: profile) {
             case .unlockable:
                 unlockable.append(sector)
-            case .locked, .comingSoon:
+            case .comingSoon:
+                comingSoon.append(sector)
+            case .locked:
                 locked.append(sector)
             case .unlocked:
                 break  // Shouldn't happen for visible locked sectors
             }
         }
 
-        return (locked, unlockable)
+        return (locked, unlockable, comingSoon)
     }
 
     // MARK: - Camera Bounds

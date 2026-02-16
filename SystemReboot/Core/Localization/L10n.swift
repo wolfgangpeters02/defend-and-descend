@@ -214,6 +214,8 @@ enum L10n {
         static let pausedWarning = String(localized: "sector.pausedWarning")
         static let alreadyDecrypted = String(localized: "sector.alreadyDecrypted")
         static let readyToDecrypt = String(localized: "sector.readyToDecrypt")
+        static let comingSoon = String(localized: "sector.comingSoon")
+        static let comingSoonDescription = String(localized: "sector.comingSoonDescription")
         static func needMoreHash(_ amount: Int) -> String {
             String(format: String(localized: "sector.needMoreHash"), amount)
         }

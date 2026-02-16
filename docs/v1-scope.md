@@ -103,9 +103,9 @@ Implement a clear "end of content" boundary at **Sector 4 (Cache)** so the game 
 ---
 
 ### Stage 3: Motherboard "Coming Soon" UI
-- **Status:** TODO
-- **Summary:** _to be filled by implementing agent_
-- **Commit:** _to be filled_
+- **Status:** DONE
+- **Summary:** Added distinct "Coming Soon" visual treatment for beyond-MVP sectors: new `renderComingSoonSector` in MegaBoardRenderer (dark blue-tinted overlay with pulsing label and sector name), separate SwiftUI panel with clock icon and description (no cost/decrypt UI), localized L10n strings (EN+DE), fixed `.comingSoon` handling in sector decorations and IC rendering, and split `visibleLockedSectorsByMode` into 3-tuple.
+- **Commit:** 7753c06
 
 **Goal:** Update the Motherboard grid view to display a "Coming Soon" state for sectors beyond the MVP boundary, distinct from the locked/unlockable states.
 

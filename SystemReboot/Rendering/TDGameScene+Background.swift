@@ -13,8 +13,8 @@ extension TDGameScene {
         megaBoardRenderer = MegaBoardRenderer(scene: self)
         guard let renderer = megaBoardRenderer else { return }
 
-        // Render locked and unlockable sectors with appropriate visual styles
-        let (lockedSectors, unlockableSectors) = MegaBoardSystem.shared.visibleLockedSectorsByMode(for: profile)
+        // Render locked, unlockable, and coming soon sectors with appropriate visual styles
+        let (lockedSectors, unlockableSectors, comingSoonSectors) = MegaBoardSystem.shared.visibleLockedSectorsByMode(for: profile)
 
         for sector in lockedSectors {
             renderer.renderLockedSector(sector, in: backgroundLayer)
@@ -22,6 +22,10 @@ extension TDGameScene {
 
         for sector in unlockableSectors {
             renderer.renderUnlockableSector(sector, in: backgroundLayer)
+        }
+
+        for sector in comingSoonSectors {
+            renderer.renderComingSoonSector(sector, in: backgroundLayer)
         }
     }
 
@@ -212,16 +216,14 @@ extension TDGameScene {
         let profile = AppState.shared.currentPlayer
 
         for sector in megaConfig.sectors {
-            // Skip CPU sector - it has its own special rendering
-            guard sector.id != SectorID.cpu.rawValue else { continue }
 
             let renderMode = MegaBoardSystem.shared.getRenderMode(for: sector.id, profile: profile)
 
             let sectorNode = SKNode()
             let themeColor = UIColor(hex: sector.theme.primaryColorHex) ?? ghostColor
 
-            // === FOUNDATION LAYER (visible for unlocked & unlockable, skipped for locked) ===
-            if renderMode != .locked {
+            // === FOUNDATION LAYER (visible for unlocked & unlockable, skipped for locked & coming soon) ===
+            if renderMode != .locked && renderMode != .comingSoon {
                 // 1. Secondary street grid (cosmetic PCB traces forming city blocks)
                 drawSecondaryStreetGrid(to: sectorNode, in: sector, themeColor: themeColor)
 
@@ -236,7 +238,7 @@ extension TDGameScene {
             let detailContainer = SKNode()
             detailContainer.name = "sectorDetails_\(sector.id)"
 
-            if renderMode != .locked {
+            if renderMode != .locked && renderMode != .comingSoon {
                 // Add vias (small filled circles at trace intersections)
                 addSectorVias(to: detailContainer, in: sector, color: ghostColor)
 

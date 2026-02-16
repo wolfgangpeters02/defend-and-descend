@@ -48,7 +48,7 @@ final class SectorUnlockSystem {
 
         var statusMessage: String {
             if isComingSoon {
-                return "Coming Soon"
+                return L10n.Sector.comingSoon
             }
             if isAlreadyUnlocked {
                 return L10n.Sector.alreadyDecrypted

@@ -45,11 +45,6 @@ struct EmbeddedTDGameView: View {
                     controller.setup(screenSize: geometry.size, playerProfile: appState.currentPlayer)
                 }
             }
-            .onChange(of: appState.showIntroSequence) { showIntro in
-                if !showIntro && controller.scene == nil && geometry.size.width > 0 && geometry.size.height > 0 {
-                    controller.setup(screenSize: geometry.size, playerProfile: appState.currentPlayer)
-                }
-            }
         }
     }
 
@@ -67,117 +62,178 @@ struct EmbeddedTDGameView: View {
                     controller.dismissSectorUnlockPanel()
                 }
 
-            // Panel
-            VStack(spacing: 24) {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.red)
-
-                    Text(L10n.Sector.encrypted)
-                        .font(.system(size: 24, weight: .bold, design: .monospaced))
-                        .foregroundColor(.cyan)
-
-                    Text(status?.displayName ?? L10n.Common.unknown)
-                        .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                        .foregroundColor(.white)
-                }
-
-                // Description
-                if let desc = status?.description {
-                    Text(desc)
-                        .font(.system(size: 14, design: .monospaced))
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-
-                // Cost display
-                if let status = status {
-                    VStack(spacing: 12) {
-                        // Cost
-                        HStack(spacing: 8) {
-                            Text(L10n.Sector.decryptCost)
-                                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray)
-
-                            Text("Ħ \(status.unlockCost)")
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                .foregroundColor(.cyan)
-                        }
-
-                        // Current balance
-                        HStack(spacing: 8) {
-                            Text(L10n.Sector.yourBalance)
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(.gray)
-
-                            Text("Ħ \(status.currentHash)")
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundColor(status.canAfford ? .green : .orange)
-                        }
-
-                        // Status message
-                        Text(status.statusMessage)
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(status.canUnlock ? .green : .orange)
-                            .padding(.top, 4)
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.05))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(status.canUnlock ? Color.cyan.opacity(0.5) : Color.red.opacity(0.3), lineWidth: 1)
-                            )
-                    )
-                }
-
-                // Buttons
-                HStack(spacing: 16) {
-                    // Cancel
-                    Button(action: {
-                        HapticsService.shared.play(.light)
-                        controller.dismissSectorUnlockPanel()
-                    }) {
-                        Text(L10n.Common.cancel)
-                            .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white)
-                            .frame(width: 120, height: 50)
-                            .background(Color.gray.opacity(0.3))
-                            .cornerRadius(8)
-                    }
-
-                    // Decrypt
-                    Button(action: {
-                        _ = controller.unlockSector(sectorId, appState: appState)
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "key.fill")
-                            Text(L10n.Sector.decrypt)
-                        }
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundColor(status?.canUnlock == true ? .black : .gray)
-                        .frame(width: 140, height: 50)
-                        .background(status?.canUnlock == true ? Color.cyan : Color.gray.opacity(0.3))
-                        .cornerRadius(8)
-                    }
-                    .disabled(status?.canUnlock != true)
-                }
+            if status?.isComingSoon == true {
+                // Coming Soon panel — distinct from unlock panel
+                comingSoonPanel(status: status!)
+            } else {
+                // Standard unlock panel
+                standardUnlockPanel(status: status, sectorId: sectorId)
             }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(hex: "0a0a12") ?? .black)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.cyan.opacity(0.3), lineWidth: 2)
-                    )
-            )
-            .padding(20)
         }
+    }
+
+    @ViewBuilder
+    private func comingSoonPanel(status: SectorUnlockSystem.UnlockStatus) -> some View {
+        VStack(spacing: 24) {
+            // Header
+            VStack(spacing: 8) {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.8))
+
+                Text(L10n.Sector.comingSoon)
+                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.8))
+
+                Text(status.displayName)
+                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white)
+            }
+
+            // Description
+            Text(L10n.Sector.comingSoonDescription)
+                .font(.system(size: 14, design: .monospaced))
+                .foregroundColor(.gray)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+
+            // OK button
+            Button(action: {
+                HapticsService.shared.play(.light)
+                controller.dismissSectorUnlockPanel()
+            }) {
+                Text(L10n.Common.done)
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+                    .frame(width: 120, height: 50)
+                    .background(Color(red: 0.3, green: 0.3, blue: 0.5).opacity(0.5))
+                    .cornerRadius(8)
+            }
+        }
+        .padding(32)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(hex: "0a0a12") ?? .black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(red: 0.4, green: 0.4, blue: 0.6).opacity(0.3), lineWidth: 2)
+                )
+        )
+        .padding(20)
+    }
+
+    @ViewBuilder
+    private func standardUnlockPanel(status: SectorUnlockSystem.UnlockStatus?, sectorId: String) -> some View {
+        // Panel
+        VStack(spacing: 24) {
+            // Header
+            VStack(spacing: 8) {
+                Image(systemName: "lock.shield.fill")
+                    .font(.system(size: 40))
+                    .foregroundColor(.red)
+
+                Text(L10n.Sector.encrypted)
+                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .foregroundColor(.cyan)
+
+                Text(status?.displayName ?? L10n.Common.unknown)
+                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .foregroundColor(.white)
+            }
+
+            // Description
+            if let desc = status?.description {
+                Text(desc)
+                    .font(.system(size: 14, design: .monospaced))
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+
+            // Cost display
+            if let status = status {
+                VStack(spacing: 12) {
+                    // Cost
+                    HStack(spacing: 8) {
+                        Text(L10n.Sector.decryptCost)
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .foregroundColor(.gray)
+
+                        Text("Ħ \(status.unlockCost)")
+                            .font(.system(size: 20, weight: .bold, design: .monospaced))
+                            .foregroundColor(.cyan)
+                    }
+
+                    // Current balance
+                    HStack(spacing: 8) {
+                        Text(L10n.Sector.yourBalance)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundColor(.gray)
+
+                        Text("Ħ \(status.currentHash)")
+                            .font(.system(size: 16, weight: .bold, design: .monospaced))
+                            .foregroundColor(status.canAfford ? .green : .orange)
+                    }
+
+                    // Status message
+                    Text(status.statusMessage)
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(status.canUnlock ? .green : .orange)
+                        .padding(.top, 4)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(status.canUnlock ? Color.cyan.opacity(0.5) : Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+
+            // Buttons
+            HStack(spacing: 16) {
+                // Cancel
+                Button(action: {
+                    HapticsService.shared.play(.light)
+                    controller.dismissSectorUnlockPanel()
+                }) {
+                    Text(L10n.Common.cancel)
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .frame(width: 120, height: 50)
+                        .background(Color.gray.opacity(0.3))
+                        .cornerRadius(8)
+                }
+
+                // Decrypt
+                Button(action: {
+                    _ = controller.unlockSector(sectorId, appState: appState)
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "key.fill")
+                        Text(L10n.Sector.decrypt)
+                    }
+                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .foregroundColor(status?.canUnlock == true ? .black : .gray)
+                    .frame(width: 140, height: 50)
+                    .background(status?.canUnlock == true ? Color.cyan : Color.gray.opacity(0.3))
+                    .cornerRadius(8)
+                }
+                .disabled(status?.canUnlock != true)
+            }
+        }
+        .padding(32)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(hex: "0a0a12") ?? .black)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.cyan.opacity(0.3), lineWidth: 2)
+                )
+        )
+        .padding(20)
     }
 }
 

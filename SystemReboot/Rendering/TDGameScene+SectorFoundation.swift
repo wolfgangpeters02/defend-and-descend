@@ -40,8 +40,8 @@ extension TDGameScene {
     /// - Parameters:
     ///   - renderMode: `.locked` skips rendering, `.unlockable` renders wireframe outlines, `.unlocked` renders full detail
     func addSectorICs(to node: SKNode, in sector: MegaBoardSector, renderMode: SectorRenderMode = .unlocked) {
-        // Locked sectors: no components visible (covered by corrupted data overlay)
-        if renderMode == .locked { return }
+        // Locked/coming soon sectors: no components visible (covered by overlay)
+        if renderMode == .locked || renderMode == .comingSoon { return }
 
         let themeColor = UIColor(hex: sector.theme.primaryColorHex)?.withAlphaComponent(0.3) ?? UIColor.gray.withAlphaComponent(0.3)
 
@@ -74,7 +74,11 @@ extension TDGameScene {
             addNetworkJack(to: targetNode, in: sector, color: themeColor)
 
         case .processing:
-            addCacheBlocks(to: targetNode, in: sector, color: themeColor)
+            if sector.id == SectorID.cpu.rawValue {
+                addCPUSocketComponents(to: targetNode, in: sector, color: themeColor)
+            } else {
+                addCacheBlocks(to: targetNode, in: sector, color: themeColor)
+            }
         }
 
         // Apply wireframe blueprint style for unlockable sectors
