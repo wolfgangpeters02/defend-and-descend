@@ -236,7 +236,21 @@ Add 25-33% chance gate (matching legendary pattern) instead of firing every shot
 
 ---
 
-## Stage 4: Performance (Optimization)
+## Stage 4: Performance (Optimization) -- DONE
+
+Six performance optimizations reducing per-frame allocations, CPU waste, and scene graph overhead.
+
+**Changes made:**
+- **4a**: Cached enemy CGPaths (flagella, chevron, bolts, seam, crosshair) as static properties keyed by size — eliminates per-enemy path allocation for basic, fast, tank, and elite virus compositions
+- **4b**: Added `currentCameraScale < 0.5` guard before artillery smoke ring and particle spawning — skips 4-6 invisible node allocations per shot when zoomed out
+- **4c**: Added `bakeSectorComponentsToSprite()` utility in SectorFoundation — bakes static sector IC components (15-25 SKShapeNodes) into a single sprite texture for all non-PSU sectors, with graceful fallback to shape nodes if view is unavailable
+- **4d**: Extracted 7 duplicated `isNearLane` closures into a single `static func TDGameScene.isNearLane()` shared across SectorComponents, PSUComponents, and CPUComponents (25 lines removed, ~40 call sites updated)
+- **4e**: Replaced per-flash `SKShapeNode` allocation in Tesla tower electric arcs with a pool of 3 reusable arc nodes per tower — updates path and alpha instead of create/remove cycle
+- **4f**: Added `NodePool.prewarm(type:count:creator:)` for loading-screen pre-allocation, child cleanup on acquire (strips unnamed/temp_ children), and guard against negative `inUseCount` on double-release
+
+**Files changed: 8 files across Rendering/. Build verified clean.**
+
+---
 
 ### 4a. Cache enemy CGPaths as static properties
 

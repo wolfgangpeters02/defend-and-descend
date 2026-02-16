@@ -92,6 +92,9 @@ extension TowerAnimations {
             flash.run(flashSequence)
         }
 
+        // Skip smoke particles when zoomed out (not visible at distance)
+        guard TowerAnimations.currentCameraScale < 0.5 else { return }
+
         // Smoke ring effect
         let smokeRing = SKShapeNode(circleOfRadius: 8)
         smokeRing.position = CGPoint(x: 0, y: 22)  // Muzzle position

@@ -20,6 +20,26 @@ class NodePool {
         self.maxPerType = maxPerType
     }
 
+    // MARK: - Pre-warming
+
+    /// Pre-create nodes for a type during loading screens to avoid runtime allocation spikes.
+    /// - Parameters:
+    ///   - type: Type key for the node
+    ///   - count: Number of nodes to pre-create
+    ///   - creator: Factory function to create each node
+    func prewarm(type: String, count: Int, creator: () -> SKNode) {
+        if available[type] == nil {
+            available[type] = []
+        }
+        let currentCount = available[type]?.count ?? 0
+        let toCreate = min(count - currentCount, maxPerType - currentCount)
+        guard toCreate > 0 else { return }
+        for _ in 0..<toCreate {
+            let node = creator()
+            available[type]?.append(node)
+        }
+    }
+
     // MARK: - Acquire / Release
 
     /// Acquire a node of the specified type.
@@ -32,12 +52,17 @@ class NodePool {
             available[type] = nodes
             inUseCount[type, default: 0] += 1
 
-            // Reset node state (minimal — most nodes have no actions now)
+            // Reset node state for reuse
             node.alpha = 1.0
             node.isHidden = false
             node.zRotation = 0
             node.xScale = 1.0
             node.yScale = 1.0
+            node.removeAllActions()
+            // Strip leftover children from previous use (e.g. muzzle flashes, particles)
+            for child in node.children where child.name == nil || child.name?.hasPrefix("temp_") == true {
+                child.removeFromParent()
+            }
 
             return node
         }
@@ -56,7 +81,9 @@ class NodePool {
         node.removeFromParent()
         node.removeAllActions()
 
-        inUseCount[type, default: 0] -= 1
+        // Guard against negative counts (double-release or mismatched type keys)
+        let current = inUseCount[type, default: 0]
+        inUseCount[type] = max(current - 1, 0)
 
         if available[type] == nil {
             available[type] = []

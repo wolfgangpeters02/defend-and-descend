@@ -43,11 +43,7 @@ extension TDGameScene {
         let height = sector.height
         let zPos: CGFloat = 3
 
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
+        let isNearLane = Self.isNearLane
 
         // Pre-generate random positions (seeded for consistency)
         var ceramicPositions: [(x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat)] = []

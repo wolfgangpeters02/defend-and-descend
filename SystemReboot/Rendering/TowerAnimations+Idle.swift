@@ -285,13 +285,31 @@ extension TowerAnimations {
         }
     }
 
+    /// Number of reusable arc nodes per Tesla tower
+    private static let teslaArcPoolSize = 3
+
     private static func startElectricArcAnimation(node: SKNode, body: SKShapeNode, color: UIColor) {
-        // Create random arcs between discharge nodes
+        // Pre-create reusable arc nodes (pooled, avoids per-flash allocation)
+        var arcPool: [SKShapeNode] = []
+        for i in 0..<teslaArcPoolSize {
+            let arc = SKShapeNode()
+            arc.strokeColor = UIColor.cyan.withAlphaComponent(0.8)
+            arc.lineWidth = 1.5
+            arc.glowWidth = 0
+            arc.blendMode = .add
+            arc.zPosition = 4
+            arc.alpha = 0
+            arc.name = "arcPool_\(i)"
+            body.addChild(arc)
+            arcPool.append(arc)
+        }
+
+        var arcIndex = 0
         let createArc = SKAction.run { [weak body] in
             guard let body = body else { return }
             guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
-            // Pick two random nodes
+            // Pick two random discharge nodes
             let node1 = Int.random(in: 0..<4)
             var node2 = Int.random(in: 0..<4)
             while node2 == node1 { node2 = Int.random(in: 0..<4) }
@@ -299,25 +317,17 @@ extension TowerAnimations {
             guard let discharge1 = body.childNode(withName: "dischargeNode_\(node1)"),
                   let discharge2 = body.childNode(withName: "dischargeNode_\(node2)") else { return }
 
-            let pos1 = discharge1.position
-            let pos2 = discharge2.position
+            // Reuse pooled arc node (round-robin)
+            guard let arc = body.childNode(withName: "arcPool_\(arcIndex % teslaArcPoolSize)") as? SKShapeNode else { return }
+            arcIndex += 1
 
-            // Create jagged lightning path
-            let arcPath = createLightningPath(from: pos1, to: pos2)
-            let arc = SKShapeNode(path: arcPath)
-            arc.strokeColor = UIColor.cyan.withAlphaComponent(0.8)
-            arc.lineWidth = 1.5
-            arc.glowWidth = 0
-            arc.blendMode = .add
-            arc.zPosition = 4
-
-            body.addChild(arc)
-
-            // Quick flash and fade
+            // Update path and flash
+            arc.path = createLightningPath(from: discharge1.position, to: discharge2.position)
+            arc.removeAllActions()
+            arc.alpha = 1.0
             arc.run(SKAction.sequence([
                 SKAction.wait(forDuration: 0.05),
-                SKAction.fadeOut(withDuration: 0.1),
-                SKAction.removeFromParent()
+                SKAction.fadeOut(withDuration: 0.1)
             ]))
         }
 

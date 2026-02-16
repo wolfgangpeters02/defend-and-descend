@@ -3,6 +3,16 @@ import SwiftUI
 
 extension TDGameScene {
 
+    // MARK: - Shared Lane Exclusion
+
+    /// Shared lane exclusion check for sector component placement.
+    /// Returns true if the local-coordinate position overlaps standard enemy lane paths.
+    static func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
+        if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
+        if x > 1000 && y > 400 && y < 700 { return true }
+        return false
+    }
+
     /// Add heat sink pattern for GPU sector
     func addHeatSinkPattern(to node: SKNode, in sector: MegaBoardSector, color: UIColor) {
         // PERFORMANCE OPTIMIZED: Batched paths for GPU sector
@@ -11,12 +21,6 @@ extension TDGameScene {
         let width = sector.width
         let height = sector.height
         let zPos: CGFloat = 3
-
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
 
         let heatSinkColor = UIColor(red: 0.25, green: 0.25, blue: 0.30, alpha: 1.0)
         let vramColor = UIColor(red: 0.08, green: 0.08, blue: 0.12, alpha: 1.0)
@@ -33,31 +37,31 @@ extension TDGameScene {
         for _ in 0..<25 {
             let x = CGFloat.random(in: 60...(width - 60))
             let y = CGFloat.random(in: 60...(height - 60))
-            if !isNearLane(x, y) {
+            if !Self.isNearLane(x, y) {
                 vramPositions.append((x, y, CGFloat.random(in: 28...42), CGFloat.random(in: 22...32)))
             }
         }
         for _ in 0..<20 {
             let x = CGFloat.random(in: 50...(width - 50))
             let y = CGFloat.random(in: 50...(height - 50))
-            if !isNearLane(x, y) {
+            if !Self.isNearLane(x, y) {
                 thermalPositions.append((x, y, CGFloat.random(in: 18...35), CGFloat.random(in: 18...35)))
             }
         }
         for _ in 0..<10 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            if !isNearLane(x, y) { vrmPositions.append((x, y)) }
+            if !Self.isNearLane(x, y) { vrmPositions.append((x, y)) }
         }
         for _ in 0..<50 {
             let x = CGFloat.random(in: 40...(width - 40))
             let y = CGFloat.random(in: 40...(height - 40))
-            if !isNearLane(x, y) { capPositions.append((x, y, CGFloat.random(in: 4...7))) }
+            if !Self.isNearLane(x, y) { capPositions.append((x, y, CGFloat.random(in: 4...7))) }
         }
         for _ in 0..<10 {
             let x = CGFloat.random(in: 80...(width - 80))
             let y = CGFloat.random(in: 80...(height - 80))
-            if !isNearLane(x, y) {
+            if !Self.isNearLane(x, y) {
                 heatSinkData.append((x, y, Int.random(in: 10...14), CGFloat.random(in: 4...5), CGFloat.random(in: 50...80)))
             }
         }
@@ -129,7 +133,7 @@ extension TDGameScene {
         // ========== GPU DIE (individual - 2 units) ==========
         let gpuDiePositions: [(x: CGFloat, y: CGFloat, label: String)] = [(350, 300, "GPU"), (900, 950, "VRAM")]
         for pos in gpuDiePositions {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 let dieSize: CGFloat = 90
                 let die = SKShapeNode(rect: CGRect(x: -dieSize/2, y: -dieSize/2, width: dieSize, height: dieSize), cornerRadius: 3)
                 die.position = CGPoint(x: baseX + pos.x, y: baseY + pos.y)
@@ -161,11 +165,6 @@ extension TDGameScene {
         let height = sector.height
         let zPos: CGFloat = 3
 
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
 
         let chipColor = UIColor(red: 0.08, green: 0.08, blue: 0.12, alpha: 1.0)
         let goldColor = UIColor(hex: "#d4a600") ?? .yellow
@@ -182,7 +181,7 @@ extension TDGameScene {
         // ========== Generate DIMM slot positions ==========
         let dimmSlotY: [CGFloat] = [150, 300, 450, 850, 1000, 1150]
         for (index, slotY) in dimmSlotY.enumerated() {
-            if !isNearLane(width/2, slotY) {
+            if !Self.isNearLane(width/2, slotY) {
                 let slotW: CGFloat = width - 200
                 dimmSlots.append((y: slotY, slotW: slotW, index: index))
                 let contactCount = Int(slotW / 8)
@@ -196,7 +195,7 @@ extension TDGameScene {
         for _ in 0..<50 {
             let x = CGFloat.random(in: 80...(width - 80))
             let y = CGFloat.random(in: 80...(height - 80))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let chipW = CGFloat.random(in: 30...60)
             let chipH = CGFloat.random(in: 20...35)
             dramChips.append((x: x, y: y, w: chipW, h: chipH))
@@ -211,7 +210,7 @@ extension TDGameScene {
         for _ in 0..<20 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             spdPositions.append((x: x, y: y))
         }
 
@@ -219,7 +218,7 @@ extension TDGameScene {
         for _ in 0..<100 {
             let x = CGFloat.random(in: 40...(width - 40))
             let y = CGFloat.random(in: 40...(height - 40))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let capW = CGFloat.random(in: 4...8)
             let capH = CGFloat.random(in: 3...5)
             capPositions.append((x: x, y: y, w: capW, h: capH))
@@ -311,7 +310,7 @@ extension TDGameScene {
         for i in 0..<8 {
             let x = CGFloat.random(in: 150...(width - 150))
             let y = CGFloat.random(in: 150...(height - 150))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let label = SKLabelNode(text: labels[i % labels.count])
             label.fontName = "Menlo"
             label.fontSize = CGFloat.random(in: 8...12)
@@ -332,11 +331,6 @@ extension TDGameScene {
         let height = sector.height
         let zPos: CGFloat = 3
 
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
 
         let chipColor = UIColor(red: 0.08, green: 0.08, blue: 0.12, alpha: 1.0)
         let goldColor = UIColor(hex: "#d4a600") ?? .yellow
@@ -354,7 +348,7 @@ extension TDGameScene {
         for _ in 0..<15 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let chipW = CGFloat.random(in: 50...90)
             let chipH = CGFloat.random(in: 40...70)
             nandChips.append((x: x, y: y, w: chipW, h: chipH, hasLabel: Bool.random()))
@@ -364,7 +358,7 @@ extension TDGameScene {
         for _ in 0..<10 {
             let x = CGFloat.random(in: 80...(width - 80))
             let y = CGFloat.random(in: 80...(height - 80))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let cacheW: CGFloat = CGFloat.random(in: 25...40)
             let cacheH: CGFloat = CGFloat.random(in: 18...28)
             cacheChips.append((x: x, y: y, w: cacheW, h: cacheH))
@@ -372,7 +366,7 @@ extension TDGameScene {
 
         // ========== Generate M.2 contact positions ==========
         let m2Y: CGFloat = 100
-        if !isNearLane(width/2, m2Y) {
+        if !Self.isNearLane(width/2, m2Y) {
             let connW: CGFloat = 300
             for c in 0..<Int(connW / 5) {
                 m2Contacts.append((x: 205 + CGFloat(c) * 5, y: m2Y + 5))
@@ -383,7 +377,7 @@ extension TDGameScene {
         for _ in 0..<20 {
             let x = CGFloat.random(in: 60...(width - 60))
             let y = CGFloat.random(in: 60...(height - 60))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let pmicW: CGFloat = CGFloat.random(in: 12...20)
             let pmicH: CGFloat = CGFloat.random(in: 10...16)
             pmicChips.append((x: x, y: y, w: pmicW, h: pmicH))
@@ -393,7 +387,7 @@ extension TDGameScene {
         for _ in 0..<120 {
             let x = CGFloat.random(in: 30...(width - 30))
             let y = CGFloat.random(in: 30...(height - 30))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let compW = CGFloat.random(in: 3...7)
             let compH = CGFloat.random(in: 2...5)
             if Bool.random() {
@@ -431,7 +425,7 @@ extension TDGameScene {
         // ========== SSD CONTROLLER ICs (individual - large labeled) ==========
         let controllerPositions: [(x: CGFloat, y: CGFloat)] = [(250, 250), (900, 350), (400, 950)]
         for pos in controllerPositions {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 let size: CGFloat = CGFloat.random(in: 60...80)
                 let controller = SKShapeNode(rect: CGRect(x: -size/2, y: -size/2, width: size, height: size), cornerRadius: 4)
                 controller.position = CGPoint(x: baseX + pos.x, y: baseY + pos.y)
@@ -466,7 +460,7 @@ extension TDGameScene {
         node.addChild(cacheNode)
 
         // ========== M.2 CONNECTOR (single node) ==========
-        if !isNearLane(width/2, m2Y) {
+        if !Self.isNearLane(width/2, m2Y) {
             let connW: CGFloat = 300
             let connH: CGFloat = 25
             let connector = SKShapeNode(rect: CGRect(x: 0, y: 0, width: connW, height: connH), cornerRadius: 2)
@@ -530,7 +524,7 @@ extension TDGameScene {
         for i in 0..<6 {
             let x = CGFloat.random(in: 150...(width - 150))
             let y = CGFloat.random(in: 150...(height - 150))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let label = SKLabelNode(text: storageLabels[i % storageLabels.count])
             label.fontName = "Menlo"
             label.fontSize = CGFloat.random(in: 7...10)
@@ -550,11 +544,6 @@ extension TDGameScene {
         let height = sector.height
         let zPos: CGFloat = 3
 
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
 
         let portColor = UIColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
         let chipColor = UIColor(red: 0.08, green: 0.08, blue: 0.12, alpha: 1.0)
@@ -573,7 +562,7 @@ extension TDGameScene {
         // ========== Generate USB-A positions ==========
         let usbARows: [(y: CGFloat, count: Int)] = [(150, 5), (250, 4), (1050, 5), (1150, 4)]
         for row in usbARows {
-            if !isNearLane(400, row.y) {
+            if !Self.isNearLane(400, row.y) {
                 for i in 0..<row.count {
                     usbAPorts.append((x: 100 + CGFloat(i) * 80, y: row.y))
                     usbATongues.append((x: 105 + CGFloat(i) * 80, y: row.y + 9))
@@ -585,14 +574,14 @@ extension TDGameScene {
         for _ in 0..<10 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 350...500)
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             usbCPorts.append((x: x, y: y))
         }
 
         // ========== Generate HDMI positions ==========
         let hdmiPositions: [(x: CGFloat, y: CGFloat)] = [(150, 400), (250, 400), (1050, 400), (1150, 400), (200, 900), (300, 900)]
         for pos in hdmiPositions {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 hdmiPorts.append(pos)
             }
         }
@@ -601,7 +590,7 @@ extension TDGameScene {
         for i in 0..<8 {
             let x = CGFloat.random(in: 600...(width - 100))
             let y = CGFloat.random(in: 200...400)
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             audioPorts.append((x: x, y: y, colorIndex: i % 6))
         }
 
@@ -609,7 +598,7 @@ extension TDGameScene {
         for _ in 0..<30 {
             let x = CGFloat.random(in: 80...(width - 80))
             let y = CGFloat.random(in: 80...(height - 80))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             diodePositions.append((x: x, y: y))
         }
 
@@ -617,7 +606,7 @@ extension TDGameScene {
         for _ in 0..<100 {
             let x = CGFloat.random(in: 40...(width - 40))
             let y = CGFloat.random(in: 40...(height - 40))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let compW = CGFloat.random(in: 3...6)
             let compH = CGFloat.random(in: 2...4)
             if Bool.random() {
@@ -700,7 +689,7 @@ extension TDGameScene {
         // ========== USB CONTROLLER ICs (individual - large labeled) ==========
         let controllerPositions: [(x: CGFloat, y: CGFloat)] = [(400, 200), (800, 250), (500, 1000), (900, 950)]
         for (index, pos) in controllerPositions.enumerated() {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 let size: CGFloat = CGFloat.random(in: 45...65)
                 let ctrl = SKShapeNode(rect: CGRect(x: -size/2, y: -size/2, width: size, height: size), cornerRadius: 3)
                 ctrl.position = CGPoint(x: baseX + pos.x, y: baseY + pos.y)
@@ -761,7 +750,7 @@ extension TDGameScene {
         for i in 0..<8 {
             let x = CGFloat.random(in: 150...(width - 150))
             let y = CGFloat.random(in: 150...(height - 150))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let label = SKLabelNode(text: ioLabels[i % ioLabels.count])
             label.fontName = "Menlo"
             label.fontSize = CGFloat.random(in: 7...10)
@@ -781,11 +770,6 @@ extension TDGameScene {
         let height = sector.height
         let zPos: CGFloat = 3
 
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
 
         let portColor = UIColor(red: 0.05, green: 0.05, blue: 0.08, alpha: 1.0)
         let goldColor = UIColor(hex: "#d4a600") ?? .yellow
@@ -813,7 +797,7 @@ extension TDGameScene {
         let jackW: CGFloat = 70
         let jackH: CGFloat = 55
         for pos in jackPositions {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 rj45Jacks.append(pos)
                 for p in 0..<8 {
                     rj45Pins.append((x: pos.x + 8 + CGFloat(p) * 7, y: pos.y + jackH - 15))
@@ -827,7 +811,7 @@ extension TDGameScene {
         for _ in 0..<8 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let magW: CGFloat = CGFloat.random(in: 35...55)
             let magH: CGFloat = CGFloat.random(in: 25...40)
             transformerPositions.append((x: x, y: y, w: magW, h: magH))
@@ -837,7 +821,7 @@ extension TDGameScene {
         for _ in 0..<25 {
             let x = CGFloat.random(in: 80...(width - 80))
             let y = CGFloat.random(in: 80...(height - 80))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let icW: CGFloat = CGFloat.random(in: 15...28)
             let icH: CGFloat = CGFloat.random(in: 12...22)
             smallICPositions.append((x: x, y: y, w: icW, h: icH))
@@ -847,7 +831,7 @@ extension TDGameScene {
         for _ in 0..<15 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let r = CGFloat.random(in: 3...5)
             statusLEDs.append((x: x, y: y, r: r, colorType: Int.random(in: 0..<3)))
         }
@@ -856,7 +840,7 @@ extension TDGameScene {
         for _ in 0..<120 {
             let x = CGFloat.random(in: 40...(width - 40))
             let y = CGFloat.random(in: 40...(height - 40))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let compW = CGFloat.random(in: 3...6)
             let compH = CGFloat.random(in: 2...4)
             if Bool.random() {
@@ -914,7 +898,7 @@ extension TDGameScene {
         // ========== ETHERNET PHY CHIPS (individual - large labeled) ==========
         let phyPositions: [(x: CGFloat, y: CGFloat)] = [(600, 200), (900, 300), (550, 950), (850, 1000)]
         for (index, pos) in phyPositions.enumerated() {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 let size: CGFloat = CGFloat.random(in: 50...70)
                 let phy = SKShapeNode(rect: CGRect(x: -size/2, y: -size/2, width: size, height: size), cornerRadius: 3)
                 phy.position = CGPoint(x: baseX + pos.x, y: baseY + pos.y)
@@ -1017,7 +1001,7 @@ extension TDGameScene {
         for i in 0..<8 {
             let x = CGFloat.random(in: 150...(width - 150))
             let y = CGFloat.random(in: 150...(height - 150))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let label = SKLabelNode(text: netLabels[i % netLabels.count])
             label.fontName = "Menlo"
             label.fontSize = CGFloat.random(in: 7...10)
@@ -1037,11 +1021,6 @@ extension TDGameScene {
         let height = sector.height
         let zPos: CGFloat = 3
 
-        func isNearLane(_ x: CGFloat, _ y: CGFloat) -> Bool {
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
-            return false
-        }
 
         let chipColor = UIColor(red: 0.1, green: 0.1, blue: 0.15, alpha: 1.0)
         let cacheColor = UIColor(red: 0.12, green: 0.12, blue: 0.18, alpha: 1.0)
@@ -1061,7 +1040,7 @@ extension TDGameScene {
         ]
         let blockSize: CGFloat = 22
         for grid in cacheGridPositions {
-            if !isNearLane(grid.x + CGFloat(grid.cols) * 20, grid.y + CGFloat(grid.rows) * 20) {
+            if !Self.isNearLane(grid.x + CGFloat(grid.cols) * 20, grid.y + CGFloat(grid.rows) * 20) {
                 for row in 0..<grid.rows {
                     for col in 0..<grid.cols {
                         cacheBlocks.append((x: grid.x + CGFloat(col) * blockSize, y: grid.y + CGFloat(row) * blockSize))
@@ -1075,7 +1054,7 @@ extension TDGameScene {
         for _ in 0..<20 {
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let unitW = CGFloat.random(in: 30...50)
             let unitH = CGFloat.random(in: 25...40)
             processorUnits.append((x: x, y: y, w: unitW, h: unitH))
@@ -1085,7 +1064,7 @@ extension TDGameScene {
         for _ in 0..<10 {
             let x = CGFloat.random(in: 150...(width - 150))
             let y = CGFloat.random(in: 150...(height - 150))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             registerBlocks.append((x: x, y: y))
         }
 
@@ -1095,7 +1074,7 @@ extension TDGameScene {
             let lineLength = CGFloat.random(in: 100...300)
             let x = CGFloat.random(in: 100...(width - 100))
             let y = CGFloat.random(in: 100...(height - 100))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             if isHorizontal {
                 busLines.append((x1: x, y1: y, x2: x + lineLength, y2: y))
             } else {
@@ -1107,7 +1086,7 @@ extension TDGameScene {
         for _ in 0..<100 {
             let x = CGFloat.random(in: 50...(width - 50))
             let y = CGFloat.random(in: 50...(height - 50))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let gateW = CGFloat.random(in: 5...10)
             let gateH = CGFloat.random(in: 4...8)
             gatePositions.append((x: x, y: y, w: gateW, h: gateH))
@@ -1155,7 +1134,7 @@ extension TDGameScene {
             (600, 850), (750, 900), (500, 1000)
         ]
         for (index, pos) in aluPositions.enumerated() {
-            if !isNearLane(pos.x, pos.y) {
+            if !Self.isNearLane(pos.x, pos.y) {
                 let size: CGFloat = CGFloat.random(in: 40...60)
                 let alu = SKShapeNode(rect: CGRect(x: -size/2, y: -size/2, width: size, height: size), cornerRadius: 3)
                 alu.position = CGPoint(x: baseX + pos.x, y: baseY + pos.y)
@@ -1224,7 +1203,7 @@ extension TDGameScene {
         for i in 0..<6 {
             let x = CGFloat.random(in: 150...(width - 150))
             let y = CGFloat.random(in: 150...(height - 150))
-            guard !isNearLane(x, y) else { continue }
+            guard !Self.isNearLane(x, y) else { continue }
             let label = SKLabelNode(text: procLabels[i % procLabels.count])
             label.fontName = "Menlo"
             label.fontSize = CGFloat.random(in: 7...10)

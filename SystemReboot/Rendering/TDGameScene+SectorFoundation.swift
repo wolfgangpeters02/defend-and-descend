@@ -45,11 +45,16 @@ extension TDGameScene {
 
         let themeColor = UIColor(hex: sector.theme.primaryColorHex)?.withAlphaComponent(0.3) ?? UIColor.gray.withAlphaComponent(0.3)
 
-        // For unlockable, render into temporary container then convert to wireframe
+        // PSU has animated capacitors — can't bake to texture
+        let isStaticSector = sector.theme != .power
+
+        // Build into temporary container for wireframe conversion or texture baking
         let targetNode: SKNode
-        if renderMode == .unlockable {
+        if renderMode == .unlockable || (renderMode == .unlocked && isStaticSector) {
             targetNode = SKNode()
-            targetNode.name = "wireframe_\(sector.id)"
+            if renderMode == .unlockable {
+                targetNode.name = "wireframe_\(sector.id)"
+            }
         } else {
             targetNode = node
         }
@@ -81,15 +86,41 @@ extension TDGameScene {
             }
         }
 
-        // Apply wireframe blueprint style for unlockable sectors
         if renderMode == .unlockable {
+            // Apply wireframe blueprint style for unlockable sectors
             let glowColor = UIColor(hex: sector.theme.glowColorHex) ?? .cyan
             applyWireframeStyle(to: targetNode, glowColor: glowColor)
-            // Clear PSU animation refs if power sector (animations stripped by wireframe)
             if sector.theme == .power {
                 psuCapacitorNodes.removeAll()
             }
             node.addChild(targetNode)
+        } else if renderMode == .unlocked && isStaticSector {
+            // Bake static sector components to a single sprite texture
+            bakeSectorComponentsToSprite(from: targetNode, to: node, in: sector)
+        }
+    }
+
+    /// Bakes all shape nodes in a container into a single sprite texture.
+    /// Falls back to adding shape nodes directly if the view is unavailable.
+    private func bakeSectorComponentsToSprite(from source: SKNode, to parent: SKNode, in sector: MegaBoardSector) {
+        let cropRect = CGRect(x: sector.worldX, y: sector.worldY,
+                              width: sector.width, height: sector.height)
+
+        if let view = self.view,
+           let texture = view.texture(from: source, crop: cropRect) {
+            let sprite = SKSpriteNode(texture: texture,
+                                      size: CGSize(width: sector.width, height: sector.height))
+            sprite.anchorPoint = CGPoint(x: 0, y: 0)
+            sprite.position = CGPoint(x: sector.worldX, y: sector.worldY)
+            sprite.zPosition = 3
+            parent.addChild(sprite)
+        } else {
+            // Fallback: re-parent shape nodes directly (pre-4c behavior)
+            let children = source.children.map { $0 }
+            for child in children {
+                child.removeFromParent()
+                parent.addChild(child)
+            }
         }
     }
 

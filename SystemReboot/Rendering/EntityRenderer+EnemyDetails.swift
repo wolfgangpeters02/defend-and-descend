@@ -7,6 +7,92 @@ import SpriteKit
 
 extension EntityRenderer {
 
+    // MARK: - Cached CGPaths
+
+    /// Static path cache keyed by rounded size (Int(size * 10)) to avoid per-enemy CGPath allocation.
+    /// Paths are identical across all instances of the same type/size.
+    private static var cachedFlagellaPaths: [Int: CGPath] = [:]
+    private static var cachedFastVirusBodyPaths: [Int: CGPath] = [:]
+    private static var cachedTankBoltPaths: [Int: CGPath] = [:]
+    private static var cachedTankSeamPaths: [Int: CGPath] = [:]
+    private static var cachedEliteCrosshairPaths: [Int: CGPath] = [:]
+
+    private static func sizeKey(_ size: CGFloat) -> Int { Int(size * 10) }
+
+    private static func flagellaPath(for size: CGFloat) -> CGPath {
+        let key = sizeKey(size)
+        if let cached = cachedFlagellaPaths[key] { return cached }
+        let path = CGMutablePath()
+        for i in 0..<3 {
+            let baseAngle = CGFloat(i) * (2 * .pi / 3) + .pi / 6
+            let startR = size * 0.9
+            let startPt = CGPoint(x: cos(baseAngle) * startR, y: sin(baseAngle) * startR)
+            let midR = size * 1.5
+            let endR = size * 1.9
+            let wobble: CGFloat = size * 0.3
+            path.move(to: startPt)
+            path.addCurve(
+                to: CGPoint(x: cos(baseAngle) * endR, y: sin(baseAngle) * endR),
+                control1: CGPoint(x: cos(baseAngle) * midR + wobble, y: sin(baseAngle) * midR + wobble),
+                control2: CGPoint(x: cos(baseAngle) * (midR + endR) / 2 - wobble, y: sin(baseAngle) * (midR + endR) / 2)
+            )
+        }
+        cachedFlagellaPaths[key] = path
+        return path
+    }
+
+    private static func fastVirusBodyPath(for size: CGFloat) -> CGPath {
+        let key = sizeKey(size)
+        if let cached = cachedFastVirusBodyPaths[key] { return cached }
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: size * 1.2))
+        path.addLine(to: CGPoint(x: -size * 0.65, y: 0))
+        path.addLine(to: CGPoint(x: 0, y: -size * 0.5))
+        path.addLine(to: CGPoint(x: size * 0.65, y: 0))
+        path.closeSubpath()
+        cachedFastVirusBodyPaths[key] = path
+        return path
+    }
+
+    private static func tankBoltPath(for size: CGFloat) -> CGPath {
+        let key = sizeKey(size)
+        if let cached = cachedTankBoltPaths[key] { return cached }
+        let path = CGMutablePath()
+        let plateSize: CGFloat = size * 0.22
+        let plateOffset = size * 0.62
+        let offsets: [(CGFloat, CGFloat)] = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
+        for (dx, dy) in offsets {
+            let cx = dx * plateOffset
+            let cy = dy * plateOffset
+            path.addRect(CGRect(x: cx - plateSize / 2, y: cy - plateSize / 2,
+                                width: plateSize, height: plateSize))
+        }
+        cachedTankBoltPaths[key] = path
+        return path
+    }
+
+    private static func tankSeamPath(for size: CGFloat) -> CGPath {
+        let key = sizeKey(size)
+        if let cached = cachedTankSeamPaths[key] { return cached }
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: -size * 0.75, y: 0))
+        path.addLine(to: CGPoint(x: size * 0.75, y: 0))
+        cachedTankSeamPaths[key] = path
+        return path
+    }
+
+    private static func eliteCrosshairPath(for size: CGFloat) -> CGPath {
+        let key = sizeKey(size)
+        if let cached = cachedEliteCrosshairPaths[key] { return cached }
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: 0, y: size * 0.45))
+        path.addLine(to: CGPoint(x: 0, y: -size * 0.45))
+        path.move(to: CGPoint(x: -size * 0.45, y: 0))
+        path.addLine(to: CGPoint(x: size * 0.45, y: 0))
+        cachedEliteCrosshairPaths[key] = path
+        return path
+    }
+
     // MARK: - 3A. Basic Virus — "Malware Blob"
     // Theme: Organic, pulsating threat. Simple but alive.
     // Nodes: body, membrane ring, nucleus, flagella (compound path) = 4
@@ -31,23 +117,8 @@ extension EntityRenderer {
         nucleus.zPosition = 0.1
         container.addChild(nucleus)
 
-        // Flagella tendrils — 3 wavy appendages (compound path, single node)
-        let flagellaPath = CGMutablePath()
-        for i in 0..<3 {
-            let baseAngle = CGFloat(i) * (2 * .pi / 3) + .pi / 6
-            let startR = size * 0.9
-            let startPt = CGPoint(x: cos(baseAngle) * startR, y: sin(baseAngle) * startR)
-            let midR = size * 1.5
-            let endR = size * 1.9
-            let wobble: CGFloat = size * 0.3
-            flagellaPath.move(to: startPt)
-            flagellaPath.addCurve(
-                to: CGPoint(x: cos(baseAngle) * endR, y: sin(baseAngle) * endR),
-                control1: CGPoint(x: cos(baseAngle) * midR + wobble, y: sin(baseAngle) * midR + wobble),
-                control2: CGPoint(x: cos(baseAngle) * (midR + endR) / 2 - wobble, y: sin(baseAngle) * (midR + endR) / 2)
-            )
-        }
-        let flagella = SKShapeNode(path: flagellaPath)
+        // Flagella tendrils — 3 wavy appendages (compound path, single node, cached)
+        let flagella = SKShapeNode(path: flagellaPath(for: size))
         flagella.strokeColor = color.withAlphaComponent(0.5)
         flagella.lineWidth = 1.5
         flagella.lineCap = .round
@@ -66,15 +137,8 @@ extension EntityRenderer {
     /// Body + core dot = 2 nodes. Core dot provides visual center reference.
     @discardableResult
     static func createFastVirusComposition(in container: SKNode, size: CGFloat, color: UIColor) -> SKShapeNode {
-        // Body — elongated diamond/chevron (pointy top, shorter bottom)
-        let bodyPath = CGMutablePath()
-        bodyPath.move(to: CGPoint(x: 0, y: size * 1.2))         // Top point (elongated)
-        bodyPath.addLine(to: CGPoint(x: -size * 0.65, y: 0))    // Left
-        bodyPath.addLine(to: CGPoint(x: 0, y: -size * 0.5))     // Bottom (shorter)
-        bodyPath.addLine(to: CGPoint(x: size * 0.65, y: 0))     // Right
-        bodyPath.closeSubpath()
-
-        let body = SKShapeNode(path: bodyPath)
+        // Body — elongated diamond/chevron (pointy top, shorter bottom, cached)
+        let body = SKShapeNode(path: fastVirusBodyPath(for: size))
         body.fillColor = color
         body.strokeColor = color.lighter(by: 0.2)
         body.lineWidth = 2
@@ -108,29 +172,16 @@ extension EntityRenderer {
         body.name = "body"
         container.addChild(body)
 
-        // Armor plates — 4 bolt heads at corners (compound path, single node)
-        let platePath = CGMutablePath()
-        let plateSize: CGFloat = size * 0.22
-        let plateOffset = size * 0.62
-        let offsets: [(CGFloat, CGFloat)] = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
-        for (dx, dy) in offsets {
-            let cx = dx * plateOffset
-            let cy = dy * plateOffset
-            platePath.addRect(CGRect(x: cx - plateSize / 2, y: cy - plateSize / 2,
-                                     width: plateSize, height: plateSize))
-        }
-        let plates = SKShapeNode(path: platePath)
+        // Armor plates — 4 bolt heads at corners (compound path, single node, cached)
+        let plates = SKShapeNode(path: tankBoltPath(for: size))
         plates.fillColor = color.darker(by: 0.4)
         plates.strokeColor = .clear
         plates.lineWidth = 0
         plates.zPosition = 0.1
         container.addChild(plates)
 
-        // Armor seam — horizontal weld line across the body
-        let seamPath = CGMutablePath()
-        seamPath.move(to: CGPoint(x: -size * 0.75, y: 0))
-        seamPath.addLine(to: CGPoint(x: size * 0.75, y: 0))
-        let seam = SKShapeNode(path: seamPath)
+        // Armor seam — horizontal weld line across the body (cached)
+        let seam = SKShapeNode(path: tankSeamPath(for: size))
         seam.strokeColor = color.darker(by: 0.5).withAlphaComponent(0.6)
         seam.lineWidth = 1.5
         seam.zPosition = 0.2
@@ -168,13 +219,8 @@ extension EntityRenderer {
         body.name = "body"
         container.addChild(body)
 
-        // Inner crosshair pattern — circuit trace feel (compound path, single node)
-        let crossPath = CGMutablePath()
-        crossPath.move(to: CGPoint(x: 0, y: size * 0.45))
-        crossPath.addLine(to: CGPoint(x: 0, y: -size * 0.45))
-        crossPath.move(to: CGPoint(x: -size * 0.45, y: 0))
-        crossPath.addLine(to: CGPoint(x: size * 0.45, y: 0))
-        let crosshair = SKShapeNode(path: crossPath)
+        // Inner crosshair pattern — circuit trace feel (compound path, single node, cached)
+        let crosshair = SKShapeNode(path: eliteCrosshairPath(for: size))
         crosshair.strokeColor = color.withAlphaComponent(0.4)
         crosshair.lineWidth = 1
         crosshair.zPosition = 0.1

@@ -35,8 +35,7 @@ extension TDGameScene {
             let dy = y - cpuCenterLocalY
             if (dx * dx + dy * dy) < cpuExclusionLocal * cpuExclusionLocal { return true }
             // Avoid lane paths (standard exclusion zones)
-            if y > 500 && y < 900 && x > 300 && x < 1100 { return true }
-            if x > 1000 && y > 400 && y < 700 { return true }
+            if Self.isNearLane(x, y) { return true }
             return false
         }
 
