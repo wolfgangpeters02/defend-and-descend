@@ -571,6 +571,7 @@ struct ProtocolDetailSheet: View {
                                 ProtocolStatRow(label: L10n.Stats.damage, value: "\(Int(leveledProtocol.firewallStats.damage))")
                                 ProtocolStatRow(label: L10n.Stats.range, value: "\(Int(leveledProtocol.firewallStats.range))")
                                 ProtocolStatRow(label: L10n.Stats.fireRate, value: String(format: "%.1f/s", leveledProtocol.firewallStats.fireRate))
+                                ProtocolStatRow(label: L10n.Stats.dps, value: String(format: "%.1f", leveledProtocol.firewallStats.damage * leveledProtocol.firewallStats.fireRate * CGFloat(leveledProtocol.firewallStats.projectileCount)))
                             }
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -662,7 +663,7 @@ struct ProtocolDetailSheet: View {
                                 }
 
                                 // Upgrade button
-                                if currentLevel < 10 {
+                                if currentLevel < BalanceConfig.maxUpgradeLevel {
                                     // Uses centralized formula from BalanceConfig
                                     let cost = BalanceConfig.exponentialUpgradeCost(baseCost: `protocol`.baseUpgradeCost, currentLevel: currentLevel)
                                     Button {
@@ -718,6 +719,7 @@ struct ProtocolDetailSheet: View {
 
         guard appState.currentPlayer.hash >= `protocol`.compileCost else { return }
         HapticsService.shared.play(.medium)
+        AnalyticsService.shared.trackProtocolCompiled(protocolId: `protocol`.id, cost: `protocol`.compileCost)
         appState.updatePlayer { profile in
             profile.hash -= `protocol`.compileCost
             profile.compiledProtocols.append(`protocol`.id)
@@ -739,6 +741,7 @@ struct ProtocolDetailSheet: View {
         let cost = BalanceConfig.exponentialUpgradeCost(baseCost: `protocol`.baseUpgradeCost, currentLevel: currentLevel)
         guard appState.currentPlayer.hash >= cost else { return }
         HapticsService.shared.play(.medium)
+        AnalyticsService.shared.trackProtocolUpgraded(protocolId: `protocol`.id, fromLevel: currentLevel, toLevel: currentLevel + 1)
         appState.updatePlayer { profile in
             profile.hash -= cost
             profile.protocolLevels[`protocol`.id] = currentLevel + 1

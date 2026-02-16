@@ -287,7 +287,7 @@ extension TDGameContainerView {
 
                 VStack(alignment: .trailing, spacing: 4) {
                     TDStatRow(icon: "bolt.fill", label: L10n.Stats.spd, value: String(format: "%.2f/s", tower.attackSpeed), color: .yellow)
-                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: L10n.Stats.dps, value: String(format: "%.1f", tower.damage * tower.attackSpeed), color: .green)
+                    TDStatRow(icon: "chart.line.uptrend.xyaxis", label: L10n.Stats.dps, value: String(format: "%.1f", tower.damage * tower.attackSpeed * CGFloat(tower.projectileCount)), color: .green)
                 }
             }
             .font(DesignTypography.caption(12))
