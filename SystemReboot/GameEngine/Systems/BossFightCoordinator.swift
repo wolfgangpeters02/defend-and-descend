@@ -158,6 +158,8 @@ class BossFightCoordinator: ObservableObject {
                !profile.protocolBlueprints.contains(protocolId) {
                 profile.protocolBlueprints.append(protocolId)
                 profile.recordBlueprintDrop(bossId, protocolId: protocolId)
+                // Mark as unseen so SYS button and Arsenal card pulse
+                TutorialHintManager.shared.addUnseenBlueprint(protocolId)
             }
 
             // Check if campaign just became complete (all MVP bosses defeated)

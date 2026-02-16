@@ -85,6 +85,7 @@ struct ArsenalView: View {
     @State private var selectedProtocol: Protocol?
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
     @State private var showSettings = false
+    @ObservedObject private var hintManager = TutorialHintManager.shared
     // Boss Arena state
     @State private var showBossFightSheet = false
     @State private var selectedBossType: String = "cyberboss"
@@ -183,7 +184,14 @@ struct ArsenalView: View {
                                     protocol: proto,
                                     level: 1,
                                     isBlueprint: true,
-                                    onTap: { selectedProtocol = proto }
+                                    onTap: {
+                                        hintManager.markBlueprintSeen(proto.id)
+                                        selectedProtocol = proto
+                                    }
+                                )
+                                .tutorialGlow(
+                                    color: RarityColors.color(for: proto.rarity),
+                                    isActive: hintManager.unseenBlueprintIds.contains(proto.id)
                                 )
                             }
                         }

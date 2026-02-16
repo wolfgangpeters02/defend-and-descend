@@ -28,9 +28,9 @@
 ## Bundle 5: Tutorial — Blueprint Discovery
 > New guided hint (non-blocking).
 
-- [ ] **5a.** When a new blueprint is found, pulse the system menu tab until tapped
-- [ ] **5b.** Once in system menu, pulse the new blueprint until tapped
-- [ ] **5c.** No popup — pulse animation only
+- [x] **5a.** When a new blueprint is found, pulse the system menu tab until tapped — ✅ Added tutorialGlow to SYS button in MotherboardView driven by TutorialHintManager.hasUnseenBlueprints
+- [x] **5b.** Once in system menu, pulse the new blueprint until tapped — ✅ Applied tutorialGlow (rarity-colored) to unseen blueprint cards in ArsenalView; markBlueprintSeen on tap
+- [x] **5c.** No popup — pulse animation only — ✅ Confirmed: uses existing GlowPulseModifier only, no popups or overlays added
 
 ## Bundle 6: Sector Upgrades (investigation)
 > May be a bug or a missing feature.

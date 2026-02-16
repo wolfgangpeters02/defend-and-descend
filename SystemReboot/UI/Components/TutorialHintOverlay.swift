@@ -20,7 +20,34 @@ class TutorialHintManager: ObservableObject {
 
     @Published var activeHints: Set<TutorialHintType> = []
 
-    private init() {}
+    // MARK: - Unseen Blueprints (pulse until viewed in Arsenal)
+
+    private static let unseenBlueprintsKey = "unseenBlueprintIds"
+
+    @Published var unseenBlueprintIds: Set<String> = []
+
+    var hasUnseenBlueprints: Bool { !unseenBlueprintIds.isEmpty }
+
+    private init() {
+        // Restore unseen blueprints from UserDefaults
+        if let saved = UserDefaults.standard.array(forKey: Self.unseenBlueprintsKey) as? [String] {
+            unseenBlueprintIds = Set(saved)
+        }
+    }
+
+    func addUnseenBlueprint(_ protocolId: String) {
+        unseenBlueprintIds.insert(protocolId)
+        persistUnseenBlueprints()
+    }
+
+    func markBlueprintSeen(_ protocolId: String) {
+        unseenBlueprintIds.remove(protocolId)
+        persistUnseenBlueprints()
+    }
+
+    private func persistUnseenBlueprints() {
+        UserDefaults.standard.set(Array(unseenBlueprintIds), forKey: Self.unseenBlueprintsKey)
+    }
 
     /// Check if a hint should be shown (not seen before and is active)
     func shouldShowHint(_ hint: TutorialHintType, profile: PlayerProfile) -> Bool {

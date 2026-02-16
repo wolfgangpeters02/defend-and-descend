@@ -9,6 +9,7 @@ struct MotherboardView: View {
     @State private var showManualOverride = false
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
     @State private var showBossTutorial = false
+    @ObservedObject private var hintManager = TutorialHintManager.shared
 
     // Boss Fight Coordinator (replaces NotificationCenter pattern)
     @StateObject private var bossCoordinator = BossFightCoordinator()
@@ -327,6 +328,7 @@ struct MotherboardView: View {
                         .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
                 )
             }
+            .tutorialGlow(color: DesignColors.primary, isActive: hintManager.hasUnseenBlueprints)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
