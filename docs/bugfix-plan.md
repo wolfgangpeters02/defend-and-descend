@@ -23,7 +23,7 @@
 ## Bundle 4: Boss Victory Screen
 > Reward collection UX.
 
-- [ ] **4a.** With 3 rewards, the screen closes on collecting the 3rd before the player sees it — add a brief delay or require explicit dismiss after all rewards are revealed
+- [x] **4a.** With 3 rewards, the screen closes on collecting the 3rd before the player sees it — add a brief delay or require explicit dismiss after all rewards are revealed — ✅ Added collectReady delay (1s) in BossLootModal.swift so COLLECT button is non-interactive until player has time to see the last reward; delay configured via BalanceConfig.BossLootReveal.collectButtonDelay
 
 ## Bundle 5: Tutorial — Blueprint Discovery
 > New guided hint (non-blocking).

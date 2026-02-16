@@ -18,6 +18,7 @@ struct BossLootModal: View {
     @State private var autoAdvanceTimer: Timer?
     @State private var glitchOffset: CGFloat = 0
     @State private var headerGlow: Bool = false
+    @State private var collectReady: Bool = false
 
     // MARK: - Computed
 
@@ -127,8 +128,9 @@ struct BossLootModal: View {
     private var bottomSection: some View {
         Group {
             if allDecrypted {
-                // Collect button
+                // Collect button (disabled briefly to prevent accidental taps)
                 Button(action: {
+                    guard collectReady else { return }
                     HapticsService.shared.play(.selection)
                     onCollect()
                 }) {
@@ -139,10 +141,11 @@ struct BossLootModal: View {
                     .font(.system(size: 18, weight: .bold, design: .monospaced))
                     .foregroundColor(.black)
                     .frame(width: 200, height: 56)
-                    .background(Color.green)
+                    .background(collectReady ? Color.green : Color.green.opacity(0.4))
                     .cornerRadius(12)
-                    .shadow(color: Color.green.opacity(0.5), radius: 10)
+                    .shadow(color: Color.green.opacity(collectReady ? 0.5 : 0.2), radius: 10)
                 }
+                .allowsHitTesting(collectReady)
                 .transition(.scale.combined(with: .opacity))
             } else {
                 // Tap instruction
@@ -268,6 +271,14 @@ struct BossLootModal: View {
                     allDecrypted = true
                 }
                 HapticsService.shared.play(.success)
+
+                // Delay before COLLECT becomes tappable so the player can see the last reward
+                DispatchQueue.main.asyncAfter(deadline: .now() + BalanceConfig.BossLootReveal.collectButtonDelay) { [self] in
+                    guard isViewActive else { return }
+                    withAnimation(.easeIn(duration: 0.25)) {
+                        collectReady = true
+                    }
+                }
             }
         }
     }

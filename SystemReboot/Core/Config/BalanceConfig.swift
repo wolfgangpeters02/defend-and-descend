@@ -1066,6 +1066,9 @@ struct BalanceConfig {
 
         /// Glitch animation offset range
         static let glitchOffsetRange: ClosedRange<CGFloat> = -5...5
+
+        /// Delay before COLLECT button becomes tappable after all items revealed (seconds)
+        static let collectButtonDelay: TimeInterval = 1.0
     }
 
     // MARK: - Performance Limits
