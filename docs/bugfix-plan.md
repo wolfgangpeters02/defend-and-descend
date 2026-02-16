@@ -13,7 +13,7 @@
 > Top HUD issues — layout and live updates.
 
 - [x] **2a.** PSU upgrade: HUD number doesn't update immediately after upgrading — ✅ Added onPSUUpgraded callback from CurrencyInfoSheet to sync powerCapacity and hash to live gameState and scene in MotherboardView
-- [ ] **2b.** Top HUD sometimes line-breaks — redesign as a consistent 2-line layout
+- [x] **2b.** Top HUD sometimes line-breaks — redesign as a consistent 2-line layout — ✅ Refactored topBar from single HStack to VStack with 2 dedicated rows (Wave+Efficiency / Power+Hash) and added lineLimit(1) to all text in TDGameContainerView+HUD.swift
 
 ## Bundle 3: Readability
 > Global text readability.

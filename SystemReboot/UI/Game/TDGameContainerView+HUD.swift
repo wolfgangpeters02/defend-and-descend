@@ -9,8 +9,8 @@ extension TDGameContainerView {
     // Clean, minimal HUD with only essential info
 
     var topBar: some View {
-        HStack(spacing: 16) {
-            // Left: Pause + Wave
+        VStack(spacing: 4) {
+            // Row 1: Pause + Wave | Efficiency
             HStack(spacing: 10) {
                 Button(action: {
                     isPaused = true
@@ -27,33 +27,32 @@ extension TDGameContainerView {
                 Text(L10n.Game.HUD.wave(gameState?.currentWave ?? 0))
                     .font(.system(size: 14, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
-            }
+                    .lineLimit(1)
 
-            Spacer()
+                Spacer()
 
-            // Center: Efficiency bar (wider, more visible)
-            HStack(spacing: 6) {
-                let efficiency = calculateEfficiency()
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.gray.opacity(0.3))
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(efficiencyColor)
-                            .frame(width: geo.size.width * efficiency / 100)
+                HStack(spacing: 6) {
+                    let efficiency = calculateEfficiency()
+                    GeometryReader { geo in
+                        ZStack(alignment: .leading) {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.gray.opacity(0.3))
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(efficiencyColor)
+                                .frame(width: geo.size.width * efficiency / 100)
+                        }
                     }
-                }
-                .frame(width: 80, height: 10)
+                    .frame(width: 80, height: 10)
 
-                Text("\(Int(efficiency))%")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(efficiencyColor)
+                    Text("\(Int(calculateEfficiency()))%")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundColor(efficiencyColor)
+                        .lineLimit(1)
+                }
             }
 
-            Spacer()
-
-            // Right: Power & Hash
-            HStack(spacing: 12) {
+            // Row 2: Power | Hash
+            HStack {
                 // Power usage (PSU capacity)
                 HStack(spacing: 3) {
                     Image(systemName: "bolt.fill")
@@ -62,7 +61,10 @@ extension TDGameContainerView {
                     Text("\(gameState?.powerUsed ?? 0)/\(gameState?.powerCapacity ?? 300)W")
                         .font(.system(size: 12, weight: .semibold, design: .monospaced))
                         .foregroundColor(powerColor)
+                        .lineLimit(1)
                 }
+
+                Spacer()
 
                 // Hash balance with storage cap
                 HStack(spacing: 3) {
@@ -75,6 +77,7 @@ extension TDGameContainerView {
                     ))
                         .font(.system(size: 12, weight: .bold, design: .monospaced))
                         .foregroundColor(.cyan)
+                        .lineLimit(1)
                 }
             }
         }
