@@ -110,7 +110,8 @@ In **GameRewardService.swift**:
 - Remove `calculateSurvivorRewards()` if boss rewards are handled separately
 - Clean the `applySurvivorResult()` method: remove the `if gameMode == .survival` branch (keep boss stats tracking)
 
-### Stage 5: Remove survival balance config and localization [TODO]
+### Stage 5: Remove survival balance config and localization [DONE]
+Removed SurvivalEvents and SurvivalEconomy structs from BalanceConfig; stripped survival-only values from BossSurvivor (kept phase thresholds used by EnemySystem); removed L10n.Extraction enum, unused Mode.arena/dungeon entries, and orphaned HUD extraction entries; cleaned all corresponding Localizable.xcstrings entries and exportJSON() references.
 
 In **BalanceConfig.swift**:
 
@@ -185,7 +186,7 @@ Global sweep:
 - [x] Stage 2: DebugGameView and debug arenas removed
 - [x] Stage 3: Survival types cleaned from shared files
 - [x] Stage 4: Survival UI and reward code cleaned
-- [ ] Stage 5: Balance config and L10n cleaned
+- [x] Stage 5: Balance config and L10n cleaned
 - [ ] Stage 6: Player profile fields cleaned
 - [ ] Stage 7: Unused arena themes removed
 - [ ] Stage 8: GameMode.survival removed, final sweep done

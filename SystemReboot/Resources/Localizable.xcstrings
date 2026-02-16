@@ -96,9 +96,6 @@
     "+%lld" : {
 
     },
-    "+Ħ" : {
-
-    },
     "+Ħ%lld" : {
 
     },
@@ -778,6 +775,142 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "[ TAP TO DECRYPT ]"
+          }
+        }
+      }
+    },
+    "bossTutorial.autoFireActive" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Protokoll feuert automatisch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your protocol fires automatically."
+          }
+        }
+      }
+    },
+    "bossTutorial.criticalThreat" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KRITISCHE BEDROHUNG ERKANNT"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CRITICAL THREAT DETECTED"
+          }
+        }
+      }
+    },
+    "bossTutorial.engage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ANGREIFEN"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ENGAGE"
+          }
+        }
+      }
+    },
+    "bossTutorial.immuneInfo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immun gegen Türme.\nDu musst direkt kämpfen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immune to tower fire.\nYou must fight it directly."
+          }
+        }
+      }
+    },
+    "bossTutorial.manualIntervention" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manueller Eingriff erforderlich."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manual intervention required."
+          }
+        }
+      }
+    },
+    "bossTutorial.moveToDodge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewege dich zum Ausweichen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to dodge."
+          }
+        }
+      }
+    },
+    "bossTutorial.startFight" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "START"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "START"
+          }
+        }
+      }
+    },
+    "bossTutorial.upgradeFirewalls" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verbessere deine Firewalls —\nsie werden deine Waffen im Kampf."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Level up your firewalls —\nthey become your weapons in combat."
           }
         }
       }
@@ -2108,142 +2241,6 @@
         }
       }
     },
-    "extraction.available" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRAKTION VERFÜGBAR"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRACTION AVAILABLE"
-          }
-        }
-      }
-    },
-    "extraction.extract" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRAHIEREN"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRACT"
-          }
-        }
-      }
-    },
-    "extraction.hashEarned" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hash verdient"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hash Earned"
-          }
-        }
-      }
-    },
-    "extraction.hashSecured" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d HASH GESICHERT"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%d HASH SECURED"
-          }
-        }
-      }
-    },
-    "extraction.keepHash" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "100% Hash behalten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Keep 100% Hash"
-          }
-        }
-      }
-    },
-    "extraction.riskForMore" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Risiko für mehr"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Risk for more"
-          }
-        }
-      }
-    },
-    "extraction.sectorCleansed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SEKTOR_BEREINIGT"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SECTOR_CLEANSED"
-          }
-        }
-      }
-    },
-    "extraction.virusesEliminated" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Viren eliminiert"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Viruses Eliminated"
-          }
-        }
-      }
-    },
     "freeze.allSystemsHalted" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2499,40 +2496,6 @@
         }
       }
     },
-    "game.hud.extract" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRAHIEREN"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRACT"
-          }
-        }
-      }
-    },
-    "game.hud.extractionReady" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⬆ EXTRAKTION BEREIT"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⬆ EXTRACTION READY"
-          }
-        }
-      }
-    },
     "game.hud.kills" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2682,23 +2645,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "DEBUG_FAILED"
-          }
-        }
-      }
-    },
-    "gameOver.extractionBonus" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRAKTIONS-BONUS (100%)"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "EXTRACTION BONUS (100%)"
           }
         }
       }
@@ -3156,40 +3102,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Build FIREWALLS to defend."
-          }
-        }
-      }
-    },
-    "mode.arena" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ARENA"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ARENA"
-          }
-        }
-      }
-    },
-    "mode.dungeon" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DUNGEON"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DUNGEON"
           }
         }
       }
@@ -4805,6 +4717,91 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Waves"
+          }
+        }
+      }
+    },
+    "tutorial.cpuCore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die CPU — dein Kern. Fällt sie, stürzt das System ab."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The CPU — your core. If it falls, the system crashes."
+          }
+        }
+      }
+    },
+    "tutorial.deployFirewall" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Setze deine erste Firewall ein.\nZiehe sie auf das Raster."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deploy your first firewall.\nDrag it onto the grid."
+          }
+        }
+      }
+    },
+    "tutorial.motherboard" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Motherboard. Dein Schlachtfeld."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your motherboard. Your battlefield."
+          }
+        }
+      }
+    },
+    "tutorial.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ÜBERSPRINGEN"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SKIP"
+          }
+        }
+      }
+    },
+    "tutorial.virusesIncoming" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PSU-Sektor durchbrochen. Viren im Anmarsch."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PSU sector breached. Viruses incoming."
           }
         }
       }

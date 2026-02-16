@@ -5,39 +5,25 @@ import Foundation
 // Usage: Text(L10n.intro.skip) or L10n.gameOver.virusesKilled
 
 enum L10n {
-    // MARK: - Intro Sequence
-    enum Intro {
-        enum SystemBoot {
-            static let header = String(localized: "intro.systemBoot.header")
-            static let line1 = String(localized: "intro.systemBoot.line1")
-            static let line2 = String(localized: "intro.systemBoot.line2")
-            static let line3 = String(localized: "intro.systemBoot.line3")
-            static let line4 = String(localized: "intro.systemBoot.line4")
-        }
+    // MARK: - Camera Tutorial (FTUE)
+    enum Tutorial {
+        static let skip = String(localized: "tutorial.skip")
+        static let motherboard = String(localized: "tutorial.motherboard")
+        static let virusesIncoming = String(localized: "tutorial.virusesIncoming")
+        static let cpuCore = String(localized: "tutorial.cpuCore")
+        static let deployFirewall = String(localized: "tutorial.deployFirewall")
+    }
 
-        enum ThreatDetected {
-            static let header = String(localized: "intro.threatDetected.header")
-            static let line1 = String(localized: "intro.threatDetected.line1")
-            static let line2 = String(localized: "intro.threatDetected.line2")
-            static let line3 = String(localized: "intro.threatDetected.line3")
-            static let line4 = String(localized: "intro.threatDetected.line4")
-        }
-
-        enum AlwaysRunning {
-            static let header = String(localized: "intro.alwaysRunning.header")
-            static let line1 = String(localized: "intro.alwaysRunning.line1")
-            static let line2 = String(localized: "intro.alwaysRunning.line2")
-            static let line3 = String(localized: "intro.alwaysRunning.line3")
-            static let line4 = String(localized: "intro.alwaysRunning.line4")
-            static let line5 = String(localized: "intro.alwaysRunning.line5")
-        }
-
-        static let skip = String(localized: "intro.skip")
-        static let swipeHint = String(localized: "intro.swipeHint")
-        static let enterSystem = String(localized: "intro.enterSystem")
-        static let offline = String(localized: "intro.offline")
-        static let earning = String(localized: "intro.earning")
-        static let operatingHours = String(localized: "intro.operatingHours")
+    // MARK: - Boss Tutorial (FTUE)
+    enum BossTutorial {
+        static let criticalThreat = String(localized: "bossTutorial.criticalThreat")
+        static let manualIntervention = String(localized: "bossTutorial.manualIntervention")
+        static let upgradeFirewalls = String(localized: "bossTutorial.upgradeFirewalls")
+        static let immuneInfo = String(localized: "bossTutorial.immuneInfo")
+        static let moveToDodge = String(localized: "bossTutorial.moveToDodge")
+        static let autoFireActive = String(localized: "bossTutorial.autoFireActive")
+        static let startFight = String(localized: "bossTutorial.startFight")
+        static let engage = String(localized: "bossTutorial.engage")
     }
 
     // MARK: - Welcome Back Modal
@@ -108,8 +94,6 @@ enum L10n {
         enum HUD {
             static let time = String(localized: "game.hud.time")
             static let level = String(localized: "game.hud.level")
-            static let extract = String(localized: "game.hud.extract")
-            static let extractionReady = String(localized: "game.hud.extractionReady")
             static func wave(_ number: Int) -> String {
                 String(format: String(localized: "game.hud.wave"), number)
             }
@@ -132,7 +116,6 @@ enum L10n {
         static let virusesKilled = String(localized: "gameOver.virusesKilled")
         static let damageDealt = String(localized: "gameOver.damageDealt")
         static let hashCollected = String(localized: "gameOver.hashCollected")
-        static let extractionBonus = String(localized: "gameOver.extractionBonus")
         static let deathPenalty = String(localized: "gameOver.deathPenalty")
         static let blueprintAcquired = String(localized: "gameOver.blueprintAcquired")
     }
@@ -258,8 +241,6 @@ enum L10n {
     enum Mode {
         static let firewall = String(localized: "mode.firewall")
         static let weapon = String(localized: "mode.weapon")
-        static let dungeon = String(localized: "mode.dungeon")
-        static let arena = String(localized: "mode.arena")
     }
 
     // MARK: - Boss
@@ -334,20 +315,6 @@ enum L10n {
         static let maxTier = String(localized: "cpu.maxTier")
         static func upgradeTo(_ tier: Int) -> String {
             String(format: String(localized: "cpu.upgradeTo"), tier)
-        }
-    }
-
-    // MARK: - Extraction
-    enum Extraction {
-        static let available = String(localized: "extraction.available")
-        static let extract = String(localized: "extraction.extract")
-        static let keepHash = String(localized: "extraction.keepHash")
-        static let riskForMore = String(localized: "extraction.riskForMore")
-        static let sectorCleansed = String(localized: "extraction.sectorCleansed")
-        static let virusesEliminated = String(localized: "extraction.virusesEliminated")
-        static let hashEarned = String(localized: "extraction.hashEarned")
-        static func hashSecured(_ amount: Int) -> String {
-            String(format: String(localized: "extraction.hashSecured"), amount)
         }
     }
 

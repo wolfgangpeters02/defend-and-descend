@@ -311,18 +311,9 @@ struct BalanceConfig {
         static let leadTargetingLookAhead: CGFloat = 0.05
     }
 
-    // MARK: - Boss Scaling (Survivor Mode)
+    // MARK: - Boss Scaling (Generic Enemy Boss Phases)
 
     struct BossSurvivor {
-        /// Time-based health scaling: 1 + (minutes × this)
-        static let healthScalingPerMinute: Double = 0.10
-
-        /// Base health multiplier for boss spawns
-        static let baseHealthMultiplier: Double = 4.0
-
-        /// Spawn interval in seconds
-        static let spawnInterval: TimeInterval = 120
-
         /// Phase transition health thresholds (percentage)
         static let phase2Threshold: CGFloat = 0.75
         static let phase3Threshold: CGFloat = 0.50
@@ -685,102 +676,6 @@ struct BalanceConfig {
         static let simHeadCollisionMultiplier: CGFloat = 1.8   // Head hitbox scaling in sim
         static let simBodyCollisionMultiplier: CGFloat = 2.0   // Body hitbox scaling in sim
         static let simSubWormCollisionMultiplier: CGFloat = 2.5 // Sub-worm body hitbox scaling in sim
-    }
-
-    // MARK: - Survival Events
-
-    struct SurvivalEvents {
-        /// Event interval settings
-        static let baseEventInterval: TimeInterval = 60
-        static let minEventInterval: TimeInterval = 40
-        static let intervalReductionPerMinute: TimeInterval = 5
-        static let intervalRandomRange: ClosedRange<Double> = -5...5
-
-        /// First event triggers at this time
-        static let firstEventTime: TimeInterval = 60
-
-        // MARK: Event Durations
-
-        /// Memory Surge duration and warning
-        static let memorySurgeDuration: TimeInterval = 8.0
-        static let memorySurgeWarningDuration: TimeInterval = 2.0
-        static let memorySurgeMinTime: TimeInterval = 60
-
-        /// Buffer Overflow duration and warning
-        static let bufferOverflowDuration: TimeInterval = 15.0
-        static let bufferOverflowWarningDuration: TimeInterval = 3.0
-
-        /// Thermal Throttle duration
-        static let thermalThrottleDuration: TimeInterval = 12.0
-        static let thermalThrottleWarningDuration: TimeInterval = 2.0
-
-        /// Cache Flush duration
-        static let cacheFlushDuration: TimeInterval = 3.0
-        static let cacheFlushWarningDuration: TimeInterval = 2.0
-
-        /// Data Corruption duration
-        static let dataCorruptionDuration: TimeInterval = 10.0
-        static let dataCorruptionWarningDuration: TimeInterval = 2.0
-
-        /// Virus Swarm duration
-        static let virusSwarmDuration: TimeInterval = 5.0
-        static let virusSwarmWarningDuration: TimeInterval = 3.0
-
-        /// System Restore duration
-        static let systemRestoreDuration: TimeInterval = 8.0
-        static let systemRestoreWarningDuration: TimeInterval = 2.0
-
-        /// Min survival time for event tiers
-        static let tier1MinTime: TimeInterval = 60
-        static let tier2MinTime: TimeInterval = 180
-        static let tier3MinTime: TimeInterval = 300
-
-        // MARK: Event Effects
-
-        /// Memory Surge: speed boost
-        static let memorySurgeSpeedBoost: CGFloat = 1.5  // +50%
-        static let memorySurgeSpawnRate: CGFloat = 2.0   // 2x spawns
-
-        /// Thermal Throttle: slow + damage boost
-        static let thermalThrottleSpeedMult: CGFloat = 0.7   // -30%
-        static let thermalThrottleDamageMult: CGFloat = 1.5  // +50%
-
-        /// Buffer Overflow: kill zone damage per second
-        static let bufferOverflowDamagePerSecond: CGFloat = 25.0
-        static let bufferOverflowZoneDepth: CGFloat = 100
-
-        /// Data Corruption: damage per second when touching corrupted obstacle
-        static let dataCorruptionDamagePerSecond: CGFloat = 15.0
-        static let maxCorruptedObstacles: Int = 3
-
-        /// System Restore: healing per second in zone
-        static let systemRestoreHealPerSecond: CGFloat = 5.0
-        static let systemRestoreZoneRadius: CGFloat = 60
-        static let healingZoneSpawnMargin: CGFloat = 80
-
-        /// Virus Swarm: enemy count and stats
-        static let virusSwarmCount: Int = 50
-        static let swarmVirusHealth: CGFloat = 5
-        static let swarmVirusSpeed: CGFloat = 200
-        static let swarmVirusDamage: CGFloat = 5
-        static let virusSpreadOffset: CGFloat = 20
-        static let virusRowOffset: CGFloat = 15
-
-        /// Cache Flush: cooldown before can trigger again
-        static let cacheFlushCooldown: TimeInterval = 120
-    }
-
-    // MARK: - Survival Economy
-
-    struct SurvivalEconomy {
-        /// Time until extraction is available (seconds)
-        static let extractionTime: TimeInterval = 180  // 3 minutes
-
-        /// Base Hash earned per second
-        static let hashPerSecond: CGFloat = 2.0
-
-        /// Bonus Hash per minute survived (adds to base rate)
-        static let hashBonusPerMinute: CGFloat = 0.5
     }
 
     // MARK: - Efficiency System (TD Mode)
@@ -2357,6 +2252,76 @@ extension BalanceConfig {
         /// Minion spawn margin from arena edges
         static let minionSpawnMargin: CGFloat = 100
 
+        // MARK: - Boss Sim Weapon Stats
+        // Simplified weapon stats for Monte Carlo boss fight simulation.
+        // These model player weapons in boss fights (twin-stick mode).
+        // Different from ProtocolBaseStats which are for tower/firewall mode.
+
+        /// Base damage at level 1 per weapon
+        static let weaponDamage: [String: CGFloat] = [
+            "kernel_pulse": 25,
+            "burst_protocol": 20,
+            "trace_route": 15,
+            "ice_shard": 18,
+            "fork_bomb": 28,
+            "null_pointer": 20
+        ]
+
+        /// Attack interval (seconds) per weapon
+        static let weaponAttackInterval: [String: TimeInterval] = [
+            "kernel_pulse": 0.4,
+            "burst_protocol": 0.5,
+            "trace_route": 0.6,
+            "ice_shard": 0.7,
+            "fork_bomb": 0.8,
+            "null_pointer": 0.5
+        ]
+
+        /// Attack range per weapon
+        static let weaponRange: [String: CGFloat] = [
+            "kernel_pulse": 200,
+            "burst_protocol": 180,
+            "trace_route": 250,
+            "ice_shard": 220,
+            "fork_bomb": 200,
+            "null_pointer": 200
+        ]
+
+        /// Weapon damage scaling per level (additive per level above 1)
+        static let weaponDamageScalingPerLevel: CGFloat = 0.5
+
+        /// DPS multipliers for weapon special effects
+        static let fragmenterDPSMultiplier: CGFloat = 1.5
+        static let pingerDPSMultiplier: CGFloat = 1.2
+        static let recursionDPSMultiplier: CGFloat = 1.7
+        static let garbageCollectorDPSMultiplier: CGFloat = 1.15
+
+        /// Pinger tag damage bonus (fraction of damage)
+        static let pingerTagBonusDamage: CGFloat = 0.2
+        /// Garbage Collector mark bonus (fraction of damage)
+        static let garbageCollectorMarkBonusDamage: CGFloat = 0.15
+        /// Throttler stun chance per hit
+        static let throttlerStunChance: Double = 0.15
+        /// Recursion child projectile count
+        static let recursionChildCount: Int = 2
+
+        // MARK: - Boss Sim Arena & Player Defaults
+
+        /// Default boss fight arena size
+        static let bossArenaSize: CGFloat = 1500
+        /// Default player speed in boss fights
+        static let bossPlayerSpeed: CGFloat = 200
+        /// Default player attack interval (when no weapon specified)
+        static let bossPlayerAttackInterval: TimeInterval = 0.5
+        /// Default player weapon damage (fallback)
+        static let bossPlayerWeaponDamage: CGFloat = 50
+        /// Default boss movement speed
+        static let bossDefaultSpeed: CGFloat = 100
+        /// Player collision radius for hazard detection
+        static let bossPlayerCollisionRadius: CGFloat = 20
+        /// Laser minimum active lifetime for collision checks
+        static let bossLaserCollisionMinLifetime: CGFloat = 1.0
+
         // MARK: - Adaptive Bot Thresholds
 
         /// Efficiency below this triggers "panic mode" — prioritize defense over economy
@@ -2371,6 +2336,18 @@ extension BalanceConfig {
 
         /// How many seconds of hash income to keep in reserve
         static let botHashReserveSeconds: CGFloat = 10.0
+
+        /// RushOC bot: overclock when efficiency is at or above this
+        static let botRushOCThreshold: CGFloat = 70.0
+
+        /// Adaptive bot: engage boss on hard difficulty above this efficiency
+        static let botHardBossDifficultyThreshold: CGFloat = 85.0
+
+        /// Adaptive bot: minimum towers before maintaining a hash reserve
+        static let botMinTowersForReserve: Int = 3
+
+        /// TowersFirst bot: place this many towers before considering upgrades
+        static let botMinTowersBeforeUpgrade: Int = 2
 
         // MARK: - Component Level Presets
 
@@ -2397,6 +2374,94 @@ extension BalanceConfig {
             power: 8, storage: 6, ram: 6, gpu: 5, cache: 6,
             expansion: 4, io: 4, network: 4, cpu: 8
         )
+    }
+
+    // MARK: - Boss Bot AI Tuning
+    // These control simulated player behavior in Monte Carlo boss fight simulations.
+    // Each bot represents a different player skill level.
+
+    struct BossBotTuning {
+
+        // MARK: Defensive Bot — survival-first, dodges everything
+
+        /// Boss melee avoidance range
+        static let defensiveBossMeleeRange: CGFloat = 200
+        /// Weight applied to boss avoidance in threat vector
+        static let defensiveBossThreatWeight: CGFloat = 2.0
+        /// Extra padding added to puddle/void zone radius for avoidance
+        static let defensiveHazardPadding: CGFloat = 50
+        /// Seconds ahead to predict projectile position
+        static let defensiveProjectilePredictionTime: CGFloat = 0.5
+        /// Threat radius around predicted projectile position
+        static let defensiveProjectileAvoidRadius: CGFloat = 80
+        /// Extra weight for projectile threats vs other hazards
+        static let defensiveProjectileThreatWeight: CGFloat = 1.5
+        /// Min laser lifetime before bot reacts
+        static let defensiveLaserMinLifetime: CGFloat = 1.0
+        /// Weight for perpendicular laser/rift dodge
+        static let defensiveLaserDodgeWeight: CGFloat = 3
+        /// Threat radius around minions
+        static let defensiveMinionAvoidRadius: CGFloat = 60
+        /// Safety margin from shrinking arena edge
+        static let defensiveArenaEdgeMargin: CGFloat = 100
+        /// Weight pulling toward arena center when near edge
+        static let defensiveArenaCenterPull: CGFloat = 2
+        /// Weak pull toward closest pylon when boss is invulnerable
+        static let defensivePylonAttraction: CGFloat = 0.3
+        /// Distance at which defensive bot will approach boss
+        static let defensiveSafeApproachDistance: CGFloat = 250
+
+        // MARK: Balanced Bot — moderate dodging, good DPS
+
+        /// Min comfortable distance from boss
+        static let balancedMinRange: CGFloat = 150
+        /// Max comfortable distance from boss
+        static let balancedMaxRange: CGFloat = 280
+        /// Seconds ahead to predict projectile position
+        static let balancedProjectilePredictionTime: CGFloat = 0.3
+        /// Dodge threshold: dodge if projectile within this distance
+        static let balancedProjectileDodgeThreshold: CGFloat = 60
+        /// Extra buffer added to puddle/void zone radius for threat check
+        static let balancedHazardBuffer: CGFloat = 30
+        /// Void zone warning time buffer
+        static let balancedVoidZoneWarningBuffer: CGFloat = 0.5
+        /// Min laser lifetime before bot reacts
+        static let balancedLaserMinLifetime: CGFloat = 0.5
+        /// Laser dodge distance threshold
+        static let balancedLaserDodgeThreshold: CGFloat = 50
+
+        // MARK: Phase-Aware Bot — adapts strategy per phase
+
+        /// Phase 1: approach boss if further than this
+        static let phaseAwareApproachDistance: CGFloat = 200
+        /// Phase 1: back away if closer than this
+        static let phaseAwareTooCloseDistance: CGFloat = 120
+        /// Phase 3: puddle warning time buffer
+        static let phaseAwarePuddleWarningBuffer: CGFloat = 0.3
+        /// Phase 3: puddle/void zone avoidance buffer
+        static let phaseAwareHazardBuffer: CGFloat = 80
+        /// Phase 3: weight for puddle/void zone avoidance
+        static let phaseAwareHazardAvoidWeight: CGFloat = 2
+        /// Phase 3: void zone warning buffer
+        static let phaseAwareVoidZoneWarningBuffer: CGFloat = 0.5
+        /// Phase 3: void rift dodge threshold distance
+        static let phaseAwareRiftDodgeThreshold: CGFloat = 60
+        /// Phase 3: void rift dodge weight
+        static let phaseAwareRiftDodgeWeight: CGFloat = 3
+        /// Phase 4: arena edge safety margin
+        static let phaseAwareArenaEdgeMargin: CGFloat = 80
+        /// Phase 4: min laser lifetime before reacting
+        static let phaseAwareLaserMinLifetime: CGFloat = 0.8
+        /// Phase 4: laser dodge distance threshold
+        static let phaseAwareLaserDodgeThreshold: CGFloat = 70
+        /// Phase 4: laser dodge strength (high priority)
+        static let phaseAwareLaserDodgeWeight: CGFloat = 4
+        /// Minion kiting distance
+        static let phaseAwareMinionKiteRange: CGFloat = 100
+        /// Projectile prediction time
+        static let phaseAwareProjectilePredictionTime: CGFloat = 0.4
+        /// Projectile dodge threshold
+        static let phaseAwareProjectileDodgeThreshold: CGFloat = 70
     }
 
     // MARK: - Motherboard Layout
@@ -2509,12 +2574,6 @@ extension BalanceConfig {
             "fastEnemyThreshold": ThreatLevel.fastEnemyThreshold,
             "tankEnemyThreshold": ThreatLevel.tankEnemyThreshold,
             "bossEnemyThreshold": ThreatLevel.bossEnemyThreshold
-        ]
-
-        let economyDict: [String: Any] = [
-            "hashPerSecond": SurvivalEconomy.hashPerSecond,
-            "hashBonusPerMinute": SurvivalEconomy.hashBonusPerMinute,
-            "extractionTime": SurvivalEconomy.extractionTime
         ]
 
         let costsDict: [String: Int] = [
@@ -2766,7 +2825,6 @@ extension BalanceConfig {
         let config: [String: Any] = [
             "waves": wavesDict,
             "threatLevel": threatDict,
-            "survivalEconomy": economyDict,
             "towers": towersDict,
             "dropRates": dropsDict,
             "powerGrid": powerGridDict,
