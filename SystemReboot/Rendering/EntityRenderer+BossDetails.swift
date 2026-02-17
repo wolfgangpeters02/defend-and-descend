@@ -21,6 +21,7 @@ extension EntityRenderer {
         threatRing.fillColor = .clear
         threatRing.strokeColor = UIColor.red.withAlphaComponent(0.5)
         threatRing.lineWidth = 2
+        threatRing.glowWidth = 2.0  // Phase 4A: threat ring glow
         threatRing.zPosition = -0.2
         threatRing.name = "threatRing"
         container.addChild(threatRing)

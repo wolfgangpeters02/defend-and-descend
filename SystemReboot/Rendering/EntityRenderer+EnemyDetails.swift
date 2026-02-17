@@ -216,6 +216,7 @@ extension EntityRenderer {
         body.fillColor = color
         body.strokeColor = color.lighter(by: 0.3)
         body.lineWidth = 2
+        body.glowWidth = 0.5  // Phase 7A: elite threat glow
         body.name = "body"
         container.addChild(body)
 

@@ -58,16 +58,23 @@ extension BossRenderingManager {
             fadeOutAndRemoveBossNode(key: key)
         }
 
-        // Render pylons (Phase 2)
+        // Render pylons (Phase 2) — striking crystal towers with energy rings
         var activePylonIds = Set<String>()
         for pylon in bossState.pylons where !pylon.isDestroyed {
             activePylonIds.insert(pylon.id)
             let nodeKey = "voidharbinger_pylon_\(pylon.id)"
 
             if let container = bossMechanicNodes[nodeKey] {
+                // Update health bar fill
                 if let healthBar = container.childNode(withName: "healthFill") as? SKShapeNode {
                     let healthPercent = pylon.health / pylon.maxHealth
                     healthBar.xScale = max(0.01, healthPercent)
+                    // Color shifts from green → yellow → red as health drops
+                    if healthPercent < 0.33 {
+                        healthBar.fillColor = DesignColors.dangerUI
+                    } else if healthPercent < 0.66 {
+                        healthBar.fillColor = DesignColors.warningUI
+                    }
                 }
             } else {
                 let container = SKNode()
@@ -75,34 +82,71 @@ extension BossRenderingManager {
                 container.zPosition = 50
                 container.name = nodeKey
 
-                let pylonBody = SKShapeNode(rectOf: CGSize(width: 40, height: 60), cornerRadius: 5)
-                pylonBody.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.8)
-                pylonBody.strokeColor = DesignColors.secondaryUI
-                pylonBody.lineWidth = 2
-                pylonBody.glowWidth = 0
-                container.addChild(pylonBody)
+                // Diamond-shaped crystal core
+                let diamondPath = CGMutablePath()
+                diamondPath.move(to: CGPoint(x: 0, y: 30))
+                diamondPath.addLine(to: CGPoint(x: 20, y: 0))
+                diamondPath.addLine(to: CGPoint(x: 0, y: -30))
+                diamondPath.addLine(to: CGPoint(x: -20, y: 0))
+                diamondPath.closeSubpath()
 
-                let crystal = SKShapeNode(circleOfRadius: 12)
-                crystal.fillColor = DesignColors.secondaryUI
-                crystal.strokeColor = DesignColors.primaryUI.withAlphaComponent(0.6)
-                crystal.position = CGPoint(x: 0, y: 40)
+                let crystal = SKShapeNode(path: diamondPath)
+                crystal.fillColor = DesignColors.secondaryUI.withAlphaComponent(0.7)
+                crystal.strokeColor = DesignColors.secondaryUI
+                crystal.lineWidth = 2
                 crystal.glowWidth = 0
+                crystal.name = "crystal"
                 container.addChild(crystal)
 
+                // Inner diamond glow
+                let innerDiamond = CGMutablePath()
+                innerDiamond.move(to: CGPoint(x: 0, y: 16))
+                innerDiamond.addLine(to: CGPoint(x: 10, y: 0))
+                innerDiamond.addLine(to: CGPoint(x: 0, y: -16))
+                innerDiamond.addLine(to: CGPoint(x: -10, y: 0))
+                innerDiamond.closeSubpath()
+
+                let innerGlow = SKShapeNode(path: innerDiamond)
+                innerGlow.fillColor = SKColor.white.withAlphaComponent(0.3)
+                innerGlow.strokeColor = SKColor.clear
+                innerGlow.zPosition = 0.1
+                container.addChild(innerGlow)
+
+                // Orbiting energy ring
+                let ring = SKShapeNode(ellipseOf: CGSize(width: 56, height: 18))
+                ring.fillColor = SKColor.clear
+                ring.strokeColor = DesignColors.secondaryUI.withAlphaComponent(0.6)
+                ring.lineWidth = 2
+                ring.zPosition = 0.2
+                ring.name = "ring"
+                container.addChild(ring)
+
+                let ringRotate = SKAction.rotate(byAngle: .pi * 2, duration: 2.0)
+                ring.run(SKAction.repeatForever(ringRotate), withKey: "rotate")
+
+                // Health bar
                 let healthBg = SKShapeNode(rectOf: CGSize(width: 50, height: 6))
                 healthBg.fillColor = DesignColors.surfaceUI
                 healthBg.strokeColor = DesignColors.mutedUI
-                healthBg.position = CGPoint(x: 0, y: -45)
+                healthBg.position = CGPoint(x: 0, y: -42)
                 container.addChild(healthBg)
 
                 let healthFill = SKShapeNode(rect: CGRect(x: -25, y: -3, width: 50, height: 6))
                 healthFill.fillColor = DesignColors.successUI
                 healthFill.strokeColor = SKColor.clear
-                healthFill.position = CGPoint(x: 0, y: -45)
+                healthFill.position = CGPoint(x: 0, y: -42)
                 healthFill.name = "healthFill"
                 container.addChild(healthFill)
 
+                // Crystal pulse animation
                 crystal.run(SKAction.repeatForever(pylonCrystalPulseAction), withKey: "pulse")
+
+                // Gentle alpha pulse on inner glow
+                let glowDown = SKAction.fadeAlpha(to: 0.1, duration: 0.6)
+                glowDown.timingMode = .easeInEaseOut
+                let glowUp = SKAction.fadeAlpha(to: 0.4, duration: 0.6)
+                glowUp.timingMode = .easeInEaseOut
+                innerGlow.run(SKAction.repeatForever(SKAction.sequence([glowDown, glowUp])), withKey: "pulse")
 
                 scene.addChild(container)
                 bossMechanicNodes[nodeKey] = container
@@ -232,95 +276,6 @@ extension BossRenderingManager {
                 lineNode.glowWidth = 4
             }
             fadeOutAndRemoveBossNode(key: key)
-        }
-
-        // Render pylon direction indicators (Phase 2 only)
-        if bossState.phase == 2 && !bossState.pylons.filter({ !$0.isDestroyed }).isEmpty {
-            let hintKey = "voidharbinger_pylon_hint"
-            if bossMechanicNodes[hintKey] == nil {
-                let hintLabel = SKLabelNode(text: L10n.Boss.destroyPylons)
-                hintLabel.fontName = "Menlo-Bold"
-                hintLabel.fontSize = 20
-                hintLabel.fontColor = DesignColors.warningUI
-                hintLabel.position = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height - 90)
-                hintLabel.zPosition = 200
-                hintLabel.name = hintKey
-
-                let hintDown = SKAction.fadeAlpha(to: 0.5, duration: 0.5)
-                hintDown.timingMode = .easeInEaseOut
-                let hintUp = SKAction.fadeAlpha(to: 1.0, duration: 0.5)
-                hintUp.timingMode = .easeInEaseOut
-                let pulse = SKAction.sequence([hintDown, hintUp])
-                hintLabel.run(SKAction.repeatForever(pulse), withKey: "pulse")
-
-                scene.addChild(hintLabel)
-                bossMechanicNodes[hintKey] = hintLabel
-            }
-
-            let playerScenePos = CGPoint(x: gameState.player.x, y: gameState.arena.height - gameState.player.y)
-
-            for pylon in bossState.pylons where !pylon.isDestroyed {
-                let arrowKey = "voidharbinger_pylon_arrow_\(pylon.id)"
-                let pylonScenePos = CGPoint(x: pylon.x, y: gameState.arena.height - pylon.y)
-
-                let dx = pylonScenePos.x - playerScenePos.x
-                let dy = pylonScenePos.y - playerScenePos.y
-                let distance = sqrt(dx * dx + dy * dy)
-
-                if distance > 200 {
-                    let angle = atan2(dy, dx)
-
-                    let arrowDistance: CGFloat = 120
-                    let arrowX = playerScenePos.x + cos(angle) * arrowDistance
-                    let arrowY = playerScenePos.y + sin(angle) * arrowDistance
-
-                    let clampedX = max(50, min(gameState.arena.width - 50, arrowX))
-                    let clampedY = max(50, min(gameState.arena.height - 50, arrowY))
-
-                    if let arrow = bossMechanicNodes[arrowKey] as? SKShapeNode {
-                        arrow.position = CGPoint(x: clampedX, y: clampedY)
-                        arrow.zRotation = angle
-                    } else {
-                        let arrowPath = CGMutablePath()
-                        arrowPath.move(to: CGPoint(x: -15, y: -8))
-                        arrowPath.addLine(to: CGPoint(x: 15, y: 0))
-                        arrowPath.addLine(to: CGPoint(x: -15, y: 8))
-                        arrowPath.addLine(to: CGPoint(x: -10, y: 0))
-                        arrowPath.closeSubpath()
-
-                        let arrowNode = SKShapeNode(path: arrowPath)
-                        arrowNode.fillColor = DesignColors.warningUI
-                        arrowNode.strokeColor = DesignColors.warningUI.withAlphaComponent(0.8)
-                        arrowNode.lineWidth = 2
-                        arrowNode.glowWidth = 0
-                        arrowNode.position = CGPoint(x: clampedX, y: clampedY)
-                        arrowNode.zRotation = angle
-                        arrowNode.zPosition = 150
-                        arrowNode.name = arrowKey
-
-                        let arrowUp = SKAction.scale(to: 1.2, duration: 0.3)
-                        arrowUp.timingMode = .easeInEaseOut
-                        let arrowDown = SKAction.scale(to: 1.0, duration: 0.3)
-                        arrowDown.timingMode = .easeInEaseOut
-                        let arrowPulse = SKAction.sequence([arrowUp, arrowDown])
-                        arrowNode.run(SKAction.repeatForever(arrowPulse), withKey: "pulse")
-
-                        scene.addChild(arrowNode)
-                        bossMechanicNodes[arrowKey] = arrowNode
-                        fadeInMechanicNode(arrowNode)
-                    }
-                } else {
-                    fadeOutAndRemoveBossNode(key: arrowKey)
-                }
-            }
-        } else {
-            fadeOutAndRemoveBossNode(key: "voidharbinger_pylon_hint")
-
-            let arrowPrefix = "voidharbinger_pylon_arrow_"
-            let arrowKeys = bossMechanicNodes.keys.filter { $0.hasPrefix(arrowPrefix) }
-            for key in arrowKeys {
-                fadeOutAndRemoveBossNode(key: key)
-            }
         }
 
         // Render void rifts (Phase 3+)
@@ -534,7 +489,7 @@ extension BossRenderingManager {
             }
         }
 
-        // Phase 4: body becomes semi-transparent
+        // Phase 4: body becomes semi-transparent + fragment particle trails
         if phase >= 4 {
             bossNode.alpha = 0.75
             // Eye color shifts to red
@@ -543,6 +498,38 @@ extension BossRenderingManager {
             }) as? SKShapeNode {
                 eye.fillColor = UIColor.red.withAlphaComponent(0.9)
                 eye.strokeColor = UIColor(hex: "ff0044") ?? UIColor.red
+            }
+
+            // Fragment particle trails — small fading dots spawned along orbit
+            if let fragments = bossNode.childNode(withName: "fragments"),
+               fragments.action(forKey: "fragmentTrails") == nil {
+                let bossSize = cachedBossEnemy?.size ?? 60
+                let voidColor = UIColor(hex: BalanceConfig.VoidHarbinger.bossColor) ?? UIColor.purple
+                let spawnTrails = SKAction.run { [weak fragments] in
+                    guard let fragments = fragments, fragments.parent != nil else { return }
+                    // Spawn 2 trail dots at opposite fragment positions
+                    for i in 0..<2 {
+                        let baseAngle = CGFloat(i) * .pi
+                        let worldAngle = baseAngle + fragments.zRotation
+                        let fx = cos(worldAngle) * bossSize * 0.8
+                        let fy = sin(worldAngle) * bossSize * 0.8
+                        let dot = SKShapeNode(circleOfRadius: 2)
+                        dot.fillColor = voidColor.withAlphaComponent(0.5)
+                        dot.strokeColor = .clear
+                        dot.position = CGPoint(x: fx, y: fy)
+                        dot.zPosition = -0.1
+                        fragments.parent?.addChild(dot)
+                        dot.run(SKAction.sequence([
+                            SKAction.group([
+                                SKAction.fadeOut(withDuration: 0.4),
+                                SKAction.scale(to: 0.2, duration: 0.4)
+                            ]),
+                            SKAction.removeFromParent()
+                        ]))
+                    }
+                }
+                let trailCycle = SKAction.sequence([spawnTrails, SKAction.wait(forDuration: 0.15)])
+                fragments.run(SKAction.repeatForever(trailCycle), withKey: "fragmentTrails")
             }
         }
     }

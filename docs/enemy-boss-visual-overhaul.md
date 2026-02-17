@@ -331,6 +331,19 @@ Establish a consistent color system across all enemies:
 
 ---
 
+## Implementation Notes
+
+### Color System (7A)
+Enemy colors are centralized in `DesignSystem.swift` (`DesignColors.enemyTier1UI` through `enemyTier4UI` and `enemyBossUI`). The rendering code in `TDGameScene+EnemyVisuals.swift` maps enemy types to these constants. Boss fight compositions use their own thematic colors defined in `EntityRenderer+BossDetails.swift`.
+
+### Design Deviations from Spec
+- **Tank shape**: Uses armor plates + seam detail instead of double-stroke border (looks better in practice)
+- **Elite aura**: Uses crosshair pattern + 0.5 glowWidth instead of separate aura ring node (fewer nodes, same visual effect)
+- **Cyberboss TD board color**: Uses #ff4444 (red danger signal) on the TD board; boss fight composition uses white/cyan per spec
+- **Fragment trails**: Void Harbinger Phase 4 spawns 2 fading trail dots every 0.15s (lightweight alternative to full particle emitters)
+
+---
+
 ## Performance Safety Rules
 
 1. **Compound paths**: Any group of small decorative shapes (fragments, plates, dots) → single `CGMutablePath` node
