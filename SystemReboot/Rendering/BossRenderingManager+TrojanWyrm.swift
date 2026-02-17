@@ -14,16 +14,8 @@ extension BossRenderingManager {
         let wyrmDark = SKColor(red: 0, green: 0.6, blue: 0.15, alpha: 1.0)
         let wyrmLime = SKColor(red: 0.53, green: 1, blue: 0, alpha: 1.0)
 
-        // Render body segments (Phase 1, 2, 4) with position history trailing
+        // Render body segments (Phase 1, 2, 4) using game-state positions from drag-chain kinematics
         if bossState.phase != 3 {
-            // Record head position for smooth trailing
-            let headScenePos = CGPoint(x: boss.x, y: arenaH - boss.y)
-            wyrmHeadHistory.insert(headScenePos, at: 0)
-            let maxHistory = bossState.segments.count * wyrmHistorySpacing + wyrmHistorySpacing
-            if wyrmHeadHistory.count > maxHistory {
-                wyrmHeadHistory.removeLast(wyrmHeadHistory.count - maxHistory)
-            }
-
             let segCount = bossState.segments.count
             for (i, segment) in bossState.segments.enumerated() {
                 let nodeKey = "trojanwyrm_seg_\(i)"
@@ -49,13 +41,7 @@ extension BossRenderingManager {
                     fadeInMechanicNode(segNode)
                 }
 
-                // Use history-based position for smooth trailing, fallback to game-state
-                let historyIndex = (i + 1) * wyrmHistorySpacing
-                if historyIndex < wyrmHeadHistory.count {
-                    segNode.position = wyrmHeadHistory[historyIndex]
-                } else {
-                    segNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
-                }
+                segNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
 
                 if bossState.phase == 2 && i == bossState.ghostSegmentIndex {
                     segNode.fillColor = SKColor.cyan.withAlphaComponent(0.2)
@@ -142,8 +128,7 @@ extension BossRenderingManager {
                 }
             }
         } else {
-            // Clean up main body in Phase 3 and reset history (8b: fade-out)
-            wyrmHeadHistory.removeAll()
+            // Clean up main body in Phase 3 (8b: fade-out)
             for i in 0..<BalanceConfig.TrojanWyrm.segmentCount {
                 fadeOutAndRemoveBossNode(key: "trojanwyrm_seg_\(i)")
             }

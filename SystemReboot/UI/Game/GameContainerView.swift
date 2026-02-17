@@ -13,6 +13,7 @@ struct GameContainerView: View {
     /// When provided, the coordinator handles boss fight completion instead of NotificationCenter.
     var bossFightCoordinator: BossFightCoordinator? = nil
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @ObservedObject var appState = AppState.shared
     @State private var gameState: GameState?
     @State private var gameScene: GameScene?
@@ -26,6 +27,11 @@ struct GameContainerView: View {
     @State private var previousHealth: CGFloat = 0
     @State private var showBossFightTutorial = false
     @State private var showBossHealthFlash = false
+
+    /// iPad adaptive scale — 1.0 on iPhone, 1.5 on iPad
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: sizeClass)
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -90,10 +96,10 @@ struct GameContainerView: View {
                                 // Health value
                                 HStack(spacing: 6) {
                                     Image(systemName: "heart.fill")
-                                        .font(DesignTypography.headline(22))
+                                        .font(DesignTypography.headline(22 * scale))
                                         .foregroundColor(.red)
                                     Text("\(Int(state.player.health))/\(Int(state.player.maxHealth))")
-                                        .font(.system(size: 18, weight: .bold))
+                                        .font(.system(size: 18 * scale, weight: .bold))
                                         .foregroundColor(.white)
                                 }
 
@@ -115,7 +121,7 @@ struct GameContainerView: View {
                                             .frame(width: barWidth)
                                     }
                                 }
-                                .frame(width: 140, height: 10)
+                                .frame(width: 140 * scale, height: 10 * scale)
                             }
                         }
 
@@ -125,10 +131,10 @@ struct GameContainerView: View {
                         if let state = gameState {
                             VStack(spacing: 2) {
                                 Text(L10n.Game.HUD.time)
-                                    .font(.system(size: 11, weight: .medium))
+                                    .font(.system(size: 11 * scale, weight: .medium))
                                     .foregroundColor(DesignColors.textSecondary)
                                 Text(formatTime(state.timeElapsed))
-                                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                                    .font(.system(size: 24 * scale, weight: .bold, design: .monospaced))
                                     .foregroundColor(.white)
                             }
                             .padding(.horizontal, 16)
@@ -139,27 +145,15 @@ struct GameContainerView: View {
 
                         Spacer()
 
-                        // Right: Stats + Exit
+                        // Right: Exit
                         HStack(spacing: 16) {
-                            // Kills
-                            if let state = gameState {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "flame.fill")
-                                        .font(DesignTypography.headline(18))
-                                        .foregroundColor(.orange)
-                                    Text("\(state.stats.enemiesKilled)")
-                                        .font(.system(size: 18, weight: .bold))
-                                        .foregroundColor(.white)
-                                }
-                            }
-
                             // Exit button
                             Button(action: {
                                 HapticsService.shared.play(.light)
                                 onExit()
                             }) {
                                 Image(systemName: "xmark.circle.fill")
-                                    .font(DesignTypography.display(28))
+                                    .font(DesignTypography.display(28 * scale))
                                     .foregroundColor(.white.opacity(0.8))
                             }
                         }
@@ -181,13 +175,14 @@ struct GameContainerView: View {
                         VStack(spacing: 4) {
                             // Boss name (format type string for display)
                             Text(boss.type.replacingOccurrences(of: "_", with: " ").uppercased())
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .font(.system(size: 14 * scale, weight: .bold, design: .monospaced))
                                 .foregroundColor(.purple)
 
                             // Boss HP bar - full width (7c: animated + tick marks + flash)
                             GeometryReader { geo in
                                 let healthPercent = boss.maxHealth > 0 ? max(0, min(1, boss.health / boss.maxHealth)) : 0
                                 let barWidth = max(1, geo.size.width * CGFloat(healthPercent))
+                                let barHeight = 12 * scale
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(DesignColors.muted.opacity(0.3))
@@ -196,8 +191,8 @@ struct GameContainerView: View {
                                     ForEach([0.75, 0.50, 0.25], id: \.self) { tick in
                                         Rectangle()
                                             .fill(Color.white.opacity(0.3))
-                                            .frame(width: 1, height: 12)
-                                            .position(x: geo.size.width * tick, y: 6)
+                                            .frame(width: 1, height: barHeight)
+                                            .position(x: geo.size.width * tick, y: barHeight / 2)
                                     }
 
                                     RoundedRectangle(cornerRadius: 4)
@@ -219,11 +214,11 @@ struct GameContainerView: View {
                                     }
                                 }
                             }
-                            .frame(height: 12)
+                            .frame(height: 12 * scale)
 
                             // Boss HP text
                             Text("\(Int(boss.health)) / \(Int(boss.maxHealth))")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .font(.system(size: 12 * scale, weight: .medium, design: .monospaced))
                                 .foregroundColor(.white.opacity(0.8))
                         }
                         .padding(.horizontal, 40)
@@ -238,10 +233,10 @@ struct GameContainerView: View {
                             // Level
                             HStack(spacing: 4) {
                                 Text(L10n.Game.HUD.level)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: 12 * scale, weight: .medium))
                                     .foregroundColor(DesignColors.textSecondary)
                                 Text("\(state.upgradeLevel + 1)")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 20 * scale, weight: .bold))
                                     .foregroundColor(.cyan)
                             }
 
@@ -257,15 +252,15 @@ struct GameContainerView: View {
                                         .frame(width: xpWidth)
                                 }
                             }
-                            .frame(width: 100, height: 6)
+                            .frame(width: 100 * scale, height: 6 * scale)
 
                             // Hash (Ħ) earned display
                             HStack(spacing: 4) {
                                 Text("Ħ")
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.system(size: 18 * scale, weight: .bold))
                                     .foregroundColor(DesignColors.primary)
                                 Text("\(state.stats.hashEarned)")
-                                    .font(.system(size: 18, weight: .bold))
+                                    .font(.system(size: 18 * scale, weight: .bold))
                                     .foregroundColor(DesignColors.primary)
                             }
 
@@ -274,7 +269,7 @@ struct GameContainerView: View {
                         .padding(.vertical, 10)
                         .background(Color.black.opacity(0.5))
                         .cornerRadius(10)
-                        .padding(.bottom, 100) // Above joystick
+                        .padding(.bottom, 100 * scale) // Above joystick
                     }
                 }
 
@@ -352,10 +347,9 @@ struct GameContainerView: View {
 
         // Use selected Protocol from AppState (unified weapon system)
         let gameProtocol = appState.selectedProtocolObject
-        let arenaType = appState.selectedArena
 
-        // All active game modes now use boss encounter architecture
-        let bossType = mapArenaToBoss(arenaType)
+        // Use boss type from coordinator (TD-triggered fights) or fall back to arena mapping
+        let bossType = bossFightCoordinator?.activeBossType ?? mapArenaToBoss(appState.selectedArena)
         let state = GameStateFactory.shared.createBossGameState(
             gameProtocol: gameProtocol,
             bossType: bossType,

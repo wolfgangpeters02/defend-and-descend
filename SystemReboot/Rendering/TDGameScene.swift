@@ -733,6 +733,8 @@ class TDGameScene: SKScene {
         innerGlow.zPosition = -0.5
         coreContainer.addChild(innerGlow)
 
+        // CPU sits above lanes (pathLayer z=3) and blockers (z=3.5), below towers (z=4)
+        coreContainer.zPosition = 3.8
         backgroundLayer.addChild(coreContainer)
 
         // Register CPU glow nodes for zoom-based LOD

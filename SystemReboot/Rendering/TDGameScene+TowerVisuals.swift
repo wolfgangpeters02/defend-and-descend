@@ -142,6 +142,7 @@ extension TDGameScene {
                 if let prevAttackTime = towerLastAttackTimes[tower.id] {
                     if tower.lastAttackTime > prevAttackTime {
                         triggerTowerFireAnimation(node: node, tower: tower)
+                        AudioManager.shared.play(.towerFire)
                     }
                 }
                 towerLastAttackTimes[tower.id] = tower.lastAttackTime

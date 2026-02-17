@@ -10,6 +10,7 @@ struct BossLootModal: View {
 
     // MARK: - State
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var currentItemIndex: Int = 0
     @State private var itemDecryptProgress: [Int] = []
     @State private var revealedItems: Set<Int> = []
@@ -24,6 +25,10 @@ struct BossLootModal: View {
 
     private var tapsRequired: Int {
         BalanceConfig.BossLootReveal.tapsToDecrypt
+    }
+
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: sizeClass)
     }
 
     // MARK: - Body
@@ -74,14 +79,14 @@ struct BossLootModal: View {
     private var headerView: some View {
         VStack(spacing: 8) {
             Text(allDecrypted ? L10n.BossLoot.decryptionComplete : L10n.BossLoot.neutralized)
-                .font(.system(size: 28, weight: .black, design: .monospaced))
+                .font(.system(size: 28 * scale, weight: .black, design: .monospaced))
                 .foregroundColor(allDecrypted ? .green : DesignColors.primary)
                 .shadow(color: (allDecrypted ? Color.green : DesignColors.primary).opacity(headerGlow ? 0.8 : 0.4), radius: 10)
                 .offset(x: glitchOffset)
 
             if !allDecrypted {
                 Text(L10n.BossLoot.decryptingPackets)
-                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .font(.system(size: 14 * scale, weight: .medium, design: .monospaced))
                     .foregroundColor(DesignColors.muted)
             }
 
@@ -110,7 +115,7 @@ struct BossLootModal: View {
     }
 
     private var cardRow: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 16 * scale) {
             ForEach(Array(reward.items.enumerated()), id: \.element.id) { index, item in
                 DataPacketCard(
                     item: item,
@@ -119,6 +124,7 @@ struct BossLootModal: View {
                     tapsRequired: tapsRequired,
                     isRevealed: revealedItems.contains(index),
                     isActive: index == currentItemIndex && !allDecrypted,
+                    scale: scale,
                     onTap: { handleCardTap(index: index) }
                 )
             }
@@ -138,9 +144,9 @@ struct BossLootModal: View {
                         Image(systemName: "square.and.arrow.down.fill")
                         Text(L10n.Common.collect)
                     }
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .font(.system(size: 18 * scale, weight: .bold, design: .monospaced))
                     .foregroundColor(.black)
-                    .frame(width: 200, height: 56)
+                    .frame(width: 200 * scale, height: 56 * scale)
                     .background(collectReady ? Color.green : Color.green.opacity(0.4))
                     .cornerRadius(12)
                     .shadow(color: Color.green.opacity(collectReady ? 0.5 : 0.2), radius: 10)
@@ -248,14 +254,17 @@ struct BossLootModal: View {
         switch item.type {
         case .hash:
             HapticsService.shared.play(.medium)
+            AudioManager.shared.play(.hashCollect)
         case .protocolBlueprint(_, let rarity):
             switch rarity {
             case .legendary: HapticsService.shared.play(.legendary)
             case .epic: HapticsService.shared.play(.heavy)
             default: HapticsService.shared.play(.medium)
             }
+            AudioManager.shared.play(.levelUp)
         case .sectorAccess:
             HapticsService.shared.play(.success)
+            AudioManager.shared.play(.victory)
         }
 
         // Move to next item or complete
@@ -301,6 +310,7 @@ struct DataPacketCard: View {
     let tapsRequired: Int
     let isRevealed: Bool
     let isActive: Bool
+    var scale: CGFloat = 1.0
     let onTap: () -> Void
 
     @State private var glowPulse: Bool = false
@@ -318,14 +328,14 @@ struct DataPacketCard: View {
             // Glow background
             RoundedRectangle(cornerRadius: 12)
                 .fill(itemColor.opacity(isRevealed ? 0.2 : 0.1 * Double(decryptProgress + 1)))
-                .frame(width: 100, height: 140)
+                .frame(width: 100 * scale, height: 140 * scale)
                 .blur(radius: 20)
                 .scaleEffect(glowPulse && isActive ? 1.1 : 1.0)
 
             // Card background
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(hex: "0d1117") ?? Color.black)
-                .frame(width: 90, height: 130)
+                .frame(width: 90 * scale, height: 130 * scale)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
                         .stroke(
@@ -343,7 +353,7 @@ struct DataPacketCard: View {
                     encryptedContent
                 }
             }
-            .frame(width: 90, height: 130)
+            .frame(width: 90 * scale, height: 130 * scale)
         }
         .scaleEffect(isRevealed ? 1.05 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isRevealed)
@@ -372,23 +382,23 @@ struct DataPacketCard: View {
             ZStack {
                 Circle()
                     .fill(itemColor.opacity(0.15))
-                    .frame(width: 50, height: 50)
+                    .frame(width: 50 * scale, height: 50 * scale)
 
                 if decryptProgress > 0 {
                     Image(systemName: item.iconName)
-                        .font(.system(size: 24))
+                        .font(.system(size: 24 * scale))
                         .foregroundColor(itemColor.opacity(progressRatio))
                         .blur(radius: CGFloat(tapsRequired - decryptProgress) * 2)
                 } else {
                     Image(systemName: "lock.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 20 * scale))
                         .foregroundColor(DesignColors.muted)
                 }
             }
 
             // Encrypted text
             Text(garbledText)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 10 * scale, weight: .bold, design: .monospaced))
                 .foregroundColor(itemColor.opacity(0.5 + progressRatio * 0.3))
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
@@ -397,11 +407,11 @@ struct DataPacketCard: View {
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color(hex: "1a1a24") ?? DesignColors.muted)
-                    .frame(width: 70, height: 4)
+                    .frame(width: 70 * scale, height: 4 * scale)
 
                 RoundedRectangle(cornerRadius: 2)
                     .fill(itemColor)
-                    .frame(width: 70 * progressRatio, height: 4)
+                    .frame(width: 70 * scale * progressRatio, height: 4 * scale)
             }
         }
         .padding(8)
@@ -413,24 +423,24 @@ struct DataPacketCard: View {
             ZStack {
                 Circle()
                     .fill(itemColor.opacity(0.2))
-                    .frame(width: 50, height: 50)
+                    .frame(width: 50 * scale, height: 50 * scale)
 
                 Image(systemName: item.iconName)
-                    .font(.system(size: 26))
+                    .font(.system(size: 26 * scale))
                     .foregroundColor(itemColor)
                     .shadow(color: itemColor, radius: 8)
             }
 
             // Title
             Text(item.decryptedTitle)
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .font(.system(size: 12 * scale, weight: .bold, design: .monospaced))
                 .foregroundColor(.white)
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
 
             // Subtitle
             Text(item.decryptedSubtitle)
-                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .font(.system(size: 8 * scale, weight: .medium, design: .monospaced))
                 .foregroundColor(itemColor)
                 .lineLimit(1)
         }

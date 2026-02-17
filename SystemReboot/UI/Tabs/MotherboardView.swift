@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Motherboard View - Embedded TD Game with HUD
 
 struct MotherboardView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @ObservedObject var appState = AppState.shared
     @ObservedObject var embeddedGameController: EmbeddedTDGameController  // Passed from parent to persist across lifecycle
     @Binding var showSystemMenu: Bool  // Controls Arsenal/Settings sheet
@@ -125,15 +126,8 @@ struct MotherboardView: View {
                     bossDifficultySelector
                 }
 
-                // Overclock button (bottom right, above build deck)
-                if !embeddedGameController.overclockActive && !embeddedGameController.isBossActive {
-                    overclockButton
-                }
-
-                // Overclock active indicator
-                if embeddedGameController.overclockActive {
-                    overclockActiveIndicator
-                }
+                // Overclock ring (always present — adapts to ready/active/unavailable)
+                overclockRing
 
                 // Camera tutorial overlay (FTUE — first-time players)
                 if embeddedGameController.showCameraTutorial {
@@ -246,102 +240,113 @@ struct MotherboardView: View {
         }
     }
 
+    /// Scale factor for HUD chips: 1.0 on iPhone SE (320pt), up to 1.25 on larger phones, up to 1.5 on iPad
+    private var hudScale: CGFloat {
+        let maxScale: CGFloat = sizeClass == .regular ? 1.5 : 1.25
+        return min(maxScale, max(1.0, UIScreen.main.bounds.width / 340))
+    }
+
     private var motherboardHUD: some View {
-        VStack(spacing: 4) {
-            // Row 1: SYSTEM button | Efficiency
-            HStack(spacing: 10) {
-                // SYSTEM button - opens Arsenal/Settings menu
-                Button {
-                    HapticsService.shared.play(.selection)
-                    showSystemMenu = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 10))
-                        Text(L10n.Motherboard.system)
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
-                            .lineLimit(1)
-                    }
-                    .foregroundColor(DesignColors.secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(DesignColors.surface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6)
-                                    .stroke(DesignColors.secondary.opacity(0.5), lineWidth: 1)
-                            )
-                            .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
-                    )
-                }
-                .tutorialGlow(color: DesignColors.primary, isActive: hintManager.hasUnseenBlueprints)
+        let s = hudScale
+        let fontSize: CGFloat = round(10 * s)
+        let iconSize: CGFloat = round(11 * s)
+        let hPad: CGFloat = round(7 * s)
+        let vPad: CGFloat = round(5 * s)
+        let chipSpacing: CGFloat = round(6 * s)
+        let innerSpacing: CGFloat = round(3 * s)
+        let cornerR: CGFloat = round(6 * s)
 
-                Spacer()
+        return HStack(spacing: chipSpacing) {
+            // Watts chip - tappable for PSU info/upgrade
+            HStack(spacing: innerSpacing) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: iconSize))
+                Text("\(embeddedGameController.gameState?.powerUsed ?? 0)/\(embeddedGameController.gameState?.powerCapacity ?? 300)W")
+                    .font(.system(size: fontSize, weight: .semibold, design: .monospaced))
+                    .lineLimit(1)
+                    .fixedSize()
+            }
+            .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
+            .padding(.horizontal, hPad)
+            .padding(.vertical, vPad)
+            .background(
+                RoundedRectangle(cornerRadius: cornerR)
+                    .fill(DesignColors.surface)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+            )
+            .offset(x: embeddedGameController.powerShakeTriggered ? -3 : 0)
+            .animation(embeddedGameController.powerShakeTriggered ?
+                Animation.easeInOut(duration: 0.05).repeatCount(6, autoreverses: true) :
+                .default, value: embeddedGameController.powerShakeTriggered)
+            .onTapGesture { showCurrencyInfo = .power }
 
-                // Efficiency bar
-                HStack(spacing: 4) {
-                    let efficiency = (embeddedGameController.gameState?.efficiency ?? 100) / 100.0
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(DesignColors.muted.opacity(0.3))
-                            RoundedRectangle(cornerRadius: 3)
-                                .fill(efficiencyColor)
-                                .frame(width: geo.size.width * efficiency)
-                        }
-                    }
-                    .frame(width: 50, height: 6)
-
-                    Text("\(Int((embeddedGameController.gameState?.efficiency ?? 100)))%")
-                        .font(DesignTypography.caption(11))
-                        .foregroundColor(efficiencyColor)
-                        .lineLimit(1)
-                        .fixedSize()
-                }
+            // Efficiency chip - color-coded percentage
+            Text("\(Int(embeddedGameController.gameState?.efficiency ?? 100))%")
+                .font(.system(size: fontSize, weight: .bold, design: .monospaced))
+                .foregroundColor(efficiencyColor)
+                .lineLimit(1)
                 .fixedSize()
+                .padding(.horizontal, hPad)
+                .padding(.vertical, vPad)
+                .background(
+                    RoundedRectangle(cornerRadius: cornerR)
+                        .fill(DesignColors.surface)
+                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                )
+
+            // Hash chip - tappable for currency info
+            HStack(spacing: innerSpacing) {
+                Image(systemName: "number.circle.fill")
+                    .font(.system(size: iconSize))
+                Text("Ħ" + NumberFormatUtils.compact(
+                    embeddedGameController.gameState?.hash ?? appState.currentPlayer.hash
+                ))
+                    .font(.system(size: fontSize, weight: .bold, design: .monospaced))
+                    .lineLimit(1)
+                    .fixedSize()
             }
+            .foregroundColor(.cyan)
+            .padding(.horizontal, hPad)
+            .padding(.vertical, vPad)
+            .background(
+                RoundedRectangle(cornerRadius: cornerR)
+                    .fill(DesignColors.surface)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+            )
+            .onTapGesture { showCurrencyInfo = .hash }
 
-            // Row 2: Power | Hash
-            HStack {
-                // Power (⚡) - PSU usage - tappable for info
-                HStack(spacing: 4) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
-                    Text("\(embeddedGameController.gameState?.powerUsed ?? 0)/\(embeddedGameController.gameState?.powerCapacity ?? 300)W")
-                        .font(DesignTypography.caption(12))
-                        .foregroundColor(embeddedGameController.powerShakeTriggered ? .red : powerColor)
-                        .lineLimit(1)
-                }
-                .offset(x: embeddedGameController.powerShakeTriggered ? -3 : 0)
-                .animation(embeddedGameController.powerShakeTriggered ?
-                    Animation.easeInOut(duration: 0.05).repeatCount(6, autoreverses: true) :
-                    .default, value: embeddedGameController.powerShakeTriggered)
-                .onTapGesture { showCurrencyInfo = .power }
+            Spacer()
 
-                Spacer()
-
-                // Hash (Ħ) - Currency with storage cap - tappable for info
-                HStack(spacing: 4) {
-                    Image(systemName: "number.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.cyan)
-                    Text(NumberFormatUtils.hashWithCap(
-                        current: embeddedGameController.gameState?.hash ?? appState.currentPlayer.hash,
-                        max: embeddedGameController.gameState?.hashStorageCapacity ?? appState.currentPlayer.hashStorageCapacity
-                    ))
-                        .font(DesignTypography.headline(12))
-                        .foregroundColor(.cyan)
+            // System chip - opens Arsenal/Settings
+            Button {
+                HapticsService.shared.play(.selection)
+                showSystemMenu = true
+            } label: {
+                HStack(spacing: innerSpacing) {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: fontSize))
+                    Text(L10n.Motherboard.system)
+                        .font(.system(size: fontSize, weight: .bold, design: .monospaced))
                         .lineLimit(1)
                         .fixedSize()
                 }
-                .onTapGesture { showCurrencyInfo = .hash }
+                .foregroundColor(DesignColors.secondary)
+                .padding(.horizontal, hPad)
+                .padding(.vertical, vPad)
+                .background(
+                    RoundedRectangle(cornerRadius: cornerR)
+                        .fill(DesignColors.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: cornerR)
+                                .stroke(DesignColors.secondary.opacity(0.5), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+                )
             }
+            .tutorialGlow(color: DesignColors.primary, isActive: hintManager.hasUnseenBlueprints)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(DesignColors.surface.opacity(0.85))
+        .padding(.horizontal, round(12 * s))
+        .padding(.vertical, round(6 * s))
         .sheet(item: $showCurrencyInfo) { info in
             CurrencyInfoSheet(info: info, onPSUUpgraded: { cost in
                 // Sync PSU capacity and hash deduction to live game state
@@ -357,19 +362,6 @@ struct MotherboardView: View {
 
     private var efficiencyColor: Color {
         DesignHelpers.efficiencyColor(embeddedGameController.gameState?.efficiency ?? 100)
-    }
-
-    /// Format hash with compact notation for large numbers (1.2K, 3.4M, etc.)
-    private func formatHashCompact(_ value: Int) -> String {
-        if value >= 1_000_000 {
-            let millions = Double(value) / 1_000_000.0
-            return String(format: "%.1fM", millions)
-        } else if value >= 10_000 {
-            let thousands = Double(value) / 1_000.0
-            return String(format: "%.1fK", thousands)
-        } else {
-            return "\(value)"
-        }
     }
 
     private var powerColor: Color {
@@ -440,6 +432,7 @@ struct MotherboardView: View {
                         Button {
                             embeddedGameController.scene?.upgradeTower(tower.id)
                             HapticsService.shared.play(.success)
+                            AudioManager.shared.play(.towerUpgrade)
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "arrow.up.circle.fill")
@@ -747,74 +740,100 @@ struct MotherboardView: View {
         DesignHelpers.difficultyColor(difficulty)
     }
 
-    /// Overclock button (visible when not overclocking)
-    private var overclockButton: some View {
-        VStack {
+    // MARK: - Overclock Ring (Unified Component)
+
+    private enum OverclockState {
+        case ready       // Can tap to activate
+        case active      // Running — show progress ring + countdown
+        case unavailable // Boss active — show disabled with reason
+    }
+
+    private var currentOverclockState: OverclockState {
+        if embeddedGameController.overclockActive { return .active }
+        if embeddedGameController.isBossActive { return .unavailable }
+        return .ready
+    }
+
+    /// Always-visible overclock component that adapts to ready/active/unavailable
+    private var overclockRing: some View {
+        let state = currentOverclockState
+        let ringSize: CGFloat = 52
+        let duration = BalanceConfig.Overclock.duration
+        let remaining = embeddedGameController.overclockTimeRemaining
+        let progress = duration > 0 ? remaining / duration : 0
+
+        return VStack {
             HStack {
                 Spacer()
 
                 Button {
+                    guard state == .ready else { return }
                     HapticsService.shared.play(.heavy)
                     embeddedGameController.scene?.activateOverclock()
                 } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: "bolt.circle.fill")
-                            .font(.system(size: 32))
-                        Text(L10n.TD.overclock)
-                            .font(DesignTypography.caption(10))
+                    VStack(spacing: 3) {
+                        ZStack {
+                            // Background ring (track)
+                            Circle()
+                                .fill(DesignColors.surface.opacity(0.9))
+                                .frame(width: ringSize, height: ringSize)
+
+                            // Progress ring (active state only)
+                            if state == .active {
+                                Circle()
+                                    .trim(from: 0, to: progress)
+                                    .stroke(
+                                        Color.orange,
+                                        style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                                    )
+                                    .rotationEffect(.degrees(-90))
+                                    .frame(width: ringSize - 4, height: ringSize - 4)
+                                    .animation(.linear(duration: 0.5), value: progress)
+                            }
+
+                            // Outer ring (state-dependent)
+                            Circle()
+                                .stroke(
+                                    state == .unavailable
+                                        ? DesignColors.muted.opacity(0.3)
+                                        : Color.orange.opacity(state == .active ? 0.8 : 0.5),
+                                    lineWidth: state == .active ? 3 : 2
+                                )
+                                .frame(width: ringSize, height: ringSize)
+
+                            // Bolt icon
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(
+                                    state == .unavailable ? DesignColors.muted : .orange
+                                )
+                        }
+
+                        // Label below ring
+                        switch state {
+                        case .ready:
+                            Text(L10n.TD.overclock)
+                                .font(DesignTypography.caption(9))
+                                .foregroundColor(.orange)
+                        case .active:
+                            Text(String(format: "%.0fs", remaining))
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(.orange)
+                        case .unavailable:
+                            Text(L10n.TD.bossActive)
+                                .font(DesignTypography.caption(8))
+                                .foregroundColor(DesignColors.muted)
+                        }
                     }
-                    .foregroundColor(.orange)
-                    .padding(12)
-                    .background(
-                        Circle()
-                            .fill(DesignColors.surface.opacity(0.9))
-                    )
-                    .overlay(
-                        Circle()
-                            .stroke(Color.orange.opacity(0.5), lineWidth: 2)
-                    )
                 }
+                .disabled(state != .ready)
             }
             .padding(.trailing, 16)
             .padding(.top, 60)
 
             Spacer()
         }
-    }
-
-    /// Overclock active indicator
-    private var overclockActiveIndicator: some View {
-        VStack {
-            HStack {
-                Spacer()
-
-                VStack(spacing: 4) {
-                    Image(systemName: "bolt.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundColor(.orange)
-
-                    Text(L10n.TD.overclocking)
-                        .font(DesignTypography.caption(9))
-                        .foregroundColor(.orange)
-
-                    Text(String(format: "%.0fs", embeddedGameController.overclockTimeRemaining))
-                        .font(DesignTypography.headline(14))
-                        .foregroundColor(.white)
-                }
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.orange.opacity(0.3))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.orange, lineWidth: 2)
-                        )
-                )
-            }
-            .padding(.trailing, 16)
-            .padding(.top, 60)
-
-            Spacer()
-        }
+        .animation(.easeInOut(duration: 0.25), value: state == .active)
+        .animation(.easeInOut(duration: 0.25), value: state == .unavailable)
     }
 }

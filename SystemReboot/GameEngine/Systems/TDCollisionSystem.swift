@@ -105,6 +105,7 @@ struct TDCollisionSystem {
                         position: CGPoint(x: enemy.x, y: enemy.y),
                         kind: .impact(color: proj.color)
                     ))
+                    AudioManager.shared.play(.enemyHit)
 
                     // Splash damage
                     if let splash = proj.splash, splash > 0 {
@@ -133,6 +134,7 @@ struct TDCollisionSystem {
                             position: CGPoint(x: enemy.x, y: enemy.y),
                             kind: .kill(color: enemy.color, hashValue: enemy.hashValue, isBoss: enemy.isBoss)
                         ))
+                        AudioManager.shared.play(.enemyDeath)
                     }
 
                     state.enemies[enemyIndex] = enemy

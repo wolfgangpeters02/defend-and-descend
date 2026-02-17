@@ -240,6 +240,11 @@ extension PlayerProfile {
             profile.hasSeenBossTutorial = true
         }
 
+        // Sync defeatedBossCount with actual defeated bosses (fixes missing component unlocks)
+        if profile.unlockedComponents.defeatedBossCount < profile.defeatedSectorBosses.count {
+            profile.unlockedComponents.defeatedBossCount = profile.defeatedSectorBosses.count
+        }
+
         // Migrate legacy weapon data → protocol system
         // Old saves may only have weaponLevels/unlocks.weapons; copy to canonical protocol fields
         for (weaponId, level) in profile.weaponLevels {

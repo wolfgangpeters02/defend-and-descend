@@ -82,6 +82,7 @@ class PickupSystem {
             state.sessionHash += pickup.value
             state.stats.hashCollected += pickup.value
             state.stats.hashEarned += pickup.value
+            AudioManager.shared.play(.hashCollect)
 
             // Collection particle - cyan for Hash (use state time instead of Date())
             state.particles.append(Particle(

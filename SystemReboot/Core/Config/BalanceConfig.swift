@@ -580,10 +580,8 @@ struct BalanceConfig {
         static let tileGridSize: Int = 4               // 4×4 grid
         static let tileCount: Int = 16                 // tileGridSize²
         static let safeTileCount: Int = 2              // Safe zones per cycle
-        static let warningTileCount: Int = 4           // Tiles that become lava per cycle
-        static let tileChangeInterval: Double = 5.0
-        static let tileWarningDuration: Double = 2.0
-        static let lavaTileDPS: CGFloat = 40           // DPS while standing on lava (was 60)
+        static let tileChangeInterval: Double = 7.0
+        static let lavaTileDPS: CGFloat = 40           // DPS on any non-safe tile
         static let phase2BossMoveSpeed: CGFloat = 150  // Phase 2 boss movement speed to safe zone
 
         // Phase 3 - Overheat (Chase + Steam Trail)
@@ -830,6 +828,9 @@ struct BalanceConfig {
 
         /// Minimum seconds between boss victory and next boss spawn
         static let cooldownAfterVictory: TimeInterval = 180
+
+        /// Cooldown after boss ignored or fight lost (shorter than victory)
+        static let cooldownAfterIgnoreOrLoss: TimeInterval = 90
     }
 
     // MARK: - TD Session Defaults

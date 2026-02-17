@@ -804,44 +804,24 @@ class BossSimulator {
 
     private func updateOverclockerPhase2() {
         let tileChangeInterval = BalanceConfig.Overclocker.tileChangeInterval
-        let warningDuration = BalanceConfig.Overclocker.tileWarningDuration
 
         // Timer for floor pattern changes
         if lastTileChangeTime == 0 || currentTime - lastTileChangeTime > tileChangeInterval {
             lastTileChangeTime = currentTime
 
-            // Reset grid
-            var newTiles = Array(repeating: 0, count: 16)
+            // All tiles lava except safe zones
+            var newTiles = Array(repeating: 2, count: 16) // 2 = lava
 
             // Pick 2 safe zones
             var available = Array(0..<16)
             let safe1 = available.randomElement()!
             available.removeAll { $0 == safe1 }
             let safe2 = available.randomElement()!
-            available.removeAll { $0 == safe2 }
 
             newTiles[safe1] = 3  // safe
             newTiles[safe2] = 3  // safe
 
-            // Pick 4 warning zones
-            for _ in 0..<4 {
-                if let lavaIndex = available.randomElement() {
-                    newTiles[lavaIndex] = 1  // warning
-                    available.removeAll { $0 == lavaIndex }
-                }
-            }
-
             overclockerTileStates = newTiles
-        }
-
-        // Convert warnings to lava after warning duration
-        let timeSinceChange = currentTime - lastTileChangeTime
-        if timeSinceChange > warningDuration {
-            for i in 0..<16 {
-                if overclockerTileStates[i] == 1 {
-                    overclockerTileStates[i] = 2  // lava
-                }
-            }
         }
 
         // Move boss to nearest safe zone
@@ -857,12 +837,12 @@ class BossSimulator {
         }
         moveBossTowards(x: targetPos.x, y: targetPos.y, speed: BalanceConfig.Overclocker.phase2BossMoveSpeed)
 
-        // Check player lava damage
+        // All non-safe tiles deal lava damage
         let col = Int((playerX - 0) / (arenaWidth / 4))
         let row = Int((playerY - 0) / (arenaHeight / 4))
         if col >= 0 && col < 4 && row >= 0 && row < 4 {
             let index = row * 4 + col
-            if index < overclockerTileStates.count && overclockerTileStates[index] == 2 {
+            if index < overclockerTileStates.count && overclockerTileStates[index] != 3 {
                 takeDamage(BalanceConfig.Overclocker.lavaTileDPS * CGFloat(deltaTime), source: "lava")
             }
         }

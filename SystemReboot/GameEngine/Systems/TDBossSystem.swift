@@ -105,11 +105,13 @@ struct TDBossSystem {
 
     /// Spawn a boss at the current threat milestone
     static func spawnBoss(state: inout TDGameState) {
-        // Pick the lane/sector with highest threat or random
+        // Pick a random lane from all unlocked sectors
         let activeLanes = state.paths
-        guard let lane = activeLanes.randomElement(), !lane.waypoints.isEmpty else {
-            return
-        }
+        guard !activeLanes.isEmpty else { return }
+
+        let laneIndex = Int.random(in: 0..<activeLanes.count)
+        let lane = activeLanes[laneIndex]
+        guard !lane.waypoints.isEmpty else { return }
 
         let startPos = lane.waypoints[0]
 
@@ -123,7 +125,7 @@ struct TDBossSystem {
             type: bossType,
             x: startPos.x,
             y: startPos.y,
-            pathIndex: 0,
+            pathIndex: laneIndex,
             pathProgress: 0,
             health: BalanceConfig.TDBoss.health,
             maxHealth: BalanceConfig.TDBoss.health,
@@ -238,12 +240,14 @@ struct TDBossSystem {
     private static func onBossReachedCPU(state: inout TDGameState) {
         // Apply efficiency loss (20% = 4 leaks)
         state.leakCounter += efficiencyLossOnIgnore
+        PathSystem.checkFreezeAfterLeakChange(state: &state)
 
         // Remove boss from enemies
         if let bossId = state.activeBossId {
             state.enemies.removeAll { $0.id == bossId }
         }
 
+        state.bossCooldownRemaining = BalanceConfig.TDBoss.cooldownAfterIgnoreOrLoss
         resetBossState(state: &state)
     }
 
@@ -323,12 +327,14 @@ struct TDBossSystem {
     static func onBossFightLostLetPass(state: inout TDGameState) {
         // Apply efficiency loss
         state.leakCounter += efficiencyLossOnIgnore
+        PathSystem.checkFreezeAfterLeakChange(state: &state)
 
         // Remove boss
         if let bossId = state.activeBossId {
             state.enemies.removeAll { $0.id == bossId }
         }
 
+        state.bossCooldownRemaining = BalanceConfig.TDBoss.cooldownAfterIgnoreOrLoss
         resetBossState(state: &state)
     }
 

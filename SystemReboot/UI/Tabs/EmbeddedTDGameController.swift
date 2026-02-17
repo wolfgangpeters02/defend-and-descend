@@ -113,6 +113,14 @@ class EmbeddedTDGameController: ObservableObject {
                 }
                 // Track boss + overclock state (delegated to +BossState extension)
                 self?.syncBossState(from: newState)
+                // Inject debug hash into live game state if pending
+                #if DEBUG
+                if AppState.shared.debugHashPending > 0 {
+                    self?.scene?.state?.hash += AppState.shared.debugHashPending
+                    AppState.shared.debugHashPending = 0
+                }
+                #endif
+
                 // Sync hash to player profile (throttled to once per second to avoid excessive UserDefaults writes)
                 if newState.hash != AppState.shared.currentPlayer.hash {
                     let now = Date()
@@ -238,6 +246,7 @@ class EmbeddedTDGameController: ObservableObject {
         if result.success {
             // Play celebration
             HapticsService.shared.play(.legendary)
+            AudioManager.shared.play(.victory)
 
             // Refresh mega-board visuals
             scene?.refreshMegaBoardVisuals()
@@ -248,6 +257,7 @@ class EmbeddedTDGameController: ObservableObject {
             return true
         } else {
             HapticsService.shared.play(.error)
+            AudioManager.shared.play(.uiDeny)
             return false
         }
     }

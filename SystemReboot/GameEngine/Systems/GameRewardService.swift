@@ -108,6 +108,7 @@ struct GameRewardService {
             profile.xp -= PlayerProfile.xpForLevel(profile.level)
             profile.level += 1
             AnalyticsService.shared.trackLevelUp(newLevel: profile.level)
+            AudioManager.shared.play(.levelUp)
         }
     }
 }

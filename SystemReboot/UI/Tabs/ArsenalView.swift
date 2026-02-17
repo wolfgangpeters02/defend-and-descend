@@ -4,7 +4,7 @@ import SwiftUI
 
 struct SystemMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTab: SystemMenuTab = .arsenal
+    @Binding var selectedTab: SystemMenuTab
 
     enum SystemMenuTab: String, CaseIterable {
         case arsenal
@@ -12,35 +12,55 @@ struct SystemMenuSheet: View {
     }
 
     var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Segmented tab picker
-                Picker("", selection: $selectedTab) {
-                    Text(L10n.Tabs.arsenal).tag(SystemMenuTab.arsenal)
-                    Text(L10n.Tabs.upgrades).tag(SystemMenuTab.upgrades)
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                .padding(.top, 8)
-
-                // Tab content
-                switch selectedTab {
-                case .arsenal:
-                    ArsenalView()
-                case .upgrades:
-                    UpgradesView()
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(DesignColors.muted)
+        VStack(spacing: 0) {
+            // Header bar with tab switcher and close button
+            HStack {
+                // Custom segmented control (avoids SwiftUI Picker bugs in sheets)
+                HStack(spacing: 0) {
+                    ForEach(SystemMenuTab.allCases, id: \.self) { tab in
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                selectedTab = tab
+                            }
+                        } label: {
+                            Text(tab == .arsenal ? L10n.Tabs.arsenal : L10n.Tabs.upgrades)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(selectedTab == tab ? .white : DesignColors.muted)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 7)
+                                        .fill(selectedTab == tab ? DesignColors.primary.opacity(0.3) : Color.clear)
+                                )
+                        }
                     }
                 }
+                .padding(3)
+                .background(
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(DesignColors.surface)
+                )
+
+                Spacer()
+
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(DesignColors.muted)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
+
+            // Tab content
+            switch selectedTab {
+            case .arsenal:
+                ArsenalView()
+            case .upgrades:
+                UpgradesView()
             }
         }
         .presentationDetents([.large])
@@ -109,10 +129,6 @@ struct ArsenalView: View {
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
     @State private var showSettings = false
     @ObservedObject private var hintManager = TutorialHintManager.shared
-    // Boss Arena state
-    @State private var showBossFightSheet = false
-    @State private var selectedBossType: String = "cyberboss"
-    @State private var selectedDifficulty: BossDifficulty = .easy
 
     var body: some View {
         VStack(spacing: 0) {
@@ -258,124 +274,12 @@ struct ArsenalView: View {
                         }
                         .padding(.horizontal)
                     }
-
-                    // Boss Arena Section
-                    bossArenaSection
-                        .padding(.top, 16)
                 }
                 .padding(.vertical)
             }
         }
         .sheet(item: $selectedProtocol) { proto in
             ProtocolDetailSheet(protocol: proto)
-        }
-        .fullScreenCover(isPresented: $showBossFightSheet) {
-            bossArenaFightView
-        }
-    }
-
-    // MARK: - Boss Arena Section
-
-    private var bossArenaSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section header
-            HStack(spacing: 8) {
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 14))
-                    .foregroundColor(.orange)
-                Text(L10n.Settings.bossArena)
-                    .font(DesignTypography.caption(12))
-                    .foregroundColor(.orange)
-            }
-            .padding(.horizontal)
-
-            VStack(spacing: 12) {
-                Text(L10n.Settings.bossArenaDesc)
-                    .font(DesignTypography.caption(12))
-                    .foregroundColor(DesignColors.muted)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                // Boss selection
-                ForEach(availableBosses, id: \.0) { bossId, bossName in
-                    bossRow(id: bossId, name: bossName)
-                }
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(DesignColors.surfaceElevated)
-            )
-            .padding(.horizontal)
-        }
-    }
-
-    private var availableBosses: [(String, String)] {
-        [
-            ("cyberboss", L10n.Boss.cyberboss),
-            ("void_harbinger", L10n.Boss.voidHarbinger)
-        ]
-    }
-
-    private func bossRow(id: String, name: String) -> some View {
-        let killRecord = appState.currentPlayer.bossKillRecords[id]
-        let isDefeated = killRecord != nil && (killRecord?.totalKills ?? 0) > 0
-
-        return HStack {
-            // Boss icon
-            Image(systemName: id == "cyberboss" ? "cpu.fill" : "tornado")
-                .font(.system(size: 24))
-                .foregroundColor(id == "cyberboss" ? .red : .purple)
-                .frame(width: 40)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name)
-                    .font(DesignTypography.headline(16))
-                    .foregroundColor(.white)
-
-                if isDefeated {
-                    Text(L10n.Settings.defeated)
-                        .font(DesignTypography.caption(10))
-                        .foregroundColor(DesignColors.success)
-                } else {
-                    Text(L10n.Settings.notEncountered)
-                        .font(DesignTypography.caption(10))
-                        .foregroundColor(DesignColors.muted)
-                }
-            }
-
-            Spacer()
-
-            // Fight button
-            Button {
-                selectedBossType = id
-                showBossFightSheet = true
-            } label: {
-                Text(L10n.Settings.fight)
-                    .font(DesignTypography.caption(12))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(id == "cyberboss" ? Color.red : Color.purple)
-                    .cornerRadius(8)
-            }
-        }
-        .padding(.vertical, 8)
-    }
-
-    @ViewBuilder
-    private var bossArenaFightView: some View {
-        if let boss = BossEncounter.all.first(where: { $0.bossId == selectedBossType }) {
-            BossGameView(
-                boss: boss,
-                difficulty: selectedDifficulty,
-                protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
-                onExit: {
-                    showBossFightSheet = false
-                }
-            )
-        } else {
-            Color.black
-                .ignoresSafeArea()
         }
     }
 
@@ -562,7 +466,7 @@ struct ProtocolDetailSheet: View {
     }
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 DesignColors.background.ignoresSafeArea()
 
@@ -750,6 +654,7 @@ struct ProtocolDetailSheet: View {
 
         guard appState.currentPlayer.hash >= `protocol`.compileCost else { return }
         HapticsService.shared.play(.medium)
+        AudioManager.shared.play(.towerUpgrade)
         AnalyticsService.shared.trackProtocolCompiled(protocolId: `protocol`.id, cost: `protocol`.compileCost)
         appState.updatePlayer { profile in
             profile.hash -= `protocol`.compileCost
@@ -772,6 +677,7 @@ struct ProtocolDetailSheet: View {
         let cost = BalanceConfig.exponentialUpgradeCost(baseCost: `protocol`.baseUpgradeCost, currentLevel: currentLevel)
         guard appState.currentPlayer.hash >= cost else { return }
         HapticsService.shared.play(.medium)
+        AudioManager.shared.play(.towerUpgrade)
         AnalyticsService.shared.trackProtocolUpgraded(protocolId: `protocol`.id, fromLevel: currentLevel, toLevel: currentLevel + 1)
         appState.updatePlayer { profile in
             profile.hash -= cost

@@ -35,6 +35,9 @@ struct VirtualJoystick: View {
 
     var config: JoystickConfig = .default
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
     @State private var isActive = false
     @State private var basePosition: CGPoint = .zero
     @State private var knobOffset: CGPoint = .zero
@@ -45,17 +48,22 @@ struct VirtualJoystick: View {
     // Momentum timer
     @State private var momentumTimer: Timer? = nil
 
-    // Responsive sizing
+    // Responsive sizing — iPhone: verticalSizeClass .regular = portrait, .compact = landscape
+    // iPad gets scaled up via adaptiveScale (1.5×), iPhone stays identical (1.0×)
     private var isPortrait: Bool {
-        UIScreen.main.bounds.height > UIScreen.main.bounds.width
+        verticalSizeClass == .regular
+    }
+
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: horizontalSizeClass)
     }
 
     private var joystickSize: CGFloat {
-        isPortrait ? 140 : 120
+        (isPortrait ? 140 : 120) * scale
     }
 
     private var knobSize: CGFloat {
-        isPortrait ? 60 : 50
+        (isPortrait ? 60 : 50) * scale
     }
 
     private var maxDistance: CGFloat {

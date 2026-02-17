@@ -265,10 +265,15 @@ class PlayerSystem {
 
     /// Deal damage to player
     static func damagePlayer(state: inout GameState, rawDamage: CGFloat) {
+        #if DEBUG
+        if AppState.shared.godMode { return }
+        #endif
+
         // Apply armor
         let damage = rawDamage * (1 - state.player.armor)
         state.player.health -= damage
         state.stats.damageTaken += damage
+        AudioManager.shared.play(.playerHit)
 
         // Use currentFrameTime for consistent time base (context.timestamp)
         let frameTime = state.currentFrameTime
@@ -323,6 +328,7 @@ class PlayerSystem {
                 state.player.health = 0
                 state.isGameOver = true
                 state.victory = false
+                AudioManager.shared.play(.defeat)
             }
         }
     }

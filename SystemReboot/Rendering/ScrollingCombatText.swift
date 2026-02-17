@@ -127,6 +127,8 @@ class ScrollingCombatTextManager {
     private var config: SCTConfig
     private var activeTexts: [SKNode] = []
     private let maxActiveTexts = 20  // Prevent performance issues during heavy combat
+    private var lastShownTimes: [String: TimeInterval] = [:]  // De-duplication: text → last shown time
+    private let deduplicateInterval: TimeInterval = 0.8       // Min interval between identical texts
 
     init(scene: SKScene, config: SCTConfig = .standard) {
         self.scene = scene
@@ -221,6 +223,18 @@ class ScrollingCombatTextManager {
 
     private func spawn(text: String, type: SCTType, at position: CGPoint, config: SCTConfig? = nil) {
         guard let scene = scene else { return }
+
+        // De-duplicate: skip if same text was shown very recently
+        let now = CACurrentMediaTime()
+        if let lastTime = lastShownTimes[text], now - lastTime < deduplicateInterval {
+            return
+        }
+        lastShownTimes[text] = now
+
+        // Periodically clean stale entries
+        if lastShownTimes.count > 30 {
+            lastShownTimes = lastShownTimes.filter { now - $0.value < deduplicateInterval * 2 }
+        }
 
         // Cleanup old texts if needed
         cleanupIfNeeded()

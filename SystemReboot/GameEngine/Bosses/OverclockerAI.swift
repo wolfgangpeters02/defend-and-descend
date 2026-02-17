@@ -33,21 +33,15 @@ class OverclockerAI {
         let currentTime = gameState.gameTime
         let arenaRect = bossState.arenaRect
 
-        // Determine phase based on health
-        let oldPhase = bossState.phase
-        if healthPercent <= BalanceConfig.Overclocker.phase4Threshold {
-            bossState.phase = 4
-        } else if healthPercent <= BalanceConfig.Overclocker.phase3Threshold {
-            bossState.phase = 3
-        } else if healthPercent <= BalanceConfig.Overclocker.phase2Threshold {
-            bossState.phase = 2
-        } else {
-            bossState.phase = 1
-        }
+        // Determine target phase based on health (advance one phase at a time to prevent skipping)
+        let targetPhase: Int = healthPercent <= BalanceConfig.Overclocker.phase4Threshold ? 4 :
+                               healthPercent <= BalanceConfig.Overclocker.phase3Threshold ? 3 :
+                               healthPercent <= BalanceConfig.Overclocker.phase2Threshold ? 2 : 1
 
-        // Handle phase transitions
-        if bossState.phase != oldPhase {
-            enterPhase(bossState.phase, bossState: &bossState, boss: boss)
+        if targetPhase > bossState.phase {
+            let nextPhase = bossState.phase + 1
+            enterPhase(nextPhase, bossState: &bossState, boss: boss)
+            bossState.phase = nextPhase
         }
 
         // Execute phase behavior
@@ -136,9 +130,9 @@ class OverclockerAI {
         if bossState.lastTileChangeTime == 0 || currentTime - bossState.lastTileChangeTime > config.tileChangeInterval {
             bossState.lastTileChangeTime = currentTime
 
-            // Reset Grid
+            // Reset Grid: all tiles lava except safe zones
             let gridConfig = BalanceConfig.Overclocker.self
-            var newTiles = Array(repeating: TileState.normal, count: gridConfig.tileCount)
+            var newTiles = Array(repeating: TileState.lava, count: gridConfig.tileCount)
 
             // Pick safe zones
             var availableIndices = Array(0..<gridConfig.tileCount)
@@ -150,14 +144,6 @@ class OverclockerAI {
             newTiles[safe1] = .safe
             newTiles[safe2] = .safe
 
-            // Pick warning zones (will become lava)
-            for _ in 0..<gridConfig.warningTileCount {
-                if let lavaIndex = availableIndices.randomElement() {
-                    newTiles[lavaIndex] = .warning
-                    availableIndices.removeAll { $0 == lavaIndex }
-                }
-            }
-
             bossState.tileStates = newTiles
 
             // Target the nearest safe zone
@@ -167,16 +153,6 @@ class OverclockerAI {
             let dist1 = hypot(bossPos.x - p1.x, bossPos.y - p1.y)
             let dist2 = hypot(bossPos.x - p2.x, bossPos.y - p2.y)
             bossState.bossTargetTileIndex = (dist1 < dist2) ? safe1 : safe2
-        }
-
-        // Resolve Warnings to Lava after warning duration
-        let timeSinceChange = currentTime - bossState.lastTileChangeTime
-        if timeSinceChange > config.tileWarningDuration {
-            for i in 0..<config.tileCount {
-                if bossState.tileStates[i] == .warning {
-                    bossState.tileStates[i] = .lava
-                }
-            }
         }
 
         // Move Boss to Safe Zone
@@ -351,7 +327,7 @@ class OverclockerAI {
 
             if col >= 0 && col < gridSize && row >= 0 && row < gridSize {
                 let index = row * gridSize + col
-                if index < state.tileStates.count && state.tileStates[index] == .lava {
+                if index < state.tileStates.count && state.tileStates[index] != .safe {
                     damage += config.lavaTileDPS * CGFloat(deltaTime)
                 }
             }

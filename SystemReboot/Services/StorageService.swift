@@ -275,6 +275,7 @@ class StorageService {
 
         // Update leak counter (efficiency is computed from this)
         state.leakCounter += earnings.leaksOccurred
+        PathSystem.checkFreezeAfterLeakChange(state: &state)
     }
 
     /// Update average efficiency for offline calculations

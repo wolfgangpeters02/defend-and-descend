@@ -4,8 +4,13 @@ import SpriteKit
 // MARK: - Embedded TD Game View (for BOARD tab)
 
 struct EmbeddedTDGameView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @EnvironmentObject var appState: AppState
     @ObservedObject var controller: EmbeddedTDGameController
+
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: sizeClass)
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -78,15 +83,15 @@ struct EmbeddedTDGameView: View {
             // Header
             VStack(spacing: 8) {
                 Image(systemName: "clock.fill")
-                    .font(.system(size: 40))
+                    .font(.system(size: 40 * scale))
                     .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.8))
 
                 Text(L10n.Sector.comingSoon)
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .font(.system(size: 24 * scale, weight: .bold, design: .monospaced))
                     .foregroundColor(Color(red: 0.5, green: 0.5, blue: 0.8))
 
                 Text(status.displayName)
-                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .monospaced))
                     .foregroundColor(.white)
             }
 
@@ -103,9 +108,9 @@ struct EmbeddedTDGameView: View {
                 controller.dismissSectorUnlockPanel()
             }) {
                 Text(L10n.Common.done)
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.system(size: 16 * scale, weight: .bold, design: .monospaced))
                     .foregroundColor(.white)
-                    .frame(width: 120, height: 50)
+                    .frame(width: 120 * scale, height: 50 * scale)
                     .background(Color(red: 0.3, green: 0.3, blue: 0.5).opacity(0.5))
                     .cornerRadius(8)
             }
@@ -129,15 +134,15 @@ struct EmbeddedTDGameView: View {
             // Header
             VStack(spacing: 8) {
                 Image(systemName: "lock.shield.fill")
-                    .font(.system(size: 40))
+                    .font(.system(size: 40 * scale))
                     .foregroundColor(.red)
 
                 Text(L10n.Sector.encrypted)
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .font(.system(size: 24 * scale, weight: .bold, design: .monospaced))
                     .foregroundColor(.cyan)
 
                 Text(status?.displayName ?? L10n.Common.unknown)
-                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 18 * scale, weight: .semibold, design: .monospaced))
                     .foregroundColor(.white)
             }
 
@@ -200,9 +205,9 @@ struct EmbeddedTDGameView: View {
                     controller.dismissSectorUnlockPanel()
                 }) {
                     Text(L10n.Common.cancel)
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .font(.system(size: 16 * scale, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
-                        .frame(width: 120, height: 50)
+                        .frame(width: 120 * scale, height: 50 * scale)
                         .background(DesignColors.muted.opacity(0.3))
                         .cornerRadius(8)
                 }
@@ -215,9 +220,9 @@ struct EmbeddedTDGameView: View {
                         Image(systemName: "key.fill")
                         Text(L10n.Sector.decrypt)
                     }
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.system(size: 16 * scale, weight: .bold, design: .monospaced))
                     .foregroundColor(status?.canUnlock == true ? .black : DesignColors.textSecondary)
-                    .frame(width: 140, height: 50)
+                    .frame(width: 140 * scale, height: 50 * scale)
                     .background(status?.canUnlock == true ? DesignColors.primary : DesignColors.muted.opacity(0.3))
                     .cornerRadius(8)
                 }
@@ -240,6 +245,7 @@ struct EmbeddedTDGameView: View {
 // MARK: - Embedded Protocol Deck Card (with Drag Support)
 
 struct EmbeddedProtocolDeckCard: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let `protocol`: Protocol
     let hash: Int
     let onDragStart: () -> Void
@@ -248,6 +254,10 @@ struct EmbeddedProtocolDeckCard: View {
 
     @State private var isDragging = false
     @State private var legendaryPulse = false
+
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: sizeClass)
+    }
 
     private var cost: Int {
         TowerSystem.towerPlacementCost(rarity: `protocol`.rarity)
@@ -292,7 +302,7 @@ struct EmbeddedProtocolDeckCard: View {
                 if isHighRarity && canAfford {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(rarityColor.opacity(0.15))
-                        .frame(width: 64, height: 64)
+                        .frame(width: 64 * scale, height: 64 * scale)
                         .blur(radius: 8)
                         .scaleEffect(legendaryPulse ? 1.15 : 1.0)
                 }
@@ -300,17 +310,17 @@ struct EmbeddedProtocolDeckCard: View {
                 // Background circuit pattern
                 RoundedRectangle(cornerRadius: 8)
                     .fill(Color(hex: "0a0a12") ?? .black)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 56 * scale, height: 56 * scale)
 
                 // Border with rarity-scaled glow effect
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(rarityColor.opacity(canAfford ? 0.9 : 0.3), lineWidth: isHighRarity ? 2.5 : 2)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 56 * scale, height: 56 * scale)
                     .shadow(color: canAfford ? rarityColor.opacity(glowOpacity) : .clear, radius: glowRadius)
 
                 // Protocol icon - simplified, geometric
                 Image(systemName: `protocol`.iconName)
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 24 * scale, weight: .medium))
                     .foregroundColor(canAfford ? .white : DesignColors.textSecondary)
                     .shadow(color: canAfford && isHighRarity ? rarityColor.opacity(0.5) : .clear, radius: 4)
 

@@ -115,6 +115,7 @@ class BossFightCoordinator: ObservableObject {
 
             showBossLootModal = true
             HapticsService.shared.play(.success)
+            AudioManager.shared.play(.bossDeath)
         } else {
             AnalyticsService.shared.trackBossFightCompleted(
                 bossId: activeBossType ?? "cyberboss",
@@ -124,6 +125,7 @@ class BossFightCoordinator: ObservableObject {
             )
             onDefeat?()
             HapticsService.shared.play(.defeat)
+            AudioManager.shared.play(.defeat)
         }
     }
 

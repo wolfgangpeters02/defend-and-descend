@@ -188,6 +188,8 @@ extension NodePool {
     }
 
     /// Acquire or update a projectile node.
+    /// Always creates fresh visuals — projectile types have different colors/shapes
+    /// that can't be reused across types via the pool.
     func acquireProjectileNode(
         id: String,
         existing: inout [String: SKNode],
@@ -198,9 +200,7 @@ extension NodePool {
             return node
         }
 
-        let node = acquire(type: .projectile) {
-            renderer.createProjectileNode(projectile: projectile)
-        }
+        let node = renderer.createProjectileNode(projectile: projectile)
         existing[id] = node
         return node
     }

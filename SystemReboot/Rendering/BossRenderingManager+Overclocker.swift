@@ -83,21 +83,15 @@ extension BossRenderingManager {
                 tileStateCache[i] = currentState
 
                 switch currentState {
-                case .normal:
-                    tileNode.fillColor = SKColor.darkGray.withAlphaComponent(0.3)
-                    tileNode.strokeColor = SKColor.gray
-                case .warning:
-                    tileNode.fillColor = SKColor.orange.withAlphaComponent(0.5)
-                    tileNode.strokeColor = SKColor.yellow
-                case .lava:
+                case .lava, .normal, .warning:
                     tileNode.fillColor = SKColor.red.withAlphaComponent(0.7)
                     tileNode.strokeColor = SKColor.orange
                 case .safe:
-                    tileNode.fillColor = SKColor.cyan.withAlphaComponent(0.4)
-                    tileNode.strokeColor = SKColor.blue
+                    tileNode.fillColor = SKColor.green.withAlphaComponent(0.5)
+                    tileNode.strokeColor = SKColor.green
                 }
 
-                // 8e: Scale pulse on state transition
+                // Scale pulse on state transition
                 if stateChanged {
                     let pulse = SKAction.sequence([
                         SKAction.scale(to: 1.05, duration: 0.1),
@@ -105,15 +99,6 @@ extension BossRenderingManager {
                     ])
                     pulse.timingMode = .easeInEaseOut
                     tileNode.run(pulse, withKey: "tileTransition")
-
-                    // Extra red flash for warning → lava transition
-                    if previousState == .warning && currentState == .lava {
-                        tileNode.run(SKAction.sequence([
-                            SKAction.run { tileNode.fillColor = SKColor.white.withAlphaComponent(0.8) },
-                            SKAction.wait(forDuration: 0.08),
-                            SKAction.run { tileNode.fillColor = SKColor.red.withAlphaComponent(0.7) }
-                        ]), withKey: "lavaFlash")
-                    }
                 }
             }
         } else {

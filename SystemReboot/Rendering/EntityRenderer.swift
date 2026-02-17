@@ -154,10 +154,10 @@ class EntityRenderer {
         let color = colorFromHex(projectile.color)
         let size = projectile.size ?? 5
 
-        // Special rendering for Cyberboss energy blasts (simplified: 1 node, no animations)
+        // Special rendering for Cyberboss energy blasts
         if projectile.weaponId == "cyberboss_blast" {
             let blast = SKShapeNode(circleOfRadius: size)
-            blast.fillColor = color.withAlphaComponent(0.5)
+            blast.fillColor = color.withAlphaComponent(0.7)
             blast.strokeColor = color
             blast.lineWidth = 3
             blast.glowWidth = 0
@@ -165,10 +165,10 @@ class EntityRenderer {
             return container
         }
 
-        // Special rendering for Void Harbinger Shadow Bolts (simplified: 1 node, no animations)
+        // Special rendering for Void Harbinger Shadow Bolts
         if projectile.weaponId == "void_bolt" {
             let voidCore = SKShapeNode(circleOfRadius: size)
-            voidCore.fillColor = SKColor(hex: BalanceConfig.VoidHarbinger.voidCoreColor) ?? SKColor.black
+            voidCore.fillColor = color.withAlphaComponent(0.8)
             voidCore.strokeColor = color
             voidCore.lineWidth = 3
             voidCore.glowWidth = 0
@@ -176,7 +176,7 @@ class EntityRenderer {
             return container
         }
 
-        // Special rendering for Pylon Beams (simplified: 1 node, no animations)
+        // Special rendering for Pylon Beams
         if projectile.weaponId == "pylon_beam" {
             let beamCore = SKShapeNode(circleOfRadius: size)
             beamCore.fillColor = color
@@ -184,6 +184,17 @@ class EntityRenderer {
             beamCore.lineWidth = 2
             beamCore.glowWidth = 0
             container.addChild(beamCore)
+            return container
+        }
+
+        // Special rendering for Trojan Wyrm turret shots
+        if projectile.weaponId == "trojan_turret" {
+            let turretShot = SKShapeNode(circleOfRadius: size)
+            turretShot.fillColor = color.withAlphaComponent(0.8)
+            turretShot.strokeColor = color
+            turretShot.lineWidth = 2
+            turretShot.glowWidth = 0
+            container.addChild(turretShot)
             return container
         }
 

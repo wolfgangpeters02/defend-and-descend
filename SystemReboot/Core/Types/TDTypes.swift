@@ -170,10 +170,11 @@ struct TDGameState: HashStorable {
     var bossSelectedDifficulty: BossDifficulty? // Selected difficulty for current boss
     var bossCooldownRemaining: TimeInterval = 0 // Cooldown after boss victory before next spawn
 
-    /// Threat milestone for next boss spawn (6, 12, 18...)
+    /// Threat milestone for next boss spawn (6, 12, 18... capped at maxThreatLevel)
     var nextBossThreatMilestone: Int {
         let interval = BalanceConfig.TDBoss.threatMilestoneInterval
-        return lastBossThreatMilestone == 0 ? interval : lastBossThreatMilestone + interval
+        let raw = lastBossThreatMilestone == 0 ? interval : lastBossThreatMilestone + interval
+        return min(raw, Int(BalanceConfig.ThreatLevel.maxThreatLevel))
     }
 
     /// Check if threat has reached next boss milestone (respects post-victory cooldown)
@@ -306,17 +307,19 @@ struct MotherboardLaneConfig {
     /// All 8 lanes (one per non-CPU sector)
     static func createAllLanes() -> [SectorLane] {
         return [
-            // PSU Lane (Starter) - East, mid-right
+            // PSU Lane (Starter) - East, mid-right (double zigzag: south then north)
             SectorLane(
                 id: "lane_psu",
                 sectorId: SectorID.power.rawValue,
                 displayName: "PSU Power Bus",
                 path: EnemyPath(id: "path_psu", waypoints: [
                     CGPoint(x: 4200, y: 2100),    // Spawn at right edge
-                    CGPoint(x: 3700, y: 2100),    // West along bus
-                    CGPoint(x: 3700, y: 2400),    // Turn north
-                    CGPoint(x: 3200, y: 2400),    // Turn west
-                    CGPoint(x: 3200, y: 2100),    // Turn south to CPU level
+                    CGPoint(x: 3900, y: 2100),    // West along bus
+                    CGPoint(x: 3900, y: 1900),    // Dip south
+                    CGPoint(x: 3500, y: 1900),    // West along southern run
+                    CGPoint(x: 3500, y: 2300),    // Rise north past center
+                    CGPoint(x: 3100, y: 2300),    // West along northern run
+                    CGPoint(x: 3100, y: 2100),    // Drop back to CPU level
                     CGPoint(x: 2250, y: 2100),    // Approach CPU from east
                     CGPoint(x: 2150, y: 2100)     // End at CPU edge
                 ]),
@@ -327,7 +330,7 @@ struct MotherboardLaneConfig {
                 prerequisites: []
             ),
 
-            // GPU Lane - West, mid-left
+            // GPU Lane - West, mid-left (wide shallow arc north)
             SectorLane(
                 id: "lane_gpu",
                 sectorId: SectorID.gpu.rawValue,
@@ -335,9 +338,9 @@ struct MotherboardLaneConfig {
                 path: EnemyPath(id: "path_gpu", waypoints: [
                     CGPoint(x: 0, y: 2100),       // Spawn at left edge
                     CGPoint(x: 500, y: 2100),     // East along bus
-                    CGPoint(x: 500, y: 1800),     // Turn south
-                    CGPoint(x: 1000, y: 1800),    // Turn east
-                    CGPoint(x: 1000, y: 2100),    // Turn north to CPU level
+                    CGPoint(x: 500, y: 2450),     // Wide arc north
+                    CGPoint(x: 1100, y: 2450),    // Long east run at height
+                    CGPoint(x: 1100, y: 2100),    // Drop to CPU level
                     CGPoint(x: 1950, y: 2100),    // Approach CPU from west
                     CGPoint(x: 2050, y: 2100)     // End at CPU edge
                 ]),
@@ -348,17 +351,17 @@ struct MotherboardLaneConfig {
                 prerequisites: [SectorID.power.rawValue]
             ),
 
-            // RAM Lane - South, bottom-center
+            // RAM Lane - South, bottom-center (tight compact step east)
             SectorLane(
                 id: "lane_ram",
                 sectorId: SectorID.ram.rawValue,
                 displayName: "RAM Memory Bus",
                 path: EnemyPath(id: "path_ram", waypoints: [
                     CGPoint(x: 2100, y: 0),       // Spawn at bottom edge
-                    CGPoint(x: 2100, y: 500),     // North along bus
-                    CGPoint(x: 1800, y: 500),     // Turn west
-                    CGPoint(x: 1800, y: 1000),    // Turn north
-                    CGPoint(x: 2100, y: 1000),    // Turn east to CPU column
+                    CGPoint(x: 2100, y: 700),     // North along bus
+                    CGPoint(x: 2350, y: 700),     // Small step east
+                    CGPoint(x: 2350, y: 1200),    // North along offset
+                    CGPoint(x: 2100, y: 1200),    // Step back to CPU column
                     CGPoint(x: 2100, y: 1950),    // Approach CPU from south
                     CGPoint(x: 2100, y: 2050)     // End at CPU edge
                 ]),
@@ -369,17 +372,17 @@ struct MotherboardLaneConfig {
                 prerequisites: [SectorID.power.rawValue]
             ),
 
-            // Cache Lane - North, top-center
+            // Cache Lane - North, top-center (deep wide sweep west)
             SectorLane(
                 id: "lane_cache",
                 sectorId: SectorID.cache.rawValue,
                 displayName: "Cache Fast Bus",
                 path: EnemyPath(id: "path_cache", waypoints: [
                     CGPoint(x: 2100, y: 4200),    // Spawn at top edge
-                    CGPoint(x: 2100, y: 3700),    // South along bus
-                    CGPoint(x: 2400, y: 3700),    // Turn east
-                    CGPoint(x: 2400, y: 3200),    // Turn south
-                    CGPoint(x: 2100, y: 3200),    // Turn west to CPU column
+                    CGPoint(x: 2100, y: 3650),    // South along bus
+                    CGPoint(x: 1600, y: 3650),    // Deep sweep west
+                    CGPoint(x: 1600, y: 3050),    // Long south run at offset
+                    CGPoint(x: 2100, y: 3050),    // Return to CPU column
                     CGPoint(x: 2100, y: 2250),    // Approach CPU from north
                     CGPoint(x: 2100, y: 2150)     // End at CPU edge
                 ]),
@@ -398,8 +401,8 @@ struct MotherboardLaneConfig {
                 path: EnemyPath(id: "path_io", waypoints: [
                     CGPoint(x: 0, y: 4200),       // Spawn at top-left corner
                     CGPoint(x: 0, y: 3500),       // Down along left edge
-                    CGPoint(x: 500, y: 3500),     // Turn east
-                    CGPoint(x: 500, y: 2800),     // Turn south
+                    CGPoint(x: 600, y: 3500),     // Turn east
+                    CGPoint(x: 600, y: 2800),     // Turn south
                     CGPoint(x: 1400, y: 2800),    // Turn east
                     CGPoint(x: 1400, y: 2100),    // Turn south to CPU level
                     CGPoint(x: 1950, y: 2100),    // Approach CPU from west
@@ -419,9 +422,9 @@ struct MotherboardLaneConfig {
                 displayName: "Network Data Bus",
                 path: EnemyPath(id: "path_network", waypoints: [
                     CGPoint(x: 4200, y: 4200),    // Spawn at top-right corner
-                    CGPoint(x: 4200, y: 3500),    // Down along right edge
-                    CGPoint(x: 3700, y: 3500),    // Turn west
-                    CGPoint(x: 3700, y: 2800),    // Turn south
+                    CGPoint(x: 4200, y: 3600),    // Down along right edge
+                    CGPoint(x: 3600, y: 3600),    // Turn west
+                    CGPoint(x: 3600, y: 2800),    // Turn south
                     CGPoint(x: 2800, y: 2800),    // Turn west
                     CGPoint(x: 2800, y: 2100),    // Turn south to CPU level
                     CGPoint(x: 2250, y: 2100),    // Approach CPU from east
@@ -441,9 +444,9 @@ struct MotherboardLaneConfig {
                 displayName: "Storage Data Bus",
                 path: EnemyPath(id: "path_storage", waypoints: [
                     CGPoint(x: 0, y: 0),          // Spawn at bottom-left corner
-                    CGPoint(x: 0, y: 700),        // Up along left edge
-                    CGPoint(x: 500, y: 700),      // Turn east
-                    CGPoint(x: 500, y: 1400),     // Turn north
+                    CGPoint(x: 0, y: 600),        // Up along left edge
+                    CGPoint(x: 600, y: 600),      // Turn east
+                    CGPoint(x: 600, y: 1400),     // Turn north
                     CGPoint(x: 1400, y: 1400),    // Turn east
                     CGPoint(x: 1400, y: 2100),    // Turn north to CPU level
                     CGPoint(x: 1950, y: 2100),    // Approach CPU from west
@@ -463,9 +466,9 @@ struct MotherboardLaneConfig {
                 displayName: "Expansion PCIe Bus",
                 path: EnemyPath(id: "path_expansion", waypoints: [
                     CGPoint(x: 4200, y: 0),       // Spawn at bottom-right corner
-                    CGPoint(x: 4200, y: 700),     // Up along right edge
-                    CGPoint(x: 3700, y: 700),     // Turn west
-                    CGPoint(x: 3700, y: 1400),    // Turn north
+                    CGPoint(x: 4200, y: 800),     // Up along right edge
+                    CGPoint(x: 3600, y: 800),     // Turn west
+                    CGPoint(x: 3600, y: 1400),    // Turn north
                     CGPoint(x: 2800, y: 1400),    // Turn west
                     CGPoint(x: 2800, y: 2100),    // Turn north to CPU level
                     CGPoint(x: 2250, y: 2100),    // Approach CPU from east

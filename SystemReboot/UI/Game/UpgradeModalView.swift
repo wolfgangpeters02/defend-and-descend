@@ -3,8 +3,13 @@ import SwiftUI
 // MARK: - Upgrade Modal View
 
 struct UpgradeModalView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let choices: [UpgradeChoice]
     let onSelect: (UpgradeChoice) -> Void
+
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: sizeClass)
+    }
 
     var body: some View {
         ZStack {
@@ -15,7 +20,7 @@ struct UpgradeModalView: View {
             VStack(spacing: 20) {
                 // Title
                 Text(L10n.Upgrade.chooseUpgrade)
-                    .font(.system(size: 28, weight: .black))
+                    .font(.system(size: 28 * scale, weight: .black))
                     .foregroundColor(.cyan)
 
                 Text(L10n.Upgrade.level(1))
@@ -23,9 +28,10 @@ struct UpgradeModalView: View {
                     .foregroundColor(DesignColors.textSecondary)
 
                 // Upgrade choices
-                HStack(spacing: 15) {
+                HStack(spacing: 15 * scale) {
                     ForEach(choices) { choice in
-                        UpgradeCardView(choice: choice) {
+                        UpgradeCardView(choice: choice, scale: scale) {
+                            AudioManager.shared.play(.towerUpgrade)
                             onSelect(choice)
                         }
                     }
@@ -40,6 +46,7 @@ struct UpgradeModalView: View {
 
 struct UpgradeCardView: View {
     let choice: UpgradeChoice
+    var scale: CGFloat = 1.0
     let onTap: () -> Void
 
     private var rarityColor: Color {
@@ -76,27 +83,27 @@ struct UpgradeCardView: View {
 
                 // Icon
                 Text(choice.icon)
-                    .font(.system(size: 40))
+                    .font(.system(size: 40 * scale))
 
                 // Name
                 Text(choice.name)
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14 * scale, weight: .bold))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
 
                 // Description
                 Text(choice.description)
-                    .font(.system(size: 11))
+                    .font(.system(size: 11 * scale))
                     .foregroundColor(DesignColors.textSecondary)
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
-                    .frame(height: 40)
+                    .frame(height: 40 * scale)
 
                 // Effect preview
                 effectPreview
             }
-            .frame(width: 140, height: 220)
+            .frame(width: 140 * scale, height: 220 * scale)
             .padding()
             .background(
                 RoundedRectangle(cornerRadius: 16)

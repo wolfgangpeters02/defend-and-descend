@@ -277,6 +277,14 @@ enum DesignLayout {
     // Tower deck - larger for touch
     static let towerCardSize: CGFloat = 60
     static let towerDeckHeight: CGFloat = 110
+
+    // MARK: - Adaptive Scaling (iPad support)
+
+    /// Returns 1.0 on iPhone (.compact), 1.5 on iPad (.regular)
+    /// iPhone behavior is completely unchanged — all existing sizes multiply by 1.0
+    static func adaptiveScale(for sizeClass: UserInterfaceSizeClass?) -> CGFloat {
+        sizeClass == .regular ? 1.5 : 1.0
+    }
 }
 
 // MARK: - TD Placement State

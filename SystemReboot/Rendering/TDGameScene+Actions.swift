@@ -89,6 +89,7 @@ extension TDGameScene {
             self.state = state
             gameStateDelegate?.gameStateUpdated(state)
             HapticsService.shared.play(.heavy)
+            AudioManager.shared.play(.overclockActivate)
 
             // Visual feedback - pulse the CPU core orange
             playOverclockActivationEffect()
@@ -160,25 +161,31 @@ extension TDGameScene {
             // Persist tower placement
             StorageService.shared.saveTDSession(TDSessionState.from(gameState: state))
             HapticsService.shared.play(.towerPlace)
+            AudioManager.shared.play(.towerPlace)
 
         case .insufficientHash:
             HapticsService.shared.play(.warning)
+            AudioManager.shared.play(.uiDeny)
             gameStateDelegate?.placementFailed(result)
 
         case .insufficientPower:
             HapticsService.shared.play(.warning)
+            AudioManager.shared.play(.uiDeny)
             gameStateDelegate?.placementFailed(result)
 
         case .slotOccupied:
             HapticsService.shared.play(.warning)
+            AudioManager.shared.play(.uiDeny)
             gameStateDelegate?.placementFailed(result)
 
         case .protocolLocked:
             HapticsService.shared.play(.warning)
+            AudioManager.shared.play(.uiDeny)
             gameStateDelegate?.placementFailed(result)
 
         case .invalidSlot:
             HapticsService.shared.play(.warning)
+            AudioManager.shared.play(.uiDeny)
         }
     }
 

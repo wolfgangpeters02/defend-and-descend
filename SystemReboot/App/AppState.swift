@@ -32,6 +32,16 @@ class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(showDebugOverlay, forKey: "debugOverlayEnabled") }
     }
 
+    #if DEBUG
+    // God mode - player takes no damage in boss fights (debug only)
+    @Published var godMode: Bool = UserDefaults.standard.bool(forKey: "godModeEnabled") {
+        didSet { UserDefaults.standard.set(godMode, forKey: "godModeEnabled") }
+    }
+
+    // Pending hash to inject into the live TD game state (avoids sync overwrite)
+    var debugHashPending: Int = 0
+    #endif
+
     private init() {
         self.currentPlayer = StorageService.shared.getOrCreateDefaultPlayer()
 

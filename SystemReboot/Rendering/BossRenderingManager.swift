@@ -106,10 +106,7 @@ class BossRenderingManager {
     var cachedVoidHarbingerPhase: Int = -1
     var cachedOverclockerPhase: Int = -1
 
-    /// Head position history for smooth Trojan Wyrm trailing (scene coordinates).
-    var wyrmHeadHistory: [CGPoint] = []
-    /// Frames of spacing between each body segment in the history buffer.
-    let wyrmHistorySpacing: Int = 3
+    // (Wyrm history buffer removed — game-state drag-chain positions used directly)
 
     // MARK: - Cached CGPaths (11f)
 
@@ -201,7 +198,6 @@ class BossRenderingManager {
         cachedCyberbossPhase = -1
         cachedVoidHarbingerPhase = -1
         cachedOverclockerPhase = -1
-        wyrmHeadHistory.removeAll()
     }
 
     func cleanupBossNodes(prefix: String) {
@@ -334,6 +330,7 @@ class BossRenderingManager {
 
         if isTransition {
             triggerPhaseTransitionEffects(phase: phase, bossType: bossType, gameState: gameState)
+            AudioManager.shared.play(.phaseChange)
         }
 
         // 7b: Phase color coding

@@ -9,6 +9,7 @@ struct SystemTabView: View {
     @ObservedObject var appState = AppState.shared
     @StateObject private var embeddedGameController = EmbeddedTDGameController()  // Persists across view lifecycle
     @State private var showSystemMenu = false  // Arsenal/Settings sheet
+    @State private var systemMenuTab: SystemMenuSheet.SystemMenuTab = .arsenal
     @State private var selectedBoss: BossEncounter?
     @State private var selectedDifficulty: BossDifficulty = .normal
 
@@ -44,7 +45,7 @@ struct SystemTabView: View {
             )
         }
         .sheet(isPresented: $showSystemMenu) {
-            SystemMenuSheet()
+            SystemMenuSheet(selectedTab: $systemMenuTab)
         }
     }
 

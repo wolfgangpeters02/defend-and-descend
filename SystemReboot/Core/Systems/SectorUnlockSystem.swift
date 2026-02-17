@@ -319,6 +319,7 @@ final class SectorUnlockSystem {
         }
 
         profile.defeatedSectorBosses.append(sectorId)
+        profile.unlockedComponents.recordBossDefeat()
 
         // Get the next sector that should become visible
         let nextSector = TDBossSystem.nextSectorAfterDefeat(sectorId)

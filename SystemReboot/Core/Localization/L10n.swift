@@ -382,6 +382,10 @@ enum L10n {
         static let permissionRequired = String(localized: "settings.permissionRequired")
         static let openSettings = String(localized: "settings.openSettings")
         static let enable = String(localized: "settings.enable")
+        // Audio
+        static let audio = String(localized: "settings.audio")
+        static let soundEffects = String(localized: "settings.soundEffects")
+        static let soundEffectsDesc = String(localized: "settings.soundEffectsDesc")
         // Boss Arena
         static let bossArena = String(localized: "settings.bossArena")
         static let bossArenaDesc = String(localized: "settings.bossArenaDesc")
@@ -392,6 +396,13 @@ enum L10n {
         static let debug = String(localized: "settings.debug")
         static let debugOverlay = String(localized: "settings.debugOverlay")
         static let debugOverlayDesc = String(localized: "settings.debugOverlayDesc")
+        static let godMode = String(localized: "settings.godMode")
+        static let godModeDesc = String(localized: "settings.godModeDesc")
+        static let addHash = String(localized: "settings.addHash")
+        static let unlockAllSectors = String(localized: "settings.unlockAllSectors")
+        static let allSectorsUnlocked = String(localized: "settings.allSectorsUnlocked")
+        static let unlockAllProtocols = String(localized: "settings.unlockAllProtocols")
+        static let allProtocolsUnlocked = String(localized: "settings.allProtocolsUnlocked")
         // Danger Zone
         static let dangerZone = String(localized: "settings.dangerZone")
         static let resetAccount = String(localized: "settings.resetAccount")

@@ -57,6 +57,7 @@ struct TDGameLoop {
                 context.gameStartDelay -= deltaTime
                 if context.gameStartDelay <= 0 {
                     context.hasStartedFirstWave = true
+                    AudioManager.shared.play(.waveStart)
                 }
             }
 
@@ -94,6 +95,7 @@ struct TDGameLoop {
                 ))
             }
             result.bossSpawnedType = bossResult.spawnedBossType ?? "unknown"
+            AudioManager.shared.play(.bossAppear)
         }
         if bossResult.bossReachedCPU {
             result.bossReachedCPU = true
@@ -127,6 +129,10 @@ struct TDGameLoop {
             activeProjectileIds.contains($0.key)
         }
 
+        // MARK: Economy
+        // Leak decay must run before freeze check so efficiency can recover naturally
+        PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
+
         // MARK: Efficiency Tracking
         if state.efficiency < context.previousEfficiency {
             result.efficiencyDropped = true
@@ -139,8 +145,6 @@ struct TDGameLoop {
             return result
         }
 
-        // MARK: Economy
-        PathSystem.updateLeakDecay(state: &state, deltaTime: deltaTime)
         PathSystem.updateHashIncome(state: &state, deltaTime: deltaTime)
 
         return result

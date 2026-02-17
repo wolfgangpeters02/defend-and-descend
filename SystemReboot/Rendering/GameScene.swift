@@ -63,6 +63,10 @@ class GameScene: SKScene {
     // Screen effects
     var screenFlashNode: SKShapeNode?
     var cameraNode: SKCameraNode?
+    var shakeOffset: CGPoint = .zero
+    var shakeIntensity: CGFloat = 0
+    var shakeDuration: TimeInterval = 0
+    var shakeElapsed: TimeInterval = 0
 
     // Callbacks
     var onGameOver: ((GameState) -> Void)?
@@ -507,6 +511,9 @@ class GameScene: SKScene {
 
         }
 
+        // Update screen shake offset (decays each frame)
+        updateShake(deltaTime: context.deltaTime)
+
         // Update camera to follow player (for large arenas)
         updateCameraFollow()
     }
@@ -527,12 +534,15 @@ class GameScene: SKScene {
         let clampedX = max(halfWidth, min(gameState.arena.width - halfWidth, targetX))
         let clampedY = max(halfHeight, min(gameState.arena.height - halfHeight, targetY))
 
-        // Smooth camera follow
+        // Smooth camera follow (ignore shake offset for base tracking)
+        let baseX = camera.position.x - shakeOffset.x
+        let baseY = camera.position.y - shakeOffset.y
         let smoothing: CGFloat = 0.1
-        let newX = camera.position.x + (clampedX - camera.position.x) * smoothing
-        let newY = camera.position.y + (clampedY - camera.position.y) * smoothing
+        let newX = baseX + (clampedX - baseX) * smoothing
+        let newY = baseY + (clampedY - baseY) * smoothing
 
-        camera.position = CGPoint(x: newX, y: newY)
+        // Apply shake offset on top of follow position
+        camera.position = CGPoint(x: newX + shakeOffset.x, y: newY + shakeOffset.y)
     }
 
     private func updateParticles(context: FrameContext) {

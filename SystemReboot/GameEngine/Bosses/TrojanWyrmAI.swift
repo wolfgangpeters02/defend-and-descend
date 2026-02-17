@@ -43,21 +43,15 @@ class TrojanWyrmAI {
         let currentTime = gameState.gameTime
         let arenaRect = bossState.arenaRect
 
-        // Determine phase based on health
-        let oldPhase = bossState.phase
-        if healthPercent <= BalanceConfig.TrojanWyrm.phase4Threshold {
-            bossState.phase = 4
-        } else if healthPercent <= BalanceConfig.TrojanWyrm.phase3Threshold {
-            bossState.phase = 3
-        } else if healthPercent <= BalanceConfig.TrojanWyrm.phase2Threshold {
-            bossState.phase = 2
-        } else {
-            bossState.phase = 1
-        }
+        // Determine target phase based on health (advance one phase at a time to prevent skipping)
+        let targetPhase: Int = healthPercent <= BalanceConfig.TrojanWyrm.phase4Threshold ? 4 :
+                               healthPercent <= BalanceConfig.TrojanWyrm.phase3Threshold ? 3 :
+                               healthPercent <= BalanceConfig.TrojanWyrm.phase2Threshold ? 2 : 1
 
-        // Handle phase transitions
-        if bossState.phase != oldPhase {
-            enterPhase(bossState.phase, bossState: &bossState, boss: boss, playerPos: playerPos, arenaRect: arenaRect)
+        if targetPhase > bossState.phase {
+            let nextPhase = bossState.phase + 1
+            enterPhase(nextPhase, bossState: &bossState, boss: boss, playerPos: playerPos, arenaRect: arenaRect)
+            bossState.phase = nextPhase
         }
 
         // Execute phase behavior

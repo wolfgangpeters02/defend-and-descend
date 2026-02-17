@@ -222,6 +222,9 @@ class ProjectileSystem {
 
         // Deal damage (with critical hit indicator for scrolling combat text)
         EnemySystem.damageEnemy(state: &state, enemyIndex: enemyIndex, damage: damage, isCritical: isCritical)
+        if isCritical {
+            AudioManager.shared.play(.criticalHit)
+        }
 
         // Impact effect
         ParticleFactory.createImpactEffect(

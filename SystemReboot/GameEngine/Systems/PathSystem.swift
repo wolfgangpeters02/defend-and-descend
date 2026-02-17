@@ -86,16 +86,30 @@ class PathSystem {
                     state.isSystemFrozen = true
                     state.freezeCount += 1
                     HapticsService.shared.play(.defeat)
+                    AudioManager.shared.play(.freezeAlert)
                 } else if state.efficiency <= BalanceConfig.Efficiency.warningThreshold && previousEfficiency > BalanceConfig.Efficiency.warningThreshold {
                     // Efficiency dropped below warning threshold
                     HapticsService.shared.play(.warning)
+                    AudioManager.shared.play(.coreHit)
                 } else {
                     // Normal leak - light feedback
                     HapticsService.shared.play(.light)
+                    AudioManager.shared.play(.coreHit)
                 }
 
                 // Note: System freeze pauses game, player must recover via UI options
             }
+        }
+    }
+
+    /// Check if a bulk leakCounter change pushed efficiency to 0% and trigger freeze if needed.
+    /// Call after any direct leakCounter modification outside of processReachedCore().
+    static func checkFreezeAfterLeakChange(state: inout TDGameState) {
+        if state.efficiency <= 0 && !state.isSystemFrozen {
+            state.isSystemFrozen = true
+            state.freezeCount += 1
+            HapticsService.shared.play(.defeat)
+            AudioManager.shared.play(.freezeAlert)
         }
     }
 

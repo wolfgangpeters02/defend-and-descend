@@ -9,6 +9,7 @@ struct IntroSequenceView: View {
 
     // MARK: - State
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var currentCard: Int = 0
     @State private var showContent = false
     @State private var typewriterText: String = ""
@@ -19,6 +20,10 @@ struct IntroSequenceView: View {
     @State private var glitchOffset: CGFloat = 0
 
     private let totalCards = 3
+
+    private var scale: CGFloat {
+        DesignLayout.adaptiveScale(for: sizeClass)
+    }
 
     // MARK: - Card Data
 
@@ -138,20 +143,20 @@ struct IntroSequenceView: View {
         VStack(spacing: 32) {
             // Header with glitch effect
             Text(card.header)
-                .font(.system(size: 28, weight: .black, design: .monospaced))
+                .font(.system(size: 28 * scale, weight: .black, design: .monospaced))
                 .foregroundColor(card.accentColor)
                 .shadow(color: card.accentColor.opacity(0.8), radius: 10)
                 .offset(x: glitchOffset)
 
             // Visual element based on card
             cardVisual(for: currentCard, color: card.accentColor)
-                .frame(height: 140)
+                .frame(height: 140 * scale)
 
             // Typewriter text
             VStack(alignment: .leading, spacing: 6) {
                 ForEach(Array(card.lines.enumerated()), id: \.offset) { index, line in
                     Text(line)
-                        .font(.system(size: 16, weight: line.hasPrefix(">") ? .bold : .regular, design: .monospaced))
+                        .font(.system(size: 16 * scale, weight: line.hasPrefix(">") ? .bold : .regular, design: .monospaced))
                         .foregroundColor(line.hasPrefix(">") ? card.accentColor : .white.opacity(0.9))
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -184,13 +189,13 @@ struct IntroSequenceView: View {
             // Glow background
             Circle()
                 .fill(color.opacity(0.15))
-                .frame(width: 120, height: 120)
+                .frame(width: 120 * scale, height: 120 * scale)
                 .blur(radius: 20)
                 .scaleEffect(pulseScale)
 
             // CPU icon
             Image(systemName: "cpu.fill")
-                .font(.system(size: 60))
+                .font(.system(size: 60 * scale))
                 .foregroundColor(color)
                 .shadow(color: color, radius: 15)
 
@@ -229,7 +234,7 @@ struct IntroSequenceView: View {
             // Warning flash
             RoundedRectangle(cornerRadius: 8)
                 .fill(color.opacity(0.1))
-                .frame(width: 200, height: 100)
+                .frame(width: 200 * scale, height: 100 * scale)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(color.opacity(0.4), lineWidth: 1)
@@ -271,7 +276,7 @@ struct IntroSequenceView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(DesignColors.surface)
-                        .frame(width: 50, height: 80)
+                        .frame(width: 50 * scale, height: 80 * scale)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(DesignColors.muted, lineWidth: 1)
@@ -297,7 +302,7 @@ struct IntroSequenceView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(color.opacity(0.15))
-                        .frame(width: 80, height: 80)
+                        .frame(width: 80 * scale, height: 80 * scale)
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(color.opacity(0.4), lineWidth: 1)
@@ -350,9 +355,9 @@ struct IntroSequenceView: View {
                         Image(systemName: "power")
                         Text(L10n.Intro.enterSystem)
                     }
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
+                    .font(.system(size: 16 * scale, weight: .bold, design: .monospaced))
                     .foregroundColor(.black)
-                    .frame(width: 220, height: 54)
+                    .frame(width: 220 * scale, height: 54 * scale)
                     .background(DesignColors.primary)
                     .cornerRadius(12)
                     .shadow(color: DesignColors.primary.opacity(0.5), radius: 15)

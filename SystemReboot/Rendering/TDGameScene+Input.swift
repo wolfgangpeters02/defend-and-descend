@@ -545,9 +545,11 @@ extension TDGameScene {
 
             // Haptic
             HapticsService.shared.play(.towerMerge)
+            AudioManager.shared.play(.towerUpgrade)
 
         default:
             HapticsService.shared.play(.warning)
+            AudioManager.shared.play(.uiDeny)
         }
     }
 

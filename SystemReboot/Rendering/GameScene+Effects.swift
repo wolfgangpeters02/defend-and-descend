@@ -42,27 +42,30 @@ extension GameScene {
         flash.run(flashAction)
     }
 
-    /// Triggers a screen shake effect
+    /// Triggers a screen shake effect using offset (works with camera follow)
     func shakeScreen(intensity: CGFloat = 5, duration: TimeInterval = 0.2) {
-        guard let camera = cameraNode else { return }
+        shakeIntensity = intensity
+        shakeDuration = duration
+        shakeElapsed = 0
+    }
 
-        let originalPosition = CGPoint(x: gameState.arena.width / 2, y: gameState.arena.height / 2)
-        camera.removeAction(forKey: "shake")
-
-        let shakeCount = Int(duration / 0.02)
-        var shakeActions: [SKAction] = []
-
-        for i in 0..<shakeCount {
-            let decayFactor = 1.0 - (CGFloat(i) / CGFloat(shakeCount))
-            let offsetX = CGFloat.random(in: -intensity...intensity) * decayFactor
-            let offsetY = CGFloat.random(in: -intensity...intensity) * decayFactor
-            shakeActions.append(SKAction.move(to: CGPoint(
-                x: originalPosition.x + offsetX,
-                y: originalPosition.y + offsetY
-            ), duration: 0.02))
+    /// Update shake offset each frame (called from updateGameState)
+    func updateShake(deltaTime: TimeInterval) {
+        guard shakeDuration > 0, shakeElapsed < shakeDuration else {
+            shakeOffset = .zero
+            return
         }
 
-        shakeActions.append(SKAction.move(to: originalPosition, duration: 0.02))
-        camera.run(SKAction.sequence(shakeActions), withKey: "shake")
+        shakeElapsed += deltaTime
+        let decayFactor = max(0, 1.0 - CGFloat(shakeElapsed / shakeDuration))
+        shakeOffset = CGPoint(
+            x: CGFloat.random(in: -shakeIntensity...shakeIntensity) * decayFactor,
+            y: CGFloat.random(in: -shakeIntensity...shakeIntensity) * decayFactor
+        )
+
+        if shakeElapsed >= shakeDuration {
+            shakeOffset = .zero
+            shakeDuration = 0
+        }
     }
 }

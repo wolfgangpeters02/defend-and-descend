@@ -24,28 +24,31 @@ class VoidHarbingerAI {
         gameState: inout GameState,
         deltaTime: TimeInterval
     ) {
-        // Determine phase based on health
+        // Determine target phase based on health (advance one phase at a time to prevent skipping)
         let healthPercent = boss.health / boss.maxHealth
+        let targetPhase: Int = healthPercent <= BalanceConfig.VoidHarbinger.phase4Threshold ? 4 :
+                               healthPercent <= BalanceConfig.VoidHarbinger.phase3Threshold ? 3 :
+                               healthPercent <= BalanceConfig.VoidHarbinger.phase2Threshold ? 2 : 1
 
-        if healthPercent <= BalanceConfig.VoidHarbinger.phase4Threshold {
-            if bossState.phase != 4 {
-                enterPhase4(bossState: &bossState, boss: boss)
-            }
-            bossState.phase = 4
-        } else if healthPercent <= BalanceConfig.VoidHarbinger.phase3Threshold {
-            if bossState.phase != 3 {
-                enterPhase3(bossState: &bossState, boss: boss)
-            }
-            bossState.phase = 3
-        } else if healthPercent <= BalanceConfig.VoidHarbinger.phase2Threshold {
-            if bossState.phase != 2 && bossState.pylonsDestroyed < 4 {
-                enterPhase2(bossState: &bossState, boss: boss, gameState: &gameState)
-            }
-            // Stay in phase 2 until all pylons destroyed
-            if bossState.phase == 2 && bossState.pylonsDestroyed >= 4 {
-                bossState.isInvulnerable = false
+        // Phase 2 pylon check: clear invulnerability when all pylons destroyed
+        // Must run outside phase advancement since boss takes no damage while invulnerable
+        if bossState.phase == 2 && bossState.pylonsDestroyed >= 4 {
+            bossState.isInvulnerable = false
+        }
+
+        if targetPhase > bossState.phase {
+            // Phase 2 locks until all pylons are destroyed
+            if bossState.phase == 2 && bossState.pylonsDestroyed < 4 {
+                // Stay in phase 2 — don't advance
             } else {
-                bossState.phase = 2
+                let nextPhase = bossState.phase + 1
+                switch nextPhase {
+                case 2: enterPhase2(bossState: &bossState, boss: boss, gameState: &gameState)
+                case 3: enterPhase3(bossState: &bossState, boss: boss)
+                case 4: enterPhase4(bossState: &bossState, boss: boss)
+                default: break
+                }
+                bossState.phase = nextPhase
             }
         }
 

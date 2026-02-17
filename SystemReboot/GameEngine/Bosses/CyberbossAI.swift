@@ -22,24 +22,21 @@ class CyberbossAI {
         gameState: inout GameState,
         deltaTime: TimeInterval
     ) {
-        // Determine phase based on health
+        // Determine target phase based on health (advance one phase at a time to prevent skipping)
         let healthPercent = boss.health / boss.maxHealth
+        let targetPhase: Int = healthPercent <= BalanceConfig.Cyberboss.phase4Threshold ? 4 :
+                               healthPercent <= BalanceConfig.Cyberboss.phase3Threshold ? 3 :
+                               healthPercent <= BalanceConfig.Cyberboss.phase2Threshold ? 2 : 1
 
-        if healthPercent <= BalanceConfig.Cyberboss.phase4Threshold {
-            if bossState.phase != 4 {
-                enterPhase4(bossState: &bossState, boss: boss)
+        if targetPhase > bossState.phase {
+            let nextPhase = bossState.phase + 1
+            switch nextPhase {
+            case 2: enterPhase2(bossState: &bossState)
+            case 3: enterPhase3(bossState: &bossState, boss: boss)
+            case 4: enterPhase4(bossState: &bossState, boss: boss)
+            default: break
             }
-            bossState.phase = 4
-        } else if healthPercent <= BalanceConfig.Cyberboss.phase3Threshold {
-            if bossState.phase != 3 {
-                enterPhase3(bossState: &bossState, boss: boss)
-            }
-            bossState.phase = 3
-        } else if healthPercent <= BalanceConfig.Cyberboss.phase2Threshold {
-            if bossState.phase != 2 {
-                enterPhase2(bossState: &bossState)
-            }
-            bossState.phase = 2
+            bossState.phase = nextPhase
         }
 
         // Update based on current phase
