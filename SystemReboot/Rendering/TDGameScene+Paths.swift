@@ -4,7 +4,7 @@ import SwiftUI
 extension TDGameScene {
 
     func setupPaths() {
-        guard let state = state else { return }
+        guard state != nil else { return }
 
         pathLayer.removeAllChildren()
 
@@ -89,7 +89,7 @@ extension TDGameScene {
     /// Motherboard-style copper trace paths for all 8 lanes
     /// Renders active lanes in full brightness, locked lanes dimmed at 25%
     func setupMotherboardPaths() {
-        guard let state = state else { return }
+        guard state != nil else { return }
 
         let copperColor = UIColor(hex: MotherboardColors.copperTrace) ?? UIColor.orange
         let copperHighlight = UIColor(hex: MotherboardColors.copperHighlight) ?? UIColor(red: 0.83, green: 0.59, blue: 0.42, alpha: 1.0)

@@ -23,6 +23,12 @@ Carthage/Build/
 .build/
 .swiftpm/
 
+# Temp / scratch files
+temp/
+
+# App Store marketing assets (large binaries)
+app-store-assets/
+
 # macOS
 .DS_Store
 *.swp

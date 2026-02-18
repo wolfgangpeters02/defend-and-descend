@@ -154,7 +154,7 @@ class TDParticleFactory {
                 y: y,
                 lifetime: Double.random(in: 0.4...0.8),
                 createdAt: now,
-                color: colors.randomElement()!,
+                color: colors.randomElement() ?? colors[0],
                 size: CGFloat.random(in: 2...5),
                 velocity: CGPoint(x: cos(angle) * speed, y: sin(angle) * speed),
                 drag: 0.03,

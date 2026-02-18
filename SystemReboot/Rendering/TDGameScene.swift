@@ -179,6 +179,7 @@ class TDGameScene: SKScene {
 
     override func didMove(to view: SKView) {
         backgroundColor = .black
+        view.preferredFramesPerSecond = 30
 
         // CRITICAL: Set anchor point to bottom-left (0,0) for correct positioning
         // Without this, default (0.5, 0.5) makes (0,0) the center, causing entities
@@ -864,6 +865,15 @@ class TDGameScene: SKScene {
 
         // Camera physics (inertia scrolling)
         cameraController.updatePhysics(deltaTime: deltaTime)
+
+        // Sync audio viewport (convert scene coords → game coords for spatial sound filtering)
+        let sceneRect = calculateVisibleRect()
+        AudioManager.shared.visibleRect = CGRect(
+            x: sceneRect.origin.x,
+            y: size.height - sceneRect.maxY,
+            width: sceneRect.width,
+            height: sceneRect.height
+        )
 
         // Parallax background
         updateParallaxLayers()

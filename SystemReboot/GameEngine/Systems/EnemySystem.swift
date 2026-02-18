@@ -31,7 +31,7 @@ class EnemySystem {
         let hpScaling = 1 + (minutesElapsed * BalanceConfig.EnemyScaling.hpScalingPerMinute)
         let damageScaling = 1 + (minutesElapsed * BalanceConfig.EnemyScaling.damageScalingPerMinute)
 
-        var enemyHealth = CGFloat(config.health) * CGFloat(hpScaling)
+        let enemyHealth = CGFloat(config.health) * CGFloat(hpScaling)
         var enemySpeed = CGFloat(config.speed)
         var enemyDamage = CGFloat(config.damage) * CGFloat(damageScaling)
 

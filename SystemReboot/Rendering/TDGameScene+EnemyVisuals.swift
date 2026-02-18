@@ -86,7 +86,7 @@ extension TDGameScene {
                 }
                 innerNode = nil
 
-            } else if enemy.type == "void_harbinger" {
+            } else if enemy.type == EnemyID.voidharbinger.rawValue {
                 // Void Harbinger — full octagonal void core composition
                 let _ = EntityRenderer.createVoidHarbingerComposition(in: container, size: enemy.size)
                 body = (container.childNode(withName: "body") as? SKShapeNode)
@@ -198,7 +198,7 @@ extension TDGameScene {
                 let rotate = SKAction.rotate(byAngle: .pi * 2, duration: 5.0)
                 innerNode?.run(SKAction.repeatForever(rotate))
 
-            } else if enemy.isBoss && enemy.type != EnemyID.cyberboss.rawValue && enemy.type != EnemyID.overclocker.rawValue && enemy.type != "void_harbinger" && enemy.type != "trojan_wyrm" {
+            } else if enemy.isBoss && enemy.type != EnemyID.cyberboss.rawValue && enemy.type != EnemyID.overclocker.rawValue && enemy.type != EnemyID.voidharbinger.rawValue && enemy.type != EnemyID.trojanwyrm.rawValue {
                 // Regular/legacy boss (not handled by archetype compositions)
                 let bossLabel = SKLabelNode(text: L10n.Enemy.bossIndicator)
                 bossLabel.fontName = "Menlo-Bold"
@@ -326,8 +326,9 @@ extension TDGameScene {
                 node.position = convertToScene(enemy.position)
 
                 // Viewport culling: hide off-screen enemies (saves GPU draw calls)
+                // Immune enemies (tutorial batch, bosses) stay visible during camera pans
                 let isOnScreen = paddedRect.contains(node.position)
-                node.isHidden = !isOnScreen
+                node.isHidden = !isOnScreen && !enemy.immuneToTowers
                 guard isOnScreen else { continue }
 
                 // Health arc indicator — lazy thin arc above enemy, only when damaged

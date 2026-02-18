@@ -206,7 +206,9 @@ class GameConfigLoader {
 
     private func loadConfig() {
         guard let url = Bundle.main.url(forResource: "GameConfig", withExtension: "json") else {
+            #if DEBUG
             print("[GameConfigLoader] ERROR: GameConfig.json not found in bundle")
+            #endif
             return
         }
 
@@ -215,7 +217,9 @@ class GameConfigLoader {
             let decoder = JSONDecoder()
             config = try decoder.decode(GameConfigData.self, from: data)
         } catch {
+            #if DEBUG
             print("[GameConfigLoader] ERROR: Failed to decode GameConfig.json: \(error)")
+            #endif
         }
     }
 

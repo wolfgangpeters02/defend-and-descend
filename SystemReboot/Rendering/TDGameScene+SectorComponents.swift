@@ -411,7 +411,7 @@ extension TDGameScene {
 
         // NAND labels (individual - few nodes)
         for chip in nandChips where chip.hasLabel {
-            let label = SKLabelNode(text: ["NAND", "3D", "TLC", "QLC"].randomElement()!)
+            let label = SKLabelNode(text: ["NAND", "3D", "TLC", "QLC"].randomElement() ?? "NAND")
             label.fontName = "Menlo"
             label.fontSize = 8
             label.fontColor = color.withAlphaComponent(0.5)
@@ -1046,7 +1046,7 @@ extension TDGameScene {
                         cacheBlocks.append((x: grid.x + CGFloat(col) * blockSize, y: grid.y + CGFloat(row) * blockSize))
                     }
                 }
-                cacheGridLabels.append((x: grid.x + CGFloat(grid.cols) * blockSize / 2, y: grid.y - 15, text: ["L3", "L2", "SRAM", "CACHE"].randomElement()!))
+                cacheGridLabels.append((x: grid.x + CGFloat(grid.cols) * blockSize / 2, y: grid.y - 15, text: ["L3", "L2", "SRAM", "CACHE"].randomElement() ?? "L3"))
             }
         }
 

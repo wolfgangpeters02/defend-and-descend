@@ -237,7 +237,7 @@ struct ProtocolLibrary {
         rarity: .common,
         level: 1,
         isCompiled: true,
-        iconName: "dot.circle.and.hand.point.up.left.fill",
+        iconName: "dot.radiowaves.left.and.right",
         color: "#00d4ff",
         firewallBaseStats: FirewallStats(
             damage: BalanceConfig.ProtocolBaseStats.KernelPulse.firewallDamage,

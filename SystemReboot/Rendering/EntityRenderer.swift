@@ -35,7 +35,7 @@ class EntityRenderer {
         let size = enemy.size ?? 20
 
         // Special rendering for Void Harbinger boss
-        if enemy.isBoss && enemy.type == EnemyID.boss.rawValue && color == colorFromHex(BalanceConfig.VoidHarbinger.bossColor) {
+        if enemy.isBoss && enemy.type == EnemyID.voidharbinger.rawValue {
             return createVoidHarbingerNode(size: size, color: color)
         }
 

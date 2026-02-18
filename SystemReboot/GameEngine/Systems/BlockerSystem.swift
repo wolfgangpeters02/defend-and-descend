@@ -126,8 +126,6 @@ class BlockerSystem {
     /// Update paths and recalculate all enemy progress to preserve their physical positions
     /// This prevents enemies from teleporting when paths are rerouted
     private static func updatePathsAndEnemyProgress(state: inout TDGameState, newPaths: [EnemyPath]) {
-        let oldPaths = state.paths
-
         // For each enemy, convert their current position to progress on the new path
         for i in 0..<state.enemies.count {
             let enemy = state.enemies[i]

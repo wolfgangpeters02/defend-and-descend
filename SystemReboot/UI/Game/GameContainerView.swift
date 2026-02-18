@@ -132,14 +132,14 @@ struct GameContainerView: View {
                             VStack(spacing: 2) {
                                 Text(L10n.Game.HUD.time)
                                     .font(.system(size: 11 * scale, weight: .medium))
-                                    .foregroundColor(DesignColors.textSecondary)
+                                    .foregroundColor(DesignColors.textSecondary.opacity(0.5))
                                 Text(formatTime(state.timeElapsed))
                                     .font(.system(size: 24 * scale, weight: .bold, design: .monospaced))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.white.opacity(0.4))
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 8)
-                            .background(Color.black.opacity(0.5))
+                            .background(Color.black.opacity(0.3))
                             .cornerRadius(10)
                         }
 
@@ -154,7 +154,7 @@ struct GameContainerView: View {
                             }) {
                                 Image(systemName: "xmark.circle.fill")
                                     .font(DesignTypography.display(28 * scale))
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .foregroundColor(.white.opacity(0.3))
                             }
                         }
                     }
@@ -172,6 +172,10 @@ struct GameContainerView: View {
                     if gameMode == .boss,
                        let state = gameState,
                        let boss = state.enemies.first(where: { $0.isBoss && !$0.isDead }) {
+                        let bossPhase: Int = state.overclockerState?.phase
+                            ?? state.cyberbossState?.phase
+                            ?? state.voidHarbingerState?.phase
+                            ?? state.trojanWyrmState?.phase ?? 1
                         VStack(spacing: 4) {
                             // Boss name (format type string for display)
                             Text(boss.type.replacingOccurrences(of: "_", with: " ").uppercased())
@@ -183,6 +187,15 @@ struct GameContainerView: View {
                                 let healthPercent = boss.maxHealth > 0 ? max(0, min(1, boss.health / boss.maxHealth)) : 0
                                 let barWidth = max(1, geo.size.width * CGFloat(healthPercent))
                                 let barHeight = 12 * scale
+                                let phaseGradient: [Color] = {
+                                    switch bossPhase {
+                                    case 1: return [.green, .cyan]
+                                    case 2: return [.yellow, .orange]
+                                    case 3: return [.orange, .red]
+                                    case 4: return [.red, Color(red: 1.0, green: 0.0, blue: 0.27)]
+                                    default: return [.purple, .red]
+                                    }
+                                }()
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(DesignColors.muted.opacity(0.3))
@@ -198,13 +211,14 @@ struct GameContainerView: View {
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(
                                             LinearGradient(
-                                                colors: [.purple, .red],
+                                                colors: phaseGradient,
                                                 startPoint: .leading,
                                                 endPoint: .trailing
                                             )
                                         )
                                         .frame(width: barWidth)
                                         .animation(.easeOut(duration: 0.25), value: healthPercent)
+                                        .animation(.easeInOut(duration: 0.3), value: bossPhase)
 
                                     // Red flash overlay on large damage spikes
                                     if showBossHealthFlash {
@@ -226,51 +240,6 @@ struct GameContainerView: View {
                     }
 
                     Spacer()
-
-                    // Bottom: Level/XP indicator (optional)
-                    if let state = gameState {
-                        HStack(spacing: 16) {
-                            // Level
-                            HStack(spacing: 4) {
-                                Text(L10n.Game.HUD.level)
-                                    .font(.system(size: 12 * scale, weight: .medium))
-                                    .foregroundColor(DesignColors.textSecondary)
-                                Text("\(state.upgradeLevel + 1)")
-                                    .font(.system(size: 20 * scale, weight: .bold))
-                                    .foregroundColor(.cyan)
-                            }
-
-                            // XP bar
-                            GeometryReader { geo in
-                                let xpPercent = max(0, min(1, state.xpBarProgress))
-                                let xpWidth = max(1, geo.size.width * xpPercent)
-                                ZStack(alignment: .leading) {
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(DesignColors.muted.opacity(0.3))
-                                    RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color.cyan)
-                                        .frame(width: xpWidth)
-                                }
-                            }
-                            .frame(width: 100 * scale, height: 6 * scale)
-
-                            // Hash (Ħ) earned display
-                            HStack(spacing: 4) {
-                                Text("Ħ")
-                                    .font(.system(size: 18 * scale, weight: .bold))
-                                    .foregroundColor(DesignColors.primary)
-                                Text("\(state.stats.hashEarned)")
-                                    .font(.system(size: 18 * scale, weight: .bold))
-                                    .foregroundColor(DesignColors.primary)
-                            }
-
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(10)
-                        .padding(.bottom, 100 * scale) // Above joystick
-                    }
                 }
 
                 // Game over overlay
@@ -422,13 +391,17 @@ struct GameContainerView: View {
         // New boss IDs from BossEncounter
         case "cyberboss", "rogue_process":
             return "cyberboss"
-        case "void_harbinger", "memory_leak":
-            return "void_harbinger"
+        case "void_harbinger", "voidharbinger", "memory_leak":
+            return "voidharbinger"
+        case "overclocker", "thermal_runaway":
+            return "overclocker"
+        case "trojan_wyrm", "packet_worm":
+            return "trojan_wyrm"
         // Legacy mappings
         case "server_room", "mainframe", "network":
             return "cyberboss"
         case "void", "corruption", "dark":
-            return "void_harbinger"
+            return "voidharbinger"
         default:
             return "cyberboss"  // Default to cyberboss
         }

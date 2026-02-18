@@ -154,7 +154,7 @@
     "voidharbinger": {
       "id": "voidharbinger",
       "name": "Void Harbinger",
-      "health": 25000,
+      "health": 3000,
       "speed": 80,
       "damage": 60,
       "hashValue": 1000,

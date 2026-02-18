@@ -104,9 +104,16 @@ class TDSimulator {
         simProfile.compiledProtocols = config.compiledProtocols
         simProfile.componentLevels = config.componentLevels
 
-        // Create initial game state
+        // Create initial game state (factory always succeeds for valid profiles)
         guard var gameState = TDGameStateFactory.createMotherboardGameState(playerProfile: simProfile) else {
-            fatalError("Failed to create game state")
+            assertionFailure("Failed to create game state for simulation")
+            self.init(
+                state: TDGameStateFactory.createMotherboardGameState(playerProfile: .defaultProfile)!,
+                profile: simProfile,
+                unlockedSectorIds: config.unlockedSectors,
+                seed: config.seed
+            )
+            return
         }
 
         gameState.hash = config.startingHash

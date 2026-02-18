@@ -13,6 +13,7 @@ struct SettingsSheet: View {
 
     #if DEBUG
     @State private var selectedDebugBoss: BossEncounter?
+    @State private var selectedDebugDifficulty: BossDifficulty = .normal
     #endif
 
     var body: some View {
@@ -25,6 +26,9 @@ struct SettingsSheet: View {
                     // Notifications Section
                     notificationsSection
 
+                    // Privacy Section
+                    privacySection
+
                     #if DEBUG
                     // Debug (only in development builds)
                     debugSection
@@ -32,6 +36,9 @@ struct SettingsSheet: View {
 
                     // Danger Zone
                     dangerZoneSection
+
+                    // About
+                    aboutSection
                 }
                 .padding()
             }
@@ -46,6 +53,7 @@ struct SettingsSheet: View {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(DesignColors.muted)
                     }
+                    .accessibilityLabel("Close settings")
                 }
             }
         }
@@ -66,7 +74,7 @@ struct SettingsSheet: View {
         .fullScreenCover(item: $selectedDebugBoss) { boss in
             BossGameView(
                 boss: boss,
-                difficulty: .easy,
+                difficulty: selectedDebugDifficulty,
                 protocol: appState.currentPlayer.equippedProtocol() ?? ProtocolLibrary.kernelPulse,
                 onExit: { selectedDebugBoss = nil }
             )
@@ -102,6 +110,7 @@ struct SettingsSheet: View {
                         }
                     ))
                     .toggleStyle(SwitchToggleStyle(tint: DesignColors.primary))
+                    .accessibilityLabel(L10n.Settings.soundEffects)
                 }
             }
             .padding(16)
@@ -318,6 +327,29 @@ struct SettingsSheet: View {
                         .foregroundColor(DesignColors.muted)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
+                    // Difficulty picker
+                    HStack(spacing: 6) {
+                        Text(L10n.Boss.selectDifficulty)
+                            .font(DesignTypography.caption(12))
+                            .foregroundColor(DesignColors.muted)
+
+                        Spacer()
+
+                        ForEach(BossDifficulty.allCases, id: \.self) { difficulty in
+                            Button {
+                                selectedDebugDifficulty = difficulty
+                            } label: {
+                                Text(difficulty.displayName)
+                                    .font(DesignTypography.caption(11))
+                                    .foregroundColor(selectedDebugDifficulty == difficulty ? .black : DesignColors.muted)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(selectedDebugDifficulty == difficulty ? Color.orange : DesignColors.surface)
+                                    .cornerRadius(6)
+                            }
+                        }
+                    }
+
                     ForEach(BossEncounter.all) { boss in
                         debugBossRow(boss: boss)
                     }
@@ -395,6 +427,61 @@ struct SettingsSheet: View {
     }
     #endif
 
+    // MARK: - Privacy Section
+
+    private var privacySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader(title: L10n.Settings.privacy, icon: "hand.raised.fill")
+
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.Settings.analytics)
+                            .font(DesignTypography.headline(16))
+                            .foregroundColor(.white)
+
+                        Text(L10n.Settings.analyticsDesc)
+                            .font(DesignTypography.caption(12))
+                            .foregroundColor(DesignColors.muted)
+                    }
+
+                    Spacer()
+
+                    Toggle("", isOn: Binding(
+                        get: { AnalyticsService.shared.isEnabled },
+                        set: { newValue in
+                            AnalyticsService.shared.isEnabled = newValue
+                            HapticsService.shared.play(.selection)
+                        }
+                    ))
+                    .toggleStyle(SwitchToggleStyle(tint: DesignColors.primary))
+                    .accessibilityLabel(L10n.Settings.analytics)
+                }
+
+                if AnalyticsService.shared.isEnabled {
+                    Button {
+                        AnalyticsService.shared.deleteAllData()
+                        HapticsService.shared.play(.success)
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash")
+                                .font(.system(size: 12))
+                            Text(L10n.Settings.deleteAnalytics)
+                                .font(DesignTypography.caption(12))
+                        }
+                        .foregroundColor(DesignColors.muted)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(DesignColors.surface)
+                        .cornerRadius(8)
+                    }
+                }
+            }
+            .padding(16)
+            .background(settingsCardBackground)
+        }
+    }
+
     // MARK: - Danger Zone Section
 
     private var dangerZoneSection: some View {
@@ -438,6 +525,60 @@ struct SettingsSheet: View {
                     )
             )
         }
+    }
+
+    // MARK: - About Section
+
+    private var aboutSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionHeader(title: L10n.Settings.about, icon: "info.circle.fill")
+
+            VStack(spacing: 12) {
+                // Privacy Policy link
+                Button {
+                    if let url = URL(string: "http://built42.com/systemreboot/privacy") {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(L10n.Settings.privacyPolicy)
+                                .font(DesignTypography.headline(16))
+                                .foregroundColor(.white)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.system(size: 14))
+                            .foregroundColor(DesignColors.muted)
+                    }
+                }
+
+                Divider().background(DesignColors.muted.opacity(0.3))
+
+                // Version info
+                HStack {
+                    Text(L10n.Settings.version)
+                        .font(DesignTypography.headline(16))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Text(appVersionString)
+                        .font(DesignTypography.caption(14))
+                        .foregroundColor(DesignColors.muted)
+                }
+            }
+            .padding(16)
+            .background(settingsCardBackground)
+        }
+    }
+
+    private var appVersionString: String {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
+        return "\(version) (\(build))"
     }
 
     // MARK: - Helpers
@@ -498,6 +639,9 @@ struct SettingsSheet: View {
 
         // Clear TD session state (towers, slots, resources)
         StorageService.shared.clearTDSession()
+
+        // Reset analytics identity (GDPR)
+        AnalyticsService.shared.deleteAllData()
 
         // Signal TD game controller to reinitialize
         appState.tdResetRequested = true

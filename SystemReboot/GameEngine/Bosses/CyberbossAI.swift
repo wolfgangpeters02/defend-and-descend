@@ -390,7 +390,10 @@ class CyberbossAI {
         let currentMinions = gameState.enemies.filter { !$0.isBoss && !$0.isDead }.count
 
         // Use lower cap in Phase 3 (puddles already add visual complexity)
-        let effectiveCap = phase >= 3 ? maxMinionsPhase3 : maxMinionsOnScreen
+        // Scale by difficulty multiplier (Easy=0.5x, Hard=1.25x, Nightmare=1.5x)
+        let difficultyMult = gameState.bossDifficulty?.minionCapMultiplier ?? 1.0
+        let baseCap = phase >= 3 ? maxMinionsPhase3 : maxMinionsOnScreen
+        let effectiveCap = max(2, Int(CGFloat(baseCap) * difficultyMult))
 
         // Don't spawn if we're at or above the cap
         guard currentMinions < effectiveCap else { return }

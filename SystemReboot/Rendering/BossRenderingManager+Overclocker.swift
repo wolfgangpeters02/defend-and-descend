@@ -10,6 +10,13 @@ extension BossRenderingManager {
         let bossPos = CGPoint(x: boss.x, y: boss.y)
         let arenaH = gameState.arena.height
 
+        // Phase 1: Render wind particles
+        if bossState.phase == 1 {
+            renderWindParticles(bossPos: CGPoint(x: bossPos.x, y: arenaH - bossPos.y))
+        } else {
+            fadeOutAndRemoveBossNode(key: "overclocker_wind")
+        }
+
         // Phase 1: Render rotating blades
         if bossState.phase == 1 {
             let bladeCount = BalanceConfig.Overclocker.bladeCount
@@ -83,12 +90,30 @@ extension BossRenderingManager {
                 tileStateCache[i] = currentState
 
                 switch currentState {
-                case .lava, .normal, .warning:
+                case .normal:
+                    tileNode.fillColor = SKColor.clear
+                    tileNode.strokeColor = SKColor.gray.withAlphaComponent(0.3)
+                    tileNode.removeAction(forKey: "warningFlash")
+                case .warning:
+                    tileNode.fillColor = SKColor.orange.withAlphaComponent(0.5)
+                    tileNode.strokeColor = SKColor.orange
+                    if tileNode.action(forKey: "warningFlash") == nil {
+                        let flash = SKAction.sequence([
+                            SKAction.fadeAlpha(to: 0.4, duration: 0.2),
+                            SKAction.fadeAlpha(to: 1.0, duration: 0.2)
+                        ])
+                        tileNode.run(SKAction.repeatForever(flash), withKey: "warningFlash")
+                    }
+                case .lava:
                     tileNode.fillColor = SKColor.red.withAlphaComponent(0.7)
                     tileNode.strokeColor = SKColor.orange
+                    tileNode.removeAction(forKey: "warningFlash")
+                    tileNode.alpha = 1.0
                 case .safe:
                     tileNode.fillColor = SKColor.green.withAlphaComponent(0.5)
                     tileNode.strokeColor = SKColor.green
+                    tileNode.removeAction(forKey: "warningFlash")
+                    tileNode.alpha = 1.0
                 }
 
                 // Scale pulse on state transition
@@ -120,12 +145,14 @@ extension BossRenderingManager {
                     steamNode = existing
                 } else {
                     steamNode = SKShapeNode(circleOfRadius: BalanceConfig.Overclocker.steamRadius)
-                    steamNode.fillColor = SKColor.white.withAlphaComponent(0.3)
-                    steamNode.strokeColor = SKColor.gray.withAlphaComponent(0.5)
+                    steamNode.fillColor = SKColor(red: 1.0, green: 0.85, blue: 0.7, alpha: 0.35)
+                    steamNode.strokeColor = SKColor.orange.withAlphaComponent(0.4)
+                    steamNode.lineWidth = 1.5
                     steamNode.zPosition = 50
                     scene.addChild(steamNode)
                     bossMechanicNodes[nodeKey] = steamNode
                     fadeInMechanicNode(steamNode, targetAlpha: 1.0, duration: 0.1)
+                    steamNode.run(SKAction.repeatForever(steamPulseAction), withKey: "steamPulse")
                 }
 
                 steamNode.position = CGPoint(x: segment.x, y: arenaH - segment.y)
@@ -169,8 +196,131 @@ extension BossRenderingManager {
             fadeOutAndRemoveBossNode(key: "overclocker_shredder")
         }
 
+        // Phase 4: Render vacuum pulse ring
+        if bossState.phase == 4 {
+            renderVacuumRing(bossScenePos: CGPoint(x: bossPos.x, y: arenaH - bossPos.y), isSuctionActive: bossState.isSuctionActive)
+        } else {
+            fadeOutAndRemoveBossNode(key: "overclocker_vacuum_ring")
+        }
+
         renderPhaseIndicator(phase: bossState.phase, bossType: "overclocker", gameState: gameState)
         updateOverclockerBodyVisuals(phase: bossState.phase, boss: boss, gameState: gameState, isSuctionActive: bossState.isSuctionActive)
+    }
+
+    // MARK: - Wind Particle Effect (Phase 1)
+
+    /// Renders outward-streaming particles from boss to visualize wind force.
+    private func renderWindParticles(bossPos: CGPoint) {
+        guard let scene = scene else { return }
+        let nodeKey = "overclocker_wind"
+
+        // Create or reuse the wind emitter container
+        let windContainer: SKNode
+        if let existing = bossMechanicNodes[nodeKey] {
+            windContainer = existing
+        } else {
+            windContainer = SKNode()
+            windContainer.zPosition = 95
+            scene.addChild(windContainer)
+            bossMechanicNodes[nodeKey] = windContainer
+
+            // Spawn particles on a repeating cycle
+            let spawnParticles = SKAction.run { [weak windContainer] in
+                guard let container = windContainer, container.parent != nil else { return }
+                let particleCount = BalanceConfig.Overclocker.windParticleCount
+                for _ in 0..<particleCount {
+                    let dot = SKShapeNode(circleOfRadius: CGFloat.random(in: 3.0...6.0))
+                    dot.fillColor = SKColor.orange.withAlphaComponent(0.7)
+                    dot.strokeColor = SKColor.yellow.withAlphaComponent(0.4)
+                    dot.lineWidth = 1
+                    dot.glowWidth = 2
+                    dot.position = .zero
+                    dot.zPosition = 1
+                    container.addChild(dot)
+
+                    let angle = CGFloat.random(in: 0...(2 * .pi))
+                    let speed = CGFloat.random(in: 80...180)
+                    let lifetime = TimeInterval.random(in: 0.6...1.0)
+                    let dx = cos(angle) * speed * CGFloat(lifetime)
+                    let dy = sin(angle) * speed * CGFloat(lifetime)
+
+                    dot.run(SKAction.sequence([
+                        SKAction.group([
+                            SKAction.moveBy(x: dx, y: dy, duration: lifetime),
+                            SKAction.fadeOut(withDuration: lifetime),
+                            SKAction.scale(to: 0.3, duration: lifetime)
+                        ]),
+                        SKAction.removeFromParent()
+                    ]))
+                }
+            }
+            let cycle = SKAction.sequence([spawnParticles, SKAction.wait(forDuration: BalanceConfig.Overclocker.windParticleInterval)])
+            windContainer.run(SKAction.repeatForever(cycle), withKey: "windSpawn")
+        }
+
+        windContainer.position = bossPos
+    }
+
+    // MARK: - Vacuum Pulse Ring (Phase 4)
+
+    /// Renders a contracting/pulsing ring to visualize vacuum suction cycles.
+    private func renderVacuumRing(bossScenePos: CGPoint, isSuctionActive: Bool) {
+        guard let scene = scene else { return }
+        let nodeKey = "overclocker_vacuum_ring"
+
+        let ringNode: SKShapeNode
+        if let existing = bossMechanicNodes[nodeKey] as? SKShapeNode {
+            ringNode = existing
+        } else {
+            ringNode = SKShapeNode(circleOfRadius: BalanceConfig.Overclocker.windMaxDistance * 0.5)
+            ringNode.fillColor = .clear
+            ringNode.lineWidth = 2
+            ringNode.zPosition = 3
+            scene.addChild(ringNode)
+            bossMechanicNodes[nodeKey] = ringNode
+            fadeInMechanicNode(ringNode)
+        }
+
+        ringNode.position = bossScenePos
+
+        if isSuctionActive {
+            ringNode.strokeColor = SKColor.red.withAlphaComponent(0.6)
+            if ringNode.action(forKey: "vacuumPulse") == nil {
+                ringNode.run(SKAction.repeatForever(vacuumPulseAction), withKey: "vacuumPulse")
+            }
+            // Spawn inward-pulling particles
+            if ringNode.action(forKey: "pullParticles") == nil {
+                let pullRadius = BalanceConfig.Overclocker.windMaxDistance * 0.5
+                let spawnPull = SKAction.run { [weak ringNode] in
+                    guard let ring = ringNode, ring.parent != nil else { return }
+                    for _ in 0..<4 {
+                        let angle = CGFloat.random(in: 0...(2 * .pi))
+                        let dot = SKShapeNode(circleOfRadius: 1.5)
+                        dot.fillColor = SKColor.red.withAlphaComponent(0.6)
+                        dot.strokeColor = .clear
+                        dot.position = CGPoint(x: cos(angle) * pullRadius, y: sin(angle) * pullRadius)
+                        dot.zPosition = 1
+                        ring.addChild(dot)
+
+                        dot.run(SKAction.sequence([
+                            SKAction.group([
+                                SKAction.move(to: .zero, duration: 0.5),
+                                SKAction.fadeOut(withDuration: 0.5),
+                                SKAction.scale(to: 0.3, duration: 0.5)
+                            ]),
+                            SKAction.removeFromParent()
+                        ]))
+                    }
+                }
+                let pullCycle = SKAction.sequence([spawnPull, SKAction.wait(forDuration: 0.4)])
+                ringNode.run(SKAction.repeatForever(pullCycle), withKey: "pullParticles")
+            }
+        } else {
+            ringNode.strokeColor = SKColor.orange.withAlphaComponent(0.3)
+            ringNode.removeAction(forKey: "vacuumPulse")
+            ringNode.removeAction(forKey: "pullParticles")
+            ringNode.setScale(1.0)
+        }
     }
 
     // MARK: - Overclocker Phase Body Visuals

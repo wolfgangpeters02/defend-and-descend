@@ -129,6 +129,9 @@ struct MotherboardView: View {
                 // Overclock ring (always present — adapts to ready/active/unavailable)
                 overclockRing
 
+                // Tutorial hint overlays (merge hint banner, etc.)
+                TutorialHintOverlay(profile: appState.currentPlayer)
+
                 // Camera tutorial overlay (FTUE — first-time players)
                 if embeddedGameController.showCameraTutorial {
                     CameraTutorialOverlay(
@@ -279,6 +282,7 @@ struct MotherboardView: View {
                 Animation.easeInOut(duration: 0.05).repeatCount(6, autoreverses: true) :
                 .default, value: embeddedGameController.powerShakeTriggered)
             .onTapGesture { showCurrencyInfo = .power }
+            .accessibilityLabel("Power: \(embeddedGameController.gameState?.powerUsed ?? 0) of \(embeddedGameController.gameState?.powerCapacity ?? 300) watts")
 
             // Efficiency chip - color-coded percentage
             Text("\(Int(embeddedGameController.gameState?.efficiency ?? 100))%")
@@ -293,6 +297,7 @@ struct MotherboardView: View {
                         .fill(DesignColors.surface)
                         .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
                 )
+                .accessibilityLabel("Efficiency: \(Int(embeddedGameController.gameState?.efficiency ?? 100)) percent")
 
             // Hash chip - tappable for currency info
             HStack(spacing: innerSpacing) {
@@ -314,6 +319,7 @@ struct MotherboardView: View {
                     .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
             )
             .onTapGesture { showCurrencyInfo = .hash }
+            .accessibilityLabel("Hash: \(NumberFormatUtils.compact(embeddedGameController.gameState?.hash ?? appState.currentPlayer.hash))")
 
             Spacer()
 
@@ -323,7 +329,7 @@ struct MotherboardView: View {
                 showSystemMenu = true
             } label: {
                 HStack(spacing: innerSpacing) {
-                    Image(systemName: "gearshape.fill")
+                    Image(systemName: "cpu.fill")
                         .font(.system(size: fontSize))
                     Text(L10n.Motherboard.system)
                         .font(.system(size: fontSize, weight: .bold, design: .monospaced))
@@ -343,6 +349,8 @@ struct MotherboardView: View {
                         .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
                 )
             }
+            .accessibilityLabel("System menu")
+            .accessibilityHint("Opens arsenal, upgrades, and settings")
             .tutorialGlow(color: DesignColors.primary, isActive: hintManager.hasUnseenBlueprints)
         }
         .padding(.horizontal, round(12 * s))
@@ -491,9 +499,9 @@ struct MotherboardView: View {
     }
 
     private func buildDeck(geometry: GeometryProxy) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             Text(L10n.Motherboard.dragToDeploy)
-                .font(DesignTypography.caption(11))
+                .font(DesignTypography.caption(10))
                 .foregroundColor(DesignColors.muted)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -502,6 +510,7 @@ struct MotherboardView: View {
                         if let proto = ProtocolLibrary.get(protocolId) {
                             EmbeddedProtocolDeckCard(
                                 protocol: proto,
+                                playerLevel: appState.currentPlayer.protocolLevel(protocolId),
                                 hash: embeddedGameController.gameState?.hash ?? 0,
                                 onDragStart: { embeddedGameController.startDrag(protocolId: proto.id) },
                                 onDragChanged: { value in embeddedGameController.updateDrag(value, geometry: geometry) },
@@ -512,22 +521,34 @@ struct MotherboardView: View {
                 }
                 .padding(.horizontal, 16)
             }
+            .scrollDisabled(appState.currentPlayer.compiledProtocols.count < 5)
+            .overlay(alignment: .trailing) {
+                // Trailing edge fade to hint at more cards
+                LinearGradient(
+                    colors: [.clear, DesignColors.surface.opacity(0.85)],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 24)
+                .allowsHitTesting(false)
+            }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(DesignColors.surface.opacity(0.85))
     }
 
     private func dragPreviewOverlay(protocolId: String, geometry: GeometryProxy) -> some View {
         ZStack {
             if let proto = ProtocolLibrary.get(protocolId) {
-                let displayPosition = embeddedGameController.nearestValidSlot != nil && embeddedGameController.canAffordDraggedTower
-                    ? embeddedGameController.convertGameToScreen(embeddedGameController.nearestValidSlot!.position, geometry: geometry)
+                let validSlot = embeddedGameController.nearestValidSlot
+                let displayPosition = validSlot != nil && embeddedGameController.canAffordDraggedTower
+                    ? embeddedGameController.convertGameToScreen(validSlot!.position, geometry: geometry)
                     : embeddedGameController.dragPosition
                 let protoColor = Color(hex: proto.color) ?? DesignColors.primary
                 let range = proto.firewallStats.range
 
                 ZStack {
-                    if embeddedGameController.nearestValidSlot != nil && embeddedGameController.canAffordDraggedTower {
+                    if validSlot != nil && embeddedGameController.canAffordDraggedTower {
                         Circle()
                             .fill(protoColor.opacity(0.1))
                             .frame(width: range * 0.6, height: range * 0.6)

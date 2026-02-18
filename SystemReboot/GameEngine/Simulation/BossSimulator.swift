@@ -98,7 +98,7 @@ struct SimulatedWeapon {
 
 struct BossSimulationConfig {
     let seed: UInt64
-    let bossType: String                    // "cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"
+    let bossType: String                    // "cyberboss", "voidharbinger", "overclocker", "trojan_wyrm"
     let difficulty: BossDifficulty
     let bot: BossBot
     let maxFightTime: TimeInterval          // Max fight duration before timeout
@@ -223,6 +223,7 @@ class BossSimulator {
     var overclockerBladeAngle: CGFloat = 0
     var overclockerTileStates: [Int] = Array(repeating: 0, count: 16)  // 0=normal, 1=warning, 2=lava, 3=safe
     var lastTileChangeTime: TimeInterval = 0
+    var overclockerWarningStartTime: TimeInterval = 0
     var steamTrail: [SimSteamSegment] = []
     var lastSteamDropTime: TimeInterval = 0
     var overclockerSuctionActive: Bool = false
@@ -235,10 +236,14 @@ class BossSimulator {
     var wyrmWallDirection: CGFloat = -1
     var wyrmGhostSegmentIndex: Int = -1
     var lastTurretFireTime: TimeInterval = 0
+    var lastDataPacketTime: TimeInterval = 0
     var wyrmSubWorms: [SimSubWorm] = []
     var wyrmPhase4SubState: Int = 0  // 0=circling, 1=aiming, 2=lunging, 3=recovering
     var wyrmRingAngle: CGFloat = 0
     var wyrmRingRadius: CGFloat = 250
+    var wyrmRingCenterX: CGFloat = 0
+    var wyrmRingCenterY: CGFloat = 0
+    var wyrmRingDriftAngle: CGFloat = 0
     var wyrmAimTimer: TimeInterval = 0
     var wyrmLungeTimer: TimeInterval = 0
     var wyrmLungeVelocity: CGPoint = .zero
@@ -313,7 +318,7 @@ class BossSimulator {
 
     private func getBossBaseHealth() -> CGFloat {
         switch config.bossType {
-        case "void_harbinger":
+        case "voidharbinger":
             return BalanceConfig.VoidHarbinger.baseHealth
         case "overclocker":
             return BalanceConfig.Overclocker.baseHealth
@@ -378,7 +383,7 @@ class BossSimulator {
 
         // Update boss AI
         switch config.bossType {
-        case "void_harbinger":
+        case "voidharbinger":
             updateVoidHarbinger()
         case "overclocker":
             updateOverclocker()
@@ -411,7 +416,7 @@ class BossSimulator {
         let healthPercent = bossHealth / bossMaxHealth
 
         switch config.bossType {
-        case "void_harbinger":
+        case "voidharbinger":
             if healthPercent <= BalanceConfig.VoidHarbinger.phase4Threshold && bossPhase < 4 {
                 bossPhase = 4
                 enterVoidHarbingerPhase4()
@@ -791,8 +796,7 @@ class BossSimulator {
                                                  x2: bladeTipX, y2: bladeTipY)
             if bladeDist < BalanceConfig.Overclocker.bladeWidth {
                 takeDamage(BalanceConfig.Overclocker.bladeDamage, source: "blade")
-                playerInvulnerableUntil = currentTime + BalanceConfig.Player.invulnerabilityDuration
-                break
+                break // Once per frame, no invulnerability (matches real game)
             }
         }
     }
@@ -804,24 +808,44 @@ class BossSimulator {
 
     private func updateOverclockerPhase2() {
         let tileChangeInterval = BalanceConfig.Overclocker.tileChangeInterval
+        let gridSize = BalanceConfig.Overclocker.tileGridSize
 
         // Timer for floor pattern changes
         if lastTileChangeTime == 0 || currentTime - lastTileChangeTime > tileChangeInterval {
             lastTileChangeTime = currentTime
+            overclockerWarningStartTime = currentTime
 
-            // All tiles lava except safe zones
-            var newTiles = Array(repeating: 2, count: 16) // 2 = lava
+            // All non-safe tiles start as warning (1)
+            var newTiles = Array(repeating: 1, count: 16) // 1 = warning
 
-            // Pick 2 safe zones
-            var available = Array(0..<16)
-            let safe1 = available.randomElement()!
-            available.removeAll { $0 == safe1 }
-            let safe2 = available.randomElement()!
-
-            newTiles[safe1] = 3  // safe
-            newTiles[safe2] = 3  // safe
+            // Pick one safe zone per quadrant (4 safe tiles)
+            let halfGrid = gridSize / 2
+            for qRow in 0..<2 {
+                for qCol in 0..<2 {
+                    var quadrantTiles: [Int] = []
+                    for r in (qRow * halfGrid)..<((qRow + 1) * halfGrid) {
+                        for c in (qCol * halfGrid)..<((qCol + 1) * halfGrid) {
+                            quadrantTiles.append(r * gridSize + c)
+                        }
+                    }
+                    if let picked = quadrantTiles.randomElement() {
+                        newTiles[picked] = 3 // safe
+                    }
+                }
+            }
 
             overclockerTileStates = newTiles
+        }
+
+        // Transition warning tiles to lava after warning duration
+        if overclockerWarningStartTime > 0 &&
+           currentTime - overclockerWarningStartTime > BalanceConfig.Overclocker.tileWarningDuration {
+            for i in 0..<overclockerTileStates.count {
+                if overclockerTileStates[i] == 1 { // warning → lava
+                    overclockerTileStates[i] = 2
+                }
+            }
+            overclockerWarningStartTime = 0
         }
 
         // Move boss to nearest safe zone
@@ -837,12 +861,12 @@ class BossSimulator {
         }
         moveBossTowards(x: targetPos.x, y: targetPos.y, speed: BalanceConfig.Overclocker.phase2BossMoveSpeed)
 
-        // All non-safe tiles deal lava damage
-        let col = Int((playerX - 0) / (arenaWidth / 4))
-        let row = Int((playerY - 0) / (arenaHeight / 4))
-        if col >= 0 && col < 4 && row >= 0 && row < 4 {
-            let index = row * 4 + col
-            if index < overclockerTileStates.count && overclockerTileStates[index] != 3 {
+        // Only lava tiles (2) deal damage
+        let col = Int(playerX / (arenaWidth / CGFloat(gridSize)))
+        let row = Int(playerY / (arenaHeight / CGFloat(gridSize)))
+        if col >= 0 && col < gridSize && row >= 0 && row < gridSize {
+            let index = row * gridSize + col
+            if index < overclockerTileStates.count && overclockerTileStates[index] == 2 {
                 takeDamage(BalanceConfig.Overclocker.lavaTileDPS * CGFloat(deltaTime), source: "lava")
             }
         }
@@ -874,6 +898,9 @@ class BossSimulator {
                 steamTrail.removeFirst()
             }
         }
+
+        // Expire old steam by age
+        steamTrail.removeAll { currentTime - $0.createdAt > BalanceConfig.Overclocker.steamLifetime }
 
         // Steam damage
         for segment in steamTrail {
@@ -937,6 +964,9 @@ class BossSimulator {
                 steamTrail.removeFirst()
             }
         }
+
+        // Expire old steam by age
+        steamTrail.removeAll { currentTime - $0.createdAt > BalanceConfig.Overclocker.steamLifetime }
 
         // Steam damage
         for segment in steamTrail {
@@ -1018,6 +1048,33 @@ class BossSimulator {
 
         // Drag body segments
         updateWyrmSegments(spacing: segmentSpacing)
+
+        // Fire data packets from tail toward player
+        if currentTime - lastDataPacketTime > BalanceConfig.TrojanWyrm.dataPacketInterval {
+            lastDataPacketTime = currentTime
+
+            guard let tailSeg = wyrmSegments.last else { return }
+            let baseAngle = atan2(playerY - tailSeg.y, playerX - tailSeg.x)
+            let count = BalanceConfig.TrojanWyrm.dataPacketCount
+            let spread = BalanceConfig.TrojanWyrm.dataPacketSpread
+
+            for i in 0..<count {
+                let offset = spread * (CGFloat(i) - CGFloat(count - 1) / 2.0) / max(1, CGFloat(count - 1))
+                let angle = baseAngle + offset
+                projectiles.append(SimProjectile(
+                    id: UUID().uuidString,
+                    x: tailSeg.x,
+                    y: tailSeg.y,
+                    velocityX: cos(angle) * BalanceConfig.TrojanWyrm.dataPacketSpeed,
+                    velocityY: sin(angle) * BalanceConfig.TrojanWyrm.dataPacketSpeed,
+                    damage: BalanceConfig.TrojanWyrm.dataPacketDamage,
+                    radius: BalanceConfig.TrojanWyrm.dataPacketRadius,
+                    lifetime: 0,
+                    maxLifetime: BalanceConfig.TrojanWyrm.dataPacketLifetime,
+                    isHoming: false
+                ))
+            }
+        }
     }
 
     private func enterTrojanWyrmPhase2() {
@@ -1028,7 +1085,6 @@ class BossSimulator {
 
     private func updateTrojanWyrmPhase2() {
         let wallSweepSpeed = BalanceConfig.TrojanWyrm.wallSweepSpeed
-        let segmentSpacing = BalanceConfig.TrojanWyrm.segmentSpacing
 
         // Move wall
         wyrmWallY += wallSweepSpeed * CGFloat(deltaTime) * wyrmWallDirection
@@ -1045,23 +1101,26 @@ class BossSimulator {
             wyrmGhostSegmentIndex = Int.random(in: 3..<min(21, wyrmSegments.count))
         }
 
-        // Rigid positioning
-        let totalWidth = segmentSpacing * CGFloat(wyrmSegments.count)
-        let startX = arenaCenter.x - totalWidth / 2
+        // Rigid positioning — fit wall across arena width
+        let wallPadding: CGFloat = 20
+        let wallSpacing = (arenaWidth - wallPadding * 2) / CGFloat(wyrmSegments.count + 1)
+        let startX = wallPadding
         bossX = startX
         bossY = wyrmWallY
 
         for i in 0..<wyrmSegments.count {
             wyrmSegments[i] = CGPoint(
-                x: startX + segmentSpacing * CGFloat(i + 1),
+                x: startX + wallSpacing * CGFloat(i + 1),
                 y: wyrmWallY
             )
         }
 
-        // Turret fire from even segments
+        // Turret fire from even segments — fire toward the player's side of the wall
         let turretFireInterval = BalanceConfig.TrojanWyrm.turretFireInterval
         if currentTime - lastTurretFireTime > turretFireInterval {
             lastTurretFireTime = currentTime
+
+            let fireDirectionY: CGFloat = playerY > wyrmWallY ? 1 : -1
 
             for i in stride(from: 0, to: wyrmSegments.count, by: 2) {
                 if i == wyrmGhostSegmentIndex { continue }
@@ -1071,7 +1130,7 @@ class BossSimulator {
                     x: seg.x,
                     y: seg.y,
                     velocityX: 0,
-                    velocityY: -BalanceConfig.TrojanWyrm.turretProjectileSpeed,
+                    velocityY: BalanceConfig.TrojanWyrm.turretProjectileSpeed * fireDirectionY,
                     damage: BalanceConfig.TrojanWyrm.turretProjectileDamage,
                     radius: BalanceConfig.TrojanWyrm.turretProjectileRadius,
                     lifetime: 0,
@@ -1169,6 +1228,9 @@ class BossSimulator {
         wyrmPhase4SubState = 0  // circling
         wyrmRingRadius = BalanceConfig.TrojanWyrm.ringInitialRadius
         wyrmRingAngle = 0
+        wyrmRingCenterX = playerX
+        wyrmRingCenterY = playerY
+        wyrmRingDriftAngle = CGFloat.random(in: 0...(2 * .pi))
         wyrmAimTimer = 0
         wyrmLungeTimer = 0
         wyrmRecoverTimer = 0
@@ -1184,23 +1246,45 @@ class BossSimulator {
 
         switch wyrmPhase4SubState {
         case 0:  // circling
+            // Drift ring center independently
+            let driftSpeed = BalanceConfig.TrojanWyrm.ringDriftSpeed
+            wyrmRingCenterX += cos(wyrmRingDriftAngle) * driftSpeed * CGFloat(deltaTime)
+            wyrmRingCenterY += sin(wyrmRingDriftAngle) * driftSpeed * CGFloat(deltaTime)
+
+            // Bounce ring center off arena walls
+            let ringPadding = wyrmRingRadius + 20
+            if wyrmRingCenterX < ringPadding {
+                wyrmRingCenterX = ringPadding
+                wyrmRingDriftAngle = .pi - wyrmRingDriftAngle
+            } else if wyrmRingCenterX > arenaWidth - ringPadding {
+                wyrmRingCenterX = arenaWidth - ringPadding
+                wyrmRingDriftAngle = .pi - wyrmRingDriftAngle
+            }
+            if wyrmRingCenterY < ringPadding {
+                wyrmRingCenterY = ringPadding
+                wyrmRingDriftAngle = -wyrmRingDriftAngle
+            } else if wyrmRingCenterY > arenaHeight - ringPadding {
+                wyrmRingCenterY = arenaHeight - ringPadding
+                wyrmRingDriftAngle = -wyrmRingDriftAngle
+            }
+
             // Shrink ring
             wyrmRingRadius = max(ringMinRadius, wyrmRingRadius - ringShrinkRate * CGFloat(deltaTime))
 
             // Rotate ring
             wyrmRingAngle += ringRotationSpeed * CGFloat(deltaTime)
 
-            // Position head on ring around player
-            bossX = playerX + cos(wyrmRingAngle) * wyrmRingRadius
-            bossY = playerY + sin(wyrmRingAngle) * wyrmRingRadius
+            // Position head on ring around the drifting center
+            bossX = wyrmRingCenterX + cos(wyrmRingAngle) * wyrmRingRadius
+            bossY = wyrmRingCenterY + sin(wyrmRingAngle) * wyrmRingRadius
 
             // Position segments in circle formation
             let angleStep = (2 * .pi) / CGFloat(wyrmSegments.count + 1)
             for i in 0..<wyrmSegments.count {
                 let segAngle = wyrmRingAngle - CGFloat(i + 1) * angleStep
                 wyrmSegments[i] = CGPoint(
-                    x: playerX + cos(segAngle) * wyrmRingRadius,
-                    y: playerY + sin(segAngle) * wyrmRingRadius
+                    x: wyrmRingCenterX + cos(segAngle) * wyrmRingRadius,
+                    y: wyrmRingCenterY + sin(segAngle) * wyrmRingRadius
                 )
             }
 
@@ -1272,6 +1356,7 @@ class BossSimulator {
                 wyrmPhase4SubState = 0  // back to circling
                 wyrmAimTimer = 0
                 wyrmRingRadius = BalanceConfig.TrojanWyrm.ringInitialRadius  // Reset ring
+                wyrmRingDriftAngle = CGFloat.random(in: 0...(2 * .pi))  // New drift direction
             }
 
         default:

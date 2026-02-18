@@ -28,7 +28,9 @@ class StorageService {
                 let migratedProfile = PlayerProfile.migrate(profile)
                 return migratedProfile
             } catch {
+                #if DEBUG
                 print("[StorageService] WARNING: Failed to decode PlayerProfile, attempting legacy migration: \(error)")
+                #endif
             }
 
             // If that fails, try to migrate from legacy format
@@ -38,7 +40,9 @@ class StorageService {
                 return migratedProfile
             }
 
+            #if DEBUG
             print("[StorageService] ERROR: Failed to load or migrate player profile, creating default")
+            #endif
         }
 
         // Create default player
@@ -131,7 +135,12 @@ class StorageService {
             let data = try JSONEncoder().encode(profile)
             userDefaults.set(data, forKey: Keys.playerProfile)
         } catch {
+            #if DEBUG
             print("[StorageService] ERROR: Failed to encode PlayerProfile: \(error)")
+            #endif
+            DispatchQueue.main.async {
+                AppState.shared.lastSaveError = "Failed to save progress. Please try again."
+            }
         }
     }
 
@@ -170,7 +179,9 @@ class StorageService {
             let data = try JSONEncoder().encode(players)
             userDefaults.set(data, forKey: Keys.allPlayers)
         } catch {
+            #if DEBUG
             print("[StorageService] ERROR: Failed to encode player list: \(error)")
+            #endif
         }
     }
 
@@ -329,7 +340,9 @@ class StorageService {
             let data = try JSONEncoder().encode(state)
             userDefaults.set(data, forKey: Keys.tdSessionState)
         } catch {
+            #if DEBUG
             print("[StorageService] ERROR: Failed to encode TDSessionState: \(error)")
+            #endif
         }
     }
 
@@ -339,7 +352,9 @@ class StorageService {
         do {
             return try JSONDecoder().decode(TDSessionState.self, from: data)
         } catch {
+            #if DEBUG
             print("[StorageService] ERROR: Failed to decode TDSessionState: \(error)")
+            #endif
             return nil
         }
     }

@@ -68,7 +68,7 @@ extension TDGameScene {
     }
 
     func setupBackground() {
-        guard let state = state else { return }
+        guard state != nil else { return }
 
         // Clear existing
         backgroundLayer.removeAllChildren()

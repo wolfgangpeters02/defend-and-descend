@@ -32,7 +32,7 @@ struct BossEncounter: Identifiable {
             description: "A void entity consuming memory. Creates gravity wells and shrinking arenas.",
             iconName: "tornado",
             color: "#a855f7",
-            bossId: "void_harbinger",
+            bossId: "voidharbinger",
             rewards: ["fork_bomb", "overflow"],
             unlockCost: 200
         ),

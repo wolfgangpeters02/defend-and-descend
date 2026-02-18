@@ -13,6 +13,7 @@
 		13BD166CCD4350CD954872C6 /* PathSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09DD228498839C35BD9C1D41 /* PathSystem.swift */; };
 		2096E9DBF01F2416463E54D1 /* MegaBoardTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 642FC35778370BD58869415C /* MegaBoardTypes.swift */; };
 		21C537CEC27D011FCFC30E1B /* IdleSpawnSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */; };
+		TUTSPNSYBL01 /* TutorialSpawnSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = TUTSPNSYRF01 /* TutorialSpawnSystem.swift */; };
 		24560D324C0A2B4C238A3D31 /* TowerSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652706E4D090EB81125BDB8E /* TowerSystem.swift */; };
 		41D40273C81B81885F1FEA91 /* SharedTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E7B2121571D71C1EE9E0447 /* SharedTypes.swift */; };
 		44E5FE6B9BCA52CA00105C40 /* ManualOverrideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 524A80231C9853CE6D4B5A23 /* ManualOverrideView.swift */; };
@@ -43,6 +44,7 @@
 		AA000013 /* VirtualJoystick.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100013 /* VirtualJoystick.swift */; };
 		AA000014 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA100014 /* Assets.xcassets */; };
 		AA000015 /* GameConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = AA100015 /* GameConfig.json */; };
+		PRVCYINF0BLD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = PRVCYINF0REF /* PrivacyInfo.xcprivacy */; };
 		AA000016 /* EnemySystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100017 /* EnemySystem.swift */; };
 		AA000017 /* WeaponSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100018 /* WeaponSystem.swift */; };
 		AA000018 /* ProjectileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA100019 /* ProjectileSystem.swift */; };
@@ -194,6 +196,7 @@
 		AA100014 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA100015 /* GameConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = GameConfig.json; sourceTree = "<group>"; };
 		AA100016 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		PRVCYINF0REF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA100017 /* EnemySystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnemySystem.swift; sourceTree = "<group>"; };
 		AA100018 /* WeaponSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeaponSystem.swift; sourceTree = "<group>"; };
 		AA100019 /* ProjectileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectileSystem.swift; sourceTree = "<group>"; };
@@ -266,6 +269,7 @@
 		F39E73304F9D3F17740953D5 /* MegaBoardRenderer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MegaBoardRenderer.swift; sourceTree = "<group>"; };
 		F5F896AC2E9B27982965DBAF /* Protocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Protocol.swift; sourceTree = "<group>"; };
 		F83163F5E1BEA26402290CE9 /* IdleSpawnSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = IdleSpawnSystem.swift; sourceTree = "<group>"; };
+		TUTSPNSYRF01 /* TutorialSpawnSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialSpawnSystem.swift; sourceTree = "<group>"; };
 		FFF59B8E7D74C8309105FA47 /* BlockerSystem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BlockerSystem.swift; sourceTree = "<group>"; };
 		FRMCTX001 /* FrameContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameContext.swift; sourceTree = "<group>"; };
 		FRZRCVREF0 /* FreezeRecoveryService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = FreezeRecoveryService.swift; sourceTree = "<group>"; };
@@ -351,6 +355,7 @@
 				AA400010 /* Resources */,
 				AA100014 /* Assets.xcassets */,
 				AA100016 /* Info.plist */,
+				PRVCYINF0REF /* PrivacyInfo.xcprivacy */,
 			);
 			path = SystemReboot;
 			sourceTree = "<group>";
@@ -562,6 +567,7 @@
 				TWRPLCSVCRF /* TowerPlacementService.swift */,
 				BSSFGHTCDRF /* BossFightCoordinator.swift */,
 				MNLOVRSYSRF /* ManualOverrideSystem.swift */,
+				TUTSPNSYRF01 /* TutorialSpawnSystem.swift */,
 			);
 			path = Systems;
 			sourceTree = "<group>";
@@ -732,6 +738,7 @@
 				AA000014 /* Assets.xcassets in Resources */,
 				AA000015 /* GameConfig.json in Resources */,
 				LOCSTRSBLD /* Localizable.xcstrings in Resources */,
+				PRVCYINF0BLD /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -824,6 +831,7 @@
 				AAC10004 /* TowerVisualFactory+Indicators.swift in Sources */,
 				01237F59EE02566C430CB41B /* PillarSystem.swift in Sources */,
 				21C537CEC27D011FCFC30E1B /* IdleSpawnSystem.swift in Sources */,
+				TUTSPNSYBL01 /* TutorialSpawnSystem.swift in Sources */,
 				6C248F4AC18463B47DE591BF /* SectorSchematics.swift in Sources */,
 				50A8B0A9C7780F96391DAD35 /* BlueprintDropSystem.swift in Sources */,
 				BALCFGBLD /* BalanceConfig.swift in Sources */,
@@ -1027,6 +1035,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SystemReboot/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -1056,6 +1065,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = SystemReboot/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

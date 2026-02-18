@@ -12,6 +12,7 @@ enum L10n {
         static let virusesIncoming = String(localized: "tutorial.virusesIncoming")
         static let cpuCore = String(localized: "tutorial.cpuCore")
         static let deployFirewall = String(localized: "tutorial.deployFirewall")
+        static let mergeTowers = String(localized: "tutorial.mergeTowers")
     }
 
     // MARK: - Boss Tutorial (FTUE)
@@ -403,6 +404,11 @@ enum L10n {
         static let allSectorsUnlocked = String(localized: "settings.allSectorsUnlocked")
         static let unlockAllProtocols = String(localized: "settings.unlockAllProtocols")
         static let allProtocolsUnlocked = String(localized: "settings.allProtocolsUnlocked")
+        // Privacy
+        static let privacy = String(localized: "settings.privacy")
+        static let analytics = String(localized: "settings.analytics")
+        static let analyticsDesc = String(localized: "settings.analyticsDesc")
+        static let deleteAnalytics = String(localized: "settings.deleteAnalytics")
         // Danger Zone
         static let dangerZone = String(localized: "settings.dangerZone")
         static let resetAccount = String(localized: "settings.resetAccount")
@@ -410,6 +416,10 @@ enum L10n {
         static let reset = String(localized: "settings.reset")
         static let resetAlertTitle = String(localized: "settings.resetAlertTitle")
         static let resetAlertMessage = String(localized: "settings.resetAlertMessage")
+        // About
+        static let about = String(localized: "settings.about")
+        static let privacyPolicy = String(localized: "settings.privacyPolicy")
+        static let version = String(localized: "settings.version")
     }
 
     // MARK: - Notifications
@@ -457,6 +467,41 @@ enum L10n {
             case .epic: return epic
             case .legendary: return legendary
             }
+        }
+    }
+
+    // MARK: - Intro Sequence (FTUE)
+    enum Intro {
+        static let skip = String(localized: "intro.skip")
+        static let swipeHint = String(localized: "intro.swipeHint")
+        static let enterSystem = String(localized: "intro.enterSystem")
+        static let offline = String(localized: "intro.offline")
+        static let operatingHours = String(localized: "intro.operatingHours")
+        static let earning = String(localized: "intro.earning")
+
+        enum SystemBoot {
+            static let header = String(localized: "intro.systemBoot.header")
+            static let line1 = String(localized: "intro.systemBoot.line1")
+            static let line2 = String(localized: "intro.systemBoot.line2")
+            static let line3 = String(localized: "intro.systemBoot.line3")
+            static let line4 = String(localized: "intro.systemBoot.line4")
+        }
+
+        enum ThreatDetected {
+            static let header = String(localized: "intro.threatDetected.header")
+            static let line1 = String(localized: "intro.threatDetected.line1")
+            static let line2 = String(localized: "intro.threatDetected.line2")
+            static let line3 = String(localized: "intro.threatDetected.line3")
+            static let line4 = String(localized: "intro.threatDetected.line4")
+        }
+
+        enum AlwaysRunning {
+            static let header = String(localized: "intro.alwaysRunning.header")
+            static let line1 = String(localized: "intro.alwaysRunning.line1")
+            static let line2 = String(localized: "intro.alwaysRunning.line2")
+            static let line3 = String(localized: "intro.alwaysRunning.line3")
+            static let line4 = String(localized: "intro.alwaysRunning.line4")
+            static let line5 = String(localized: "intro.alwaysRunning.line5")
         }
     }
 

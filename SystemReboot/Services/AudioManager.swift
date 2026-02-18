@@ -29,6 +29,10 @@ class AudioManager {
         case victory
         case defeat
 
+        // Tier 2b: Menu Actions
+        case equipProtocol      // Protocol equipped for debug mode
+        case componentUpgrade   // System component upgraded (PSU, RAM, etc.)
+
         // Tier 3: Feedback & Polish
         case uiTap
         case uiDeny
@@ -72,9 +76,18 @@ class AudioManager {
         set { UserDefaults.standard.set(newValue, forKey: Self.soundEnabledKey) }
     }
 
+    /// When true, combat and player-feedback sounds are suppressed (e.g. system menu open).
+    /// Milestone and UI sounds still play through so menu interactions remain audible.
+    var gameSoundsSuppressed = false
+
+    /// Viewport in game coordinates for spatial filtering. Set by TDGameScene each frame.
+    /// Sounds played via `play(_:at:)` outside this rect are skipped.
+    var visibleRect: CGRect?
+
     private var engine: AVAudioEngine?
     private var playerNodes: [AVAudioPlayerNode] = []
     private var bufferCache: [SoundType: AVAudioPCMBuffer] = [:]
+    private var towerFireBuffers: [String: AVAudioPCMBuffer] = [:]  // Per-archetype tower fire sounds
     private var lastPlayedTime: [SoundType: CFAbsoluteTime] = [:]
     private var isEngineRunning = false
 
@@ -99,6 +112,10 @@ class AudioManager {
         .levelUp:           SoundConfig(priority: .milestone, cooldown: 0.0, volume: 0.45),
         .victory:           SoundConfig(priority: .milestone, cooldown: 0.0, volume: 0.50),
         .defeat:            SoundConfig(priority: .milestone, cooldown: 0.0, volume: 0.45),
+
+        // Tier 2b: Menu Actions
+        .equipProtocol:     SoundConfig(priority: .milestone, cooldown: 0.0, volume: 0.40),
+        .componentUpgrade:  SoundConfig(priority: .milestone, cooldown: 0.0, volume: 0.40),
 
         // Tier 3: Feedback & Polish
         .uiTap:             SoundConfig(priority: .ui, cooldown: 0.050, volume: 0.15),
@@ -130,10 +147,12 @@ class AudioManager {
         let eng = AVAudioEngine()
         engine = eng
 
+        guard let monoFormat = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return }
+
         for _ in 0..<nodeCount {
             let node = AVAudioPlayerNode()
             eng.attach(node)
-            eng.connect(node, to: eng.mainMixerNode, format: nil)
+            eng.connect(node, to: eng.mainMixerNode, format: monoFormat)
             playerNodes.append(node)
         }
 
@@ -154,6 +173,14 @@ class AudioManager {
     func play(_ sound: SoundType) {
         guard !isMuted, isEngineRunning else { return }
 
+        // Suppress game sounds when in system menu (combat & player feedback)
+        if gameSoundsSuppressed {
+            let priority = soundConfigs[sound]?.priority ?? .combat
+            if priority == .combat || priority == .playerFeedback {
+                return
+            }
+        }
+
         // Throttle check
         let now = CFAbsoluteTimeGetCurrent()
         if let config = soundConfigs[sound], config.cooldown > 0 {
@@ -167,6 +194,46 @@ class AudioManager {
 
         // Find available player node (round-robin with priority preemption)
         let config = soundConfigs[sound] ?? SoundConfig(priority: .combat, cooldown: 0, volume: 0.3)
+        playBuffer(buffer, volume: config.volume, priority: config.priority)
+    }
+
+    /// Play a sound only if the event position is visible on screen.
+    /// Use for high-frequency combat sounds (towerFire, enemyHit, etc.) so the player
+    /// only hears what they can see. Pass game-coordinate positions.
+    func play(_ sound: SoundType, at position: CGPoint) {
+        if let rect = visibleRect {
+            let expanded = rect.insetBy(dx: -120, dy: -120)  // Margin to avoid hard cutoff at edges
+            if !expanded.contains(position) {
+                return
+            }
+        }
+        play(sound)
+    }
+
+    /// Play tower fire sound with per-archetype variation.
+    /// Each tower type has a distinct sound character matching its role.
+    func playTowerFire(protocolId: String, at position: CGPoint) {
+        guard !isMuted, isEngineRunning else { return }
+        if gameSoundsSuppressed { return }
+
+        // Viewport check
+        if let rect = visibleRect {
+            let expanded = rect.insetBy(dx: -120, dy: -120)
+            if !expanded.contains(position) { return }
+        }
+
+        // Throttle (shared across all tower fire variants)
+        let now = CFAbsoluteTimeGetCurrent()
+        if let config = soundConfigs[.towerFire], config.cooldown > 0 {
+            if let lastTime = lastPlayedTime[.towerFire], now - lastTime < config.cooldown {
+                return
+            }
+        }
+        lastPlayedTime[.towerFire] = now
+
+        let key = protocolId.lowercased()
+        guard let buffer = towerFireBuffers[key] ?? bufferCache[.towerFire] else { return }
+        let config = soundConfigs[.towerFire] ?? SoundConfig(priority: .combat, cooldown: 0.15, volume: 0.25)
         playBuffer(buffer, volume: config.volume, priority: config.priority)
     }
 
@@ -223,12 +290,45 @@ class AudioManager {
         let allSounds: [SoundType] = [
             .towerFire, .enemyHit, .enemyDeath, .playerHit, .criticalHit, .hashCollect,
             .towerPlace, .towerUpgrade, .waveStart, .bossAppear, .bossDeath, .levelUp,
-            .victory, .defeat,
+            .victory, .defeat, .equipProtocol, .componentUpgrade,
             .uiTap, .uiDeny, .coreHit, .freezeAlert, .overclockActivate, .phaseChange
         ]
         for sound in allSounds {
             bufferCache[sound] = generateBuffer(for: sound)
         }
+        generateTowerFireVariants()
+    }
+
+    /// Generate per-archetype tower fire sounds so each tower type has distinct audio character.
+    private func generateTowerFireVariants() {
+        // Scanner (KernelPulse, TraceRoute) — sharp high blip (the "default" towerFire)
+        let scannerSound = squareWave(frequency: 880, duration: 0.05, attack: 0.005, decay: 0.04)
+        towerFireBuffers["kernel_pulse"] = scannerSound
+        towerFireBuffers["trace_route"] = scannerSound
+
+        // Payload (BurstProtocol) — deep punchy thud
+        let payloadSound = squareWave(frequency: 220, duration: 0.06, attack: 0.003, decay: 0.05)
+        towerFireBuffers["burst_protocol"] = payloadSound
+
+        // Cryowall (IceShard) — crystalline chime
+        let cryoSound = sineWave(frequency: 1400, duration: 0.06, attack: 0.005, decay: 0.05)
+        towerFireBuffers["ice_shard"] = cryoSound
+
+        // Rootkit (RootAccess) — soft low hum
+        let rootkitSound = sineWave(frequency: 330, duration: 0.05, attack: 0.005, decay: 0.04)
+        towerFireBuffers["root_access"] = rootkitSound
+
+        // Overload (Overflow) — buzzy glitch burst
+        let overloadSound = noiseBurst(duration: 0.04, attack: 0.003, decay: 0.035)
+        towerFireBuffers["overflow"] = overloadSound
+
+        // Forkbomb (ForkBomb) — rapid double blip
+        let forkSound = arpeggio(frequencies: [660, 880], noteDuration: 0.025, waveform: .square)
+        towerFireBuffers["fork_bomb"] = forkSound
+
+        // Exception (NullPointer) — sharp descending crack
+        let exceptionSound = sweep(startFreq: 1200, endFreq: 600, duration: 0.04, waveform: .square)
+        towerFireBuffers["null_pointer"] = exceptionSound
     }
 
     private func generateBuffer(for sound: SoundType) -> AVAudioPCMBuffer? {
@@ -277,6 +377,17 @@ class AudioManager {
         case .defeat:
             return arpeggio(frequencies: [659, 523, 440], noteDuration: 0.15, waveform: .sine, fadeOut: true)
 
+        // Tier 2b: Menu Actions
+        case .equipProtocol:
+            // Confident two-tone "lock-in" — low confirm thud + high affirmation ping
+            return combinedBuffer([
+                squareWave(frequency: 330, duration: 0.06, attack: 0.005, decay: 0.05),
+                sineWave(frequency: 880, duration: 0.08, attack: 0.01, decay: 0.06)
+            ])
+        case .componentUpgrade:
+            // Ascending power-up chime — shorter than towerUpgrade, different interval (4th instead of 3rd)
+            return arpeggio(frequencies: [440, 587, 880], noteDuration: 0.07, waveform: .sine)
+
         // Tier 3: Feedback & Polish
         case .uiTap:
             return sineWave(frequency: 1000, duration: 0.02, attack: 0.002, decay: 0.015)
@@ -305,7 +416,7 @@ class AudioManager {
     }
 
     private func makeBuffer(duration: TimeInterval) -> AVAudioPCMBuffer? {
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return nil }
         let frameCount = AVAudioFrameCount(duration * sampleRate)
         guard frameCount > 0 else { return nil }
         return AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)
@@ -498,7 +609,7 @@ class AudioManager {
         guard !validBuffers.isEmpty else { return nil }
 
         let maxFrames = validBuffers.map { $0.frameLength }.max() ?? 0
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return nil }
         guard let combined = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: maxFrames) else { return nil }
         combined.frameLength = maxFrames
         guard let outData = combined.floatChannelData?[0] else { return nil }

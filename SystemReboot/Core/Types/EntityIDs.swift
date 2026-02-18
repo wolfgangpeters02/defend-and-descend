@@ -51,6 +51,7 @@ enum EnemyID: String, CaseIterable, Codable {
     case voidharbinger
     case voidminion
     case overclocker
+    case trojanwyrm = "trojan_wyrm"
     case voidPylon = "void_pylon"
     case voidMinionSpawn = "void_minion"
     case voidElite = "void_elite"
@@ -58,7 +59,7 @@ enum EnemyID: String, CaseIterable, Codable {
     /// Whether this enemy type is a boss
     var isBoss: Bool {
         switch self {
-        case .boss, .cyberboss, .voidharbinger, .overclocker:
+        case .boss, .cyberboss, .voidharbinger, .overclocker, .trojanwyrm:
             return true
         default:
             return false

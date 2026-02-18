@@ -675,7 +675,7 @@ enum DesignHelpers {
         case "trace_route":
             return "scope"
         case "kernel_pulse":
-            return "dot.circle.and.hand.point.up.left.fill"
+            return "dot.radiowaves.left.and.right"
         case "wand", "staff":
             return "wand.and.stars"
         case "cannon":
@@ -702,6 +702,17 @@ enum DesignHelpers {
             return "exclamationmark.triangle.fill"
         default:
             return "square.fill"
+        }
+    }
+
+    /// SF Symbol icon for a firewall special ability
+    static func iconForFirewallAbility(_ ability: ProtocolFirewallAbility) -> String {
+        switch ability {
+        case .homing:  return "scope"
+        case .chain:   return "link"
+        case .burn:    return "flame"
+        case .freeze:  return "snowflake"
+        case .execute: return "bolt.slash.fill"
         }
     }
 

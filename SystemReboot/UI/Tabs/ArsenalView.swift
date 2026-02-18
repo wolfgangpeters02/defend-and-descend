@@ -5,6 +5,7 @@ import SwiftUI
 struct SystemMenuSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedTab: SystemMenuTab
+    @State private var showSettings = false
 
     enum SystemMenuTab: String, CaseIterable {
         case arsenal
@@ -44,6 +45,14 @@ struct SystemMenuSheet: View {
                 Spacer()
 
                 Button {
+                    showSettings = true
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(DesignColors.muted)
+                }
+
+                Button {
                     dismiss()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -54,6 +63,9 @@ struct SystemMenuSheet: View {
             .padding(.horizontal)
             .padding(.top, 12)
             .padding(.bottom, 4)
+            .sheet(isPresented: $showSettings) {
+                SettingsSheet()
+            }
 
             // Tab content
             switch selectedTab {
@@ -127,7 +139,6 @@ struct ArsenalView: View {
     @ObservedObject var appState = AppState.shared
     @State private var selectedProtocol: Protocol?
     @State private var showCurrencyInfo: CurrencyInfoType? = nil
-    @State private var showSettings = false
     @ObservedObject private var hintManager = TutorialHintManager.shared
 
     var body: some View {
@@ -139,14 +150,6 @@ struct ArsenalView: View {
                     .foregroundColor(.white)
 
                 Spacer()
-
-                // Settings gear icon
-                Button(action: { showSettings = true }) {
-                    Image(systemName: "gearshape.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(DesignColors.muted)
-                }
-                .padding(.trailing, 12)
 
                 // Hash balance - tappable for info
                 HStack(spacing: 6) {
@@ -162,9 +165,6 @@ struct ArsenalView: View {
             .padding()
             .sheet(item: $showCurrencyInfo) { info in
                 CurrencyInfoSheet(info: info)
-            }
-            .sheet(isPresented: $showSettings) {
-                SettingsSheet()
             }
 
             // Equipped protocol
@@ -636,10 +636,13 @@ struct ProtocolDetailSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(L10n.Common.done) {
+                    Button {
                         dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundColor(DesignColors.muted)
                     }
-                    .foregroundColor(DesignColors.primary)
                 }
             }
         }
@@ -667,6 +670,7 @@ struct ProtocolDetailSheet: View {
 
     private func equipProtocol() {
         HapticsService.shared.play(.selection)
+        AudioManager.shared.play(.equipProtocol)
         appState.updatePlayer { profile in
             profile.equippedProtocolId = `protocol`.id
         }

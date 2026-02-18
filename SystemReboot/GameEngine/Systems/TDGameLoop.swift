@@ -80,7 +80,7 @@ struct TDGameLoop {
         }
 
         // MARK: Overclock System
-        OverclockSystem.update(state: &state, deltaTime: deltaTime)
+        _ = OverclockSystem.update(state: &state, deltaTime: deltaTime)
 
         // MARK: Boss System
         let bossResult = TDBossSystem.update(state: &state, deltaTime: deltaTime)

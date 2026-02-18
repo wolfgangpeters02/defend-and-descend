@@ -263,14 +263,17 @@ class PlayerSystem {
         }
     }
 
-    /// Deal damage to player
+    /// Deal damage to player (applies armor + boss difficulty scaling)
     static func damagePlayer(state: inout GameState, rawDamage: CGFloat) {
         #if DEBUG
         if AppState.shared.godMode { return }
         #endif
 
+        // Apply boss difficulty damage scaling
+        let difficultyScaled = rawDamage * (state.bossDifficulty?.damageMultiplier ?? 1.0)
+
         // Apply armor
-        let damage = rawDamage * (1 - state.player.armor)
+        let damage = difficultyScaled * (1 - state.player.armor)
         state.player.health -= damage
         state.stats.damageTaken += damage
         AudioManager.shared.play(.playerHit)

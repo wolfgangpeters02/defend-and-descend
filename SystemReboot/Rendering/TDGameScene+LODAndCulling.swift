@@ -84,8 +84,14 @@ extension TDGameScene {
             return CGRect(x: 0, y: 0, width: size.width, height: size.height)
         }
 
-        let viewWidth = view.bounds.width * currentScale
-        let viewHeight = view.bounds.height * currentScale
+        // Account for .aspectFill scene-to-view scaling.
+        // With .aspectFill the scene is scaled uniformly so the larger ratio fills the view,
+        // meaning 1 view point != 1 scene point. Dividing by this factor converts
+        // view-space dimensions back to scene-space dimensions.
+        let aspectFillScale = max(view.bounds.width / size.width,
+                                  view.bounds.height / size.height)
+        let viewWidth = (view.bounds.width / aspectFillScale) * currentScale
+        let viewHeight = (view.bounds.height / aspectFillScale) * currentScale
 
         return CGRect(
             x: camera.position.x - viewWidth / 2,
@@ -100,7 +106,7 @@ extension TDGameScene {
     /// Hide background decorations, parallax, and grid dots when zoomed out.
     /// These small details are invisible at high zoom levels and waste GPU rendering time.
     func updateBackgroundDetailLOD() {
-        let shouldShow = currentScale < 0.55
+        let shouldShow = currentScale < 0.56
         guard shouldShow != backgroundDetailVisible else { return }
         backgroundDetailVisible = shouldShow
 

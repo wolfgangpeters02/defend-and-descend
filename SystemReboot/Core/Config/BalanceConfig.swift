@@ -579,7 +579,7 @@ struct BalanceConfig {
         // Phase 2 - Heat Sink (Lava Grid)
         static let tileGridSize: Int = 4               // 4×4 grid
         static let tileCount: Int = 16                 // tileGridSize²
-        static let safeTileCount: Int = 2              // Safe zones per cycle
+        static let safeTileCount: Int = 4              // Safe zones per cycle (one per quadrant)
         static let tileChangeInterval: Double = 7.0
         static let lavaTileDPS: CGFloat = 40           // DPS on any non-safe tile
         static let phase2BossMoveSpeed: CGFloat = 150  // Phase 2 boss movement speed to safe zone
@@ -590,6 +590,14 @@ struct BalanceConfig {
         static let steamRadius: CGFloat = 35
         static let steamDPS: CGFloat = 40              // DPS while in steam
         static let maxSteamSegments: Int = 80
+        static let steamLifetime: Double = 8.0          // Steam segments expire after this many seconds
+
+        // Phase 2 - Warning before lava
+        static let tileWarningDuration: Double = 1.0    // Seconds of warning before tiles deal damage
+
+        // Wind/Vacuum visuals
+        static let windParticleInterval: Double = 0.2   // Seconds between wind particle spawns
+        static let windParticleCount: Int = 6           // Particles per spawn cycle
 
         // Phase 4 - Suction (Vacuum + Shredder)
         static let vacuumPullStrength: CGFloat = 25.0
@@ -630,7 +638,7 @@ struct BalanceConfig {
         static let headCollisionRadius: CGFloat = 28
         static let bodyCollisionRadius: CGFloat = 18
 
-        // Phase 1 - Packet Loss (Snake movement)
+        // Phase 1 - Packet Loss (Snake movement + tail projectiles)
         static let headSpeed: CGFloat = 170            // Slightly slower for fairness
         static let turnSpeed: CGFloat = 2.2            // Radians per second (less aggressive)
         static let headContactDamage: CGFloat = 15     // Reduced from 30 (24 segments = lots of hits)
@@ -638,6 +646,16 @@ struct BalanceConfig {
         static let bodyKnockbackStrength: CGFloat = 80 // Reduced to let player escape
         static let bodyDamageMitigation: CGFloat = 0.60  // 40% damage passes through (was 0.80 = 20%)
         static let boundsPadding: CGFloat = 30
+
+        // Phase 1 - Data Packet projectiles (secondary ranged threat from tail)
+        static let dataPacketInterval: Double = 3.0        // Seconds between volleys
+        static let dataPacketCount: Int = 3                // Projectiles per volley
+        static let dataPacketSpeed: CGFloat = 200          // Projectile speed
+        static let dataPacketDamage: CGFloat = 8           // Damage per packet
+        static let dataPacketSpread: CGFloat = 0.4         // Spread angle in radians
+        static let dataPacketRadius: CGFloat = 6           // Collision radius
+        static let dataPacketLifetime: TimeInterval = 3.0  // Despawn time
+        static let dataPacketColor: String = "#88ff00"     // Lime-yellow
 
         // Phase 2 - Firewall (Wall sweep)
         static let wallMargin: CGFloat = 100           // Wall bounce margin from arena edges
@@ -664,6 +682,7 @@ struct BalanceConfig {
         static let ringMinRadius: CGFloat = 130        // Slightly larger min (more escape room)
         static let ringShrinkRate: CGFloat = 4         // Slower shrink
         static let ringRotationSpeed: CGFloat = 0.8    // Radians per second (slower rotation)
+        static let ringDriftSpeed: CGFloat = 40       // Ring center drift speed (px/s)
         static let aimDuration: Double = 1.2           // More warning time
         static let lungeSpeed: CGFloat = 500           // Reduced from 600
         static let lungeDuration: Double = 1.5         // Lunge timeout
@@ -926,12 +945,12 @@ struct BalanceConfig {
 
     struct BossDifficultyConfig {
         /// Boss health multipliers by difficulty
-        /// Scaled up to counter weapon mastery (Level 10 = 10x damage)
+        /// Fights should be harder via mechanics, not just longer
         static let healthMultipliers: [String: CGFloat] = [
             "Easy": 0.6,       // Reduced HP — ~20s TTK with starter weapon
             "Normal": 1.5,     // A real fight even with mid-level weapons
-            "Hard": 3.0,       // Level 5 weapon (5x) still needs good play
-            "Nightmare": 6.0   // Level 10 weapon (10x) → TTK still 60% of base
+            "Hard": 2.0,       // Tighter than Normal, but mechanics are the real threat
+            "Nightmare": 3.5   // Substantial, but mechanic damage scaling is the killer
         ]
 
         /// Boss damage multipliers by difficulty
@@ -965,6 +984,14 @@ struct BalanceConfig {
             "Normal": 3000,    // Standard progression
             "Hard": 10000,     // Big paydays
             "Nightmare": 25000 // Jackpot
+        ]
+
+        /// Minion cap multiplier — scales max-on-screen for add-spawning bosses
+        static let minionCapMultipliers: [String: CGFloat] = [
+            "Easy": 0.5,       // Half the adds — let players learn boss patterns
+            "Normal": 1.0,
+            "Hard": 1.0,
+            "Nightmare": 1.0
         ]
 
     }
@@ -1298,7 +1325,7 @@ struct BalanceConfig {
         /// Void Harbinger - Chaos/Corruption theme
         /// Drops: Fork Bomb (E), Root Access (E), Overflow (L)
         static let voidHarbinger = BossLootTable(
-            bossId: "void_harbinger",
+            bossId: "voidharbinger",
             entries: [
                 LootTableEntry(
                     protocolId: "fork_bomb",
@@ -1378,7 +1405,7 @@ struct BalanceConfig {
         static func bossDisplayName(_ bossId: String) -> String {
             switch bossId {
             case "cyberboss": return L10n.Boss.cyberboss
-            case "void_harbinger": return L10n.Boss.voidHarbinger
+            case "voidharbinger": return L10n.Boss.voidHarbinger
             case "overclocker": return L10n.Boss.overclocker
             case "trojan_wyrm": return L10n.Boss.trojanWyrm
             default: return bossId.capitalized
@@ -2555,6 +2582,27 @@ extension BalanceConfig {
         static let maxNotificationTime: TimeInterval = 86400
     }
 
+    // MARK: - Tutorial (FTUE Scripted Waves)
+
+    struct Tutorial {
+        // Batch 1: Immune enemies that leak to CPU (teaches "enemies reaching core = bad")
+        static let batch1Count: Int = 5
+        static let batch1Health: CGFloat = 999       // Survive core auto-attack (10 dmg/sec)
+        static let batch1Speed: CGFloat = 300        // Moderate speed — camera tracks them to CPU
+        static let batch1Damage: CGFloat = 5         // Low damage to core on arrival
+        static let batch1Size: CGFloat = 20          // Clearly visible during camera pan
+        static let batch1SpawnStagger: TimeInterval = 0.3
+
+        // Batch 2: Weak mixed enemies for satisfying first kills after tower placement
+        static let batch2Count: Int = 5
+        static let batch2SpawnStagger: TimeInterval = 0.4
+        static let batch2GracePeriod: TimeInterval = 0.5   // Delay before batch 2 starts spawning
+        static let batch2TankHealth: CGFloat = 20           // Reduced from 70 so Kernel Pulse (25 dmg) one-shots
+
+        // Post-tutorial idle spawn grace
+        static let postTutorialSpawnTimer: TimeInterval = -3
+    }
+
     // MARK: - TD Maps
 
     struct TDMaps {
@@ -2876,7 +2924,9 @@ extension BalanceConfig {
 
     /// Print balance config to console (for debugging)
     static func printConfig() {
+        #if DEBUG
         print("=== BalanceConfig Export ===")
         print(exportJSON())
+        #endif
     }
 }

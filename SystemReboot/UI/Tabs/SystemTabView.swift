@@ -47,6 +47,13 @@ struct SystemTabView: View {
         .sheet(isPresented: $showSystemMenu) {
             SystemMenuSheet(selectedTab: $systemMenuTab)
         }
+        .onChange(of: showSystemMenu) { isOpen in
+            AudioManager.shared.gameSoundsSuppressed = isOpen
+            embeddedGameController.scene?.isPaused = isOpen
+        }
+        .onChange(of: selectedBoss) { boss in
+            embeddedGameController.scene?.isPaused = boss != nil
+        }
     }
 
     // MARK: - Top Navigation Bar

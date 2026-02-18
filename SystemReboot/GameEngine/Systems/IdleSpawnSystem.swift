@@ -45,7 +45,7 @@ class IdleSpawnSystem {
         state.idleSpawnTimer = 0
 
         // Select random lane
-        let selectedLane = lanes.randomElement()!
+        guard let selectedLane = lanes.randomElement() else { return nil }
 
         // Select enemy type based on threat level with weighted randomness
         let enemyType = selectEnemyType(threatLevel: state.idleThreatLevel)

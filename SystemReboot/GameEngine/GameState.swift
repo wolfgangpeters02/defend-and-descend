@@ -41,7 +41,7 @@ class GameStateFactory {
         let config = GameConfigLoader.shared
 
         // Boss arenas are simple circular arenas
-        let arenaConfig = config.getArena("memory_core") ?? config.getArena(ArenaID.starter.rawValue)!
+        let arenaConfig = config.getArena("memory_core") ?? config.getArena(ArenaID.starter.rawValue) ?? ArenaConfig(id: "fallback", name: "Arena", rarity: "common", width: 1200, height: 900, backgroundColor: "#0a0a1a", theme: "default")
         var arena = config.createArenaData(from: arenaConfig)
 
         // Boss arena is larger for strategic movement

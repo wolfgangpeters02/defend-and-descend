@@ -391,23 +391,23 @@ class ScrollingCombatTextManager {
 
 // MARK: - SKScene Extension for Easy Access
 
-extension SKScene {
+private let sctManagerKey = malloc(1)!
 
-    private static var sctManagerKey = "ScrollingCombatTextManager"
+extension SKScene {
 
     /// Get or create the SCT manager for this scene
     var combatText: ScrollingCombatTextManager {
-        if let manager = objc_getAssociatedObject(self, &SKScene.sctManagerKey) as? ScrollingCombatTextManager {
+        if let manager = objc_getAssociatedObject(self, sctManagerKey) as? ScrollingCombatTextManager {
             return manager
         }
         let manager = ScrollingCombatTextManager(scene: self)
-        objc_setAssociatedObject(self, &SKScene.sctManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        objc_setAssociatedObject(self, sctManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
         return manager
     }
 
     /// Initialize SCT with custom config
     func setupCombatText(config: SCTConfig = .standard) {
         let manager = ScrollingCombatTextManager(scene: self, config: config)
-        objc_setAssociatedObject(self, &SKScene.sctManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        objc_setAssociatedObject(self, sctManagerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     }
 }

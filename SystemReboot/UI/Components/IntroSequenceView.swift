@@ -101,6 +101,7 @@ struct IntroSequenceView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 6)
                     }
+                    .accessibilityLabel("Skip introduction")
                 }
                 .padding(.top, 16)
                 .padding(.horizontal, 20)

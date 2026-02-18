@@ -25,7 +25,7 @@ struct BossTutorialOverlay: View {
     private var bossDisplayName: String {
         switch bossType {
         case "cyberboss": return L10n.Boss.cyberboss
-        case "void_harbinger": return L10n.Boss.voidHarbinger
+        case "voidharbinger": return L10n.Boss.voidHarbinger
         default: return bossType.replacingOccurrences(of: "_", with: " ").uppercased()
         }
     }

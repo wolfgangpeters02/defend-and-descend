@@ -150,6 +150,11 @@ enum BossDifficulty: String, Codable, CaseIterable {
         return BalanceConfig.BossDifficultyConfig.hashRewards[rawValue] ?? 1000
     }
 
+    /// Minion cap multiplier (from BalanceConfig)
+    var minionCapMultiplier: CGFloat {
+        return BalanceConfig.BossDifficultyConfig.minionCapMultipliers[rawValue] ?? 1.0
+    }
+
     /// Display name for UI
     var displayName: String {
         return self.rawValue

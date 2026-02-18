@@ -247,6 +247,7 @@ struct EmbeddedTDGameView: View {
 struct EmbeddedProtocolDeckCard: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     let `protocol`: Protocol
+    let playerLevel: Int
     let hash: Int
     let onDragStart: () -> Void
     let onDragChanged: (DragGesture.Value) -> Void
@@ -257,6 +258,13 @@ struct EmbeddedProtocolDeckCard: View {
 
     private var scale: CGFloat {
         DesignLayout.adaptiveScale(for: sizeClass)
+    }
+
+    /// Protocol with player's level applied for accurate stat display
+    private var leveledProtocol: Protocol {
+        var p = `protocol`
+        p.level = playerLevel
+        return p
     }
 
     private var cost: Int {
@@ -295,77 +303,109 @@ struct EmbeddedProtocolDeckCard: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             // Tower icon container - circuit board aesthetic
             ZStack {
                 // Outer glow for epic/legendary
                 if isHighRarity && canAfford {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: 8)
                         .fill(rarityColor.opacity(0.15))
-                        .frame(width: 64 * scale, height: 64 * scale)
-                        .blur(radius: 8)
+                        .frame(width: 52 * scale, height: 52 * scale)
+                        .blur(radius: 6)
                         .scaleEffect(legendaryPulse ? 1.15 : 1.0)
                 }
 
                 // Background circuit pattern
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 7)
                     .fill(Color(hex: "0a0a12") ?? .black)
-                    .frame(width: 56 * scale, height: 56 * scale)
+                    .frame(width: 46 * scale, height: 46 * scale)
 
                 // Border with rarity-scaled glow effect
-                RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 7)
                     .stroke(rarityColor.opacity(canAfford ? 0.9 : 0.3), lineWidth: isHighRarity ? 2.5 : 2)
-                    .frame(width: 56 * scale, height: 56 * scale)
+                    .frame(width: 46 * scale, height: 46 * scale)
                     .shadow(color: canAfford ? rarityColor.opacity(glowOpacity) : .clear, radius: glowRadius)
 
                 // Protocol icon - simplified, geometric
                 Image(systemName: `protocol`.iconName)
-                    .font(.system(size: 24 * scale, weight: .medium))
+                    .font(.system(size: 20 * scale, weight: .medium))
                     .foregroundColor(canAfford ? .white : DesignColors.textSecondary)
                     .shadow(color: canAfford && isHighRarity ? rarityColor.opacity(0.5) : .clear, radius: 4)
 
                 // Corner accent (circuit node) - larger for higher rarity
                 Circle()
                     .fill(rarityColor)
-                    .frame(width: isHighRarity ? 10 : 8, height: isHighRarity ? 10 : 8)
-                    .offset(x: 22, y: -22)
+                    .frame(width: isHighRarity ? 8 : 6, height: isHighRarity ? 8 : 6)
+                    .offset(x: 18, y: -18)
                     .opacity(canAfford ? 1 : 0.3)
 
                 // Opposite corner node for balance
                 Circle()
                     .fill(rarityColor.opacity(0.5))
-                    .frame(width: isHighRarity ? 8 : 6, height: isHighRarity ? 8 : 6)
-                    .offset(x: -22, y: 22)
+                    .frame(width: isHighRarity ? 6 : 5, height: isHighRarity ? 6 : 5)
+                    .offset(x: -18, y: 18)
                     .opacity(canAfford ? 0.8 : 0.2)
+
+                // Level badge (top-left corner)
+                if playerLevel > 1 {
+                    Text(L10n.Common.lv(playerLevel))
+                        .font(.system(size: 7, weight: .bold, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 2)
+                        .padding(.vertical, 1)
+                        .background(rarityColor.opacity(0.8))
+                        .cornerRadius(3)
+                        .offset(x: -15, y: -18)
+                }
+
+                // Special ability badge (bottom-right corner)
+                if let special = `protocol`.firewallBaseStats.special {
+                    Image(systemName: DesignHelpers.iconForFirewallAbility(special))
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(2.5)
+                        .background(
+                            Circle()
+                                .fill(rarityColor.opacity(0.85))
+                        )
+                        .offset(x: 18, y: 15)
+                }
             }
             .scaleEffect(isDragging ? 0.9 : 1.0)
+
+            // Protocol name (truncated)
+            Text(`protocol`.name)
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundColor(canAfford ? .white.opacity(0.8) : DesignColors.muted)
+                .lineLimit(1)
+                .frame(width: 50 * scale)
 
             // Cost label - terminal/monospace aesthetic
             HStack(spacing: 2) {
                 Text("Ħ")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
                 Text("\(cost)")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
             }
             .foregroundColor(canAfford ? rarityColor : .red.opacity(0.7))
 
             // Stats row - power and damage
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 // Power consumption
                 HStack(spacing: 1) {
                     Image(systemName: "bolt.fill")
-                        .font(.system(size: 8))
+                        .font(.system(size: 7))
                     Text("\(`protocol`.firewallStats.powerDraw)")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
                 }
                 .foregroundColor(.yellow.opacity(0.8))
 
                 // Damage
                 HStack(spacing: 1) {
                     Image(systemName: "flame.fill")
-                        .font(.system(size: 8))
-                    Text("\(Int(`protocol`.firewallStats.damage))")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .font(.system(size: 7))
+                    Text("\(Int(leveledProtocol.firewallStats.damage))")
+                        .font(.system(size: 8, weight: .medium, design: .monospaced))
                 }
                 .foregroundColor(.orange.opacity(0.8))
             }
@@ -380,8 +420,8 @@ struct EmbeddedProtocolDeckCard: View {
                 }
             }
         }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 10, coordinateSpace: .named("motherboardGameArea"))
+        .gesture(
+            DragGesture(minimumDistance: 30, coordinateSpace: .named("motherboardGameArea"))
                 .onChanged { value in
                     if canAfford {
                         if !isDragging {

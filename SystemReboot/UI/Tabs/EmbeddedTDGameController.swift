@@ -197,7 +197,7 @@ class EmbeddedTDGameController: ObservableObject {
         if isNewPlayer {
             newScene.cameraController.suppressIntroAnimation = true
             state.isPaused = true
-            state.idleSpawnTimer = -20  // Long grace period after tutorial ends
+            state.idleSpawnEnabled = false  // Tutorial controls spawning; re-enabled after tower placement
         }
 
         newScene.loadState(state, waves: waves)
@@ -218,9 +218,34 @@ class EmbeddedTDGameController: ObservableObject {
         // Mark intro as completed
         AppState.shared.completeIntroSequence()
 
+        // Spawn batch 2: mixed weak enemies for satisfying first kills
+        spawnTutorialBatch2()
+
         // Activate tutorial hints for tower placement
         TutorialHintManager.shared.activateHint(.deckCard)
         TutorialHintManager.shared.activateHint(.towerSlot)
+    }
+
+    /// Spawn batch 2 tutorial enemies with staggered timing and enable idle spawning
+    private func spawnTutorialBatch2() {
+        guard let scene = scene else { return }
+
+        let spawnPoint = CGPoint(x: 4200, y: 2100) // PSU spawn edge
+        let enemies = TutorialSpawnSystem.createBatch2Enemies(spawnPoint: spawnPoint, pathIndex: 0)
+        let stagger = BalanceConfig.Tutorial.batch2SpawnStagger
+        let grace = BalanceConfig.Tutorial.batch2GracePeriod
+
+        for (index, enemy) in enemies.enumerated() {
+            let delay = grace + stagger * Double(index)
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.scene?.state?.enemies.append(enemy)
+                scene.spawnPortalAnimation(at: scene.convertToScene(spawnPoint))
+            }
+        }
+
+        // Enable idle spawning with short grace period after batch 2
+        scene.state?.idleSpawnEnabled = true
+        scene.state?.idleSpawnTimer = BalanceConfig.Tutorial.postTutorialSpawnTimer
     }
 
     // MARK: - System Freeze Recovery

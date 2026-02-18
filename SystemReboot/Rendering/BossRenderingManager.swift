@@ -81,6 +81,22 @@ class BossRenderingManager {
         return SKAction.sequence([up, down])
     }()
 
+    lazy var vacuumPulseAction: SKAction = {
+        let contract = SKAction.scale(to: 0.9, duration: 0.4)
+        contract.timingMode = .easeInEaseOut
+        let expand = SKAction.scale(to: 1.1, duration: 0.4)
+        expand.timingMode = .easeInEaseOut
+        return SKAction.sequence([expand, contract])
+    }()
+
+    lazy var steamPulseAction: SKAction = {
+        let up = SKAction.scale(to: 1.08, duration: 0.3)
+        up.timingMode = .easeInEaseOut
+        let down = SKAction.scale(to: 1.0, duration: 0.3)
+        down.timingMode = .easeInEaseOut
+        return SKAction.sequence([up, down])
+    }()
+
     lazy var damageFlashAction: SKAction = {
         let down = SKAction.fadeAlpha(to: 0.4, duration: 0.06)
         down.timingMode = .easeOut
@@ -105,6 +121,7 @@ class BossRenderingManager {
     var cachedCyberbossPhase: Int = -1
     var cachedVoidHarbingerPhase: Int = -1
     var cachedOverclockerPhase: Int = -1
+    var cachedTrojanWyrmPhase: Int = -1
 
     // (Wyrm history buffer removed — game-state drag-chain positions used directly)
 
@@ -198,6 +215,7 @@ class BossRenderingManager {
         cachedCyberbossPhase = -1
         cachedVoidHarbingerPhase = -1
         cachedOverclockerPhase = -1
+        cachedTrojanWyrmPhase = -1
     }
 
     func cleanupBossNodes(prefix: String) {

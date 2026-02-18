@@ -485,7 +485,7 @@ extension TowerAnimations {
             guard TowerAnimations.currentCameraScale < 0.5 else { return }
 
             let codeChars = ["0", "1", "!", "?", "#", "@", "%"]
-            let code = SKLabelNode(text: codeChars.randomElement()!)
+            let code = SKLabelNode(text: codeChars.randomElement() ?? "0")
             code.fontName = "Menlo"
             code.fontSize = 8
             code.fontColor = UIColor(hex: "ef4444")?.withAlphaComponent(0.7) ?? .red.withAlphaComponent(0.7)

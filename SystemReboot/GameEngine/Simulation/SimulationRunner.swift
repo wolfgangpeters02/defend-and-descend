@@ -143,7 +143,9 @@ class SimulationRunner {
     private static var logLines: [String] = []
 
     private static func log(_ line: String) {
+        #if DEBUG
         print(line)
+        #endif
         logLines.append(line)
     }
 
@@ -152,7 +154,9 @@ class SimulationRunner {
         let tmpDir = NSTemporaryDirectory()
         let path = (tmpDir as NSString).appendingPathComponent("sim_calibration.txt")
         try? content.write(toFile: path, atomically: true, encoding: .utf8)
+        #if DEBUG
         print("[SIM] Results written to: \(path)")
+        #endif
     }
 
     // MARK: - Economy Analysis
@@ -301,7 +305,6 @@ class SimulationRunner {
                    "CPU Lv", "Ħ/sec", "Earned", "HPS Peak", "Multiplier"))
         log(String(repeating: "─", count: 55))
 
-        let baseCpuResult: SimulationResult? = nil
         for cpuLevel in [1, 3, 5, 7, 10] {
             var levels = BalanceConfig.Simulation.earlyGame
             levels.cpu = cpuLevel
@@ -1266,7 +1269,7 @@ class SimulationRunner {
         log("Are all boss phases being reached?")
         log("")
 
-        let bossTypes = ["cyberboss", "void_harbinger"]
+        let bossTypes = ["cyberboss", "voidharbinger"]
 
         for bossType in bossTypes {
             let config = BossSimulationConfig(
@@ -1384,7 +1387,7 @@ class SimulationRunner {
         log("Are all bosses similarly difficult?")
         log("")
 
-        let bossTypes = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
+        let bossTypes = ["cyberboss", "voidharbinger", "overclocker", "trojan_wyrm"]
         let bot = BalancedBot()
 
         log(String(format: "%-16@ %6@ %8@ %6@ %8@ %8@ %@",
@@ -1435,8 +1438,8 @@ class SimulationRunner {
         if results.count >= 2 {
             let durations = results.map { $0.1.fightDuration }
             let damages = results.map { $0.1.totalDamageTaken }
-            let durationSpread = durations.max()! - durations.min()!
-            let dmgSpread = damages.max()! - damages.min()!
+            let durationSpread = (durations.max() ?? 0) - (durations.min() ?? 0)
+            let dmgSpread = (damages.max() ?? 0) - (damages.min() ?? 0)
 
             if durationSpread > 60 {
                 log("  ⚠️ Fight duration spread: \(Int(durationSpread))s - consider rebalancing")
@@ -1461,7 +1464,7 @@ class SimulationRunner {
         log("Testing all boss×difficulty×strategy combinations")
         log("")
 
-        let bossTypes = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
+        let bossTypes = ["cyberboss", "voidharbinger", "overclocker", "trojan_wyrm"]
         let difficulties: [BossDifficulty] = [.easy, .normal, .hard, .nightmare]
         let testBot = BalancedBot()
 
@@ -1515,7 +1518,7 @@ class SimulationRunner {
 
         // Test all 4 bosses on Normal with same bot
         let cyberbossNormal = runBossTest(bossType: "cyberboss", difficulty: .normal, bot: testBot)
-        let voidHarbingerNormal = runBossTest(bossType: "void_harbinger", difficulty: .normal, bot: testBot)
+        let voidHarbingerNormal = runBossTest(bossType: "voidharbinger", difficulty: .normal, bot: testBot)
         let overclockerNormal = runBossTest(bossType: "overclocker", difficulty: .normal, bot: testBot)
         let trojanWyrmNormal = runBossTest(bossType: "trojan_wyrm", difficulty: .normal, bot: testBot)
 
@@ -1535,8 +1538,8 @@ class SimulationRunner {
         // Calculate variance
         let durations = allResults.map { $0.1.fightDuration }
         let deaths = allResults.map { $0.1.playerDeaths }
-        let maxDurationDiff = durations.max()! - durations.min()!
-        let maxDeathsDiff = deaths.max()! - deaths.min()!
+        let maxDurationDiff = (durations.max() ?? 0) - (durations.min() ?? 0)
+        let maxDeathsDiff = (deaths.max() ?? 0) - (deaths.min() ?? 0)
 
         log("")
         log(String(format: "  Max duration spread: %.0fs %@", maxDurationDiff, maxDurationDiff < 60 ? "✓" : "⚠️"))
@@ -1585,7 +1588,7 @@ class SimulationRunner {
         log("Testing 6 weapons × 4 bosses × 3 levels = 72 combinations")
         log("")
 
-        let bossTypes = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
+        let bossTypes = ["cyberboss", "voidharbinger", "overclocker", "trojan_wyrm"]
         let levels = [1, 5, 10]
         let bot = BalancedBot()
 
@@ -1771,7 +1774,7 @@ class SimulationRunner {
         // Void Harbinger
         let configVH = BossSimulationConfig(
             seed: 42,
-            bossType: "void_harbinger",
+            bossType: "voidharbinger",
             difficulty: .hard,
             bot: BalancedBot(),
             maxFightTime: 300,

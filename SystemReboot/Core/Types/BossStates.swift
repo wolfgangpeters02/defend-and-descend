@@ -162,6 +162,7 @@ extension OverclockerAI {
         // Phase 2 - Heat Sink (4x4 Lava Grid)
         var tileStates: [TileState] = Array(repeating: .normal, count: 16)
         var lastTileChangeTime: Double = 0
+        var warningStartTime: Double = 0
         var bossTargetTileIndex: Int? = nil
 
         // Phase 3 - Overheat (Chase + Steam Trail)
@@ -233,6 +234,7 @@ extension TrojanWyrmAI {
         var segments: [Segment] = [] // The 24 body segments
         var headAngle: CGFloat = 0
         var turnTimer: Double = 0
+        var lastDataPacketTime: Double = 0
 
         // Phase 2 - Firewall
         var wallY: CGFloat = 0
@@ -250,6 +252,9 @@ extension TrojanWyrmAI {
         var phase4SubState: Phase4SubState = .circling
         var ringAngle: CGFloat = 0
         var ringRadius: CGFloat = 250
+        var ringCenterX: CGFloat = 0
+        var ringCenterY: CGFloat = 0
+        var ringDriftAngle: CGFloat = 0
 
         // Lunge Data
         var aimTimer: Double = 0

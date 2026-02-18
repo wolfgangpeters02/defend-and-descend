@@ -392,7 +392,9 @@ class VoidHarbingerAI {
         let currentMinions = gameState.enemies.filter {
             $0.type == EnemyID.voidMinionSpawn.rawValue || $0.type == EnemyID.voidElite.rawValue
         }.count
-        let allowed = max(0, BalanceConfig.VoidHarbinger.maxMinionsOnScreen - currentMinions)
+        let difficultyMult = gameState.bossDifficulty?.minionCapMultiplier ?? 1.0
+        let scaledCap = max(2, Int(CGFloat(BalanceConfig.VoidHarbinger.maxMinionsOnScreen) * difficultyMult))
+        let allowed = max(0, scaledCap - currentMinions)
         let spawnCount = min(count, allowed)
 
         for _ in 0..<spawnCount {
@@ -424,7 +426,9 @@ class VoidHarbingerAI {
         let currentMinions = gameState.enemies.filter {
             $0.type == EnemyID.voidMinionSpawn.rawValue || $0.type == EnemyID.voidElite.rawValue
         }.count
-        guard currentMinions < BalanceConfig.VoidHarbinger.maxMinionsOnScreen else { return }
+        let difficultyMult = gameState.bossDifficulty?.minionCapMultiplier ?? 1.0
+        let scaledCap = max(2, Int(CGFloat(BalanceConfig.VoidHarbinger.maxMinionsOnScreen) * difficultyMult))
+        guard currentMinions < scaledCap else { return }
 
         let angle = CGFloat.random(in: 0...(2 * .pi))
         let distance = BalanceConfig.VoidHarbinger.eliteMinionSpawnDistance

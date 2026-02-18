@@ -156,6 +156,7 @@ struct UpgradeCard: View {
     private func performUpgrade() {
         guard let upgradeCost = cost, canAfford else { return }
         HapticsService.shared.play(.medium)
+        AudioManager.shared.play(.componentUpgrade)
         AnalyticsService.shared.trackComponentUpgraded(component: component.rawValue, fromLevel: level, toLevel: level + 1)
         appState.updatePlayer { profile in
             profile.hash -= upgradeCost

@@ -287,7 +287,7 @@ class TowerSystem {
 
     /// Process single tower attack
     private static func processTowerAttack(state: inout TDGameState, towerIndex: Int, currentTime: TimeInterval) {
-        var tower = state.towers[towerIndex]
+        let tower = state.towers[towerIndex]
 
         // Check if has target
         guard let targetId = tower.targetId,

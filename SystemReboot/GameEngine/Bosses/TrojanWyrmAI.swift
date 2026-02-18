@@ -57,7 +57,7 @@ class TrojanWyrmAI {
         // Execute phase behavior
         switch bossState.phase {
         case 1:
-            updatePhase1(boss: &boss, bossState: &bossState, playerPos: playerPos, deltaTime: deltaTime, arenaRect: arenaRect)
+            updatePhase1(boss: &boss, bossState: &bossState, gameState: &gameState, playerPos: playerPos, deltaTime: deltaTime, currentTime: currentTime, arenaRect: arenaRect)
         case 2:
             updatePhase2(boss: &boss, bossState: &bossState, gameState: &gameState, deltaTime: deltaTime, currentTime: currentTime, arenaRect: arenaRect)
         case 3:
@@ -112,11 +112,14 @@ class TrojanWyrmAI {
             }
 
         case 4:
-            // Setup Ring
+            // Setup Ring — center starts on the player so they're trapped inside, then drifts
             bossState.phase4Initialized = true
             bossState.phase4SubState = .circling
             bossState.ringRadius = BalanceConfig.TrojanWyrm.ringInitialRadius
             bossState.ringAngle = 0
+            bossState.ringCenterX = playerPos.x
+            bossState.ringCenterY = playerPos.y
+            bossState.ringDriftAngle = CGFloat.random(in: 0...(2 * .pi))
             bossState.aimTimer = 0
             bossState.lungeTimer = 0
             bossState.recoverTimer = 0
@@ -134,8 +137,10 @@ class TrojanWyrmAI {
     private static func updatePhase1(
         boss: inout Enemy,
         bossState: inout TrojanWyrmState,
+        gameState: inout GameState,
         playerPos: CGPoint,
         deltaTime: TimeInterval,
+        currentTime: Double,
         arenaRect: CGRect
     ) {
         let config = BalanceConfig.TrojanWyrm.self
@@ -169,6 +174,41 @@ class TrojanWyrmAI {
 
         // Drag Body
         updateSegments(head: CGPoint(x: boss.x, y: boss.y), segments: &bossState.segments, spacing: config.segmentSpacing)
+
+        // Fire data packets from tail toward player
+        if currentTime - bossState.lastDataPacketTime > config.dataPacketInterval {
+            bossState.lastDataPacketTime = currentTime
+
+            guard let tailSeg = bossState.segments.last else { return }
+            let tailPos = CGPoint(x: tailSeg.x, y: tailSeg.y)
+            let baseAngle = atan2(playerPos.y - tailPos.y, playerPos.x - tailPos.x)
+            let count = config.dataPacketCount
+            let spread = config.dataPacketSpread
+
+            for i in 0..<count {
+                let offset = spread * (CGFloat(i) - CGFloat(count - 1) / 2.0) / max(1, CGFloat(count - 1))
+                let angle = baseAngle + offset
+                let projectile = Projectile(
+                    id: RandomUtils.generateId(),
+                    weaponId: "trojan_packet",
+                    x: tailPos.x,
+                    y: tailPos.y,
+                    velocityX: cos(angle) * config.dataPacketSpeed,
+                    velocityY: sin(angle) * config.dataPacketSpeed,
+                    damage: config.dataPacketDamage,
+                    radius: config.dataPacketRadius,
+                    color: config.dataPacketColor,
+                    lifetime: config.dataPacketLifetime,
+                    piercing: 0,
+                    hitEnemies: [],
+                    isHoming: false,
+                    homingStrength: 0,
+                    isEnemyProjectile: true,
+                    sourceType: "boss"
+                )
+                gameState.projectiles.append(projectile)
+            }
+        }
     }
 
     // MARK: - Phase 2: Firewall (Wall Sweep)
@@ -199,22 +239,25 @@ class TrojanWyrmAI {
         }
 
         // Rigid grid positioning (no drag)
-        // Head in center, segments spread horizontally
-        let spacing = config.segmentSpacing
-        let totalWidth = spacing * CGFloat(bossState.segments.count)
-        let startX = arenaRect.midX - totalWidth / 2
+        // Head at left edge, segments spread horizontally across arena width
+        let wallPadding: CGFloat = 20
+        let wallSpacing = (arenaRect.width - wallPadding * 2) / CGFloat(bossState.segments.count + 1)
+        let startX = arenaRect.minX + wallPadding
 
         boss.x = startX
         boss.y = bossState.wallY
 
         for i in 0..<bossState.segments.count {
-            bossState.segments[i].x = startX + spacing * CGFloat(i + 1)
+            bossState.segments[i].x = startX + wallSpacing * CGFloat(i + 1)
             bossState.segments[i].y = bossState.wallY
         }
 
-        // Turret Fire
+        // Turret Fire — fire toward the player's side of the wall
         if currentTime - bossState.lastTurretFireTime > config.turretFireInterval {
             bossState.lastTurretFireTime = currentTime
+
+            let playerPos = CGPoint(x: gameState.player.x, y: gameState.player.y)
+            let fireDirectionY: CGFloat = playerPos.y > bossState.wallY ? 1 : -1
 
             // Fire from even segments (except ghost)
             for i in stride(from: 0, to: bossState.segments.count, by: 2) {
@@ -227,7 +270,7 @@ class TrojanWyrmAI {
                     x: seg.x,
                     y: seg.y,
                     velocityX: 0,
-                    velocityY: -config.turretProjectileSpeed, // Fire downward
+                    velocityY: config.turretProjectileSpeed * fireDirectionY,
                     damage: config.turretProjectileDamage,
                     radius: config.turretProjectileRadius,
                     color: config.turretProjectileColor,
@@ -299,6 +342,28 @@ class TrojanWyrmAI {
 
         switch bossState.phase4SubState {
         case .circling:
+            // Drift ring center independently
+            let driftSpeed = config.ringDriftSpeed
+            bossState.ringCenterX += cos(bossState.ringDriftAngle) * driftSpeed * CGFloat(deltaTime)
+            bossState.ringCenterY += sin(bossState.ringDriftAngle) * driftSpeed * CGFloat(deltaTime)
+
+            // Bounce ring center off arena walls (keep ring fully inside)
+            let ringPadding = bossState.ringRadius + 20
+            if bossState.ringCenterX < arenaRect.minX + ringPadding {
+                bossState.ringCenterX = arenaRect.minX + ringPadding
+                bossState.ringDriftAngle = .pi - bossState.ringDriftAngle
+            } else if bossState.ringCenterX > arenaRect.maxX - ringPadding {
+                bossState.ringCenterX = arenaRect.maxX - ringPadding
+                bossState.ringDriftAngle = .pi - bossState.ringDriftAngle
+            }
+            if bossState.ringCenterY < arenaRect.minY + ringPadding {
+                bossState.ringCenterY = arenaRect.minY + ringPadding
+                bossState.ringDriftAngle = -bossState.ringDriftAngle
+            } else if bossState.ringCenterY > arenaRect.maxY - ringPadding {
+                bossState.ringCenterY = arenaRect.maxY - ringPadding
+                bossState.ringDriftAngle = -bossState.ringDriftAngle
+            }
+
             // Shrink Ring
             bossState.ringRadius = max(
                 config.ringMinRadius,
@@ -308,16 +373,19 @@ class TrojanWyrmAI {
             // Rotate ring
             bossState.ringAngle += config.ringRotationSpeed * CGFloat(deltaTime)
 
-            // Position head on ring
-            boss.x = playerPos.x + cos(bossState.ringAngle) * bossState.ringRadius
-            boss.y = playerPos.y + sin(bossState.ringAngle) * bossState.ringRadius
+            let centerX = bossState.ringCenterX
+            let centerY = bossState.ringCenterY
+
+            // Position head on ring around the drifting center
+            boss.x = centerX + cos(bossState.ringAngle) * bossState.ringRadius
+            boss.y = centerY + sin(bossState.ringAngle) * bossState.ringRadius
 
             // Position segments in circle formation
             let angleStep = (2 * .pi) / CGFloat(bossState.segments.count + 1)
             for i in 0..<bossState.segments.count {
                 let segAngle = bossState.ringAngle - CGFloat(i + 1) * angleStep
-                bossState.segments[i].x = playerPos.x + cos(segAngle) * bossState.ringRadius
-                bossState.segments[i].y = playerPos.y + sin(segAngle) * bossState.ringRadius
+                bossState.segments[i].x = centerX + cos(segAngle) * bossState.ringRadius
+                bossState.segments[i].y = centerY + sin(segAngle) * bossState.ringRadius
             }
 
             // Trigger lunge after circling for a while
@@ -371,6 +439,7 @@ class TrojanWyrmAI {
                 bossState.phase4SubState = .circling
                 bossState.aimTimer = 0
                 bossState.ringRadius = config.ringInitialRadius // Reset ring
+                bossState.ringDriftAngle = CGFloat.random(in: 0...(2 * .pi)) // New drift direction
             }
         }
     }
@@ -450,7 +519,12 @@ class TrojanWyrmAI {
 
             if hit {
                 totalDamage += damage
-                indicesToRemove.append(index)
+                // Respect piercing: decrement counter instead of consuming
+                if gameState.projectiles[index].piercing > 0 {
+                    gameState.projectiles[index].piercing -= 1
+                } else {
+                    indicesToRemove.append(index)
+                }
             }
         }
 

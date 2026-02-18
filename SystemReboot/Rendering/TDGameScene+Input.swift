@@ -15,10 +15,11 @@ extension TDGameScene {
         // Brighten grid dots during placement (from ambient 0.3 to full visibility)
         gridDotsLayer.run(SKAction.fadeAlpha(to: 1.0, duration: DesignAnimations.Timing.quick))
 
-        // Subtle pulse to draw attention to available slots
+        // Subtle pulse to draw attention to available slots (alpha pulse, not scale,
+        // because scaling the layer shifts dots away from the origin)
         let pulse = SKAction.sequence([
-            SKAction.scale(to: 1.12, duration: 0.6),
-            SKAction.scale(to: 1.0, duration: 0.6)
+            SKAction.fadeAlpha(to: 0.6, duration: 0.6),
+            SKAction.fadeAlpha(to: 1.0, duration: 0.6)
         ])
         pulse.timingMode = .easeInEaseOut
         gridDotsLayer.run(SKAction.repeatForever(pulse), withKey: "placementPulse")
@@ -36,7 +37,6 @@ extension TDGameScene {
 
         // Stop placement pulse and dim grid dots back to ambient visibility
         gridDotsLayer.removeAction(forKey: "placementPulse")
-        gridDotsLayer.setScale(1.0)
         gridDotsLayer.run(SKAction.fadeAlpha(to: 0.3, duration: DesignAnimations.Timing.quick))
 
         // Remove active slot highlight
@@ -312,6 +312,12 @@ extension TDGameScene {
         draggedTowerId = towerId
         longPressTimer = nil
 
+        // FTUE: Dismiss merge hint on first long-press drag
+        if TutorialHintManager.shared.activeHints.contains(.mergeTower) {
+            hideMergeHintRing()
+            AppState.shared.markHintSeen(.mergeTower)
+        }
+
         // Find empty slots for repositioning
         if let state = state {
             validMoveSlots = Set(state.towerSlots.filter { !$0.occupied }.map { $0.id })
@@ -434,6 +440,56 @@ extension TDGameScene {
     func hideMergeCandidateHighlights() {
         for (_, node) in towerNodes {
             node.enumerateChildNodes(withName: "mergeHighlight") { child, _ in
+                child.removeFromParent()
+            }
+        }
+    }
+
+    // MARK: - Merge Tutorial Hint Ring
+
+    /// Show a persistent yellow pulse ring on a tower to hint at merging (FTUE)
+    func showMergeHintRing(towerId: String) {
+        guard let towerNode = towerNodes[towerId] else { return }
+
+        // Yellow pulsing ring (same visual as merge candidate highlight)
+        let ring = SKShapeNode(circleOfRadius: 35)
+        ring.fillColor = UIColor.yellow.withAlphaComponent(0.1)
+        ring.strokeColor = UIColor.yellow.withAlphaComponent(0.7)
+        ring.lineWidth = 2.5
+        ring.name = "mergeHintRing"
+        ring.zPosition = 10
+        towerNode.addChild(ring)
+
+        // Star icon above
+        let star = SKLabelNode(text: "\u{2605}")
+        star.fontSize = 16
+        star.fontColor = .yellow
+        star.verticalAlignmentMode = .center
+        star.position = CGPoint(x: 0, y: 38)
+        star.name = "mergeHintRing"
+        towerNode.addChild(star)
+
+        // Pulse animation
+        let pulse = SKAction.sequence([
+            SKAction.scale(to: 1.15, duration: 0.6),
+            SKAction.scale(to: 1.0, duration: 0.6)
+        ])
+        ring.run(SKAction.repeatForever(pulse))
+
+        // Auto-remove after 30s (matches TutorialHintManager auto-fade)
+        let autoRemove = SKAction.sequence([
+            SKAction.wait(forDuration: 30),
+            SKAction.fadeOut(withDuration: 0.5),
+            SKAction.removeFromParent()
+        ])
+        ring.run(autoRemove, withKey: "mergeHintAutoRemove")
+        star.run(autoRemove.copy() as! SKAction, withKey: "mergeHintAutoRemove")
+    }
+
+    /// Remove the merge tutorial hint ring from all towers
+    func hideMergeHintRing() {
+        for (_, node) in towerNodes {
+            node.enumerateChildNodes(withName: "mergeHintRing") { child, _ in
                 child.removeFromParent()
             }
         }

@@ -57,6 +57,18 @@ extension EmbeddedTDGameController {
             if !AppState.shared.currentPlayer.firstTowerPlaced {
                 AppState.shared.recordFirstTowerPlacement()
             }
+
+            // FTUE: Show merge hint when 2nd tower of same type is placed
+            if let state = gameState,
+               !AppState.shared.currentPlayer.tutorialHintsSeen.contains(TutorialHintType.mergeTower.rawValue) {
+                let sameTypeTowers = state.towers.filter { $0.protocolId == protocolId }
+                if sameTypeTowers.count >= 2 {
+                    if let matchingTower = sameTypeTowers.first(where: { $0.slotId != slot.id }) {
+                        scene?.showMergeHintRing(towerId: matchingTower.id)
+                    }
+                    TutorialHintManager.shared.activateHint(.mergeTower)
+                }
+            }
         }
     }
 

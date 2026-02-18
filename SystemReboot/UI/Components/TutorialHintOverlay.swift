@@ -5,6 +5,7 @@ import SwiftUI
 enum TutorialHintType: String, CaseIterable {
     case deckCard = "deck_card_hint"           // Glow on first protocol card in deck
     case towerSlot = "tower_slot_hint"         // Ghost preview on optimal placement slot
+    case mergeTower = "merge_tower_hint"       // Yellow ring on matching tower + text banner
     case psuUpgrade = "psu_upgrade_hint"       // Pulse on PSU upgrade button
     case bossTab = "boss_tab_hint"             // "NEW" badge on boss tab
 
@@ -208,6 +209,44 @@ struct PulseRingEffect: View {
     }
 }
 
+// MARK: - Merge Hint Banner
+
+struct MergeHintBanner: View {
+    let isVisible: Bool
+
+    @State private var opacity: Double = 0
+
+    var body: some View {
+        if isVisible {
+            VStack {
+                Text(L10n.Tutorial.mergeTowers)
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .shadow(color: .black, radius: 8, x: 0, y: 2)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.black.opacity(0.7))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.yellow.opacity(0.6), lineWidth: 1)
+                            )
+                    )
+                Spacer()
+            }
+            .padding(.top, 100)
+            .opacity(opacity)
+            .onAppear {
+                withAnimation(.easeIn(duration: 0.4)) {
+                    opacity = 1
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Tutorial Hint Overlay Container
 
 struct TutorialHintOverlay: View {
@@ -230,6 +269,11 @@ struct TutorialHintOverlay: View {
                     size: towerSlotSize
                 )
             }
+
+            // Merge tower hint banner
+            MergeHintBanner(
+                isVisible: hintManager.shouldShowHint(.mergeTower, profile: profile)
+            )
         }
         .allowsHitTesting(false)  // Don't block interactions
     }

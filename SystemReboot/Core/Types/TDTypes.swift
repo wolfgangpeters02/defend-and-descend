@@ -163,7 +163,7 @@ struct TDGameState: HashStorable {
 
     var bossActive: Bool = false              // Is a boss currently on the board
     var activeBossId: String?                 // ID of the active boss enemy
-    var activeBossType: String?               // "cyberboss" or "void_harbinger"
+    var activeBossType: String?               // "cyberboss", "voidharbinger", etc.
     var activeBossSectorId: String?            // Which sector the boss spawned from
     var lastBossThreatMilestone: Int = 0      // Last threat milestone that triggered a boss
     var bossEngaged: Bool = false             // Player has tapped to engage this boss

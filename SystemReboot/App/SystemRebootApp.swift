@@ -4,6 +4,7 @@ import SwiftUI
 struct SystemRebootApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var previousScenePhase: ScenePhase = .active
+    private let memoryWarningObserver: NSObjectProtocol
 
     init() {
         let isFirstLaunch = !UserDefaults.standard.bool(forKey: "hasLaunchedBefore")
@@ -16,6 +17,15 @@ struct SystemRebootApp: App {
         // Run boss fight test suite on launch (background thread)
         DispatchQueue.global(qos: .background).async { SimulationRunner.runBossFightTestSuite() }
         #endif
+
+        // Respond to memory pressure by shedding caches
+        memoryWarningObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didReceiveMemoryWarningNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            AppState.shared.onMemoryWarning()
+        }
     }
 
     var body: some Scene {

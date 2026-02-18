@@ -203,6 +203,7 @@ struct WelcomeBackModal: View {
                         .background(Color.cyan)
                         .cornerRadius(10)
                 }
+                .accessibilityLabel("Collect \(earnings.hashEarned) hash")
                 .opacity(showStats ? 1 : 0)
             }
             .padding(32)
@@ -228,7 +229,7 @@ struct WelcomeBackModal: View {
             showContent = false
             showStats = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [onDismiss] in
             onDismiss()
         }
     }

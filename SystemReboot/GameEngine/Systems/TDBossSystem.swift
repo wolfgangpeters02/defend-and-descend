@@ -28,7 +28,7 @@ struct TDBossSystem {
             return "cyberboss"
         }
         // 4-boss rotation cycle
-        let bossCycle = ["cyberboss", "void_harbinger", "overclocker", "trojan_wyrm"]
+        let bossCycle = ["cyberboss", "voidharbinger", "overclocker", "trojan_wyrm"]
         return bossCycle[index % bossCycle.count]
     }
 
@@ -36,7 +36,7 @@ struct TDBossSystem {
     static func bossColorForType(_ bossType: String) -> String {
         switch bossType {
         case "cyberboss": return "#ff4444"           // Red
-        case "void_harbinger": return "#8844ff"      // Purple
+        case "voidharbinger": return "#8844ff"      // Purple
         case "overclocker": return "#ff6600"         // Orange
         case "trojan_wyrm": return "#00ff44"         // Green
         default: return "#ff4444"
@@ -208,7 +208,7 @@ struct TDBossSystem {
         }
 
         let totalLength = calculatePathLength(path)
-        var targetDistance = progress * totalLength
+        let targetDistance = progress * totalLength
         var currentLength: CGFloat = 0
 
         for i in 0..<path.waypoints.count - 1 {

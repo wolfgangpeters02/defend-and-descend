@@ -245,7 +245,7 @@ struct BossLootModal: View {
         guard isViewActive else { return }
 
         // Mark as revealed
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+        _ = withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
             revealedItems.insert(index)
         }
 

@@ -159,17 +159,16 @@ extension GameScene {
                 gameState.player.x = max(padding, min(gameState.arena.width - padding, gameState.player.x))
                 gameState.player.y = max(padding, min(gameState.arena.height - padding, gameState.player.y))
 
-                // Check mechanics damage
-                let arenaRect = CGRect(x: 0, y: 0, width: gameState.arena.width, height: gameState.arena.height)
+                // Check mechanics damage (use bossState.arenaRect for consistency)
                 let mechanicsDamage = OverclockerAI.checkMechanicsDamage(
                     playerPos: CGPoint(x: gameState.player.x, y: gameState.player.y),
                     state: bossState,
                     bossPos: bossPos,
-                    arenaRect: arenaRect,
+                    arenaRect: bossState.arenaRect,
                     deltaTime: context.deltaTime
                 )
                 if mechanicsDamage > 0 {
-                    gameState.player.health -= mechanicsDamage
+                    PlayerSystem.damagePlayer(state: &gameState, rawDamage: mechanicsDamage)
                 }
 
                 gameState.enemies[bossIndex] = boss

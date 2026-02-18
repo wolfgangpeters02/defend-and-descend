@@ -25,6 +25,14 @@ struct ContentView: View {
             }
         }
         .environmentObject(appState)
+        .alert("Save Error", isPresented: Binding(
+            get: { appState.lastSaveError != nil },
+            set: { if !$0 { appState.lastSaveError = nil } }
+        )) {
+            Button("OK", role: .cancel) { appState.lastSaveError = nil }
+        } message: {
+            Text(appState.lastSaveError ?? "")
+        }
     }
 }
 

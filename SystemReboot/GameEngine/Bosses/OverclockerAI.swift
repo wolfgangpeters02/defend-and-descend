@@ -129,30 +129,60 @@ class OverclockerAI {
         // Timer for floor pattern changes
         if bossState.lastTileChangeTime == 0 || currentTime - bossState.lastTileChangeTime > config.tileChangeInterval {
             bossState.lastTileChangeTime = currentTime
+            bossState.warningStartTime = currentTime
 
-            // Reset Grid: all tiles lava except safe zones
-            let gridConfig = BalanceConfig.Overclocker.self
-            var newTiles = Array(repeating: TileState.lava, count: gridConfig.tileCount)
+            // Set all non-safe tiles to warning first (no damage during warning)
+            var newTiles = Array(repeating: TileState.warning, count: config.tileCount)
 
-            // Pick safe zones
-            var availableIndices = Array(0..<gridConfig.tileCount)
-            let safe1 = availableIndices.randomElement()!
-            availableIndices.removeAll { $0 == safe1 }
-            let safe2 = availableIndices.randomElement()!
-            availableIndices.removeAll { $0 == safe2 }
+            // Pick one safe zone per quadrant (4 safe tiles total)
+            let gridSize = config.tileGridSize
+            let halfGrid = gridSize / 2
+            var safeIndices: [Int] = []
+            for qRow in 0..<2 {
+                for qCol in 0..<2 {
+                    // Collect tile indices in this quadrant
+                    var quadrantTiles: [Int] = []
+                    for r in (qRow * halfGrid)..<((qRow + 1) * halfGrid) {
+                        for c in (qCol * halfGrid)..<((qCol + 1) * halfGrid) {
+                            quadrantTiles.append(r * gridSize + c)
+                        }
+                    }
+                    if let picked = quadrantTiles.randomElement() {
+                        safeIndices.append(picked)
+                    }
+                }
+            }
 
-            newTiles[safe1] = .safe
-            newTiles[safe2] = .safe
+            for idx in safeIndices {
+                newTiles[idx] = .safe
+            }
 
             bossState.tileStates = newTiles
 
             // Target the nearest safe zone
             let bossPos = CGPoint(x: boss.x, y: boss.y)
-            let p1 = getTileCenter(index: safe1, arenaRect: arenaRect)
-            let p2 = getTileCenter(index: safe2, arenaRect: arenaRect)
-            let dist1 = hypot(bossPos.x - p1.x, bossPos.y - p1.y)
-            let dist2 = hypot(bossPos.x - p2.x, bossPos.y - p2.y)
-            bossState.bossTargetTileIndex = (dist1 < dist2) ? safe1 : safe2
+            var nearestDist: CGFloat = .greatestFiniteMagnitude
+            var nearestIdx = safeIndices.first ?? 0
+            for idx in safeIndices {
+                let p = getTileCenter(index: idx, arenaRect: arenaRect)
+                let d = hypot(bossPos.x - p.x, bossPos.y - p.y)
+                if d < nearestDist {
+                    nearestDist = d
+                    nearestIdx = idx
+                }
+            }
+            bossState.bossTargetTileIndex = nearestIdx
+        }
+
+        // Transition warning tiles to lava after warning duration
+        if bossState.warningStartTime > 0 &&
+           currentTime - bossState.warningStartTime > config.tileWarningDuration {
+            for i in 0..<bossState.tileStates.count {
+                if bossState.tileStates[i] == .warning {
+                    bossState.tileStates[i] = .lava
+                }
+            }
+            bossState.warningStartTime = 0
         }
 
         // Move Boss to Safe Zone
@@ -200,6 +230,9 @@ class OverclockerAI {
                 bossState.steamTrail.removeFirst()
             }
         }
+
+        // Expire old steam by age
+        bossState.steamTrail.removeAll { currentTime - $0.createdAt > config.steamLifetime }
     }
 
     // MARK: - Phase 4: Suction (Vacuum + Shredder)
@@ -251,6 +284,9 @@ class OverclockerAI {
                 bossState.steamTrail.removeFirst()
             }
         }
+
+        // Expire old steam by age
+        bossState.steamTrail.removeAll { currentTime - $0.createdAt > config.steamLifetime }
     }
 
     // MARK: - Player Interaction
@@ -327,7 +363,7 @@ class OverclockerAI {
 
             if col >= 0 && col < gridSize && row >= 0 && row < gridSize {
                 let index = row * gridSize + col
-                if index < state.tileStates.count && state.tileStates[index] != .safe {
+                if index < state.tileStates.count && state.tileStates[index] == .lava {
                     damage += config.lavaTileDPS * CGFloat(deltaTime)
                 }
             }

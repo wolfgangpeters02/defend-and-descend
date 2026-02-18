@@ -27,6 +27,9 @@ class AppState: ObservableObject {
     // Background save signal (for persisting game state before app suspension)
     @Published var shouldSaveGameState: Bool = false
 
+    // Save error surfacing — set by StorageService on encode failures
+    @Published var lastSaveError: String?
+
     // Debug overlay (developer preference, persisted via UserDefaults)
     @Published var showDebugOverlay: Bool = UserDefaults.standard.bool(forKey: "debugOverlayEnabled") {
         didSet { UserDefaults.standard.set(showDebugOverlay, forKey: "debugOverlayEnabled") }
@@ -95,6 +98,11 @@ class AppState: ObservableObject {
     /// Called when app returns to foreground
     func onAppForeground() {
         checkOfflineEarnings()
+    }
+
+    /// Called when system signals memory pressure — shed non-essential caches
+    func onMemoryWarning() {
+        pendingOfflineEarnings = nil
     }
 
     // MARK: - Player Management

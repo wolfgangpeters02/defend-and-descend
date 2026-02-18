@@ -121,6 +121,8 @@ class GameScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
+        view.preferredFramesPerSecond = 30
+
         // CRITICAL: Set anchor point in didMove after scene is attached to view
         // Without this, default (0.5, 0.5) makes (0,0) the center
         self.anchorPoint = CGPoint(x: 0, y: 0)

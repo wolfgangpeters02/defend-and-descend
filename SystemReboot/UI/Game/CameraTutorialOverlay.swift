@@ -5,11 +5,11 @@ import SwiftUI
 // Replaces the old 3-card intro sequence with a "learn in 15 seconds" camera sweep
 //
 // Flow:
-//   0. Full board → "Your motherboard. Your battlefield."
-//   1. Pan to PSU spawn edge → "PSU sector breached. Viruses incoming."
-//   2. Pan to CPU center → "The CPU — your core. If it falls, the system crashes."
-//   3. Pull back to play view, spawn one slow virus (no text)
-//   4. "Deploy your first firewall. Drag it onto the grid." (waits for placement)
+//   0. Full board → "Your motherboard. Your battlefield." (game paused)
+//   1. Pan to PSU spawn edge → "PSU sector breached. Viruses incoming." (game unpauses, batch 1 spawns)
+//   2. Pan to CPU center → "The CPU — your core. If it falls, the system crashes." (batch 1 arrives, efficiency drops)
+//   3. Pull back to play view (no text)
+//   4. "Deploy your first firewall. Drag it onto the grid." (waits for placement, then batch 2 spawns via controller)
 
 struct CameraTutorialOverlay: View {
     @ObservedObject var controller: EmbeddedTDGameController
@@ -25,7 +25,7 @@ struct CameraTutorialOverlay: View {
     private let boardCenter = CGPoint(x: 2100, y: 2100)
     private let psuSpawnEdge = CGPoint(x: 3900, y: 2100)
     private let cpuCenter = CGPoint(x: 2100, y: 2100)
-    private let psuSectorCenter = CGPoint(x: 3500, y: 2100)
+    private let psuPlayView = CGPoint(x: 3300, y: 2100)  // Centered on PSU sector for gameplay
 
     var body: some View {
         ZStack {
@@ -37,10 +37,9 @@ struct CameraTutorialOverlay: View {
                     .transition(.opacity)
             }
 
-            // Tutorial text
+            // Tutorial text (upper third of screen to avoid covering game action)
             if showText {
                 VStack {
-                    Spacer()
                     Text(tutorialText)
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .foregroundColor(.white)
@@ -55,7 +54,7 @@ struct CameraTutorialOverlay: View {
                         )
                     Spacer()
                 }
-                .padding(.bottom, isInteractiveStep ? 130 : 0)
+                .padding(.top, 100)
                 .transition(.opacity)
                 .allowsHitTesting(false)
             }
@@ -110,6 +109,7 @@ struct CameraTutorialOverlay: View {
     }
 
     /// Step 1: Pan to PSU spawn edge — "PSU sector breached. Viruses incoming."
+    /// Unpauses the game and spawns batch 1 (immune enemies that will leak to CPU).
     private func startStep1() {
         currentStep = 1
 
@@ -129,7 +129,14 @@ struct CameraTutorialOverlay: View {
                 showText = true
             }
 
-            scheduleAfter(2.5) {
+            // Unpause game so enemies can move during camera pan to CPU
+            self.controller.scene?.state?.isPaused = false
+
+            // Spawn batch 1: immune enemies that will leak and drop efficiency
+            self.spawnBatch1()
+
+            // Short text display — the spawning enemies ARE the visual content
+            scheduleAfter(1.5) {
                 self.startStep2()
             }
         }
@@ -143,23 +150,25 @@ struct CameraTutorialOverlay: View {
             showText = false
         }
 
+        // Slow tracking pan — camera follows batch 1 enemies toward the CPU
         controller.scene?.cameraController.animateTo(
             position: cpuCenter,
             scale: 0.55,
-            duration: 2.0
+            duration: 3.5
         ) {
             tutorialText = L10n.Tutorial.cpuCore
             withAnimation(.easeIn(duration: 0.4)) {
                 showText = true
             }
 
-            scheduleAfter(3.0) {
+            // Hold on CPU long enough for batch 1 to arrive and impact
+            scheduleAfter(5.0) {
                 self.startStep3()
             }
         }
     }
 
-    /// Step 3: Pull back to play view, spawn one virus (no text)
+    /// Step 3: Pull back to play view (no text). Game already unpaused at step 1.
     private func startStep3() {
         currentStep = 3
 
@@ -167,12 +176,12 @@ struct CameraTutorialOverlay: View {
             showText = false
         }
 
-        // Unpause so game loop can spawn the virus
-        controller.scene?.state?.isPaused = false
+        // Game was already unpaused in step 1 for batch 1 enemies to move
 
+        // Zoom into PSU sector — scale 0.55 keeps all IC details visible (threshold is 0.6)
         controller.scene?.cameraController.animateTo(
-            position: psuSectorCenter,
-            scale: 1.0,
+            position: psuPlayView,
+            scale: 0.55,
             duration: 1.5
         ) {
             scheduleAfter(1.5) {
@@ -219,16 +228,36 @@ struct CameraTutorialOverlay: View {
 
         HapticsService.shared.play(.selection)
 
-        // Ensure game is unpaused
+        // Ensure game is unpaused and idle spawning enabled
         controller.scene?.state?.isPaused = false
+        controller.scene?.state?.idleSpawnEnabled = true
+        controller.scene?.state?.idleSpawnTimer = BalanceConfig.Tutorial.postTutorialSpawnTimer
 
-        // Animate camera to default play position
+        // Animate camera to PSU sector play position (scale 0.55 for IC details)
         controller.scene?.cameraController.animateTo(
-            position: psuSectorCenter,
-            scale: 1.0,
+            position: psuPlayView,
+            scale: 0.55,
             duration: 0.5
         ) {
             onComplete()
+        }
+    }
+
+    // MARK: - Tutorial Spawning
+
+    /// Spawn batch 1 enemies with staggered timing (immune fast enemies that leak to CPU)
+    private func spawnBatch1() {
+        guard let scene = controller.scene else { return }
+
+        let spawnPoint = CGPoint(x: 4200, y: 2100) // PSU spawn edge
+        let enemies = TutorialSpawnSystem.createBatch1Enemies(spawnPoint: spawnPoint, pathIndex: 0)
+        let stagger = BalanceConfig.Tutorial.batch1SpawnStagger
+
+        for (index, enemy) in enemies.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + stagger * Double(index)) {
+                scene.state?.enemies.append(enemy)
+                scene.spawnPortalAnimation(at: scene.convertToScene(spawnPoint))
+            }
         }
     }
 
