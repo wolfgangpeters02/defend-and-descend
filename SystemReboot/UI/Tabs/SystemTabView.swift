@@ -6,12 +6,15 @@ import Combine
 // Main game hub - motherboard game with HUD, Arsenal accessible via SYS button
 
 struct SystemTabView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @ObservedObject var appState = AppState.shared
     @StateObject private var embeddedGameController = EmbeddedTDGameController()  // Persists across view lifecycle
     @State private var showSystemMenu = false  // Arsenal/Settings sheet
     @State private var systemMenuTab: SystemMenuSheet.SystemMenuTab = .arsenal
     @State private var selectedBoss: BossEncounter?
     @State private var selectedDifficulty: BossDifficulty = .normal
+
+    private var isIPad: Bool { sizeClass == .regular }
 
     var onExit: (() -> Void)? = nil
 
@@ -44,7 +47,10 @@ struct SystemTabView: View {
                 }
             )
         }
-        .sheet(isPresented: $showSystemMenu) {
+        .sheet(isPresented: isIPad ? .constant(false) : $showSystemMenu) {
+            SystemMenuSheet(selectedTab: $systemMenuTab)
+        }
+        .fullScreenCover(isPresented: isIPad ? $showSystemMenu : .constant(false)) {
             SystemMenuSheet(selectedTab: $systemMenuTab)
         }
         .onChange(of: showSystemMenu) { isOpen in

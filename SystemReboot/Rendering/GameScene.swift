@@ -75,6 +75,8 @@ class GameScene: SKScene {
 
     // Screen size for dynamic scaling
     var screenSize: CGSize = .zero
+    /// Visible viewport size in scene coordinates (accounts for .aspectFill scaling)
+    var visibleViewportSize: CGSize = .zero
 
     // Boss mechanics rendering (Step 4.1: delegated to BossRenderingManager)
     var bossRenderingManager = BossRenderingManager()
@@ -94,6 +96,16 @@ class GameScene: SKScene {
             self.screenSize = screenSize ?? CGSize(width: width, height: height)
             self.gameState.arena.width = width
             self.gameState.arena.height = height
+            // Calculate visible viewport in scene coordinates (accounts for .aspectFill)
+            let viewAspect = self.screenSize.width / self.screenSize.height
+            let sceneAspect = width / height
+            if viewAspect > sceneAspect {
+                // View wider than scene: full width visible, top/bottom clipped
+                visibleViewportSize = CGSize(width: width, height: width / viewAspect)
+            } else {
+                // View taller than scene: full height visible, sides clipped
+                visibleViewportSize = CGSize(width: height * viewAspect, height: height)
+            }
             // Player position is set by createBossGameState, don't override
         }
         // Other modes: Resize arena to match screen for full-screen gameplay
@@ -303,7 +315,8 @@ class GameScene: SKScene {
         }
 
         let texture = SKTexture(image: image)
-        let vignetteSize = CGSize(width: screenSize.width * 1.5, height: screenSize.height * 1.5)
+        let vp = visibleViewportSize.width > 0 ? visibleViewportSize : screenSize
+        let vignetteSize = CGSize(width: vp.width * 1.5, height: vp.height * 1.5)
         let vignette = SKSpriteNode(texture: texture, size: vignetteSize)
         vignette.position = .zero
         vignette.zPosition = -10
@@ -529,9 +542,10 @@ class GameScene: SKScene {
         let targetX = gameState.player.x
         let targetY = gameState.arena.height - gameState.player.y  // Flip Y for scene coords
 
-        // Clamp camera to arena bounds (keep viewport within arena)
-        let halfWidth = screenSize.width / 2
-        let halfHeight = screenSize.height / 2
+        // Clamp camera to arena bounds (use visible viewport to account for .aspectFill scaling)
+        let viewport = visibleViewportSize.width > 0 ? visibleViewportSize : screenSize
+        let halfWidth = viewport.width / 2
+        let halfHeight = viewport.height / 2
 
         let clampedX = max(halfWidth, min(gameState.arena.width - halfWidth, targetX))
         let clampedY = max(halfHeight, min(gameState.arena.height - halfHeight, targetY))
@@ -596,8 +610,9 @@ class GameScene: SKScene {
         let healthBarWidth: CGFloat = 200
         let healthBarHeight: CGFloat = 20
 
-        let hudWidth = gameState.gameMode == .boss ? screenSize.width : gameState.arena.width
-        let hudHeight = gameState.gameMode == .boss ? screenSize.height : gameState.arena.height
+        let bossViewport = visibleViewportSize.width > 0 ? visibleViewportSize : screenSize
+        let hudWidth = gameState.gameMode == .boss ? bossViewport.width : gameState.arena.width
+        let hudHeight = gameState.gameMode == .boss ? bossViewport.height : gameState.arena.height
         let hudYOffset: CGFloat = gameState.gameMode == .boss ? hudHeight / 2 - 30 : hudHeight - 30
         let hudXOffsetLeft: CGFloat = gameState.gameMode == .boss ? -hudWidth / 2 + 120 : 120
         let hudXCenter: CGFloat = gameState.gameMode == .boss ? 0 : hudWidth / 2
