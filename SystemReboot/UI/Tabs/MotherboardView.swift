@@ -164,7 +164,10 @@ struct MotherboardView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $bossCoordinator.showBossFight) {
+        .fullScreenCover(isPresented: $bossCoordinator.showBossFight, onDismiss: {
+            // Ensure TD scene resumes when boss fight is dismissed for any reason
+            embeddedGameController.scene?.isPaused = false
+        }) {
             if let bossType = embeddedGameController.activeBossType,
                let boss = BossEncounter.all.first(where: { $0.bossId == bossType }) {
                 BossGameView(

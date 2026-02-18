@@ -51,9 +51,6 @@ struct SystemTabView: View {
             AudioManager.shared.gameSoundsSuppressed = isOpen
             embeddedGameController.scene?.isPaused = isOpen
         }
-        .onChange(of: selectedBoss?.id) { bossId in
-            embeddedGameController.scene?.isPaused = bossId != nil
-        }
     }
 
     // MARK: - Top Navigation Bar

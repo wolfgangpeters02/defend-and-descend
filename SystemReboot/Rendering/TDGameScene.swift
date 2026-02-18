@@ -780,8 +780,9 @@ class TDGameScene: SKScene {
     override func update(_ currentTime: TimeInterval) {
         guard var state = state, !state.isPaused, !state.isGameOver else { return }
 
-        // Calculate delta time
-        let deltaTime = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
+        // Calculate delta time (capped to prevent jumps after scene.isPaused resumes)
+        let rawDelta = lastUpdateTime == 0 ? 0 : currentTime - lastUpdateTime
+        let deltaTime = min(rawDelta, 1.0 / 15.0)
         lastUpdateTime = currentTime
 
         // Debug overlay (before frozen check so FPS tracks during freeze)
