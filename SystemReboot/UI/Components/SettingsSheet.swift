@@ -458,23 +458,21 @@ struct SettingsSheet: View {
                     .accessibilityLabel(L10n.Settings.analytics)
                 }
 
-                if AnalyticsService.shared.isEnabled {
-                    Button {
-                        AnalyticsService.shared.deleteAllData()
-                        HapticsService.shared.play(.success)
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 12))
-                            Text(L10n.Settings.deleteAnalytics)
-                                .font(DesignTypography.caption(12))
-                        }
-                        .foregroundColor(DesignColors.muted)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(DesignColors.surface)
-                        .cornerRadius(8)
+                Button {
+                    AnalyticsService.shared.deleteAllData()
+                    HapticsService.shared.play(.success)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12))
+                        Text(L10n.Settings.deleteAnalytics)
+                            .font(DesignTypography.caption(12))
                     }
+                    .foregroundColor(DesignColors.muted)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(DesignColors.surface)
+                    .cornerRadius(8)
                 }
             }
             .padding(16)
@@ -536,7 +534,7 @@ struct SettingsSheet: View {
             VStack(spacing: 12) {
                 // Privacy Policy link
                 Button {
-                    if let url = URL(string: "http://built42.com/systemreboot/privacy") {
+                    if let url = URL(string: "https://built42.com/systemreboot/privacy") {
                         UIApplication.shared.open(url)
                     }
                 } label: {
